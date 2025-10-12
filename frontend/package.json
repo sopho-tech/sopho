@@ -1,0 +1,51 @@
+{
+  "name": "sopho",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
+  },
+  "dependencies": {
+    "@codemirror/lang-markdown": "^6.3.3",
+    "@codemirror/lang-sql": "^6.9.0",
+    "@radix-ui/react-dialog": "^1.1.14",
+    "@radix-ui/react-dropdown-menu": "^2.1.15",
+    "@radix-ui/react-form": "^0.1.6",
+    "@radix-ui/react-menubar": "^1.1.15",
+    "@radix-ui/react-navigation-menu": "^1.2.14",
+    "@radix-ui/react-select": "^2.2.5",
+    "@radix-ui/react-toolbar": "^1.1.10",
+    "@react-oauth/google": "^0.12.1",
+    "@tanstack/react-query": "^5.74.3",
+    "@tanstack/react-table": "^8.21.3",
+    "@types/react-cookies": "^0.1.4",
+    "classnames": "^2.5.1",
+    "codemirror": "^6.0.2",
+    "echarts": "^6.0.0",
+    "material-symbols": "^0.31.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router": "^7.5.1",
+    "vite-tsconfig-paths": "^5.1.4",
+    "zustand": "^5.0.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.21.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.24.1",
+    "vite": "^6.2.0"
+  }
+}

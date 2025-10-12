@@ -1,0 +1,37 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.titleBar {
+    display: flex;
+    flex-direction: column;
+}
+
+.titleFirstRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.titleBarNotebookName {
+    background-color: var(--color-grey);
+    padding: 0.5rem;
+    border-radius: var(--border-radius-lg);
+}
+
+.saveButton {
+    max-height: 2rem;
+}
+
+.description {
+    color: var(--color-grey);
+}
+
+.cells {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}

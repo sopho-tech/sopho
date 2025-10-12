@@ -1,0 +1,7 @@
+.root {
+    background-color: var(--color-grey-dark-1);
+    border-radius: var(--border-radius-normal);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}

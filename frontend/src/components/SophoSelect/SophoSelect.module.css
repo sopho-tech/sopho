@@ -1,0 +1,115 @@
+.root {
+    background-color: var(--color-grey-dark-3);
+    border-radius: var(--border-radius-normal);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.toolbarButton {
+	all: unset;
+}
+
+.selectTrigger {
+	display: inline-flex;
+	align-items: center;
+	justify-content: space-between;
+	border-radius: var(--border-radius-md);
+	padding: 0 5px;
+	font-size: var(--font-size-xs);
+	background-color: var(--color-background);
+	color: var(--color-foreground);
+	box-shadow: var(--shadow);
+	width: 150px;
+	overflow: hidden;
+    margin: 5px 2px 5px 5px;
+}
+
+.selectTrigger > span:first-child {
+	flex: 1;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	text-align: left;
+	min-width: 0;
+}
+
+.selectTrigger:hover {
+	background-color: var(--color-grey-dark-1);
+}
+.selectTrigger:focus {
+	box-shadow: 0 0 0 2px var(--color-accent-dark-1);
+}
+.selectTrigger[data-placeholder] {
+	color: var(--inactive-color-normal);
+}
+
+.selectIcon {
+	color: var(--color-foreground);
+}
+
+.selectContent {
+	overflow: hidden;
+	background-color: var(--color-background);
+	border-radius: var(--border-radius-md);
+	box-shadow: var(--shadow-hover);
+}
+
+.selectViewport {
+	padding: 5px;
+}
+
+.selectItem {
+	font-size: 13px;
+	line-height: 1;
+	color: var(--color-foreground);
+	border-radius: var(--border-radius-sm);
+	display: flex;
+	align-items: center;
+	height: 25px;
+	padding: 0 35px 0 25px;
+	position: relative;
+	user-select: none;
+}
+
+.selectItem[data-disabled] {
+	color: var(--inactive-color-normal);
+	pointer-events: none;
+}
+.selectItem[data-highlighted] {
+	outline: none;
+	background-color: var(--color-accent-dark-1);
+	color: var(--color-background);
+}
+
+.selectLabel {
+	padding: 0 25px;
+	font-size: 12px;
+	line-height: 25px;
+	color: var(--inactive-color-normal);
+}
+
+.selectSeparator {
+	height: 1px;
+	background-color: var(--color-grey-dark-3);
+	margin: 5px;
+}
+
+.selectItemIndicator {
+	position: absolute;
+	left: 0;
+	width: 25px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.selectScrollButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 25px;
+	background-color: var(--color-background);
+	color: var(--color-foreground);
+	cursor: default;
+}

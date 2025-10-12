@@ -1,0 +1,19 @@
+---
+description: Project Details
+globs: *.rs
+alwaysApply: false
+---
+
+- Always use the latest version of rust packages.
+- Always ensure test coverage is above 90%.
+- For rust the backend framework used is axum.
+- Make code modular and extendable following all good design priciples.
+- Lint the code properly using rust-analyzer.
+- Create folders for modules if needed. Always arrange code properly.
+- Always use sea-orm for orm and queries.
+- I am making data visualization / query backend.
+- Use @tanstack/react-query for data fetching at client side in the frontend.
+- Use tailwind css, and react functions and eslint.
+- Use radix-ui wherever possible for components instead of creating from scratch.
+- Use google's material-symbols for icons.
+- Do not add comments when generating code.

@@ -1,0 +1,71 @@
+.formRoot {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    width: 100%;
+}
+
+.formField {
+    display: flex;
+    flex-direction: column;
+}
+
+.formLabel {
+    font-weight: var(--font-weight-semibold);
+}
+
+.formInput {
+    font-family: var(--font-primary);
+    font-size: var(--font-size-base);
+    padding: 0.75rem;
+    border-radius: var(--border-radius-sm);
+    border: var(--border-input);
+    transition: border-color 0.2s;
+    background-color: var(--input-background);
+    color: var(--color-foreground);
+}
+
+.formInput:focus {
+    outline: none;
+    border: var(--border-input-focus);
+}
+
+.formSelect {
+    font-family: var(--font-primary);
+    font-size: var(--font-size-base);
+    padding: 0.75rem;
+    border-radius: var(--border-radius-sm);
+    border: var(--border-input);
+    transition: border-color 0.2s;
+    background-color: var(--input-background);
+    color: var(--color-foreground);
+    cursor: pointer;
+}
+
+.formSelect:focus {
+    outline: none;
+    border: var(--border-input-focus);
+}
+
+.formMessage {
+    color: var(--color-red-dark-2);
+    font-size: var(--font-size-base);
+}
+
+.formError {
+    color: var(--color-red-dark-2);
+    font-size: var(--font-size-base);
+    padding: 0.5rem;
+    background-color: var(--error-background);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--color-red-dark-2);
+}
+
+.formButtonRow {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1.5rem;
+    border-top: var(--border-section)
+}

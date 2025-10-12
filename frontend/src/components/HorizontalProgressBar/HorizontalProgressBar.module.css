@@ -1,0 +1,102 @@
+.progressContainer {
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+    padding: 1rem;
+    background: var(--color-background);
+    border-radius: var(--border-radius-md);
+}
+
+.progressBar {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.progressStep {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.progressStep:last-child {
+    margin-bottom: 0;
+}
+
+.stepIndicator {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background-color: var(--color-grey-dark-1);
+    border: 2px solid var(--color-grey-dark-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    z-index: var(--z-index-10);
+    position: relative;
+}
+
+.progressStep.active .stepIndicator {
+    background-color: var(--color-accent-dark-1);
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow);
+}
+
+.progressStep.completed .stepIndicator {
+    background-color: var(--color-accent-dark-1);
+    border-color: var(--color-accent);
+}
+
+.stepNumber {
+    color: var(--color-background);
+    font-weight: 600;
+    font-size: var(--font-size-xs);
+    transition: color 0.3s ease;
+}
+
+.progressStep:not(.active):not(.completed) .stepNumber {
+    color: var(--color-grey-dark-3);
+}
+
+.stepLabel {
+    font-size: var(--font-size-xs);
+    color: var(--color-grey-dark-3);
+    font-weight: 500;
+    transition: color 0.3s ease;
+    line-height: 1.3;
+}
+
+.progressStep.active .stepLabel {
+    color: var(--color-foreground);
+    font-weight: 600;
+}
+
+.progressStep.completed .stepLabel {
+    color: var(--color-foreground);
+}
+
+.progressLine {
+    position: absolute;
+    left: 1rem;
+    top: 2.5rem;
+    bottom: 4rem;
+    width: 2px;
+    background-color: var(--color-grey-dark-1);
+    z-index: var(--z-index-1);
+}
+
+.progressFill {
+    height: 0%;
+    background-color: var(--color-accent);
+    transition: height 0.5s ease;
+    border-radius: 1px;
+}
+
+.progressFill.completed {
+    height: 100%;
+}

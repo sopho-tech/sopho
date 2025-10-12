@@ -1,0 +1,28 @@
+.base {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 5rem;
+  font-size: 0.9em;
+  font-weight: 500;
+  text-align: center;
+  border: 1px solid transparent;
+  cursor: default;
+}
+
+.active {
+  background-color: #e6fffa;
+  color: #2f855a;
+  border-color: #b2f5ea;
+}
+
+.inactive {
+  background-color: #f0f0f0;
+  color: #666666;
+  border-color: #cccccc;
+}
+
+.failed {
+  background-color: #fff5f5;
+  color: #c53030;
+  border-color: #fed7d7;
+}

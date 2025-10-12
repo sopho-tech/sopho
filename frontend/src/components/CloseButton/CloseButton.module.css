@@ -1,0 +1,20 @@
+.closeButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-foreground-secondary);
+    padding: 0.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+    background-color: var(--color-grey);
+}
+
+.closeButton:active {
+    background-color: var(--color-grey-dark-1);
+}

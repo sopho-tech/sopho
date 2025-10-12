@@ -1,0 +1,150 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--inactive-color-normal);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: var(--z-index-1);
+}
+
+.connectionDetailsContainer {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-background);
+    padding: 3rem;
+    border-radius: var(--border-radius-md);
+    max-width: min(90%, 50rem);
+    max-height: 80vh;
+    min-width: 30rem;
+    min-height: min-content;
+    overflow-y: auto;
+    box-shadow: var(--shadow);
+    outline: none;
+}
+
+.modalHeader {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: var(--border-section);
+}
+
+.connectionDetailsTitle {
+    font-family: var(--font-primary);
+    font-size: 1.8rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin-bottom: 20px;
+}
+
+.connectionForm {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.formContent {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.formRow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    width: 100%;
+}
+
+.formLabel {
+    font-family: var(--font-primary);
+    font-size: 0.9rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+}
+
+.formInput {
+    font-family: var(--font-primary);
+    font-size: 1rem;
+    padding: 0.75rem;
+    border-radius: var(--border-radius-sm);
+    border: var(--border-input);
+    transition: border-color 0.2s;
+    background-color: var(--input-background);
+    color: var(--color-foreground);
+}
+
+.formInput:focus {
+    outline: none;
+    border: var(--border-input-focus);
+}
+
+.errorMessage {
+    color: var(--color-red-dark-2);
+    font-size: var(--font-size-base);
+}
+
+.formActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1.5rem;
+    border-top: var(--border-section);
+}
+
+.selectTrigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    cursor: pointer;
+}
+
+.selectIcon {
+    margin-left: 0.5rem;
+}
+
+.selectContent {
+    background-color: var(--color-background);
+    border-radius: var(--border-radius-sm);
+    border: var(--border-input);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    width: var(--radix-select-trigger-width);
+    max-height: var(--radix-select-content-available-height);
+    z-index: var(--z-index-2);
+}
+
+.selectItem {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    outline: none;
+    color: var(--color-foreground);
+}
+
+.selectItem:hover, .selectItem:focus {
+    background-color: var(--color-grey-dark-1);
+}
+
+.selectedConnector {
+    padding: 0.75rem;
+    border-radius: var(--border-radius-sm);
+    border: var(--border-input);
+    background-color: var(--inactive-color-high);
+    font-family: var(--font-primary);
+    font-weight: var(--font-weight-semibold);
+}
+
+.formActions button span {
+    font-family: var(--font-primary);
+    font-weight: var(--font-weight-semibold);
+}

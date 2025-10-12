@@ -1,0 +1,5 @@
+.container {
+    overflow-x: auto;
+    border: var(--border-section);
+    border-radius: var(--border-radius-md);
+}

@@ -1,0 +1,7 @@
+.settingsContainer {
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+  padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+  margin: 0.5rem 0.5rem 0.5rem 0.5rem;
+}

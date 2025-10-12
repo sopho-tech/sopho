@@ -1,0 +1,31 @@
+.searchbar {
+    flex: 5;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+    padding: 0.25rem 0.25rem 0.25rem 0.25rem;
+}
+
+.searchbar:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.searchbarInput {
+    width: 30rem;
+    height: 2rem;
+    border: none;
+    font-size: 1rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.searchbarInput::placeholder {
+    color: var(--color-grey-dark-1);
+    font-style: italic;
+}
+
+.searchbar:focus-within {
+    box-shadow: var(--shadow-hover);
+    border: var(--border-input-focus);
+}

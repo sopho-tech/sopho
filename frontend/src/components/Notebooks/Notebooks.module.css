@@ -1,0 +1,17 @@
+.notebooksContainer {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: var(--space-lg);
+}
+
+.notebooksHeader {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: var(--space-lg);
+}
+
+.tableContainer {
+    margin-top: var(--space-lg);
+}

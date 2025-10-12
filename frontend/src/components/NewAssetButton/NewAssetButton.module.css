@@ -1,0 +1,22 @@
+.buttonStyle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: var(--color-background);
+  background-color: var(--color-accent);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.clicked {
+  background-color: var(--color-accent-dark-1);
+}
+
+.buttonStyle:hover {
+  background-color: var(--color-accent-light-1);
+}
+
+.buttonStyle:active {
+  background-color: var(--color-accent-dark-1);
+}

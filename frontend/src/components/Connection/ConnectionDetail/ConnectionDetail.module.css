@@ -1,0 +1,84 @@
+.dialogTitle {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: var(--border-section);
+}
+
+@keyframes overlayShow {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes contentShow {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.dialogOverlay {
+  background-color: rgba(0, 0, 0, 0.4); /* Approximation for bg-blackA6 from Radix UI colors */
+  position: fixed;
+  inset: 0;
+  animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dialogContent {
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 2rem;
+}
+
+/* .dialogContent:focus {
+  outline: none;
+} */
+
+.loadingText,
+.errorText,
+.noDetailsText {
+  padding: 10px 0;
+  color: #555;
+}
+
+.connectionDetailsContainer {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+
+
+.connectionDetailsContainer dt {
+  margin-right: 0.5rem;
+  float: left;
+  clear: left;
+  width: 10rem;
+}
+
+.connectionDetailsContainer dd {
+  margin-left: 10rem;
+  margin-bottom: 1rem;
+  background-color: var(--color-grey);
+  padding: 0.5em;
+  border-radius: var(--border-radius-sm);
+  min-height: 1rem;
+}
+
+.statusDd {
+  background-color: transparent !important; /* Override the general dd background */
+  padding: 0 !important; /* Override the general dd padding */
+  min-height: auto !important; /* Override min-height if not needed or adjust as necessary */
+}
+
+.backButton {
+  margin-top: 25px;
+  display: flex;
+  justify-content: flex-end;
+}

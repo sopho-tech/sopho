@@ -1,0 +1,49 @@
+.cm-editor {
+    box-shadow: var(--shadow);
+}
+
+.cm-editor.cm-focused {
+    outline: none;
+}
+
+.cm-editor .cm-content {
+    color: var(--color-foreground);
+}
+
+.cm-editor .cm-gutters {
+    background-color: var(--color-grey);
+}
+
+.cm-editor .cm-activeLine { 
+    background-color: var(--color-grey);
+}
+
+.cm-editor .cm-activeLineGutter { 
+    background-color: var(--color-grey);
+    color: var(--color-foreground);
+}
+
+.cm-editor .cm-lineNumbers { 
+    font-size: var(--font-size-xs);
+    width: 1.25rem 
+}
+
+.cm-editor .cm-foldGutter {
+    font-size: var(--font-size-xs);
+}
+
+.cm-editor .cm-foldGutter .span {
+    width: 1rem;
+}
+
+.cm-editor .cm-selectionLayer .cm-selectionBackground {
+    background-color: var(--color-grey);
+}
+
+.cm-editor .cm-cursorLayer .cm-cursor {
+    background-color: var(--color-grey);
+}
+
+.cm-editor .cm-line ::selection {
+    background-color: var(--color-grey);
+}
