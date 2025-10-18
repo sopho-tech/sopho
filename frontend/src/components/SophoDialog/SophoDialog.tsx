@@ -6,16 +6,22 @@ interface SophoDialogProps {
   shouldOpenDialog: boolean;
   handleOnOpenChange: (open: boolean) => void;
   handleDialogClose: () => void;
-  triggerButton: React.ReactElement;
-  content: React.ReactElement;
+  info: React.ReactElement;
+  title: string;
+  description?: string;
+  titleAccessory?: React.ReactElement;
+  dialogContentStyleClass?: string;
 }
 
 export function SophoDialog({
   shouldOpenDialog,
   handleOnOpenChange,
   handleDialogClose,
-  triggerButton,
-  content,
+  info,
+  title,
+  description,
+  titleAccessory,
+  dialogContentStyleClass,
 }: SophoDialogProps) {
   return (
     <Dialog.Root
@@ -23,22 +29,30 @@ export function SophoDialog({
       open={shouldOpenDialog}
       onOpenChange={handleOnOpenChange}
     >
-      <Dialog.Trigger asChild={true}>{triggerButton}</Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className={DialogStyles.dialogOverlay} />
-        <Dialog.Content className={DialogStyles.dialogContent}>
-          <Dialog.Title className={DialogStyles.dialogTitle}>
-            <div className={DialogStyles.dialogTitleHeading}>
-              Create New Notebook
-            </div>
-            <Dialog.Close asChild>
-              <CloseButton onClick={handleDialogClose} />
-            </Dialog.Close>
-          </Dialog.Title>
-          <Dialog.Description className={DialogStyles.dialogDescription}>
-            Redirects to the new notebook after creation
-          </Dialog.Description>
-          {content}
+        <Dialog.Content
+          className={`${DialogStyles.dialogContent} ${dialogContentStyleClass || ""}`}
+        >
+          <div className={DialogStyles.dialogHeadersContainer}>
+            <Dialog.Title asChild>
+              <div className={DialogStyles.dialogTitle}>
+                <div className={DialogStyles.dialogTitleHeading}>{title}</div>
+                <div className={DialogStyles.dialogHeadersRightContainer}>
+                  {titleAccessory}
+                  <Dialog.Close asChild>
+                    <CloseButton onClick={handleDialogClose} />
+                  </Dialog.Close>
+                </div>
+              </div>
+            </Dialog.Title>
+            {description && (
+              <Dialog.Description className={DialogStyles.dialogDescription}>
+                {description}
+              </Dialog.Description>
+            )}
+          </div>
+          <div className={DialogStyles.dialogInfo}>{info}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

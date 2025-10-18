@@ -4,13 +4,13 @@ import { APP_ROUTES } from "src/constants/app_routes";
 import { NotebookDto } from "src/components/Notebooks/dto";
 import { useNavigate } from "react-router";
 import { useCreateNotebook } from "src/api/notebook/queries";
-import { NewAssetButton } from "src/components/NewAssetButton";
 import {
   SophoForm,
   SophoFormElement,
   SophoFormElementType,
 } from "src/components/SophoForm/SophoForm";
 import { SophoDialog } from "src/components/SophoDialog";
+import NotebookCreateDialogStyles from "src/components/Notebooks/NotebookCreateDialog/NotebookCreateDialog.module.css";
 
 export function NotebookCreateDialog() {
   const navigate = useNavigate();
@@ -18,10 +18,6 @@ export function NotebookCreateDialog() {
 
   const handleDialogClose = () => {
     setNotebookPageState(NotebookPageStateEnum.LIST);
-  };
-
-  const handleOpenCreateDialog = () => {
-    setNotebookPageState(NotebookPageStateEnum.CREATE_NOTEBOOK_DIALOG);
   };
 
   const handleOnOpenChange = (open: boolean) => {
@@ -70,30 +66,23 @@ export function NotebookCreateDialog() {
       key: "name",
       name: "Name",
       required: true,
-      message: "Please fill name",
+      error_message: "Please fill name",
       type: SophoFormElementType.INPUT,
     },
     {
       key: "description",
       name: "Description",
       required: false,
-      message: "Please enter description",
+      error_message: "Please enter description",
       type: SophoFormElementType.INPUT,
     },
   ];
-
-  const dialogTriggerButton = (
-    <NewAssetButton
-      buttonText="New Notebook"
-      onClick={handleOpenCreateDialog}
-      isLoading={mutation.isPending}
-    />
-  );
   const dialogContent = (
     <SophoForm
       formElements={formElements}
       onSubmitCallback={onSubmitCallback}
       onCancelCallback={handleDialogClose}
+      formElementsStyleClass={NotebookCreateDialogStyles.formElements}
     />
   );
   return (
@@ -101,8 +90,10 @@ export function NotebookCreateDialog() {
       shouldOpenDialog={shouldOpenDialog}
       handleOnOpenChange={handleOnOpenChange}
       handleDialogClose={handleDialogClose}
-      triggerButton={dialogTriggerButton}
-      content={dialogContent}
+      info={dialogContent}
+      title="New Notebook"
+      description="Create a new notebook"
+      dialogContentStyleClass={NotebookCreateDialogStyles.dialogContent}
     />
   );
 }

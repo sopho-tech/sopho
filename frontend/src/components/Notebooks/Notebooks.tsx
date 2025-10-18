@@ -1,4 +1,5 @@
 import NotebooksStyles from "src/components/Notebooks/Notebooks.module.css";
+import { NotebookPageStateEnum } from "src/components/Notebooks/dto";
 import { NotebookCreateDialog } from "src/components/Notebooks/NotebookCreateDialog";
 import { NotebookDto } from "src/components/Notebooks/dto";
 import { SophoTable, ColumnConfig } from "src/components/SophoTable/SophoTable";
@@ -7,11 +8,14 @@ import { SophoTabs, type TabItem } from "src/components/SophoNavigationMenu";
 import { ActionButtons } from "src/components/ActionButtons";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { NewAssetButton } from "src/components/NewAssetButton";
+import { useNotebookStore } from "src/components/Notebooks/store";
 
 export function Notebooks() {
   const { data: notebooks, isLoading, isError } = useAllNotebooks();
   const deleteMutation = useDeleteNotebook();
   const navigate = useNavigate();
+  const { setNotebookPageState } = useNotebookStore();
 
   const handleViewNotebook = (id: string) => {
     navigate(APP_ROUTES.NOTEBOOK.replace(":id", id));
@@ -25,6 +29,10 @@ export function Notebooks() {
     if (confirm("Are you sure you want to delete this notebook?")) {
       deleteMutation.mutate(id);
     }
+  };
+
+  const handleOpenCreateDialog = () => {
+    setNotebookPageState(NotebookPageStateEnum.CREATE_NOTEBOOK_DIALOG);
   };
 
   const columns: ColumnConfig<NotebookDto>[] = [
@@ -106,6 +114,11 @@ export function Notebooks() {
     <div className={NotebooksStyles.notebooksContainer}>
       <div className={NotebooksStyles.notebooksHeader}>
         <h3>Notebooks</h3>
+        <NewAssetButton
+          buttonText="New Notebook"
+          onClick={handleOpenCreateDialog}
+          isLoading={isLoading}
+        />
         <NotebookCreateDialog />
       </div>
       <SophoTabs items={tabItems} defaultActiveItem="all_notebooks" />

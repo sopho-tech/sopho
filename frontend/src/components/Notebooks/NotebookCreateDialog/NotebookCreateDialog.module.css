@@ -3,3 +3,13 @@
     display: flex;
     justify-content: flex-end;
 }
+
+.formElements {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.dialogContent {
+    width: 30%;
+}

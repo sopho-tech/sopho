@@ -1,22 +1,24 @@
 .dialogOverlay {
-    background-color: var(--color-background);
+    background-color: var(--overlay-color);
     position: fixed;
     inset: 0;
     animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dialogContent {
-    background-color: var(--color-background);
+    background-color: var(--color-grey-light-2);
     border-radius: var(--border-radius-md);
     box-shadow: var(--shadow);
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 90vw;
-    max-width: 25rem;
-    max-height: 50rem;
-    padding: 2rem;
+    width: 50%;
+    padding: var(--space-sm);
+    border-radius: var(--border-radius-xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
 }
 
 .dialogTitle {
@@ -24,18 +26,28 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: var(--border-section);
 }
 
 .dialogTitleHeading {
-    font: var(--font-primary);
-    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-semibold);
 }
 
 .dialogDescription {
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-sm);
     color: var(--color-grey-dark-2);
+}
+
+.dialogInfo {
+}
+
+.dialogHeadersContainer {
+    
+}
+
+.dialogHeadersRightContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    align-items: center;
 }

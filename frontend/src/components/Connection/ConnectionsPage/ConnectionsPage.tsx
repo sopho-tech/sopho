@@ -1,11 +1,11 @@
 import ConnectionsStyles from "src/components/Connection/ConnectionsPage/ConnectionsPage.module.css";
 import { NewAssetButton } from "src/components/NewAssetButton";
-import { CreateNewConnection } from "src/components/Connection/CreateNewConnection";
 import { useConnectionsStore } from "src/components/Connection/store";
 import { ConnectionsTable } from "src/components/Connection/ConnectionsTable/ConnectionsTable";
 import { ConnectionDetail } from "src/components/Connection/ConnectionDetail/ConnectionDetail";
 import { ConnectionEdit } from "src/components/Connection/ConnectionEdit/ConnectionEdit";
 import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
+import { ConnectionNew } from "src/components/Connection/ConnectionNew";
 
 export function Connections() {
   const { connectionDetailsPageState, setConnectionDetailsPageState } =
@@ -22,7 +22,7 @@ export function Connections() {
         />
       </div>
       {connectionDetailsPageState === ConnectionDetailsPageStateEnum.NEW && (
-        <CreateNewConnection />
+        <ConnectionNew />
       )}
       {connectionDetailsPageState === ConnectionDetailsPageStateEnum.DETAIL && (
         <ConnectionDetail />

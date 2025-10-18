@@ -18,6 +18,7 @@
     "@radix-ui/react-form": "^0.1.6",
     "@radix-ui/react-menubar": "^1.1.15",
     "@radix-ui/react-navigation-menu": "^1.2.14",
+    "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-toolbar": "^1.1.10",
     "@react-oauth/google": "^0.12.1",

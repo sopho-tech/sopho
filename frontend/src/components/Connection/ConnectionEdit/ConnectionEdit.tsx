@@ -1,248 +1,191 @@
 import { useConnectionsStore } from "src/components/Connection/store";
-import { useState, useEffect, FormEvent } from "react";
-import * as Form from "@radix-ui/react-form";
-import CreateNewConnectionStyles from "src/components/Connection/CreateNewConnection/CreateNewConnection.module.css";
-import { NewAssetButton } from "src/components/NewAssetButton/NewAssetButton";
-import { CloseButton } from "../../CloseButton/CloseButton";
+import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 import {
-  ConnectionDto,
-  CONNECTOR_DISPLAY_TO_BACKEND_VALUE_MAP,
-  ConnectionDetailsPageStateEnum,
-} from "src/components/Connection/dto";
+  SophoForm,
+  SophoFormElement,
+  SophoFormElementType,
+  InputType,
+} from "src/components/SophoForm";
+import { SourceTypeEnum } from "src/constants/database_types";
+import { SophoDialog } from "src/components/SophoDialog";
 import { useConnection, useUpdateConnection } from "src/api/connection/queries";
+import ConnectionEditStyles from "src/components/Connection/ConnectionEdit/ConnectionEdit.module.css";
 
-const getDisplayNameFromBackendValue = (
-  backendValue: string,
-): string | undefined => {
-  return Object.keys(CONNECTOR_DISPLAY_TO_BACKEND_VALUE_MAP).find(
-    (key) => CONNECTOR_DISPLAY_TO_BACKEND_VALUE_MAP[key] === backendValue,
-  );
-};
-
-const initialFormState: ConnectionDto | null = null;
+const sourceTypeOptions = Object.values(SourceTypeEnum).map((type) => ({
+  value: type,
+  label: type.charAt(0) + type.slice(1).toLowerCase(),
+}));
 
 export function ConnectionEdit() {
-  const { connectionId, setConnectionDetailsPageState } = useConnectionsStore();
+  const updateMutation = useUpdateConnection();
+  const {
+    connectionId,
+    connectionDetailsPageState,
+    setConnectionDetailsPageState,
+  } = useConnectionsStore();
   const {
     data: connection,
     isLoading,
     error: queryError,
   } = useConnection(connectionId);
-  const updateMutation = useUpdateConnection();
 
-  const [formData, setFormData] = useState<ConnectionDto | null>(
-    initialFormState,
+  const shouldOpenDialog =
+    connectionDetailsPageState === ConnectionDetailsPageStateEnum.EDIT;
+
+  function handleOnOpenChange(open: boolean) {
+    if (!open) {
+      setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
+    }
+  }
+
+  function handleDialogClose() {
+    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
+  }
+
+  function handleCancelCallback() {
+    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
+  }
+
+  function handleSubmitCallback(formData: FormData) {
+    if (!connection) {
+      throw new Error("Connection is null in handleSubmitCallback");
+    }
+    const payload = {
+      id: connection.id,
+      source_type: connection.source_type,
+      created_at: connection.created_at,
+      updated_at: connection.updated_at,
+      status: connection.status,
+      name: formData.get("name") as string,
+      host: formData.get("host") as string,
+      port: formData.get("port") ? Number(formData.get("port")) : null,
+      database: formData.get("database") as string,
+      schema: (formData.get("schema") as string) || null,
+      username: formData.get("username") as string,
+      password: formData.get("password") as string,
+      description: (formData.get("description") as string) || null,
+    };
+    updateMutation.mutate({ connectionId, payload });
+    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
+  }
+
+  if (isLoading) return <div>Loading connection details...</div>;
+  if (queryError)
+    return <div>Error loading connection: {queryError.message}</div>;
+  if (!connection) return <div>No connection data found.</div>;
+
+  const formElements: SophoFormElement[] = [
+    {
+      key: "source_type",
+      name: "Source Type",
+      required: true,
+      error_message: "Source is not selected",
+      type: SophoFormElementType.SELECT,
+      options: sourceTypeOptions,
+      defaultValue: connection.source_type,
+      disabled: true,
+    },
+    {
+      key: "name",
+      name: "Connector Name",
+      required: true,
+      error_message: "Enter the connector name",
+      placeholder: "e.g., my connector",
+      type: SophoFormElementType.INPUT,
+      input_type: InputType.TEXT,
+      defaultValue: connection.name,
+    },
+    {
+      key: "username",
+      name: "Username",
+      required: true,
+      error_message: "Enter the username",
+      placeholder: "e.g., admin",
+      type: SophoFormElementType.INPUT,
+      input_type: InputType.TEXT,
+      defaultValue: connection.username,
+    },
+    {
+      key: "password",
+      name: "Password",
+      required: false,
+      error_message: "Enter the password",
+      placeholder: "*****",
+      type: SophoFormElementType.INPUT,
+      input_type: InputType.PASSWORD,
+      defaultValue: connection.password,
+    },
+    {
+      key: "host",
+      name: "Host",
+      required: true,
+      error_message: "Enter the database host name",
+      placeholder: "e.g., localhost or db.example.com",
+      type: SophoFormElementType.INPUT,
+      input_type: InputType.TEXT,
+      defaultValue: connection.host,
+    },
+    {
+      key: "port",
+      name: "Port",
+      required: true,
+      error_message: "Enter the database port number",
+      placeholder: "e.g., 5432",
+      type: SophoFormElementType.INPUT,
+      input_type: InputType.NUMBER,
+      defaultValue: connection.port,
+    },
+    {
+      key: "database",
+      name: "Database",
+      required: true,
+      error_message: "Enter the database name",
+      placeholder: "my_database",
+      type: SophoFormElementType.INPUT,
+      input_type: InputType.TEXT,
+      defaultValue: connection.database,
+    },
+    {
+      key: "schema",
+      name: "Schema (optional)",
+      required: false,
+      error_message: "Enter the schema",
+      placeholder: "public",
+      type: SophoFormElementType.INPUT,
+      input_type: InputType.TEXT,
+      defaultValue: connection.schema,
+    },
+    {
+      key: "description",
+      name: "Description (optional)",
+      required: false,
+      error_message: "Enter a description",
+      placeholder: "A brief description of the connection",
+      type: SophoFormElementType.INPUT,
+      input_type: InputType.TEXT,
+      defaultValue: connection.description,
+    },
+  ];
+
+  const dialogContent = (
+    <SophoForm
+      formElements={formElements}
+      onSubmitCallback={handleSubmitCallback}
+      onCancelCallback={handleCancelCallback}
+      submitButtonText="Save Changes"
+      showCancelButton={true}
+      showSubmitButton={true}
+    />
   );
 
-  useEffect(() => {
-    // Only set formData if connection data is available AND formData hasn't been populated yet (is null).
-    // This prevents overwriting user edits if the 'connection' object reference changes due to background refetches.
-    if (connection && formData === null) {
-      setFormData({
-        ...connection, // Spread the fetched connection object
-        // Ensure port is correctly formatted as number or null
-        port:
-          connection.port !== undefined &&
-          connection.port !== null &&
-          !isNaN(Number(connection.port))
-            ? Number(connection.port)
-            : null,
-      });
-    }
-  }, [connection, formData]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prevFormData) => {
-      // If formData is not yet initialized by useEffect, prevFormData will be null.
-      // In this case, we should not try to update it from here, as useEffect will set it.
-      // Returning prevFormData (which is null) allows useEffect to proceed correctly.
-      if (!prevFormData) {
-        console.warn(
-          "handleInputChange called before formData was initialized from connection. Input for this event may be ignored until form is fully ready.",
-        );
-        return null; // Or return prevFormData;
-      }
-
-      // If prevFormData is populated, create the new state.
-      // Create a new object to ensure state update
-      const updatedData = { ...prevFormData };
-
-      if (name === "port") {
-        const digitsOnly = value.replace(/[^0-9]/g, "");
-        // Ensure port is number or null
-        updatedData.port = digitsOnly === "" ? null : parseInt(digitsOnly, 10);
-      } else {
-        // For other fields, assign the value.
-        // Type assertion needed if 'name' can be a key for non-string/number values
-        // or if Connection type is stricter. For current form fields, this should be okay.
-        (updatedData as any)[name] = value;
-      }
-      return updatedData;
-    });
-  };
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!formData) {
-      console.error("handleSubmit: formData is null. Cannot submit.");
-      return;
-    }
-
-    const dataToSubmit: Partial<ConnectionDto> = { ...formData };
-
-    updateMutation.mutate({ connectionId, payload: dataToSubmit });
-  };
-
-  const renderFormField = (
-    name: keyof ConnectionDto,
-    label: string,
-    type: string,
-    placeholder: string,
-    isRequired: boolean = true,
-  ) => {
-    if (!formData) return null; // Ensure formData is available
-
-    // Explicitly type value to avoid implicit any
-    const fieldValue = formData[name] as string | number | null | undefined;
-
-    return (
-      <Form.Field
-        className={CreateNewConnectionStyles.formRow}
-        name={name as string}
-      >
-        <Form.Label className={CreateNewConnectionStyles.formLabel}>
-          {label}
-        </Form.Label>
-        <Form.Control asChild>
-          <input
-            type={type}
-            id={name as string}
-            name={name as string}
-            value={fieldValue ?? ""} // Use the typed fieldValue
-            onChange={handleInputChange}
-            required={isRequired}
-            className={CreateNewConnectionStyles.formInput}
-            placeholder={placeholder}
-            autoComplete={"off"}
-          />
-        </Form.Control>
-        {isRequired && (
-          <Form.Message
-            className={CreateNewConnectionStyles.errorMessage}
-            match="valueMissing"
-          >
-            Please enter a {label.toLowerCase().replace(" (optional)", "")}
-          </Form.Message>
-        )}
-      </Form.Field>
-    );
-  };
-
-  if (isLoading) return <p>Loading connection details...</p>;
-  if (queryError) return <p>Error loading connection: {queryError.message}</p>;
-  if (!connection) return <p>No connection data found.</p>;
-
   return (
-    <div className={CreateNewConnectionStyles.modalOverlay}>
-      <div
-        className={CreateNewConnectionStyles.connectionDetailsContainer}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="connection-edit-title"
-      >
-        <div className={CreateNewConnectionStyles.modalHeader}>
-          <h4>Edit Connection</h4>
-          <CloseButton
-            onClick={() =>
-              setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST)
-            }
-          />
-        </div>
-
-        <Form.Root
-          onSubmit={handleSubmit}
-          className={CreateNewConnectionStyles.connectionForm}
-        >
-          <div className={CreateNewConnectionStyles.formContent}>
-            <div className={CreateNewConnectionStyles.formRow}>
-              <div className={CreateNewConnectionStyles.formLabel}>
-                Connector Type
-              </div>
-              <div className={CreateNewConnectionStyles.selectedConnector}>
-                {formData &&
-                  (getDisplayNameFromBackendValue(formData.source_type) ||
-                    formData.source_type)}
-              </div>
-            </div>
-
-            {renderFormField(
-              "name",
-              "Connector Name",
-              "text",
-              "My Database Connection",
-            )}
-            {renderFormField("username", "User", "text", "username")}
-            {renderFormField(
-              "password",
-              "Password",
-              "password",
-              "*****",
-              false,
-            )}
-            {renderFormField(
-              "host",
-              "Host",
-              "text",
-              "localhost or db.example.com",
-            )}
-            {renderFormField("port", "Port", "text", "5432")}
-            {renderFormField("database", "Database", "text", "my_database")}
-            {renderFormField(
-              "schema",
-              "Schema (Optional)",
-              "text",
-              "public",
-              false,
-            )}
-            {renderFormField(
-              "description",
-              "Description (Optional)",
-              "text",
-              "A brief description of the connection",
-              false,
-            )}
-          </div>
-
-          <div className={CreateNewConnectionStyles.formActions}>
-            <NewAssetButton
-              buttonText="Cancel"
-              onClick={
-                () =>
-                  setConnectionDetailsPageState &&
-                  setConnectionDetailsPageState(
-                    "LIST" as any,
-                  ) /* Cast to any if enum causes issues here, or import enum */
-              }
-            />
-            <Form.Submit asChild>
-              <NewAssetButton
-                buttonText="Save Changes"
-                isLoading={updateMutation.isPending}
-              />
-            </Form.Submit>
-          </div>
-          {updateMutation.isError && (
-            <p
-              className={CreateNewConnectionStyles.errorMessage}
-              style={{ textAlign: "center", marginTop: "10px" }}
-            >
-              Error:{" "}
-              {updateMutation.error?.message || "Failed to update connection."}
-            </p>
-          )}
-        </Form.Root>
-      </div>
-    </div>
+    <SophoDialog
+      shouldOpenDialog={shouldOpenDialog}
+      handleOnOpenChange={handleOnOpenChange}
+      handleDialogClose={handleDialogClose}
+      info={dialogContent}
+      title="Edit Connection"
+      description="Update your database connection details"
+    />
   );
 }

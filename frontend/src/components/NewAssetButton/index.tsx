@@ -1,1 +1,5 @@
-export { NewAssetButton } from "src/components/NewAssetButton/NewAssetButton";
+export {
+  NewAssetButton,
+  ButtonType,
+  ButtonStyle,
+} from "src/components/NewAssetButton/NewAssetButton";

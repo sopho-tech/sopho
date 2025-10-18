@@ -1,16 +1,18 @@
-.buttonStyle {
+/* Common button styles */
+.buttonStyle,
+.back__buttonStyle {
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 0.5rem;
-  color: var(--color-background);
-  background-color: var(--color-accent);
+  padding: var(--space-xs);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow);
 }
 
-.clicked {
-  background-color: var(--color-accent-dark-1);
+/* Primary button variant */
+.buttonStyle {
+  color: var(--color-background);
+  background-color: var(--color-accent);
 }
 
 .buttonStyle:hover {
@@ -19,4 +21,18 @@
 
 .buttonStyle:active {
   background-color: var(--color-accent-dark-1);
+}
+
+/* Back button variant */
+.back__buttonStyle {
+  color: var(--color-foreground);
+  background-color: var(--color-background);
+}
+
+.back__buttonStyle:hover {
+  background-color: var(--color-grey-light-2);
+}
+
+.back__buttonStyle:active {
+  background-color: var(--color-grey-dark-1);
 }

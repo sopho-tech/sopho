@@ -5,51 +5,92 @@
     width: 100%;
 }
 
+.formElements {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    column-gap: var(--space-sm);
+    row-gap: var(--space-sm);
+    grid-auto-rows: minmax(50px, auto);
+    padding: var(--space-sm);
+    overflow-y: auto;
+    background-color: var(--color-background);
+    border-radius: var(--border-radius-lg);
+}
+
 .formField {
     display: flex;
     flex-direction: column;
 }
 
 .formLabel {
-    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-sm);
 }
 
-.formInput {
-    font-family: var(--font-primary);
-    font-size: var(--font-size-base);
-    padding: 0.75rem;
-    border-radius: var(--border-radius-sm);
-    border: var(--border-input);
-    transition: border-color 0.2s;
-    background-color: var(--input-background);
-    color: var(--color-foreground);
-}
-
-.formInput:focus {
-    outline: none;
-    border: var(--border-input-focus);
-}
-
+/* Common styles for input and select elements */
+.formInput,
 .formSelect {
-    font-family: var(--font-primary);
-    font-size: var(--font-size-base);
-    padding: 0.75rem;
-    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
+    padding: var(--space-xxs);
+    border-radius: var(--border-radius-md);
     border: var(--border-input);
     transition: border-color 0.2s;
-    background-color: var(--input-background);
     color: var(--color-foreground);
-    cursor: pointer;
 }
 
+/* Input-specific styles */
+.formInput {
+    background-color: var(--input-background);
+}
+
+/* To make the arrow for number input disappear */
+.formInput::-webkit-outer-spin-button, 
+.formInput::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.formInput[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Select-specific styles */
+.formSelect {
+    background-color: var(--color-background);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24' fill='%231f1f1f'%3E%3Cpath d='M480-345 240-585l56-56 184 183 184-183 56 56-240 240Z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+}
+
+/* Common focus state */
+.formInput:focus,
 .formSelect:focus {
     outline: none;
     border: var(--border-input-focus);
+    box-shadow: var(--shadow-accent-md);
+}
+
+/* Select hover and active states */
+.formSelect:hover, 
+.formSelect:active {
+    border: var(--border-input-focus);
+    box-shadow: var(--shadow-accent-md);
+}
+
+/* Common disabled state */
+.formInput:disabled,
+.formSelect:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: var(--color-background-secondary);
 }
 
 .formMessage {
     color: var(--color-red-dark-2);
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-sm);
 }
 
 .formError {
@@ -64,8 +105,7 @@
 .formButtonRow {
     display: flex;
     justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 1rem;
-    padding-top: 1.5rem;
-    border-top: var(--border-section)
+    gap: var(--space-md);
+    margin-top: var(--space-xs);
+    padding-top: var(--space-sm);
 }

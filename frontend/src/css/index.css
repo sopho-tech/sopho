@@ -83,14 +83,14 @@ button {
 :root {
   /* Color System */
   --color-background: hsla(249, 99%, 99%, 1);
-  --color-background-dark-1: hsla(249, 95%, 90%, 1);
+  --color-background-dark-1: hsla(249, 99%, 90%, 1);
   --color-background-dark-2: hsla(249, 95%, 85%, 1);
 
   --color-foreground: #000000;
   --color-foreground-light-1: hsl(0, 0%, 5%, 1);
   --color-foreground-light-2: hsl(0, 0%, 7.5%, 1);
   --color-foreground-light-3: hsl(0, 0%, 10%, 1);
-  --color-foreground-light-4: hsl(0, 0%, 12.5%, 1);
+  --color-foreground-light-4: hsl(0, 0%, 50.5%, 1);
 
   --color-accent-base: 249, 95%, 75%;
   --color-accent: hsla(var(--color-accent-base));
@@ -102,6 +102,9 @@ button {
   --color-grey-dark-1: hsl(0, 0%, 68%, 1);
   --color-grey-dark-2: hsl(0, 0%, 48%, 1);
   --color-grey-dark-3: hsl(0, 0%, 28%, 1);
+  --color-grey-light-1: hsl(0, 0%, 92%, 1);
+  --color-grey-light-2: hsl(0, 0%, 95%, 1);
+  --color-grey-light-3: hsla(0, 0%, 96%, 1);
 
   --color-green: hsl(84, 96%, 64%, 1);
   --color-green-dark-1: hsl(84, 62%, 52%, 1);
@@ -132,7 +135,7 @@ button {
   --error-color: var(--color-red-dark-2);
   --active-color: var(--color-grey);
   --action-color: var(--color-green-dark-2);
-  --overlay-color: rgba(0, 0, 0, 0.4);
+  --overlay-color: hsla(0, 0%, 0%, 0.6);
 
   --inactive-color-normal: rgba(0, 0, 0, 0.5);
   --inactive-color-high: rgba(0, 0, 0, 0.1);
@@ -219,7 +222,7 @@ button {
   --border-style-dotted: dotted;
 
   /* Border Colors */
-  --border-color-default: var(--color-grey-dark-2);
+  --border-color-default: var(--color-grey-dark-1);
   --border-color-light: var(--color-grey-dark-1);
   --border-color-dark: var(--color-grey-dark-3);
   --border-color-focus: var(--color-accent);
@@ -227,11 +230,12 @@ button {
   --border-color-success: var(--color-green-dark-2);
 
   /* Semantic Borders */
-  --border-input: var(--border-width-thin) var(--border-style-solid) var(--border-color-default);
-  --border-input-focus: var(--border-width-thin) var(--border-style-solid) var(--border-color-focus);
-  --border-input-error: var(--border-width-thin) var(--border-style-solid) var(--border-color-error);
+  --border-input: var(--border-width-medium) var(--border-style-solid) var(--border-color-default);
+  --border-input-focus: var(--border-width-medium) var(--border-style-solid) var(--border-color-focus);
+  --border-input-error: var(--border-width-medium) var(--border-style-solid) var(--border-color-error);
+  --border-input-hide: var(--border-width-medium) var(--border-style-solid) var(--color-background);
 
-  --border-section: var(--border-width-thin) var(--border-style-solid) var(--border-color-default);
+  --border-section: var(--border-width-medium) var(--border-style-solid) var(--border-color-default);
   --border-card: var(--border-width-thin) var(--border-style-solid) var(--border-color-light);
   --border-cell: var(--border-width-medium) var(--border-style-solid) var(--border-color-default);
  
@@ -261,9 +265,61 @@ button {
   --icon-xl: 2rem;
   --icon-2xl: 3rem;
 
-  /* shadow */
-  --shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  --shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
+  /* Shadow System - Elevation Levels */
+  /* Extra small - subtle lift */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  
+  /* Small - cards, buttons */
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+               0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  
+  /* Medium - dropdowns, popovers */
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+               0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  
+  /* Large - modals, overlays */
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+               0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  
+  /* Extra large - major UI elements */
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+               0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  
+  /* 2X large - maximum elevation */
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* Inner shadow - inset elements */
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+  
+  /* Interaction States */
+  --shadow-hover: 0 10px 20px -5px rgba(0, 0, 0, 0.15),
+                  0 6px 12px -6px rgba(0, 0, 0, 0.12);
+  
+  --shadow-focus: 0 0 0 3px hsla(var(--color-accent-base), 0.3),
+                  0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  
+  --shadow-active: 0 1px 2px 0 rgba(0, 0, 0, 0.15);
+  
+  /* Colored Shadows - for accent elements */
+  --shadow-accent-sm: 0 2px 8px -2px hsla(var(--color-accent-base), 0.3),
+                      0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  
+  --shadow-accent-md: 0 4px 16px -4px hsla(var(--color-accent-base), 0.4),
+                      0 2px 6px -2px rgba(0, 0, 0, 0.1);
+  
+  --shadow-accent-lg: 0 8px 24px -6px hsla(var(--color-accent-base), 0.5),
+                      0 4px 12px -4px rgba(0, 0, 0, 0.15);
+  
+  /* Semantic Shadows - common use cases */
+  --shadow-card: var(--shadow-sm);
+  --shadow-card-hover: var(--shadow-md);
+  --shadow-dropdown: var(--shadow-lg);
+  --shadow-modal: var(--shadow-2xl);
+  --shadow-button: var(--shadow-xs);
+  --shadow-button-hover: var(--shadow-sm);
+  
+  /* Legacy support (deprecated - use specific shadows above) */
+  --shadow: var(--shadow-sm);
 
   /* z-index */
   --z-index-1: 1;
