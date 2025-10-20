@@ -51,7 +51,7 @@ const connectionApi = {
   },
 
   createConnection: async (
-    payload: CreateConnectionDto,
+    payload: CreateConnectionDto
   ): Promise<ConnectionDto> => {
     const response = await ApiService.post({
       url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CONNECTION.CREATE}`,
@@ -69,7 +69,7 @@ const connectionApi = {
       {
         method: "DELETE",
         credentials: "include",
-      },
+      }
     );
 
     if (!response.ok) {
