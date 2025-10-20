@@ -5,6 +5,7 @@ import { useConnection } from "src/api/connection/queries";
 import { SophoFormDetails } from "src/components/SophoFormDetails/SophoFormDetails";
 import { SophoDialog } from "src/components/SophoDialog/SophoDialog";
 import { Fragment } from "react/jsx-runtime";
+import { formatTimestamp } from "src/utils/timestamp_utils";
 
 export function ConnectionDetail() {
   const {
@@ -39,12 +40,12 @@ export function ConnectionDetail() {
             { label: "Database", value: connectionDetails.database },
             { label: "Description", value: connectionDetails.description },
             {
-              label: "Created At",
-              value: new Date(connectionDetails.created_at).toISOString(),
+              label: "Created On",
+              value: formatTimestamp(connectionDetails.created_at),
             },
             {
-              label: "Updated At",
-              value: new Date(connectionDetails.updated_at).toISOString(),
+              label: "Last Modified",
+              value: formatTimestamp(connectionDetails.updated_at),
             },
             {
               label: "Status",

@@ -27,6 +27,7 @@
     "@types/react-cookies": "^0.1.4",
     "classnames": "^2.5.1",
     "codemirror": "^6.0.2",
+    "dayjs": "^1.11.18",
     "echarts": "^6.0.0",
     "material-symbols": "^0.31.2",
     "react": "^19.0.0",

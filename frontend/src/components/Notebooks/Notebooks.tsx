@@ -10,6 +10,7 @@ import { useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { NewAssetButton } from "src/components/NewAssetButton";
 import { useNotebookStore } from "src/components/Notebooks/store";
+import { formatTimestamp } from "src/utils/timestamp_utils";
 
 export function Notebooks() {
   const { data: notebooks, isLoading, isError } = useAllNotebooks();
@@ -53,12 +54,14 @@ export function Notebooks() {
       header: "Created On",
       type: "accessor",
       accessor: "created_at",
+      cell: (props) => formatTimestamp(props.getValue()),
     },
     {
       key: "updated_at",
-      header: "Last Edited",
+      header: "Last Modified",
       type: "accessor",
       accessor: "updated_at",
+      cell: (props) => formatTimestamp(props.getValue()),
     },
     {
       key: "actions",

@@ -12,6 +12,7 @@ import {
   useDeleteConnection,
 } from "src/api/connection/queries";
 import { SophoTable, ColumnConfig } from "src/components/SophoTable/SophoTable";
+import { formatTimestamp } from "src/utils/timestamp_utils";
 
 export function ConnectionsTable() {
   const { setConnectionDetailsPageState, setConnectionId } =
@@ -80,6 +81,14 @@ export function ConnectionsTable() {
       size: 300,
     },
     {
+      key: "created_at",
+      header: "Created On",
+      type: "accessor",
+      accessor: "created_at",
+      cell: (props) => formatTimestamp(props.getValue()),
+      size: 210,
+    },
+    {
       key: "actions",
       header: "Actions",
       type: "display",
@@ -96,6 +105,8 @@ export function ConnectionsTable() {
   ];
 
   const { data: connectionsData, isLoading, isError } = useConnections();
+
+  console.log("connectionsData:", connectionsData);
 
   return (
     <div className={ConnectionsStyles.connectionsTable}>
