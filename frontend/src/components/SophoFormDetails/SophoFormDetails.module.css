@@ -1,0 +1,28 @@
+.detailsContainer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(var(--space-lg), 1fr));
+  column-gap: var(--space-sm);
+  row-gap: var(--space-sm);
+  grid-auto-rows: minmax(var(--space-lg), auto);
+  padding: var(--space-sm);
+  overflow-y: auto;
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-lg);
+}
+
+.elementContainer {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-xs);
+}
+
+.detailLabel {
+  color: var(--color-grey-dark-2);
+  font-size: var(--font-size-sm);
+  width: 100px;
+}
+
+.detailValue {
+  display: flex;
+  font-size: var(--font-size-sm);
+}
