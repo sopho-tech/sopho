@@ -1,6 +1,5 @@
 import "src/css/index.css";
 import styles from "src/components/Settings/Settings.module.css";
-import ContainerStyles from "src/css/container.module.css";
 import { Connections } from "src/components/Connection/ConnectionsPage";
 import { SophoTabs, type TabItem } from "src/components/SophoNavigationMenu";
 
@@ -29,8 +28,10 @@ export function Settings() {
   ];
 
   return (
-    <div className={`${ContainerStyles.container} ${styles.settingsContainer}`}>
-      <h3>Settings</h3>
+    <div className={styles.settingsContainer}>
+      <div className={styles.settingsHeader}>
+        <h3>Settings</h3>
+      </div>
       <SophoTabs items={tabItems} defaultActiveItem="connections" />
     </div>
   );

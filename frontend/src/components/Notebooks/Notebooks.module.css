@@ -1,7 +1,7 @@
 .notebooksContainer {
     display: flex;
     flex-direction: column;
-    width: 100%;
+    flex: 1;
     padding: var(--space-lg);
 }
 
@@ -14,4 +14,7 @@
 
 .tableContainer {
     margin-top: var(--space-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }

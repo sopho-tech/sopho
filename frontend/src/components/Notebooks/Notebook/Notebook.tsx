@@ -7,7 +7,6 @@ import { useNotebookStore } from "src/components/Notebooks/store";
 import { useEffect } from "react";
 import { useNotebook, useUpdateNotebook } from "src/api/notebook/queries";
 import { CellType } from "src/components/Notebooks/Notebook/Cell/dto";
-import ContainerStyles from "src/css/container.module.css";
 import NotebookStyles from "src/components/Notebooks/Notebook/Notebook.module.css";
 
 export function Notebook() {
@@ -56,7 +55,7 @@ export function Notebook() {
     });
 
   return (
-    <div className={`${ContainerStyles.container} ${NotebookStyles.container}`}>
+    <div className={`${NotebookStyles.container}`}>
       <div className={NotebookStyles.titleBar}>
         <div className={NotebookStyles.titleFirstRow}>
           <h1 className={NotebookStyles.titleBarNotebookName}>
