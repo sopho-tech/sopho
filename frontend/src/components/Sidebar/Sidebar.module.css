@@ -1,5 +1,4 @@
 .sidebar {
-    flex: initial;
     padding: 0.5rem 0.5rem 0.5rem 0.5rem;
     margin: 0.5rem 0.5rem 0.5rem 0.5rem;
     background-color: var(--color-background);

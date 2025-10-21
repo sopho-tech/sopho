@@ -1,9 +1,12 @@
+.tableContainer {
+    overflow-y: auto;
+}
+
 .table {
     width: 100%;
     border-collapse: collapse;
     box-shadow: var(--shadow);
     border-radius: var(--border-radius-lg);
-    overflow: hidden;
 }
 
 .table th,
@@ -17,6 +20,8 @@
     background-color: var(--color-background-dark-1);
     color: var(--color-grey-dark-2);
     font-weight: var(--font-weight-bold);
+    position: sticky;
+    top: 0px;
 }
  
 .table td {

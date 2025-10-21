@@ -106,8 +106,6 @@ export function ConnectionsTable() {
 
   const { data: connectionsData, isLoading, isError } = useConnections();
 
-  console.log("connectionsData:", connectionsData);
-
   return (
     <div className={ConnectionsStyles.connectionsTable}>
       <SophoTable
