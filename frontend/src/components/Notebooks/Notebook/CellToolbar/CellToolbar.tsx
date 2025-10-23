@@ -77,12 +77,14 @@ export function CellToolbar({ cellId }: { cellId: string }) {
 
   return (
     <Toolbar.Root className={CellToolbarStyles.root} loop>
-      <SophoSelect
-        groupName="Connections"
-        initialValue={initialValue}
-        onValueChange={handleValueChange}
-        options={options}
-      />
+      <Toolbar.Button asChild>
+        <SophoSelect
+          groupName="Connections"
+          initialValue={initialValue}
+          onValueChange={handleValueChange}
+          options={options}
+        />
+      </Toolbar.Button>
       <Toolbar.Button asChild>
         <ExecuteButton onClick={handleExecute} />
       </Toolbar.Button>

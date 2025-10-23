@@ -1,0 +1,120 @@
+.root {
+	display: flex;
+	background-color: var(--color-accent-light-2);
+	padding: var(--space-xxs);
+	border-radius: var(--border-radius-lg);
+	box-shadow: var(--shadow);
+	z-index: var(--z-index-10);
+}
+
+.trigger {
+	all: unset;
+	padding: 8px 12px;
+	outline: none;
+	user-select: none;
+	line-height: 1;
+	border-radius: 4px;
+	color: var(--color-foreground);
+	font-size: var(--font-size-base);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 2px;
+}
+
+.trigger[data-highlighted],
+.trigger[data-state="open"] {
+	background-color: var(--color-grey-dark-1);
+}
+
+.content,
+.subContent {
+	min-width: 110px;
+	background-color: white;
+	border-radius: var(--border-radius-md);
+	padding: 5px;
+	box-shadow: var(--shadow);
+	animation-duration: 400ms;
+	animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+	will-change: transform, opacity;
+}
+
+.item,
+.subTrigger,
+.checkboxItem,
+.radioItem {
+	all: unset;
+	font-size: var(--font-size-xs);
+	line-height: 1;
+	color: var(--color-foreground);
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	height: 25px;
+	padding: 0 10px;
+	position: relative;
+	user-select: none;
+}
+
+.item:global(.inset),
+.subTrigger:global(.inset),
+.checkboxItem:global(.inset),
+.radioItem:global(.inset) {
+	padding-left: 20px;
+}
+
+.item[data-state="open"],
+.subTrigger[data-state="open"] {
+	background-color: var(--color-foreground);
+	color: var(--color-foreground);
+}
+
+.item[data-highlighted],
+.subTrigger[data-highlighted],
+.checkboxItem[data-highlighted],
+.radioItem[data-highlighted] {
+	background-image: linear-gradient(
+		135deg,
+		var(--color-grey-dark-1) 0%,
+		var(--color-grey-dark-1) 100%
+	);
+	color: var(--color-foreground);
+}
+
+.item[data-disabled],
+.subTrigger[data-disabled],
+.checkboxItem[data-disabled],
+.radioItem[data-disabled] {
+	color: var(--color-foreground);
+	pointer-events: none;
+}
+
+.itemIndicator {
+	position: absolute;
+	left: 0;
+	width: 20px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.separator {
+	height: 1px;
+	background-color: var(--color-accent-dark-1);
+	margin: 5px;
+}
+
+.rightSlot {
+	margin-left: auto;
+	padding-left: 20px;
+	color: var(--color-foreground);
+}
+
+[data-highlighted] > .rightSlot {
+	color: var(--color-foreground);
+}
+
+[data-disabled] > .rightSlot {
+	color: var(--color-grey-dark-3);
+}
+

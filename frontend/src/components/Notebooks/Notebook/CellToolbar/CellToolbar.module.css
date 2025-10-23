@@ -1,6 +1,6 @@
 .root {
-    background-color: var(--color-grey-dark-1);
-    border-radius: var(--border-radius-normal);
+    background-color: var(--color-grey);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
     display: flex;
     align-items: center;
     justify-content: space-between;

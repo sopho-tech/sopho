@@ -58,20 +58,17 @@ export function Notebook() {
     <div className={`${NotebookStyles.container}`}>
       <div className={NotebookStyles.titleBar}>
         <div className={NotebookStyles.titleFirstRow}>
-          <h1 className={NotebookStyles.titleBarNotebookName}>
+          <h3 className={NotebookStyles.titleBarNotebookName}>
             {query.data.name}
-          </h1>
-          <NewAssetButton
-            buttonText="Save"
-            className={NotebookStyles.saveButton}
-            onClick={saveNotebook}
-          />
+          </h3>
         </div>
         <div className={NotebookStyles.description}>
-          <p>{query.data.description} ??</p>
+          <p>{query.data.description}</p>
         </div>
       </div>
-      <NotebookMenuBar />
+      <div className={NotebookStyles.menubarContainer}>
+        <NotebookMenuBar />
+      </div>
       <div className={NotebookStyles.cells}>{cellComponents}</div>
     </div>
   );

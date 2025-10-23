@@ -1,5 +1,10 @@
 .cm-editor {
     box-shadow: var(--shadow);
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+}
+
+.cm-gutters {
+    border-radius: 0 0 0 var(--border-radius-lg);
 }
 
 .cm-editor.cm-focused {
