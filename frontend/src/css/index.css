@@ -82,9 +82,9 @@ button {
 
 :root {
   /* Color System */
-  --color-background: hsla(249, 99%, 99%, 1);
-  --color-background-dark-1: hsla(249, 99%, 90%, 1);
-  --color-background-dark-2: hsla(249, 95%, 85%, 1);
+  --color-background: #FFFFFF;
+  --color-background-dark-1: hsla(249, 99%, 99%, 1);
+  --color-background-dark-2: hsla(249, 99%, 90%, 1);
 
   --color-foreground: #000000;
   --color-foreground-light-1: hsl(0, 0%, 5%, 1);
@@ -96,6 +96,7 @@ button {
   --color-accent: hsla(var(--color-accent-base));
   --color-accent-dark-1: hsla(249, 95%, 70%, 1);
   --color-accent-light-1: hsla(249, 95%, 80%, 1);
+  --color-accent-light-2: hsla(249, 95%, 90%, 1);
   --color-accent-gradient: linear-gradient(130deg, var(--color-accent), var(--color-foreground));
 
   --color-grey: hsl(0, 0%, 88%, 1);

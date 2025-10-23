@@ -17,7 +17,7 @@
 }
 
 .table th {
-    background-color: var(--color-background-dark-1);
+    background-color: var(--color-accent-light-2);
     color: var(--color-grey-dark-2);
     font-weight: var(--font-weight-bold);
     position: sticky;
