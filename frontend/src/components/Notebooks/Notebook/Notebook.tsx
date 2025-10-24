@@ -1,5 +1,4 @@
 import { useParams } from "react-router";
-import { NewAssetButton } from "src/components/NewAssetButton";
 import { Cell } from "src/components/Notebooks/Notebook/Cell";
 import { ChartCell } from "src/components/Notebooks/Notebook/ChartCell";
 import { NotebookMenuBar } from "src/components/Notebooks/Notebook/NotebookMenuBar";
@@ -55,7 +54,7 @@ export function Notebook() {
     });
 
   return (
-    <div className={`${NotebookStyles.container}`}>
+    <div className={NotebookStyles.container}>
       <div className={NotebookStyles.titleBar}>
         <div className={NotebookStyles.titleFirstRow}>
           <h3 className={NotebookStyles.titleBarNotebookName}>

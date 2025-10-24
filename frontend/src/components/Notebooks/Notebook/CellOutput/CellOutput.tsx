@@ -2,13 +2,7 @@ import {
   CellOutputState,
   useCellOutputStore,
 } from "src/components/Notebooks/Notebook/Cell";
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import tableStyles from "src/css/table.module.css";
+import { SophoTable, ColumnConfig } from "src/components/SophoTable/SophoTable";
 import CellOutputStles from "src/components/Notebooks/Notebook/CellOutput/CellOutput.module.css";
 
 interface CellOutputProps {
@@ -19,54 +13,29 @@ export function CellOutput({ cellId }: CellOutputProps) {
   const { getOutput, getOutputState } = useCellOutputStore();
   const output = getOutput(cellId);
   const outputState = getOutputState(cellId);
-  const columnHelper = createColumnHelper<Record<string, any>>();
-  const columns = output?.column_names?.map((column_name) => {
-    return columnHelper.accessor((x) => x[column_name], {
-      id: column_name,
+
+  const columns: ColumnConfig<Record<string, any>>[] =
+    output?.column_names?.map((column_name) => ({
+      key: column_name,
+      header: column_name,
+      type: "accessor" as const,
+      accessor: column_name,
       cell: (props: any) => props.getValue(),
-    });
-  });
-  const data = output?.data;
-  const table = useReactTable({
-    columns: columns ?? [],
-    data: data ?? [],
-    getCoreRowModel: getCoreRowModel(),
-  });
+    })) ?? [];
+
+  const data = output?.data ?? [];
 
   if (outputState === CellOutputState.ABSENT || output === undefined)
     return null;
 
   return (
     <div className={CellOutputStles.container}>
-      <table className={tableStyles.table}>
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th key={header.id} className={tableStyles["table th"]}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className={tableStyles["table tbody tr"]}>
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className={tableStyles["table td"]}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <SophoTable
+        columns={columns}
+        data={data}
+        tableHeaderCellStyle={CellOutputStles.tableHeaderCell}
+        tableDataCellStyle={CellOutputStles.tableDataCell}
+      />
     </div>
   );
 }

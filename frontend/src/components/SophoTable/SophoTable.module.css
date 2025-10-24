@@ -1,5 +1,7 @@
 .tableContainer {
     overflow-y: auto;
+    overflow-x: auto;
+    scrollbar-width: thin;
 }
 
 .table {
@@ -9,14 +11,14 @@
     border-radius: var(--border-radius-lg);
 }
 
-.table th,
-.table td {
+.tableHeaderCell,
+.tableDataCell {
     padding: 1rem 1rem;
     text-align: left;
     font: var(--font-primary);
 }
 
-.table th {
+.tableHeaderCell {
     background-color: var(--color-accent-light-2);
     color: var(--color-grey-dark-2);
     font-weight: var(--font-weight-bold);
@@ -24,10 +26,26 @@
     top: 0px;
 }
  
-.table td {
+.tableDataCell {
     border-bottom: var(--border-table-cell);
 }
 
-.table tbody tr:hover {
-    background-color: var(--color-grey);
+.tableBodyRow:hover {
+    background-color: var(--color-grey-light-2);
+}
+
+.tableBody tr:last-child td {
+    border-bottom: none;
+}
+
+.tableBody tc:last-child td {
+    border-right: none;
+}
+
+.thead th:last-child {
+    border-right: none;
+}
+
+.tableBody td:last-child {
+    border-right: none;
 }

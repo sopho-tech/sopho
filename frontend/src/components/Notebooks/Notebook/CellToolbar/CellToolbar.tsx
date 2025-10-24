@@ -10,6 +10,7 @@ import {
   useCellOutputStore,
 } from "src/components/Notebooks/Notebook/Cell";
 import { ExecutionState } from "src/components/Notebooks/Notebook/Cell";
+import { SophoToolTip } from "src/components/SophoToolTip";
 
 export function CellToolbar({ cellId }: { cellId: string }) {
   const query = useConnections();
@@ -75,19 +76,36 @@ export function CellToolbar({ cellId }: { cellId: string }) {
     });
   }
 
+  const messageElement = (
+    <aside className={CellToolbarStyles.cellNameToolTipContainer}>
+      <h3 className={CellToolbarStyles.cellNameToolTipHeader}>Cell Name</h3>
+      <p className={CellToolbarStyles.cellNameToolTipDescription}>
+        Double click to edit
+      </p>
+    </aside>
+  );
+  const toolTipTrigger = (
+    <div className={CellToolbarStyles.cellNameContainer}>
+      <span>{getCellQuery.data?.name}</span>
+    </div>
+  );
+
   return (
     <Toolbar.Root className={CellToolbarStyles.root} loop>
-      <Toolbar.Button asChild>
-        <SophoSelect
-          groupName="Connections"
-          initialValue={initialValue}
-          onValueChange={handleValueChange}
-          options={options}
-        />
-      </Toolbar.Button>
-      <Toolbar.Button asChild>
-        <ExecuteButton onClick={handleExecute} />
-      </Toolbar.Button>
+      <SophoToolTip messageElement={messageElement} children={toolTipTrigger} />
+      <div className={CellToolbarStyles.rightSideContainer}>
+        <Toolbar.Button asChild>
+          <SophoSelect
+            groupName="Connections"
+            initialValue={initialValue}
+            onValueChange={handleValueChange}
+            options={options}
+          />
+        </Toolbar.Button>
+        <Toolbar.Button asChild>
+          <ExecuteButton onClick={handleExecute} />
+        </Toolbar.Button>
+      </div>
     </Toolbar.Root>
   );
 }
