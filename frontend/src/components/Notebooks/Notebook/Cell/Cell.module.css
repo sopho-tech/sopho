@@ -1,5 +1,6 @@
 .cellContainer {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    box-shadow: var(--shadow);
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
 }

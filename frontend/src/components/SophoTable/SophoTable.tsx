@@ -23,6 +23,8 @@ type SophoTableProps<T> = {
   isError?: boolean;
   loadingComponent?: React.ReactNode;
   errorComponent?: React.ReactNode;
+  tableHeaderCellStyle?: string;
+  tableDataCellStyle?: string;
 };
 
 export function SophoTable<T>({
@@ -32,6 +34,8 @@ export function SophoTable<T>({
   isError = false,
   loadingComponent = <div>Loading...</div>,
   errorComponent = <div>Error fetching data</div>,
+  tableHeaderCellStyle,
+  tableDataCellStyle,
 }: SophoTableProps<T>) {
   const columnHelper = createColumnHelper<T>();
 
@@ -69,11 +73,15 @@ export function SophoTable<T>({
   return (
     <div className={styles.tableContainer}>
       <table className={styles.table}>
-        <thead>
+        <thead className={styles.thead}>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <th key={header.id} style={{ width: header.getSize() }}>
+                <th
+                  key={header.id}
+                  className={`${styles.tableHeaderCell} ${tableHeaderCellStyle || ""}`}
+                  style={{ width: header.getSize() }}
+                >
                   {header.isPlaceholder
                     ? null
                     : flexRender(
@@ -85,11 +93,15 @@ export function SophoTable<T>({
             </tr>
           ))}
         </thead>
-        <tbody>
+        <tbody className={styles.tableBody}>
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
+            <tr key={row.id} className={styles.tableBodyRow}>
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} style={{ width: cell.column.getSize() }}>
+                <td
+                  key={cell.id}
+                  className={`${styles.tableDataCell} ${tableDataCellStyle}`}
+                  style={{ width: cell.column.getSize() }}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}

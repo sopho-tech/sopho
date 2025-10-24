@@ -1,5 +1,18 @@
 .container {
     overflow-x: auto;
-    border: var(--border-section);
-    border-radius: var(--border-radius-md);
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+    border-top: var(--border-width-thin) solid var(--color-grey-dark-1);
+}
+
+.tableHeaderCell {
+    background-color: var(--color-grey);
+    padding: var(--space-xs);
+    font-size: var(--font-size-sm);
+    border-right: var(--border-width-thin) solid var(--color-grey-dark-1);
+}
+
+.tableDataCell {
+    padding: var(--space-xs);
+    font-size: var(--font-size-sm);
+    border-right: var(--border-width-thin) solid var(--color-grey-dark-1);
 }

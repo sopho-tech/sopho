@@ -1,12 +1,19 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::fmt;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum CellType {
     Text,
     Code,
     Markdown,
     Sql,
     Chart,
+}
+
+impl fmt::Display for CellType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
 }
 
 impl CellType {
@@ -92,4 +99,3 @@ impl std::fmt::Display for CellStatus {
         write!(f, "{}", self.to_string())
     }
 }
-

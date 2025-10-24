@@ -4,4 +4,37 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 0 var(--space-xxs) 0 var(--space-xxs);
+}
+
+.rightSideContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-xxs);
+}
+
+.cellNameContainer {
+    padding: 0 var(--space-xs) 0 var(--space-xs);
+    color: var(--color-grey-dark-2);
+    font-size: var(--font-size-sm);
+    border-radius: var(--border-radius-lg);
+}
+
+.cellNameContainer:hover {
+    background-color: var(--color-grey-light-3);
+}
+
+.cellNameToolTipContainer {
+    font-size: var(--font-size-xs);
+	line-height: var(--line-height-tightest);
+}
+
+.cellNameToolTipHeader {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    padding-bottom: var(--space-xxs);
+}
+
+.cellNameToolTipDescription {
 }

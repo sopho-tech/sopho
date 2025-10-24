@@ -4,6 +4,7 @@
     background-color: var(--color-background);
     border-radius: var(--border-radius-md);
     box-shadow: var(--shadow);
+    flex: 1;
 }
 
 .navItems {
