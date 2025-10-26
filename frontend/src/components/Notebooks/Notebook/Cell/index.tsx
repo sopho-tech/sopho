@@ -9,3 +9,4 @@ export {
   ExecutionState,
 } from "src/components/Notebooks/Notebook/Cell/dto";
 export { useCellOutputStore } from "src/components/Notebooks/Notebook/Cell/store";
+export { useHandleExecuteCell } from "src/components/Notebooks/Notebook/Cell/hooks";
