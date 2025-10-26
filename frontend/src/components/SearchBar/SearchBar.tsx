@@ -1,27 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import SearchBarStyles from "src/components/SearchBar/SearchBar.module.css";
-import { KEYBOARD_SHORTCUTS } from "src/constants/keyboard_shortcuts";
 
 export function SearchBar() {
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key === KEYBOARD_SHORTCUTS.SEARCH.key &&
-        document.activeElement?.tagName !== "INPUT"
-      ) {
-        event.preventDefault();
-        inputRef.current?.focus();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
   return (
     <div className={SearchBarStyles.searchbar}>
       <input

@@ -11,7 +11,7 @@ import {
   crosshairCursor,
   highlightActiveLineGutter,
 } from "@codemirror/view";
-import { EditorState } from "@codemirror/state";
+import { EditorState, Prec } from "@codemirror/state";
 import {
   bracketMatching,
   foldGutter,
@@ -27,6 +27,10 @@ import { useCell, useUpdateCell } from "src/api/cell/queries";
 import styles from "src/components/Notebooks/Notebook/Cell/Cell.module.css";
 import "src/components/Notebooks/Notebook/CellEditor/CellEditor.global.css";
 import { getCSSVariable } from "src/utils/css_util";
+import { useNotebookStore } from "src/components/Notebooks/store";
+import { StateEffect } from "@codemirror/state";
+import { NOTEBOOK_CELL_KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
+import { KeyBinding } from "@codemirror/view";
 
 const myHighlightStyle = HighlightStyle.define([
   { tag: tags.keyword, color: getCSSVariable("--color-accent-dark-1") },
@@ -48,9 +52,40 @@ export function CellEditor({ cellId }: { cellId: string }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const updateCellMutation = useUpdateCell();
+  const { setActiveCellId } = useNotebookStore();
+  const smokeEffect = StateEffect.define(undefined);
 
   useEffect(() => {
     if (editorRef.current && !viewRef.current && query.data) {
+      const customKeymap: KeyBinding[] = NOTEBOOK_CELL_KEYBOARD_SHORTCUTS.map(
+        (shortcut) => {
+          const modifiers = shortcut.modifiers || [];
+          let keyBinding: string = shortcut.key;
+
+          const hasModifier = (mod: string) => modifiers.some((m) => m === mod);
+
+          if (hasModifier("meta")) {
+            keyBinding = `Mod-${keyBinding}`;
+          }
+          if (hasModifier("shift")) {
+            keyBinding = `Shift-${keyBinding}`;
+          }
+          if (hasModifier("alt")) {
+            keyBinding = `Alt-${keyBinding}`;
+          }
+          if (hasModifier("ctrl")) {
+            keyBinding = `Ctrl-${keyBinding}`;
+          }
+
+          return {
+            key: keyBinding,
+            run: () => {
+              return true;
+            },
+          };
+        }
+      );
+
       let state = EditorState.create({
         doc: query.data.content || "",
         extensions: [
@@ -70,6 +105,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
           sql({
             dialect: PostgreSQL,
           }),
+          Prec.highest(keymap.of(customKeymap)),
           keymap.of([
             ...defaultKeymap,
             ...historyKeymap,
@@ -88,6 +124,12 @@ export function CellEditor({ cellId }: { cellId: string }) {
                 },
               });
             }
+          }),
+          EditorView.focusChangeEffect.of((_, focusing) => {
+            if (focusing) {
+              setActiveCellId(cellId);
+            }
+            return smokeEffect.of(null);
           }),
         ],
       });

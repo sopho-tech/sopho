@@ -3,19 +3,19 @@ import { NotebookPageStateEnum } from "src/components/Notebooks/dto";
 
 interface NotebookStore {
   currentNotebookId: string;
-  currentCellId: string;
+  activeCellId: string;
   notebookPageState: NotebookPageStateEnum;
   setCurrentNotebookId: (notebookId: string) => void;
-  setCurrentCellId: (cellId: string) => void;
+  setActiveCellId: (cellId: string) => void;
   setNotebookPageState: (pageState: NotebookPageStateEnum) => void;
 }
 
 export const useNotebookStore = create<NotebookStore>((set) => ({
   currentNotebookId: "",
-  currentCellId: "",
+  activeCellId: "",
   notebookPageState: NotebookPageStateEnum.LIST,
   setCurrentNotebookId: (notebookId) => set({ currentNotebookId: notebookId }),
-  setCurrentCellId: (cellId) => set({ currentCellId: cellId }),
+  setActiveCellId: (cellId) => set({ activeCellId: cellId }),
   setNotebookPageState: (pageState) =>
     set(() => ({ notebookPageState: pageState })),
 }));
