@@ -1,6 +1,5 @@
 .container {
     overflow-x: auto;
-    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
     border-top: var(--border-width-thin) solid var(--color-grey-dark-1);
 }
 

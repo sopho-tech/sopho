@@ -1,7 +1,20 @@
+.overallContainer {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    flex: 1;
+    justify-content: space-between;
+}
+
 .tableContainer {
     overflow-y: auto;
     overflow-x: auto;
     scrollbar-width: thin;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
 }
 
 .table {
@@ -44,6 +57,10 @@
 
 .thead th:last-child {
     border-right: none;
+}
+
+.thead th:first-child {
+    
 }
 
 .tableBody td:last-child {

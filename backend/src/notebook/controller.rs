@@ -1,13 +1,13 @@
 use crate::common::AppState;
-use crate::notebook::service;
+use crate::common::Pagination;
 use crate::notebook::dto;
+use crate::notebook::service;
+use axum::extract::Path;
+use axum::extract::{Json, Query, State};
+use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::Router;
-use axum::extract::{State, Json};
-use axum::response::IntoResponse;
 use uuid::Uuid;
-use axum::extract::Path;
-
 
 pub fn routes(app_state: AppState) -> Router {
     Router::new()
@@ -26,8 +26,9 @@ async fn get_notebook(
 
 async fn get_all_notebooks(
     State(app_state): State<AppState>,
+    pagination: Query<Pagination>,
 ) -> impl IntoResponse {
-    service::get_all_notebooks(app_state).await
+    service::get_all_notebooks(app_state, pagination).await
 }
 
 async fn create_notebook(

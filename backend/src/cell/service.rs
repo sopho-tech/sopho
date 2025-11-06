@@ -324,6 +324,7 @@ async fn execute_sql_cell(
                     .try_get::<DateTime<FixedOffset>, _>(i)
                     .map(|v| serde_json::json!(v)),
                 "INT4" => row.try_get::<i32, _>(i).map(|v| serde_json::json!(v)),
+                "INT8" => row.try_get::<i64, _>(i).map(|v| serde_json::json!(v)),
                 _ => {
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,

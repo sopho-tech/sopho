@@ -4,8 +4,16 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
+  PaginationState,
+  OnChangeFn,
 } from "@tanstack/react-table";
 import styles from "src/components/SophoTable/SophoTable.module.css";
+import { Pagination } from "src/components/Pagination";
+
+export enum TableType {
+  FULL = "FULL",
+  PAGINATED = "PAGINATED",
+}
 
 export type ColumnConfig<T> = {
   key: string;
@@ -16,18 +24,70 @@ export type ColumnConfig<T> = {
   accessor?: keyof T;
 };
 
+export type PaginationConfig = {
+  pagination: PaginationState;
+  currentPage: number;
+  totalItems: number;
+  totalPages: number;
+  pageSize: number;
+  onPaginationChange: OnChangeFn<PaginationState>;
+  onChangePageSize: (newValue: string) => void;
+  onPageClick: (newPage: number) => void;
+  paginationContainerClassName?: string;
+};
+
 type SophoTableProps<T> = {
+  tableType?: TableType;
   columns: ColumnConfig<T>[];
   data: T[];
   isLoading?: boolean;
   isError?: boolean;
   loadingComponent?: React.ReactNode;
   errorComponent?: React.ReactNode;
+  tableContainerStyle?: string;
   tableHeaderCellStyle?: string;
   tableDataCellStyle?: string;
+  tableFirstHeaderCellStyle?: string;
+  tableLastHeaderCellStyle?: string;
+  paginationConfig?: PaginationConfig;
 };
 
+function createReactTable<T>(
+  tableType: TableType,
+  reactTableColumns: ColumnDef<T, any>[],
+  data: T[],
+  paginationConfig: PaginationConfig | undefined
+) {
+  switch (tableType) {
+    case TableType.FULL: {
+      return useReactTable({
+        columns: reactTableColumns,
+        data: data ?? [],
+        getCoreRowModel: getCoreRowModel(),
+      });
+    }
+    case TableType.PAGINATED: {
+      if (!paginationConfig) {
+        throw Error("Pagination config is required for paginated table");
+      }
+      return useReactTable({
+        columns: reactTableColumns,
+        data: data ?? [],
+        getCoreRowModel: getCoreRowModel(),
+        rowCount: paginationConfig.totalItems,
+        pageCount: paginationConfig.totalPages,
+        state: {
+          pagination: paginationConfig.pagination,
+        },
+        onPaginationChange: paginationConfig.onPaginationChange,
+        manualPagination: true,
+      });
+    }
+  }
+}
+
 export function SophoTable<T>({
+  tableType = TableType.FULL,
   columns,
   data,
   isLoading = false,
@@ -36,6 +96,10 @@ export function SophoTable<T>({
   errorComponent = <div>Error fetching data</div>,
   tableHeaderCellStyle,
   tableDataCellStyle,
+  tableFirstHeaderCellStyle,
+  tableLastHeaderCellStyle,
+  paginationConfig,
+  tableContainerStyle,
 }: SophoTableProps<T>) {
   const columnHelper = createColumnHelper<T>();
 
@@ -56,11 +120,12 @@ export function SophoTable<T>({
     }
   });
 
-  const table = useReactTable({
-    columns: reactTableColumns,
-    data: data ?? [],
-    getCoreRowModel: getCoreRowModel(),
-  });
+  const table = createReactTable(
+    tableType,
+    reactTableColumns,
+    data,
+    paginationConfig
+  );
 
   if (isLoading) {
     return <>{loadingComponent}</>;
@@ -71,44 +136,61 @@ export function SophoTable<T>({
   }
 
   return (
-    <div className={styles.tableContainer}>
-      <table className={styles.table}>
-        <thead className={styles.thead}>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className={`${styles.tableHeaderCell} ${tableHeaderCellStyle || ""}`}
-                  style={{ width: header.getSize() }}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody className={styles.tableBody}>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className={styles.tableBodyRow}>
-              {row.getVisibleCells().map((cell) => (
-                <td
-                  key={cell.id}
-                  className={`${styles.tableDataCell} ${tableDataCellStyle}`}
-                  style={{ width: cell.column.getSize() }}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className={styles.overallContainer}>
+      <div className={`${styles.tableContainer} ${tableContainerStyle}`}>
+        <table className={styles.table}>
+          <thead className={styles.thead}>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header, index) => {
+                  const isFirst = index === 0;
+                  const isLast = index === headerGroup.headers.length - 1;
+                  return (
+                    <th
+                      key={header.id}
+                      className={`${styles.tableHeaderCell} ${tableHeaderCellStyle || ""} ${isFirst && tableFirstHeaderCellStyle ? tableFirstHeaderCellStyle : ""} ${isLast && tableLastHeaderCellStyle ? tableLastHeaderCellStyle : ""}`}
+                      style={{ width: header.getSize() }}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </th>
+                  );
+                })}
+              </tr>
+            ))}
+          </thead>
+          <tbody className={styles.tableBody}>
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id} className={styles.tableBodyRow}>
+                {row.getVisibleCells().map((cell) => (
+                  <td
+                    key={cell.id}
+                    className={`${styles.tableDataCell} ${tableDataCellStyle}`}
+                    style={{ width: cell.column.getSize() }}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {paginationConfig && (
+        <Pagination
+          totalPages={paginationConfig.totalPages}
+          currentPage={paginationConfig.currentPage}
+          pageSize={paginationConfig.pageSize}
+          totalItems={paginationConfig.totalItems}
+          onChangePageSize={paginationConfig.onChangePageSize}
+          onPageClick={paginationConfig.onPageClick}
+          containerClassName={paginationConfig.paginationContainerClassName}
+        />
+      )}
     </div>
   );
 }

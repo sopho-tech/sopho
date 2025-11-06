@@ -2,7 +2,11 @@ import NotebooksStyles from "src/components/Notebooks/Notebooks.module.css";
 import { NotebookPageStateEnum } from "src/components/Notebooks/dto";
 import { NotebookCreateDialog } from "src/components/Notebooks/NotebookCreateDialog";
 import { NotebookDto } from "src/components/Notebooks/dto";
-import { SophoTable, ColumnConfig } from "src/components/SophoTable/SophoTable";
+import {
+  SophoTable,
+  ColumnConfig,
+  TableType,
+} from "src/components/SophoTable/SophoTable";
 import { useAllNotebooks, useDeleteNotebook } from "src/api/notebook/queries";
 import { SophoTabs, type TabItem } from "src/components/SophoNavigationMenu";
 import { ActionButtons } from "src/components/ActionButtons";
@@ -11,9 +15,19 @@ import { APP_ROUTES } from "src/constants/app_routes";
 import { NewAssetButton } from "src/components/NewAssetButton";
 import { useNotebookStore } from "src/components/Notebooks/store";
 import { formatTimestamp } from "src/utils/timestamp_utils";
+import { useState } from "react";
+import { PaginationState, Updater } from "@tanstack/react-table";
 
 export function Notebooks() {
-  const { data: notebooks, isLoading, isError } = useAllNotebooks();
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 20,
+  });
+  const {
+    data: notebooks,
+    isLoading,
+    isError,
+  } = useAllNotebooks(pagination.pageIndex, pagination.pageSize);
   const deleteMutation = useDeleteNotebook();
   const navigate = useNavigate();
   const { setNotebookPageState } = useNotebookStore();
@@ -35,6 +49,22 @@ export function Notebooks() {
   const handleOpenCreateDialog = () => {
     setNotebookPageState(NotebookPageStateEnum.CREATE_NOTEBOOK_DIALOG);
   };
+
+  function handlePaginationChange(updaterOrValue: Updater<PaginationState>) {
+    setPagination((prev) =>
+      typeof updaterOrValue === "function"
+        ? updaterOrValue(prev)
+        : updaterOrValue
+    );
+  }
+
+  function handleChangePageSize(newPageSize: string) {
+    setPagination((_) => ({ pageIndex: 0, pageSize: Number(newPageSize) }));
+  }
+
+  function handlePageClick(newPage: number) {
+    setPagination((prev) => ({ ...prev, pageIndex: newPage }));
+  }
 
   const columns: ColumnConfig<NotebookDto>[] = [
     {
@@ -83,12 +113,29 @@ export function Notebooks() {
       id: "all_notebooks",
       label: "All Notebooks",
       content: (
-        <div className={NotebooksStyles.tableContainer}>
+        <div className={NotebooksStyles.fullTableContainer}>
           <SophoTable
+            tableType={TableType.PAGINATED}
             columns={columns}
-            data={notebooks ?? []}
+            data={notebooks?.data ?? []}
             isLoading={isLoading}
             isError={isError}
+            paginationConfig={{
+              pagination,
+              totalItems: notebooks?.totalItems ?? 0,
+              totalPages: notebooks?.totalPages ?? 0,
+              currentPage: pagination.pageIndex,
+              pageSize: pagination.pageSize,
+              onPaginationChange: handlePaginationChange,
+              onChangePageSize: handleChangePageSize,
+              onPageClick: handlePageClick,
+              paginationContainerClassName: NotebooksStyles.paginationContainer,
+            }}
+            tableContainerStyle={NotebooksStyles.tableContainer}
+            tableHeaderCellStyle={NotebooksStyles.tableHeaderCell}
+            tableDataCellStyle={NotebooksStyles.tableDataCell}
+            tableFirstHeaderCellStyle={NotebooksStyles.tableFirstHeaderCell}
+            tableLastHeaderCellStyle={NotebooksStyles.tableLastHeaderCell}
           />
         </div>
       ),
