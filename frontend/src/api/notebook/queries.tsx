@@ -1,13 +1,21 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { NotebookDto } from "src/components/Notebooks/dto";
+import { PaginatedData, PaginatedDataResponse } from "../dto";
 
 // Query keys for notebooks
 export const notebookKeys = {
   all: ["notebooks"] as const,
   lists: () => [...notebookKeys.all, "list"] as const,
   list: (filters: string) => [...notebookKeys.lists(), { filters }] as const,
+  listPaginated: (page: number, pageSize: number) =>
+    [...notebookKeys.lists(), { page, pageSize }] as const,
   details: () => [...notebookKeys.all, "detail"] as const,
   detail: (id: string) => [...notebookKeys.details(), id] as const,
 };
@@ -22,12 +30,32 @@ const notebookApi = {
     return response as NotebookDto;
   },
 
-  getAllNotebooks: async (): Promise<NotebookDto[]> => {
+  getAllNotebooks: async (
+    page?: number,
+    pageSize?: number
+  ): Promise<PaginatedData<NotebookDto>> => {
+    const url = new URL(
+      `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.NOTEBOOK.GET_ALL}`
+    );
+    if (page !== undefined) {
+      url.searchParams.set("page", page.toString());
+    }
+    if (pageSize !== undefined) {
+      url.searchParams.set("page_size", pageSize.toString());
+    }
     const response = await ApiService.get({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.NOTEBOOK.GET_ALL}`,
+      url: url.toString(),
       onlyBody: true,
     });
-    return response as NotebookDto[];
+    const paginatedResponse = response as PaginatedDataResponse<NotebookDto>;
+
+    return {
+      data: paginatedResponse.data,
+      totalPages: paginatedResponse.total_pages,
+      page: paginatedResponse.page,
+      pageSize: paginatedResponse.page_size,
+      totalItems: paginatedResponse.total_items,
+    };
   },
 
   createNotebook: async (
@@ -84,10 +112,11 @@ export const useNotebook = (notebookId: string) => {
   });
 };
 
-export const useAllNotebooks = () => {
+export const useAllNotebooks = (page?: number, pageSize?: number) => {
   return useQuery({
-    queryKey: notebookKeys.lists(),
-    queryFn: notebookApi.getAllNotebooks,
+    queryKey: notebookKeys.listPaginated(page ?? 1, pageSize ?? 10),
+    queryFn: () => notebookApi.getAllNotebooks(page, pageSize),
+    placeholderData: keepPreviousData,
   });
 };
 

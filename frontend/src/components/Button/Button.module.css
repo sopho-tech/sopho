@@ -1,0 +1,42 @@
+.button {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: var(--border-radius-md);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: inherit;
+}
+
+/* Variants */
+.neutral {
+    background: transparent;
+}
+
+.icon {
+    background: transparent;
+    padding: var(--space-xxs);
+}
+
+.ghost {
+    background: transparent;
+}
+
+/* Hover states */
+.button:hover:not(:disabled) {
+    background-color: var(--color-grey-light-2);
+    box-shadow: var(--shadow-button-hover);
+}
+
+/* Active states */
+.button:active:not(:disabled) {
+    background-color: var(--color-grey-dark-1);
+}
+
+/* Disabled state */
+.button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: var(--color-grey-dark-3);
+}

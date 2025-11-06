@@ -1,0 +1,36 @@
+.container {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-md);
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pageButtonsContainer {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-xxs);
+}
+
+.paginationButton {
+    font-size: var(--font-size-sm);
+    width: 35px;
+    height: 35px;
+}
+
+.icon {
+    font-size: var(--font-size-lg);
+}
+
+.summary, .pageSizeSelectionLabel {
+    font-size: var(--font-size-sm);
+    color: var(--color-grey-dark-2);
+}
+
+.pageSizeSelectionContainer {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-xs);
+    align-items: center;
+}

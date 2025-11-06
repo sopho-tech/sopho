@@ -12,9 +12,37 @@
     margin-bottom: var(--space-lg);
 }
 
-.tableContainer {
+.fullTableContainer {
     margin-top: var(--space-lg);
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    flex: 1
+}
+
+.tableContainer {
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+    padding: 0 var(--space-xxs) var(--space-xxs) var(--space-xxs);
+}
+
+.tableHeaderCell {
+    padding: var(--space-sm);
+    border-right: var(--border-width-thin) solid var(--color-grey-dark-1);
+}
+
+.tableDataCell {
+    padding: var(--space-xs);
+    border-right: var(--border-width-thin) solid var(--color-grey-dark-1);
+}
+
+.tableFirstHeaderCell {
+    border-radius: var(--border-radius-lg) 0 0 0;
+}
+
+.tableLastHeaderCell {
+    border-radius: 0 var(--border-radius-lg) 0 0;
+}
+
+.paginationContainer {
+    padding: var(--space-xs);
 }
