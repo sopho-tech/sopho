@@ -11,16 +11,12 @@ export function NotebookMenuBar() {
   const { currentNotebookId } = useNotebookStore();
   const createCellMutation = useCreateCell();
 
-  function onClickNewMarkdownCell() {
-    console.log("onClickNewMarkdownCell");
-  }
-
-  function onClickNewSqlCell() {
+  function handleCreateNewCell(cellType: CellType) {
     const newCell: CreateCellDto = {
       notebook_id: currentNotebookId,
       name: null,
       content: null,
-      cell_type: CellType.SQL,
+      cell_type: cellType,
     };
     createCellMutation.mutate(newCell);
   }
@@ -39,16 +35,17 @@ export function NotebookMenuBar() {
         {
           label: "Markdown Cell",
           shortcut: "⌘ M",
-          onClick: onClickNewMarkdownCell,
+          onClick: () => handleCreateNewCell(CellType.MARKDOWN),
         },
         {
           label: "SQL Cell",
           shortcut: "⌘ Q",
-          onClick: onClickNewSqlCell,
+          onClick: () => handleCreateNewCell(CellType.SQL),
         },
         {
           label: "Chart Cell",
           shortcut: "⌘ C",
+          onClick: () => handleCreateNewCell(CellType.CHART),
         },
       ],
     },

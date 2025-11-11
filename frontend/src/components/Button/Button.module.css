@@ -1,7 +1,8 @@
 .button {
+    all: unset;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    border-radius: var(--border-radius-md);
+    border-radius: var(--border-radius-lg);
     border: none;
     display: flex;
     align-items: center;
@@ -12,6 +13,7 @@
 /* Variants */
 .neutral {
     background: transparent;
+    padding: var(--space-xs);
 }
 
 .icon {
@@ -21,6 +23,7 @@
 
 .ghost {
     background: transparent;
+    padding: var(--space-xxs);
 }
 
 /* Hover states */

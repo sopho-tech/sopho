@@ -22,6 +22,13 @@
     flex-direction: column;
 }
 
+.formLabelControlRow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
 .formLabel {
     font-size: var(--font-size-sm);
 }
@@ -56,13 +63,18 @@
 /* Select-specific styles */
 .formSelect {
     background-color: var(--color-background);
+    padding-right: var(--space-lg);
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
     outline: 0;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24' fill='%231f1f1f'%3E%3Cpath d='M480-345 240-585l56-56 184 183 184-183 56 56-240 240Z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 0.75rem center;
+    background-position: right 0 center;
+}
+
+.placeholderSelect {
+    color: var(--color-foreground-light-4);
 }
 
 /* Common focus state */
@@ -108,4 +120,30 @@
     gap: var(--space-md);
     margin-top: var(--space-xs);
     padding-top: var(--space-sm);
+}
+
+.collapsibleContainer {
+    border: var(--border-width-thin) solid var(--color-grey);
+    border-radius: var(--space-xs);
+}
+
+.collapsibleHeaderContainer {
+    display: flex;
+    flex-direction: row;
+}
+
+.collapsibleHeaderContainer:hover {
+    background-color: var(--color-grey);
+    cursor: pointer;
+}
+
+.collapsibleContent {
+    margin-top: var(--space-xs);
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-xs);
+}
+
+.collapsibleIconExpand, .collapsibleIconCollapse {
+    color: var(--color-grey-dark-2);
 }

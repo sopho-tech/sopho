@@ -10,6 +10,7 @@ import {
   useCellOutputStore,
 } from "src/components/Notebooks/Notebook/Cell";
 import { ExecutionState } from "src/components/Notebooks/Notebook/Cell";
+import { SophoToolTip } from "src/components/SophoToolTip";
 
 export function ChartCellToolbar({ cellId }: { cellId: string }) {
   const query = useConnections();
@@ -75,8 +76,24 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
     });
   }
 
+  const messageElement = (
+    <aside className={ToolbarStyles.cellNameToolTipContainer}>
+      <h3 className={ToolbarStyles.cellNameToolTipHeader}>Cell Name</h3>
+      <p className={ToolbarStyles.cellNameToolTipDescription}>
+        Double click to edit
+      </p>
+    </aside>
+  );
+
+  const toolTipTrigger = (
+    <div className={ToolbarStyles.cellNameContainer}>
+      <span>{getCellQuery.data?.name}</span>
+    </div>
+  );
+
   return (
     <Toolbar.Root className={ToolbarStyles.root} loop>
+      <SophoToolTip messageElement={messageElement} children={toolTipTrigger} />
       <Toolbar.Button asChild>
         <ExecuteButton onClick={handleExecute} />
       </Toolbar.Button>
