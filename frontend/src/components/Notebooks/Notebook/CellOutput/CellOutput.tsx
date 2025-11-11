@@ -25,7 +25,11 @@ export function CellOutput({ cellId }: CellOutputProps) {
 
   const data = output?.data ?? [];
 
-  if (outputState === CellOutputState.ABSENT || output === undefined)
+  if (
+    outputState === CellOutputState.ABSENT ||
+    outputState === undefined ||
+    output === undefined
+  )
     return null;
 
   return (

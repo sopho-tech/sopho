@@ -20,6 +20,13 @@ export enum ExecutionState {
   FAILED = "FAILED",
 }
 
+export type ChartContent = {
+  x_axis: string;
+  y_axis: string;
+  chart_type?: string;
+  cell_id?: string;
+};
+
 export type CellDto = {
   id: string;
   notebook_id: string | null;
@@ -42,3 +49,18 @@ export type ExecuteCellResponseDto = {
   column_names: string[] | null;
   data: JSON[] | null;
 };
+
+export function getChartContent(cell: CellDto): ChartContent | null {
+  if (cell.cell_type !== CellType.CHART || !cell.content) {
+    return null;
+  }
+  try {
+    return JSON.parse(cell.content) as ChartContent;
+  } catch {
+    return null;
+  }
+}
+
+export function serializeChartContent(content: ChartContent): string {
+  return JSON.stringify(content);
+}

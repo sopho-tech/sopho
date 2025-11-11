@@ -1,14 +1,19 @@
 import * as Form from "@radix-ui/react-form";
+import { useState, Fragment, useEffect } from "react";
 import FormStyles from "src/components/SophoForm/SophoForm.module.css";
 import { ButtonStyle, NewAssetButton } from "src/components/NewAssetButton";
-import { useMemo } from "react";
-import { mergeForms, getInitialFormValues } from "src/utils/form_utils";
+import { mergeForms } from "src/utils/form_utils";
+import { Accordion } from "../Accordion";
+
+export type CollapsibleConfig = {
+  formElements: SophoFormElement[];
+};
 
 export type SophoFormElement = {
   key: string;
-  name: string;
-  required: boolean;
-  error_message: string;
+  name: string | React.ReactNode;
+  required?: boolean;
+  error_message?: string;
   type: SophoFormElementType;
   initialValue?: string;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -18,6 +23,7 @@ export type SophoFormElement = {
   input_type?: InputType;
   defaultValue?: string | number | null;
   disabled?: boolean;
+  collapsibleConfig?: CollapsibleConfig;
 };
 
 export type SophoFormProps = {
@@ -25,15 +31,20 @@ export type SophoFormProps = {
   formElements: SophoFormElement[];
   onSubmitCallback: (formData: FormData) => void;
   onCancelCallback: any;
+  onChange?: (formData: FormData, fieldName: string, value: string) => void;
   submitButtonText?: string;
   showCancelButton?: boolean;
   showSubmitButton?: boolean;
+  additionalButtons?: React.ReactNode[];
   formElementsStyleClass?: string;
+  formFieldStyleClass?: string;
+  formRootStyleClass?: string;
 };
 
 export enum SophoFormElementType {
   INPUT = "INPUT",
   SELECT = "SELECT",
+  COLLAPSIBLE = "COLLAPSIBLE",
 }
 
 export enum InputType {
@@ -43,40 +54,172 @@ export enum InputType {
   NUMBER = "number",
 }
 
-function renderFormControl(formElement: SophoFormElement) {
-  if (formElement.type === SophoFormElementType.SELECT) {
-    return (
-      <select
-        className={FormStyles.formSelect}
-        required={formElement.required}
-        name={formElement.key}
-        defaultValue={
-          formElement.selectedValue || formElement.defaultValue || ""
-        }
-        disabled={formElement.disabled}
-      >
-        <option value="">Select an option</option>
-        {formElement.options?.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    );
-  }
+function renderCollapsibleSection(
+  collapsibleFormElement: SophoFormElement,
+  formFieldStyleClass?: string,
+  onFormChange?: (
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void
+): React.ReactNode {
+  const items = [
+    {
+      value: collapsibleFormElement.key,
+      trigger: collapsibleFormElement.name,
+      content: collapsibleFormElement.collapsibleConfig?.formElements.map(
+        (formElement) =>
+          renderFormElement(formElement, formFieldStyleClass, onFormChange)
+      ),
+    },
+  ];
+  return <Accordion items={items} />;
+}
+
+function ControlledSelect({
+  formElement,
+  onFormChange,
+}: {
+  formElement: SophoFormElement;
+  onFormChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+}) {
+  const initialValue =
+    formElement.selectedValue ||
+    (formElement.defaultValue !== null && formElement.defaultValue !== undefined
+      ? String(formElement.defaultValue)
+      : "") ||
+    "";
+  const [value, setValue] = useState<string>(initialValue);
+
+  useEffect(() => {
+    if (formElement.selectedValue !== undefined) {
+      setValue(formElement.selectedValue);
+    }
+  }, [formElement.selectedValue]);
 
   return (
-    <input
-      className={FormStyles.formInput}
+    <select
+      className={FormStyles.formSelect}
       required={formElement.required}
       name={formElement.key}
-      type={formElement.input_type || InputType.TEXT}
-      placeholder={formElement.placeholder}
-      defaultValue={formElement.defaultValue ?? formElement.initialValue ?? ""}
-      onChange={formElement.onChange}
+      value={value}
+      onChange={(e) => {
+        setValue(e.target.value);
+        onFormChange?.(e);
+      }}
       disabled={formElement.disabled}
-    />
+    >
+      <option value="">Select an option</option>
+      {formElement.options?.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
   );
+}
+
+function renderSelect(
+  formElement: SophoFormElement,
+  onFormChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void
+) {
+  if (formElement.selectedValue !== undefined) {
+    return (
+      <ControlledSelect formElement={formElement} onFormChange={onFormChange} />
+    );
+  }
+  return (
+    <select
+      className={FormStyles.formSelect}
+      required={formElement.required}
+      name={formElement.key}
+      defaultValue={formElement.defaultValue || ""}
+      onChange={onFormChange}
+      disabled={formElement.disabled}
+    >
+      <option value="">Select an option</option>
+      {formElement.options?.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function renderFormControl(
+  formElement: SophoFormElement,
+  onFormChange?: (
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void
+): React.ReactNode {
+  switch (formElement.type) {
+    case SophoFormElementType.SELECT: {
+      return renderSelect(formElement, onFormChange);
+    }
+    case SophoFormElementType.INPUT: {
+      return (
+        <input
+          className={FormStyles.formInput}
+          required={formElement.required}
+          name={formElement.key}
+          type={formElement.input_type || InputType.TEXT}
+          placeholder={formElement.placeholder}
+          defaultValue={
+            formElement.defaultValue ?? formElement.initialValue ?? ""
+          }
+          onChange={(e) => {
+            formElement.onChange?.(e);
+            onFormChange?.(e);
+          }}
+          disabled={formElement.disabled}
+        />
+      );
+    }
+  }
+  throw Error("Form element cannot be handled");
+}
+
+function renderFormElement(
+  formElement: SophoFormElement,
+  formFieldStyleClass?: string,
+  onFormChange?: (
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void
+): React.ReactNode {
+  switch (formElement.type) {
+    case SophoFormElementType.INPUT:
+    case SophoFormElementType.SELECT: {
+      return (
+        <Form.Field
+          className={`${FormStyles.formField} ${formFieldStyleClass}`}
+          name={formElement.key}
+          key={formElement.key}
+        >
+          <div className={FormStyles.formLabelControlRow}>
+            <Form.Label className={FormStyles.formLabel}>
+              {formElement.name}
+            </Form.Label>
+            <Form.Control asChild>
+              {renderFormControl(formElement, onFormChange)}
+            </Form.Control>
+          </div>
+          <Form.Message
+            name={formElement.key}
+            className={FormStyles.formMessage}
+            match="valueMissing"
+          >
+            {formElement.error_message}
+          </Form.Message>
+        </Form.Field>
+      );
+    }
+    case SophoFormElementType.COLLAPSIBLE: {
+      return renderCollapsibleSection(
+        formElement,
+        formFieldStyleClass,
+        onFormChange
+      );
+    }
+  }
 }
 
 export function SophoForm({
@@ -84,43 +227,68 @@ export function SophoForm({
   formElements,
   onSubmitCallback,
   onCancelCallback,
+  onChange,
   submitButtonText = "Submit",
   showCancelButton = true,
   showSubmitButton = true,
+  additionalButtons,
   formElementsStyleClass,
+  formFieldStyleClass,
+  formRootStyleClass,
 }: SophoFormProps) {
+  const [openCollapsibles, setOpenCollapsibles] = useState<Set<string>>(
+    new Set()
+  );
+
+  const isCollapsibleOpen = (key: string): boolean => {
+    return openCollapsibles.has(key);
+  };
+
+  const handleCollapsibleOpenChange = (key: string, open: boolean): void => {
+    setOpenCollapsibles((prev) => {
+      const next = new Set(prev);
+      if (open) {
+        next.add(key);
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
+  };
+
+  const handleFormChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    if (onChange) {
+      const form = event.currentTarget.form;
+      if (form) {
+        const formData = new FormData(form);
+        onChange(formData, event.target.name, event.target.value);
+      }
+    }
+  };
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const finalFormData = mergeForms(initialFormData, event.currentTarget);
-    console.log("formData submitted:", Object.fromEntries(finalFormData));
     onSubmitCallback(finalFormData);
   }
 
   return (
-    <Form.Root className={FormStyles.formRoot} onSubmit={handleSubmit}>
+    <Form.Root
+      className={`${FormStyles.formRoot} ${formRootStyleClass}`}
+      onSubmit={handleSubmit}
+    >
       <div className={formElementsStyleClass || FormStyles.formElements}>
-        {formElements.map((formElement) => {
-          return (
-            <Form.Field
-              className={FormStyles.formField}
-              name={formElement.key}
-              key={formElement.key}
-            >
-              <Form.Label className={FormStyles.formLabel}>
-                {formElement.name}
-              </Form.Label>
-              <Form.Control asChild>
-                {renderFormControl(formElement)}
-              </Form.Control>
-              <Form.Message
-                className={FormStyles.formMessage}
-                match="valueMissing"
-              >
-                {formElement.error_message}
-              </Form.Message>
-            </Form.Field>
-          );
-        })}
+        {formElements.map((formElement) => (
+          <Fragment key={formElement.key}>
+            {renderFormElement(
+              formElement,
+              formFieldStyleClass,
+              handleFormChange
+            )}
+          </Fragment>
+        ))}
       </div>
       {(showCancelButton || showSubmitButton) && (
         <div className={FormStyles.formButtonRow}>
@@ -141,6 +309,7 @@ export function SophoForm({
               />
             </Form.Submit>
           )}
+          {additionalButtons}
         </div>
       )}
     </Form.Root>

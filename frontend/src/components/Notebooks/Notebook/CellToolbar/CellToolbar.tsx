@@ -1,3 +1,4 @@
+import ToolbarStyles from "src/css/toolbar.module.css";
 import CellToolbarStyles from "src/components/Notebooks/Notebook/CellToolbar/CellToolbar.module.css";
 import * as Toolbar from "@radix-ui/react-toolbar";
 import { ExecuteButton } from "src/components/ExecuteButton/ExecuteButton";
@@ -56,21 +57,21 @@ export function CellToolbar({ cellId }: { cellId: string }) {
   }
 
   const messageElement = (
-    <aside className={CellToolbarStyles.cellNameToolTipContainer}>
-      <h3 className={CellToolbarStyles.cellNameToolTipHeader}>Cell Name</h3>
-      <p className={CellToolbarStyles.cellNameToolTipDescription}>
+    <aside className={ToolbarStyles.cellNameToolTipContainer}>
+      <h3 className={ToolbarStyles.cellNameToolTipHeader}>Cell Name</h3>
+      <p className={ToolbarStyles.cellNameToolTipDescription}>
         Double click to edit
       </p>
     </aside>
   );
   const toolTipTrigger = (
-    <div className={CellToolbarStyles.cellNameContainer}>
+    <div className={ToolbarStyles.cellNameContainer}>
       <span>{getCellQuery.data?.name}</span>
     </div>
   );
 
   return (
-    <Toolbar.Root className={CellToolbarStyles.root} loop>
+    <Toolbar.Root className={ToolbarStyles.root} loop>
       <SophoToolTip messageElement={messageElement} children={toolTipTrigger} />
       <div className={CellToolbarStyles.rightSideContainer}>
         <Toolbar.Button asChild>

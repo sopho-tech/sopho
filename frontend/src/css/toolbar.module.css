@@ -1,7 +1,32 @@
 .root {
-    background-color: var(--color-grey-dark-1);
-    border-radius: var(--border-radius-normal);
+    background-color: var(--color-grey);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 0 var(--space-xxs) 0 var(--space-xxs);
+    height: 35px;
+}
+
+
+.cellNameContainer {
+    padding: 0 var(--space-xs) 0 var(--space-xs);
+    color: var(--color-grey-dark-2);
+    font-size: var(--font-size-sm);
+    border-radius: var(--border-radius-lg);
+}
+
+.cellNameContainer:hover {
+    background-color: var(--color-grey-light-3);
+}
+
+.cellNameToolTipContainer {
+    font-size: var(--font-size-xs);
+	line-height: var(--line-height-tightest);
+}
+
+.cellNameToolTipHeader {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    padding-bottom: var(--space-xxs);
 }

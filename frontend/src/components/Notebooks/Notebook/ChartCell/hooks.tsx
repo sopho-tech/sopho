@@ -1,21 +1,22 @@
 import { useExecuteCell } from "src/api/cell";
-import { useCellOutputStore } from "src/components/Notebooks/Notebook/Cell/store";
+import { useChartCellExecutionStore } from "src/components/Notebooks/Notebook/ChartCell/store";
 import {
   ExecutionState,
   CellOutputState,
 } from "src/components/Notebooks/Notebook/Cell/dto";
 
-export function useHandleExecuteCell() {
-  const { setOutput, setExecutionState, setOutputState } = useCellOutputStore();
+export function useHandleExecuteChartCell() {
+  const { setOutput, setExecutionState, setOutputState } =
+    useChartCellExecutionStore();
   const executeCellMutation = useExecuteCell();
 
-  return (cellId: string, shouldSetOutputState: boolean = true) => {
+  return (cellId: string) => {
     setExecutionState(cellId, ExecutionState.RUNNING);
     executeCellMutation.mutate(cellId, {
       onSuccess: (data) => {
         setOutput(cellId, data);
         setExecutionState(cellId, ExecutionState.COMPLETED);
-        if (data != null && shouldSetOutputState) {
+        if (data != null) {
           setOutputState(cellId, CellOutputState.PRESENT);
         }
       },
