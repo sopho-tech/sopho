@@ -37,7 +37,7 @@ pub async fn get_paginated_notebooks(
         .order_by(notebook::Column::CreatedAt, sea_orm::Order::Desc)
         .paginate(db, page_size);
     let total_items = paginator.num_items().await?;
-    let notebooks = paginator.fetch_page(page + 1).await?;
+    let notebooks = paginator.fetch_page(page).await?;
     let total_pages = paginator.num_pages().await?;
     Ok((notebooks, total_items, total_pages))
 }
