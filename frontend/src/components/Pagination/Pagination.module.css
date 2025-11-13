@@ -28,6 +28,11 @@
     color: var(--color-grey-dark-2);
 }
 
+.summary {
+    min-width: 200px;
+    font-variant-numeric: tabular-nums;
+}
+
 .pageSizeSelectionContainer {
     display: flex;
     flex-direction: row;

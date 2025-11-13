@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { registerTheme } from "echarts";
 import Home from "src/components/Home/Home";
 import SignUp from "src/components/SignUp/SignUp";
 import SignIn from "src/components/SignIn/SignIn";
@@ -11,6 +12,9 @@ import { ReactQueryClientProvider } from "./utils/react_query_provider";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { Notebook } from "src/components/Notebooks/Notebook";
+import theme from "src/assets/echart_themes/theme.json";
+
+registerTheme("theme", theme);
 
 const router = createBrowserRouter([
   {

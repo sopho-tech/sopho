@@ -9,7 +9,12 @@ export function useHandleExecuteCell() {
   const { setOutput, setExecutionState, setOutputState } = useCellOutputStore();
   const executeCellMutation = useExecuteCell();
 
-  return (cellId: string, shouldSetOutputState: boolean = true) => {
+  return (
+    cellId: string,
+    shouldSetOutputState: boolean = true,
+    onSuccessCallback: (() => void) | null = null,
+    onErrorCallback: (() => void) | null = null
+  ) => {
     setExecutionState(cellId, ExecutionState.RUNNING);
     executeCellMutation.mutate(cellId, {
       onSuccess: (data) => {
@@ -18,9 +23,15 @@ export function useHandleExecuteCell() {
         if (data != null && shouldSetOutputState) {
           setOutputState(cellId, CellOutputState.PRESENT);
         }
+        if (onSuccessCallback) {
+          onSuccessCallback();
+        }
       },
       onError: () => {
         setExecutionState(cellId, ExecutionState.FAILED);
+        if (onErrorCallback) {
+          onErrorCallback();
+        }
       },
     });
   };

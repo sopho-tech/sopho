@@ -12,3 +12,4 @@ alwaysApply: false
 - Use zustand for global and local client frontend state.
 - Use tanstack query to store backend state.
 - Use type for react props and states. Use interface only for public APIs.
+- Use Apache ECharts for creating charts.

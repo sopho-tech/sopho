@@ -21,7 +21,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
   const updateCellMutation = useUpdateCell();
   const chartContent = cellQuery.data ? getChartContent(cellQuery.data) : null;
   const { setSourceCellId, sourceCellOutput, executeSourceCell } =
-    useSourceCellExecution(chartContent);
+    useSourceCellExecution(cellId, chartContent);
   const { cellOptions, chartOptions, columnOptions } =
     useFormOptions(sourceCellOutput);
 
@@ -136,22 +136,17 @@ export function CellEditor({ cellId }: { cellId: string }) {
     />
   );
   return (
-    <div className={CellEditorStyle.container}>
-      <SophoForm
-        formElements={formElements}
-        onSubmitCallback={handleSubmit}
-        onCancelCallback={handleCancel}
-        showCancelButton={false}
-        submitButtonText="Save"
-        formRootStyleClass={CellEditorStyle.chartControlContainer}
-        formElementsStyleClass={CellEditorStyle.formElements}
-        formFieldStyleClass={CellEditorStyle.formField}
-        additionalButtons={[runButton]}
-        onChange={handleChange}
-      />
-      <div className={CellEditorStyle.chartContainer}>
-        Chart is displayed here
-      </div>
-    </div>
+    <SophoForm
+      formElements={formElements}
+      onSubmitCallback={handleSubmit}
+      onCancelCallback={handleCancel}
+      showCancelButton={false}
+      submitButtonText="Save"
+      formRootStyleClass={CellEditorStyle.chartControlContainer}
+      formElementsStyleClass={CellEditorStyle.formElements}
+      formFieldStyleClass={CellEditorStyle.formField}
+      additionalButtons={[runButton]}
+      onChange={handleChange}
+    />
   );
 }

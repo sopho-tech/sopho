@@ -2,5 +2,5 @@
     display: flex;
     flex-direction: column;
     box-shadow: var(--shadow);
-    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) var(--border-radius-lg) var(--border-radius-lg);
 }

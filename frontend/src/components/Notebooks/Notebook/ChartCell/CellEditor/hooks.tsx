@@ -3,21 +3,40 @@ import { useHandleExecuteCell } from "src/components/Notebooks/Notebook/Cell";
 import { useCellOutputStore } from "src/components/Notebooks/Notebook/Cell/store";
 import type { ChartContent } from "src/components/Notebooks/Notebook/Cell/dto";
 import { useNotebook } from "src/api/notebook/queries";
-import { CellType } from "src/components/Notebooks/Notebook/Cell/dto";
-import { ChartType } from "src/components/Notebooks/Notebook/ChartCell/dto";
+import {
+  CellOutputState,
+  CellType,
+} from "src/components/Notebooks/Notebook/Cell/dto";
+import { ChartType } from "src/components/Chart";
 import type { ExecuteCellResponseDto } from "src/components/Notebooks/Notebook/Cell/dto";
 import { useNotebookStore } from "src/components/Notebooks/store";
 
-export function useSourceCellExecution(chartContent: ChartContent | null) {
+export function useSourceCellExecution(
+  cellId: string,
+  chartContent: ChartContent | null
+) {
   const handleExecuteCell = useHandleExecuteCell();
-  const { getOutput } = useCellOutputStore();
+  const { getOutput, setOutputState, getOutputState } = useCellOutputStore();
   const [sourceCellId, setSourceCellId] = useState<string | null>(
     chartContent?.cell_id || null
   );
   const sourceCellOutput = sourceCellId ? getOutput(sourceCellId) : null;
+
+  const onSuccessCallback = () => {
+    setOutputState(cellId, CellOutputState.PRESENT);
+  };
+  const onErrorCallback = () => {
+    setOutputState(cellId, CellOutputState.ERROR);
+  };
   const executeSourceCell = () => {
     if (sourceCellId) {
-      handleExecuteCell(sourceCellId, false);
+      setOutputState(cellId, CellOutputState.EXECUTING);
+      handleExecuteCell(
+        sourceCellId,
+        false,
+        onSuccessCallback,
+        onErrorCallback
+      );
     }
   };
 

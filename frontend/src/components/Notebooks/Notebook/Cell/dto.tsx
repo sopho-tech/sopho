@@ -47,7 +47,7 @@ export type CreateCellDto = {
 
 export type ExecuteCellResponseDto = {
   column_names: string[] | null;
-  data: JSON[] | null;
+  data: Record<string, unknown>[] | null;
 };
 
 export function getChartContent(cell: CellDto): ChartContent | null {

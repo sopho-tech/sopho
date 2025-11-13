@@ -1,14 +1,3 @@
-.container {
-    display: flex;
-    flex-direction: row;
-    box-shadow: var(--shadow);
-    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
-}
-
-.chartContainer {
-    flex: 4;
-}
-
 .chartControlContainer {
     flex: 2;
     margin: var(--space-sm);
