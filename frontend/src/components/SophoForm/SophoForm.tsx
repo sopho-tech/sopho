@@ -1,7 +1,7 @@
 import * as Form from "@radix-ui/react-form";
 import { useState, Fragment, useEffect } from "react";
 import FormStyles from "src/components/SophoForm/SophoForm.module.css";
-import { ButtonStyle, NewAssetButton } from "src/components/NewAssetButton";
+import { Button } from "src/components/design-system/Button";
 import { mergeForms } from "src/utils/form_utils";
 import { Accordion } from "../Accordion";
 
@@ -293,19 +293,23 @@ export function SophoForm({
       {(showCancelButton || showSubmitButton) && (
         <div className={FormStyles.formButtonRow}>
           {showCancelButton && (
-            <NewAssetButton
-              buttonText="Cancel"
-              isLoading={false}
-              onClick={onCancelCallback}
-              style={ButtonStyle.BackButton}
+            <Button
+              label="Cancel"
+              onClick={() => onCancelCallback()}
+              backgroundColor="white"
+              size="sm"
+              shape="rectangle"
             />
           )}
           {showSubmitButton && (
             <Form.Submit asChild>
-              <NewAssetButton
-                buttonText={submitButtonText}
-                isLoading={false}
+              <Button
+                label={submitButtonText}
                 onClick={() => {}}
+                backgroundColor="accent"
+                size="sm"
+                shape="rectangle"
+                type="submit"
               />
             </Form.Submit>
           )}

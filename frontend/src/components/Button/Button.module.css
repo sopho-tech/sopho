@@ -18,12 +18,12 @@
 
 .icon {
     background: transparent;
-    padding: var(--space-xxs);
+    padding: var(--space-2xs);
 }
 
 .ghost {
     background: transparent;
-    padding: var(--space-xxs);
+    padding: var(--space-2xs);
 }
 
 /* Hover states */

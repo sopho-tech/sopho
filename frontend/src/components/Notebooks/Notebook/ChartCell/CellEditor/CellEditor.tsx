@@ -10,7 +10,7 @@ import {
   serializeChartContent,
 } from "src/components/Notebooks/Notebook/Cell";
 import CellEditorStyle from "src/components/Notebooks/Notebook/ChartCell/CellEditor/CellEditor.module.css";
-import { NewAssetButton } from "src/components/NewAssetButton";
+import { Button } from "src/components/design-system/Button";
 import {
   useSourceCellExecution,
   useFormOptions,
@@ -128,11 +128,13 @@ export function CellEditor({ cellId }: { cellId: string }) {
   ];
 
   const runButton = (
-    <NewAssetButton
+    <Button
       key="run"
-      buttonText="Run"
-      className={CellEditorStyle.runButton}
-      onClick={executeSourceCell}
+      label="Run"
+      onClick={() => executeSourceCell()}
+      backgroundColor="green"
+      size="sm"
+      shape="rectangle"
     />
   );
   return (

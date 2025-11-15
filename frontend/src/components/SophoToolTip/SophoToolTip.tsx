@@ -19,7 +19,7 @@ export function SophoToolTip({
   tooltipSide = "top",
 }: SophoToolTipProps) {
   return (
-    <Tooltip.Provider>
+    <Tooltip.Provider delayDuration={100}>
       <Tooltip.Root
         open={open}
         defaultOpen={defaultOpen}

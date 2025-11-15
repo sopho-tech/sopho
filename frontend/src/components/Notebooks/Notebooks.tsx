@@ -1,177 +1,42 @@
-import NotebooksStyles from "src/components/Notebooks/Notebooks.module.css";
-import { NotebookPageStateEnum } from "src/components/Notebooks/dto";
 import { NotebookCreateDialog } from "src/components/Notebooks/NotebookCreateDialog";
-import { NotebookDto } from "src/components/Notebooks/dto";
-import {
-  SophoTable,
-  ColumnConfig,
-  TableType,
-} from "src/components/SophoTable/SophoTable";
-import { useAllNotebooks, useDeleteNotebook } from "src/api/notebook/queries";
-import { SophoTabs, type TabItem } from "src/components/SophoNavigationMenu";
-import { ActionButtons } from "src/components/ActionButtons";
-import { useNavigate } from "react-router";
-import { APP_ROUTES } from "src/constants/app_routes";
-import { NewAssetButton } from "src/components/NewAssetButton";
-import { useNotebookStore } from "src/components/Notebooks/store";
-import { formatTimestamp } from "src/utils/timestamp_utils";
-import { useState } from "react";
-import { PaginationState, Updater } from "@tanstack/react-table";
+import { Flex } from "src/components/design-system/Flex/Flex";
+import { Heading } from "src/components/design-system";
+import { useNotebookActions } from "src/components/Notebooks/hooks.tsx";
+import { NotebooksTable } from "src/components/Notebooks/NotebooksTable";
+import { Button } from "../design-system/Button/Button";
 
 export function Notebooks() {
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 20,
-  });
   const {
-    data: notebooks,
-    isLoading,
-    isError,
-  } = useAllNotebooks(pagination.pageIndex, pagination.pageSize);
-  const deleteMutation = useDeleteNotebook();
-  const navigate = useNavigate();
-  const { setNotebookPageState } = useNotebookStore();
-
-  const handleViewNotebook = (id: string) => {
-    navigate(APP_ROUTES.NOTEBOOK.replace(":id", id));
-  };
-
-  const handleEditNotebook = (id: string) => {
-    navigate(APP_ROUTES.NOTEBOOK.replace(":id", id));
-  };
-
-  const handleDeleteNotebook = (id: string) => {
-    if (confirm("Are you sure you want to delete this notebook?")) {
-      deleteMutation.mutate(id);
-    }
-  };
-
-  const handleOpenCreateDialog = () => {
-    setNotebookPageState(NotebookPageStateEnum.CREATE_NOTEBOOK_DIALOG);
-  };
-
-  function handlePaginationChange(updaterOrValue: Updater<PaginationState>) {
-    setPagination((prev) =>
-      typeof updaterOrValue === "function"
-        ? updaterOrValue(prev)
-        : updaterOrValue
-    );
-  }
-
-  function handleChangePageSize(newPageSize: string) {
-    setPagination((_) => ({ pageIndex: 0, pageSize: Number(newPageSize) }));
-  }
-
-  function handlePageClick(newPage: number) {
-    setPagination((prev) => ({ ...prev, pageIndex: newPage }));
-  }
-
-  const columns: ColumnConfig<NotebookDto>[] = [
-    {
-      key: "name",
-      header: "Name",
-      type: "accessor",
-      accessor: "name",
-    },
-    {
-      key: "description",
-      header: "Description",
-      type: "accessor",
-      accessor: "description",
-    },
-    {
-      key: "created_at",
-      header: "Created On",
-      type: "accessor",
-      accessor: "created_at",
-      cell: (props) => formatTimestamp(props.getValue()),
-    },
-    {
-      key: "updated_at",
-      header: "Last Modified",
-      type: "accessor",
-      accessor: "updated_at",
-      cell: (props) => formatTimestamp(props.getValue()),
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      type: "display",
-      cell: (props) => (
-        <ActionButtons
-          connectionId={props.row.original.id}
-          onViewClick={handleViewNotebook}
-          onEditClick={handleEditNotebook}
-          onDeleteClick={handleDeleteNotebook}
-        />
-      ),
-    },
-  ];
-
-  const tabItems: TabItem[] = [
-    {
-      id: "all_notebooks",
-      label: "All Notebooks",
-      content: (
-        <div className={NotebooksStyles.fullTableContainer}>
-          <SophoTable
-            tableType={TableType.PAGINATED}
-            columns={columns}
-            data={notebooks?.data ?? []}
-            isLoading={isLoading}
-            isError={isError}
-            paginationConfig={{
-              pagination,
-              totalItems: notebooks?.totalItems ?? 0,
-              totalPages: notebooks?.totalPages ?? 0,
-              currentPage: pagination.pageIndex,
-              pageSize: pagination.pageSize,
-              onPaginationChange: handlePaginationChange,
-              onChangePageSize: handleChangePageSize,
-              onPageClick: handlePageClick,
-              paginationContainerClassName: NotebooksStyles.paginationContainer,
-            }}
-            tableContainerStyle={NotebooksStyles.tableContainer}
-            tableHeaderCellStyle={NotebooksStyles.tableHeaderCell}
-            tableDataCellStyle={NotebooksStyles.tableDataCell}
-            tableFirstHeaderCellStyle={NotebooksStyles.tableFirstHeaderCell}
-            tableLastHeaderCellStyle={NotebooksStyles.tableLastHeaderCell}
-          />
-        </div>
-      ),
-    },
-    {
-      id: "my_notebooks",
-      label: "My Notebooks",
-      content: (
-        <div>
-          <p>To do</p>
-        </div>
-      ),
-    },
-    {
-      id: "failing_notebooks",
-      label: "Failing Notebooks",
-      content: (
-        <div>
-          <p>To do</p>
-        </div>
-      ),
-    },
-  ];
+    handleViewNotebook,
+    handleEditNotebook,
+    handleDeleteNotebook,
+    handleOpenCreateDialog,
+  } = useNotebookActions();
 
   return (
-    <div className={NotebooksStyles.notebooksContainer}>
-      <div className={NotebooksStyles.notebooksHeader}>
-        <h3>Notebooks</h3>
-        <NewAssetButton
-          buttonText="New Notebook"
+    <Flex direction="column" flex="grow" paddingX="lg" paddingY="lg">
+      <Flex
+        direction="row"
+        justifyContent="space-between"
+        marginBottom="lg"
+        alignItems="center"
+      >
+        <Heading accessbilityLevel={1}>Notebooks</Heading>
+        <Button
+          leadingIconName="add"
+          shape="rectangle"
+          label="New Notebook"
           onClick={handleOpenCreateDialog}
-          isLoading={isLoading}
+          backgroundColor="accent"
+          size="md"
         />
         <NotebookCreateDialog />
-      </div>
-      <SophoTabs items={tabItems} defaultActiveItem="all_notebooks" />
-    </div>
+      </Flex>
+      <NotebooksTable
+        onViewClick={handleViewNotebook}
+        onEditClick={handleEditNotebook}
+        onDeleteClick={handleDeleteNotebook}
+      />
+    </Flex>
   );
 }

@@ -7,7 +7,11 @@ import {
 import { useNotebookStore } from "src/components/Notebooks/store";
 import { useCreateCell } from "src/api/cell";
 
-export function NotebookMenuBar() {
+type NotebookMenuBarProps = {
+  style?: React.CSSProperties;
+};
+
+export function NotebookMenuBar({ style }: NotebookMenuBarProps = {}) {
   const { currentNotebookId } = useNotebookStore();
   const createCellMutation = useCreateCell();
 
@@ -111,5 +115,5 @@ export function NotebookMenuBar() {
     },
   ];
 
-  return <SophoMenuBar menus={menus} />;
+  return <SophoMenuBar menus={menus} style={style} />;
 }

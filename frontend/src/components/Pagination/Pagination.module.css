@@ -10,7 +10,7 @@
 .pageButtonsContainer {
     display: flex;
     flex-direction: row;
-    gap: var(--space-xxs);
+    gap: var(--space-2xs);
 }
 
 .paginationButton {

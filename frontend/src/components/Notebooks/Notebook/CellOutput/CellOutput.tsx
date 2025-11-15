@@ -33,13 +33,12 @@ export function CellOutput({ cellId }: CellOutputProps) {
     return null;
 
   return (
-    <div className={CellOutputStles.container}>
-      <SophoTable
-        columns={columns}
-        data={data}
-        tableHeaderCellStyle={CellOutputStles.tableHeaderCell}
-        tableDataCellStyle={CellOutputStles.tableDataCell}
-      />
-    </div>
+    <SophoTable
+      columns={columns}
+      data={data}
+      tableContainerStyle={CellOutputStles.container}
+      tableHeaderCellStyle={CellOutputStles.tableHeaderCell}
+      tableDataCellStyle={CellOutputStles.tableDataCell}
+    />
   );
 }
