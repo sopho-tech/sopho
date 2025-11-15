@@ -1,6 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import DialogStyles from "./SophoDialog.module.css";
-import { CloseButton } from "src/components/CloseButton/CloseButton";
+import { IconButton } from "src/components/design-system/IconButton/IconButton";
 
 interface SophoDialogProps {
   shouldOpenDialog: boolean;
@@ -41,7 +41,13 @@ export function SophoDialog({
                 <div className={DialogStyles.dialogHeadersRightContainer}>
                   {titleAccessory}
                   <Dialog.Close asChild>
-                    <CloseButton onClick={handleDialogClose} />
+                    <IconButton
+                      type="close"
+                      backgroundColor="white"
+                      iconColor="black"
+                      onClick={handleDialogClose}
+                      aria-label="Close"
+                    />
                   </Dialog.Close>
                 </div>
               </div>

@@ -1,0 +1,18 @@
+.tableContainer {
+}
+
+.tableHeaderCell {
+}
+
+.tableDataCell {
+}
+
+.tableFirstHeaderCell {
+}
+
+.tableLastHeaderCell {
+}
+
+.paginationContainer {
+    padding: var(--space-xs);
+}

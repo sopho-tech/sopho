@@ -18,11 +18,12 @@ export type MenuConfig = {
 type SophoMenuBarProps = {
   menus: MenuConfig[];
   loop?: boolean;
+  style?: React.CSSProperties;
 };
 
-export function SophoMenuBar({ menus, loop = true }: SophoMenuBarProps) {
+export function SophoMenuBar({ menus, loop = true, style }: SophoMenuBarProps) {
   return (
-    <Menubar.Root className={SophoMenuBarStyles.root} loop={loop}>
+    <Menubar.Root className={SophoMenuBarStyles.root} loop={loop} style={style}>
       {menus.map((menu) => (
         <Menubar.Menu key={menu.value} value={menu.value}>
           <Menubar.Trigger className={SophoMenuBarStyles.trigger}>

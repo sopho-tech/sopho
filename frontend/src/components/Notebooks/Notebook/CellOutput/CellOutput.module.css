@@ -1,6 +1,7 @@
 .container {
     overflow-x: auto;
     border-top: var(--border-width-thin) solid var(--color-grey-dark-1);
+    border-radius: 0;
 }
 
 .tableHeaderCell {

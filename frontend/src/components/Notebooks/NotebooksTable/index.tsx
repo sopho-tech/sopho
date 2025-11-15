@@ -1,0 +1,1 @@
+export { NotebooksTable } from "./NotebooksTable";

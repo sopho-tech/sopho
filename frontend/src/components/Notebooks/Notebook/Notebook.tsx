@@ -6,10 +6,13 @@ import { useNotebookStore } from "src/components/Notebooks/store";
 import { useEffect, useRef } from "react";
 import { useNotebook } from "src/api/notebook/queries";
 import { CellType } from "src/components/Notebooks/Notebook/Cell/dto";
-import NotebookStyles from "src/components/Notebooks/Notebook/Notebook.module.css";
 import { KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
 import { useHandleExecuteCell } from "src/components/Notebooks/Notebook/Cell";
 import { useKeyboardShortcut } from "src/utils/keyboard_shortcuts/hooks";
+import { Heading } from "src/components/design-system";
+import { Text } from "src/components/design-system/Text/Text";
+import { Flex } from "src/components/design-system/Flex/Flex";
+import { Sticky } from "src/components/design-system/Sticky/Sticky";
 
 export function Notebook() {
   let params = useParams();
@@ -64,21 +67,27 @@ export function Notebook() {
   }
 
   return (
-    <div ref={notebookRef} className={NotebookStyles.container}>
-      <div className={NotebookStyles.titleBar}>
-        <div className={NotebookStyles.titleFirstRow}>
-          <h3 className={NotebookStyles.titleBarNotebookName}>
-            {query.data.name}
-          </h3>
-        </div>
-        <div className={NotebookStyles.description}>
-          <p>{query.data.description}</p>
-        </div>
-      </div>
-      <div className={NotebookStyles.menubarContainer}>
+    <Flex
+      ref={notebookRef}
+      direction="column"
+      paddingX="md"
+      paddingY="md"
+      gap="md"
+      flex="grow"
+      overflow="scrollY"
+    >
+      <Flex direction="column" gap="sm">
+        <Heading accessbilityLevel={1}>{query.data.name}</Heading>
+        <Text as="p" color="subtle">
+          {query.data.description}
+        </Text>
+      </Flex>
+      <Sticky top={0} zIndex={"10"}>
         <NotebookMenuBar />
-      </div>
-      <div className={NotebookStyles.cells}>{generateCellComponents()}</div>
-    </div>
+      </Sticky>
+      <Flex direction="column" gap="md">
+        {generateCellComponents()}
+      </Flex>
+    </Flex>
   );
 }

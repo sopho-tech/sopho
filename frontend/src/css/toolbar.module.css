@@ -1,10 +1,9 @@
 .root {
     background-color: var(--color-grey);
-    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 var(--space-xxs) 0 var(--space-xxs);
+    padding: 0 var(--space-2xs) 0 var(--space-2xs);
     height: 35px;
 }
 
@@ -28,5 +27,5 @@
 .cellNameToolTipHeader {
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
-    padding-bottom: var(--space-xxs);
+    padding-bottom: var(--space-2xs);
 }

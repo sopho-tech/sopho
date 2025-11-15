@@ -12,7 +12,7 @@
 	align-items: center;
 	justify-content: space-between;
 	border-radius: var(--border-radius-md);
-	padding: 0 var(--space-xxs);
+	padding: 0 var(--space-2xs);
 	font-size: var(--font-size-sm);
 	background-color: var(--color-background);
 	color: var(--color-foreground);

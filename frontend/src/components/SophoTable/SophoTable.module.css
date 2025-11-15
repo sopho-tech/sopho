@@ -22,19 +22,18 @@
     width: 100%;
     border-collapse: collapse;
     box-shadow: var(--shadow);
-    border-radius: var(--border-radius-lg);
 }
 
 .tableHeaderCell,
 .tableDataCell {
-    padding: 1rem 1rem;
+    padding: var(--space-xs);
     text-align: left;
     font: var(--font-primary);
 }
 
 .tableHeaderCell {
-    background-color: var(--color-accent-light-2);
-    color: var(--color-grey-dark-2);
+    background-color: var(--color-accent-light-3);
+    color: var(--color-grey-dark-3);
     font-weight: var(--font-weight-bold);
     position: sticky;
     top: 0px;

@@ -1,0 +1,26 @@
+.button {
+    padding: var(--space-xs);
+    border-radius: var(--border-radius-full);
+    display: flex;
+    align-items: center;
+}
+
+.button:active {
+    transform: scale(0.95);
+}
+
+.accent {
+    color: var(--color-accent);
+}
+
+.white {
+    color: var(--color-background);
+}
+
+.white:hover {
+    background-color: var(--color-grey);
+}
+
+.white:active {
+    background-color: var(--color-grey-light-1);
+}

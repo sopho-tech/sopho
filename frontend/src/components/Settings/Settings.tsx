@@ -1,7 +1,8 @@
 import "src/css/index.css";
-import styles from "src/components/Settings/Settings.module.css";
 import { Connections } from "src/components/Connection/ConnectionsPage";
 import { SophoTabs, type TabItem } from "src/components/SophoNavigationMenu";
+import { Flex } from "src/components/design-system/Flex/Flex";
+import { Heading } from "src/components/design-system";
 
 export function Settings() {
   const tabItems: TabItem[] = [
@@ -28,11 +29,20 @@ export function Settings() {
   ];
 
   return (
-    <div className={styles.settingsContainer}>
-      <div className={styles.settingsHeader}>
-        <h3>Settings</h3>
-      </div>
+    <Flex
+      flex="grow"
+      paddingX="xs"
+      paddingY="xs"
+      marginTop="xs"
+      marginBottom="xs"
+      marginLeft="xs"
+      marginRight="xs"
+      direction="column"
+    >
+      <Flex marginBottom="lg">
+        <Heading accessbilityLevel={1}>Settings</Heading>
+      </Flex>
       <SophoTabs items={tabItems} defaultActiveItem="connections" />
-    </div>
+    </Flex>
   );
 }

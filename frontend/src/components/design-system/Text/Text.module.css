@@ -1,0 +1,15 @@
+.default {
+    color: var(--font-color);
+}
+
+.white {
+    color: var(--color-background);
+}
+
+.subtle {
+    color: var(--font-color-subtle);
+}
+
+.disabled {
+    color: var(--font-color-disabled);
+}

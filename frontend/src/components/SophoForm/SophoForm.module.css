@@ -37,7 +37,7 @@
 .formInput,
 .formSelect {
     font-size: var(--font-size-sm);
-    padding: var(--space-xxs);
+    padding: var(--space-2xs);
     border-radius: var(--border-radius-md);
     border: var(--border-input);
     transition: border-color 0.2s;

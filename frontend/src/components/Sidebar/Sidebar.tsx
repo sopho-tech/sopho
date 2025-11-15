@@ -2,6 +2,7 @@ import SidebarStyles from "src/components/Sidebar/Sidebar.module.css";
 import { NavLink } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
 import * as NavigationMenu from "@radix-ui/react-navigation-menu";
+import { IconButton } from "src/components/design-system";
 
 export function Sidebar() {
   return (
@@ -18,21 +19,36 @@ export function Sidebar() {
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
               <NavLink to={APP_ROUTES.INDEX} className={SidebarStyles.link}>
-                <span className="material-symbols-rounded">home</span>
+                <IconButton
+                  type="home"
+                  backgroundColor="white"
+                  iconColor="black"
+                  tooltip={{ text: "Home", direction: "top" }}
+                ></IconButton>
               </NavLink>
             </NavigationMenu.Link>
           </NavigationMenu.Item>
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
               <NavLink to={APP_ROUTES.NOTEBOOKS} className={SidebarStyles.link}>
-                <span className="material-symbols-rounded">book_2</span>
+                <IconButton
+                  type="book_2"
+                  backgroundColor="white"
+                  iconColor="black"
+                  tooltip={{ text: "Notebooks", direction: "top" }}
+                ></IconButton>
               </NavLink>
             </NavigationMenu.Link>
           </NavigationMenu.Item>
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
               <NavLink to={APP_ROUTES.SETTINGS} className={SidebarStyles.link}>
-                <span className="material-symbols-rounded">settings</span>
+                <IconButton
+                  type="settings"
+                  backgroundColor="white"
+                  iconColor="black"
+                  tooltip={{ text: "Settings", direction: "top" }}
+                ></IconButton>
               </NavLink>
             </NavigationMenu.Link>
           </NavigationMenu.Item>

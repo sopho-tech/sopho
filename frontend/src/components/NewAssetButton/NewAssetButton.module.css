@@ -7,7 +7,6 @@
   padding: var(--space-xs);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow);
-  font-weight: var(--font-weight-bold);
 }
 
 /* Primary button variant */

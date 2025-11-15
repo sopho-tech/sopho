@@ -1,0 +1,23 @@
+.accent {
+    color: var(--color-accent);
+}
+
+.white {
+    color: var(--color-background);
+}
+
+.white:hover {
+    background-color: var(--color-accent-dark-1);
+}
+
+.white:active {
+    background-color: var(--color-accent-light-1);
+}
+
+.black {
+    color: var(--color-foreground);
+}
+
+span {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+}

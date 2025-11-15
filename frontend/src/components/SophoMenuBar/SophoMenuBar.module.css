@@ -1,7 +1,7 @@
 .root {
 	display: flex;
 	background-color: var(--color-accent-light-2);
-	padding: var(--space-xxs);
+	padding: var(--space-2xs);
 	border-radius: var(--border-radius-lg);
 	box-shadow: var(--shadow);
 	z-index: var(--z-index-10);

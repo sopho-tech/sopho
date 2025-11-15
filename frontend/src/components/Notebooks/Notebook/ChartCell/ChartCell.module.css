@@ -1,12 +1,13 @@
 .container {
     display: flex;
     flex-direction: column;
-    box-shadow: var(--shadow);
-    border-radius: var(--border-radius-lg) var(--border-radius-lg) var(--border-radius-lg) var(--border-radius-lg);
+    border-radius: var(--border-radius-lg);
+    border: var(--border-width-thick) solid var(--color-grey);
+    overflow: hidden;
 }
 
 .editorAndOutputContainer {
     display: flex;
     flex-direction: row;
-    gap: var(--space-xxs);
+    gap: var(--space-2xs);
 }

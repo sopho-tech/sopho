@@ -4,7 +4,7 @@ globs: *.tsx
 alwaysApply: false
 ---
 
-- Do not use relative imports.
+- Do not use relative imports. Always use full absolute imports.
 - Use css modules.
 - Do not generate comments in code.
 - Use css variables from `frontend/src/css/index.css` if possible and add new variables if needed.
