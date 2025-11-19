@@ -1,5 +1,5 @@
 import * as RadixSelect from "@radix-ui/react-select";
-import SelectStyles from "src/components/Select/Select.module.css";
+import SelectStyles from "src/components/design-system/Select/Select.module.css";
 
 export type SelectProps = {
   placeholderText: string;
