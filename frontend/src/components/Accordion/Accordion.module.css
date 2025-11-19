@@ -5,7 +5,8 @@ h3 {
 
 .accordionRoot {
   border-radius: var(--border-radius-lg);
-  border: var(--border-width-thin) solid var(--color-grey);
+  border: var(--border-width-medium) solid var(--color-grey);
+  overflow: hidden;
 }
 
 .accordionItem {
@@ -37,7 +38,8 @@ h3 {
   justify-content: space-between;
 }
 
-.accordionTrigger:hover {
+.accordionTrigger:hover,
+.accordionTrigger:hover *:not(.accordionChevron) {
   background-color: var(--color-background-dark-1);
 }
 
@@ -45,12 +47,14 @@ h3 {
   overflow: hidden;
 }
 
-.accordionContent[data-state="open"] {
-  animation: slideDown 300ms cubic-bezier(0.87, 0, 0.13, 1);
+.accordionContent[data-state="closed"] {
+  height: 0;
+  opacity: 0;
+  animation: slideUp 300ms cubic-bezier(0.87, 0, 0.13, 1);
 }
 
-.accordionContent[data-state="closed"] {
-  animation: slideUp 300ms cubic-bezier(0.87, 0, 0.13, 1);
+.accordionContent[data-state="open"] {
+  animation: slideDown 300ms cubic-bezier(0.87, 0, 0.13, 1);
 }
 
 .accordionContentText {

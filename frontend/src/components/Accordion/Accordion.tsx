@@ -9,9 +9,11 @@ export type AccordionItemConfig = {
 
 export type AccordionProps = {
   items: AccordionItemConfig[];
+  value: string[];
+  onValueChange: (value: string[]) => void;
 };
 
-export function Accordion({ items }: AccordionProps) {
+export function Accordion({ items, value, onValueChange }: AccordionProps) {
   const accordionItems = items.map((v: AccordionItemConfig) => {
     return (
       <RadixAccordion.Item
@@ -29,14 +31,19 @@ export function Accordion({ items }: AccordionProps) {
             </span>
           </RadixAccordion.Trigger>
         </RadixAccordion.Header>
-        <RadixAccordion.Content className={styles.accordionContent}>
+        <RadixAccordion.Content forceMount className={styles.accordionContent}>
           <div className={styles.accordionContentText}>{v.content}</div>
         </RadixAccordion.Content>
       </RadixAccordion.Item>
     );
   });
   return (
-    <RadixAccordion.Root type="multiple" className={styles.accordionRoot}>
+    <RadixAccordion.Root
+      type="multiple"
+      value={value}
+      onValueChange={onValueChange}
+      className={styles.accordionRoot}
+    >
       {accordionItems}
     </RadixAccordion.Root>
   );

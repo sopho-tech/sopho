@@ -15,7 +15,14 @@ export type IconColor =
   | "error"
   | "warning";
 
-export type IconType = "add" | "home" | "book_2" | "settings" | "close";
+export type IconType =
+  | "add"
+  | "home"
+  | "book_2"
+  | "settings"
+  | "close"
+  | "swap_horiz"
+  | "swap_vert";
 
 export type FlexValue = "grow" | "shrink" | "none" | NumberString;
 

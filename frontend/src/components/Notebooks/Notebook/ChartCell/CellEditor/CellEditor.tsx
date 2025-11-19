@@ -1,8 +1,8 @@
 import {
-  SophoForm,
-  SophoFormElement,
-  SophoFormElementType,
-} from "src/components/SophoForm";
+  FormField,
+  FormFieldType,
+  ValidationTrigger,
+} from "src/components/design-system/Form";
 import { useUpdateCell, useCell } from "src/api/cell/queries";
 import {
   CellDto,
@@ -15,6 +15,8 @@ import {
   useSourceCellExecution,
   useFormOptions,
 } from "src/components/Notebooks/Notebook/ChartCell/CellEditor/hooks";
+import { Form, Icon, Text, Flex } from "src/components/design-system";
+import { Accordion } from "src/components/Accordion";
 
 export function CellEditor({ cellId }: { cellId: string }) {
   const cellQuery = useCell(cellId);
@@ -48,13 +50,13 @@ export function CellEditor({ cellId }: { cellId: string }) {
     }
   }
 
-  const formElements: SophoFormElement[] = [
+  const fields: FormField[] = [
     {
       key: "cell_id",
       name: "Source Cell",
       required: true,
-      error_message: "Please select the source cell",
-      type: SophoFormElementType.SELECT,
+      errorMessage: "Please select the source cell",
+      type: FormFieldType.SELECT,
       options: cellOptions,
       selectedValue: chartContent?.cell_id,
     },
@@ -62,34 +64,30 @@ export function CellEditor({ cellId }: { cellId: string }) {
       key: "chart_type",
       name: "Chart Type",
       required: true,
-      error_message: "Please select the type of chart",
-      type: SophoFormElementType.SELECT,
+      errorMessage: "Please select the type of chart",
+      type: FormFieldType.SELECT,
       options: chartOptions,
       selectedValue: chartContent?.chart_type,
     },
     {
       key: "x_axis_settings",
       name: (
-        <div className={CellEditorStyle.accordionTriggerHeading}>
-          <span
-            className={`material-symbols-outlined ${CellEditorStyle.accordionTriggerIcon}`}
-          >
-            swap_horiz
-          </span>
-          <span>X-axis</span>
-        </div>
+        <Flex direction="row" gap="2xs" justifyContent="center">
+          <Icon type="swap_horiz" color="default" />
+          <Text>X-axis</Text>
+        </Flex>
       ),
       required: false,
-      error_message: "",
-      type: SophoFormElementType.COLLAPSIBLE,
+      errorMessage: "",
+      type: FormFieldType.COLLAPSIBLE,
       collapsibleConfig: {
-        formElements: [
+        fields: [
           {
             key: "x_axis",
             name: "Column",
             required: true,
-            error_message: "Please select the column for x-axis",
-            type: SophoFormElementType.SELECT,
+            errorMessage: "Please select the column for x-axis",
+            type: FormFieldType.SELECT,
             options: columnOptions,
             selectedValue: chartContent?.x_axis,
           },
@@ -99,26 +97,22 @@ export function CellEditor({ cellId }: { cellId: string }) {
     {
       key: "y_axis_settings",
       name: (
-        <div className={CellEditorStyle.accordionTriggerHeading}>
-          <span
-            className={`material-symbols-outlined ${CellEditorStyle.accordionTriggerIcon}`}
-          >
-            swap_vert
-          </span>
-          <span>Y-axis</span>
-        </div>
+        <Flex direction="row" gap="2xs" justifyContent="center">
+          <Icon type="swap_vert" color="default" />
+          <Text>Y-axis</Text>
+        </Flex>
       ),
       required: false,
-      error_message: "",
-      type: SophoFormElementType.COLLAPSIBLE,
+      errorMessage: "",
+      type: FormFieldType.COLLAPSIBLE,
       collapsibleConfig: {
-        formElements: [
+        fields: [
           {
             key: "y_axis",
             name: "Column",
             required: true,
-            error_message: "Please select the column for y-axis",
-            type: SophoFormElementType.SELECT,
+            errorMessage: "Please select the column for y-axis",
+            type: FormFieldType.SELECT,
             options: columnOptions,
             selectedValue: chartContent?.y_axis,
           },
@@ -138,15 +132,15 @@ export function CellEditor({ cellId }: { cellId: string }) {
     />
   );
   return (
-    <SophoForm
-      formElements={formElements}
+    <Form
+      fields={fields}
       onSubmitCallback={handleSubmit}
       onCancelCallback={handleCancel}
       showCancelButton={false}
       submitButtonText="Save"
-      formRootStyleClass={CellEditorStyle.chartControlContainer}
-      formElementsStyleClass={CellEditorStyle.formElements}
-      formFieldStyleClass={CellEditorStyle.formField}
+      rootStyleClass={CellEditorStyle.chartControlContainer}
+      fieldsContainerStyleClass={CellEditorStyle.formElements}
+      fieldStyleClass={CellEditorStyle.formField}
       additionalButtons={[runButton]}
       onChange={handleChange}
     />

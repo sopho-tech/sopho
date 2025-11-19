@@ -25,6 +25,7 @@
     "@radix-ui/react-toolbar": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-oauth/google": "^0.12.1",
+    "@tanstack/react-form": "^1.25.0",
     "@tanstack/react-query": "^5.74.3",
     "@tanstack/react-table": "^8.21.3",
     "@types/lodash.debounce": "^4.0.9",

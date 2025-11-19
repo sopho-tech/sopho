@@ -1,0 +1,82 @@
+.formRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.formElements {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  column-gap: var(--space-sm);
+  row-gap: var(--space-sm);
+  grid-auto-rows: minmax(50px, auto);
+  padding: var(--space-sm);
+  overflow-y: auto;
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-lg);
+}
+
+.formField {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-md);
+  align-content: center;
+}
+
+.formLabelControlRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.formLabel {
+  font-size: var(--font-size-sm);
+}
+
+.formInput {
+  font-size: var(--font-size-sm);
+  padding: var(--space-2xs);
+  border-radius: var(--border-radius-md);
+  border: var(--border-input);
+  transition: border-color 0.2s;
+  color: var(--color-foreground);
+  background-color: var(--input-background);
+}
+
+.formInput::-webkit-outer-spin-button,
+.formInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.formInput[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.formInput:focus {
+  outline: none;
+  border: var(--border-input-focus);
+  box-shadow: var(--shadow-accent-md);
+}
+
+.formInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--color-background-secondary);
+}
+
+.formMessage {
+  color: var(--color-red-dark-2);
+  font-size: var(--font-size-sm);
+}
+
+.formButtonRow {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  margin-top: var(--space-xs);
+  padding-top: var(--space-sm);
+}
+
