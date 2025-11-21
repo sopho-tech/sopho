@@ -1,5 +1,6 @@
 import * as RadixAccordion from "@radix-ui/react-accordion";
 import styles from "./Accordion.module.css";
+import { Icon } from "src/components/design-system/Icon";
 
 export type AccordionItemConfig = {
   value: string;
@@ -24,11 +25,9 @@ export function Accordion({ items, value, onValueChange }: AccordionProps) {
         <RadixAccordion.Header className={styles.accordionHeader}>
           <RadixAccordion.Trigger className={styles.accordionTrigger}>
             {v.trigger}
-            <span
-              className={`material-symbols-outlined ${styles.accordionChevron}`}
-            >
-              keyboard_arrow_down
-            </span>
+            <div className={styles.accordionChevron}>
+              <Icon type="chevron_down" color="default" />
+            </div>
           </RadixAccordion.Trigger>
         </RadixAccordion.Header>
         <RadixAccordion.Content forceMount className={styles.accordionContent}>

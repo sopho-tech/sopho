@@ -1,5 +1,6 @@
 import * as RadixSelect from "@radix-ui/react-select";
 import SelectStyles from "src/components/Select/Select.module.css";
+import { Icon } from "src/components/design-system/Icon";
 
 export type SelectProps = {
   placeholderText: string;
@@ -29,7 +30,7 @@ export function Select({
     >
       <RadixSelect.ItemText>{option.label}</RadixSelect.ItemText>
       <RadixSelect.ItemIndicator className={SelectStyles.selectItemIndicator}>
-        <span className="material-symbols-outlined">check_small</span>
+        <Icon type="check" color="default" />
       </RadixSelect.ItemIndicator>
     </RadixSelect.Item>
   ));
@@ -40,11 +41,9 @@ export function Select({
           {selectedOption?.label}
         </RadixSelect.Value>
         <RadixSelect.Icon asChild>
-          <span
-            className={`material-symbols-outlined ${SelectStyles.selectIcon}`}
-          >
-            keyboard_arrow_down
-          </span>
+          <div className={SelectStyles.selectIcon}>
+            <Icon type="chevron_down" color="default" />
+          </div>
         </RadixSelect.Icon>
       </RadixSelect.Trigger>
       <RadixSelect.Portal>
@@ -53,7 +52,7 @@ export function Select({
             className={SelectStyles.selectScrollButton}
             asChild
           >
-            <span className="material-symbols-outlined">keyboard_arrow_up</span>
+            <Icon type="chevron_up" color="default" />
           </RadixSelect.ScrollUpButton>
           <RadixSelect.Viewport className={SelectStyles.selectViewport}>
             <RadixSelect.Group>
@@ -67,9 +66,7 @@ export function Select({
             className={SelectStyles.selectScrollButton}
             asChild
           >
-            <span className="material-symbols-outlined">
-              keyboard_arrow_down
-            </span>
+            <Icon type="chevron_down" color="default" />
           </RadixSelect.ScrollDownButton>
           <RadixSelect.Arrow />
         </RadixSelect.Content>

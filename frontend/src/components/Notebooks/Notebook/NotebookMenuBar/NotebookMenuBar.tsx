@@ -6,6 +6,7 @@ import {
 } from "src/components/Notebooks/Notebook/Cell";
 import { useNotebookStore } from "src/components/Notebooks/store";
 import { useCreateCell } from "src/api/cell";
+import { Icon } from "src/components/design-system/Icon";
 
 type NotebookMenuBarProps = {
   style?: React.CSSProperties;
@@ -29,11 +30,9 @@ export function NotebookMenuBar({ style }: NotebookMenuBarProps = {}) {
     {
       value: "new",
       icon: (
-        <span
-          className={`material-symbols-outlined ${NotebookMenuBarStyles.icon}`}
-        >
-          add
-        </span>
+        <div className={NotebookMenuBarStyles.icon}>
+          <Icon type="add" color="default" />
+        </div>
       ),
       items: [
         {
@@ -56,11 +55,9 @@ export function NotebookMenuBar({ style }: NotebookMenuBarProps = {}) {
     {
       value: "delete",
       icon: (
-        <span
-          className={`material-symbols-outlined ${NotebookMenuBarStyles.icon}`}
-        >
-          remove
-        </span>
+        <div className={NotebookMenuBarStyles.icon}>
+          <Icon type="remove" color="default" />
+        </div>
       ),
       items: [
         {
@@ -76,11 +73,9 @@ export function NotebookMenuBar({ style }: NotebookMenuBarProps = {}) {
     {
       value: "move_up",
       icon: (
-        <span
-          className={`material-symbols-outlined ${NotebookMenuBarStyles.icon}`}
-        >
-          arrow_upward
-        </span>
+        <div className={NotebookMenuBarStyles.icon}>
+          <Icon type="arrow_up" color="default" />
+        </div>
       ),
       items: [
         {
@@ -96,11 +91,9 @@ export function NotebookMenuBar({ style }: NotebookMenuBarProps = {}) {
     {
       value: "move_down",
       icon: (
-        <span
-          className={`material-symbols-outlined ${NotebookMenuBarStyles.icon}`}
-        >
-          arrow_downward
-        </span>
+        <div className={NotebookMenuBarStyles.icon}>
+          <Icon type="arrow_down" color="default" />
+        </div>
       ),
       items: [
         {

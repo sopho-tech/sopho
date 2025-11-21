@@ -13,16 +13,32 @@ export type IconColor =
   | "default"
   | "info"
   | "error"
-  | "warning";
+  | "warning"
+  | "green"
+  | "grey"
+  | "transparent";
 
 export type IconType =
   | "add"
   | "home"
-  | "book_2"
+  | "book"
   | "settings"
   | "close"
   | "swap_horiz"
-  | "swap_vert";
+  | "swap_vert"
+  | "visibility"
+  | "edit"
+  | "delete"
+  | "play"
+  | "remove"
+  | "arrow_up"
+  | "arrow_down"
+  | "more_horiz"
+  | "chevron_left"
+  | "chevron_right"
+  | "chevron_down"
+  | "chevron_up"
+  | "check";
 
 export type FlexValue = "grow" | "shrink" | "none" | NumberString;
 

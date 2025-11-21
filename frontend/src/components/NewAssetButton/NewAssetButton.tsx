@@ -1,4 +1,3 @@
-import "material-symbols";
 import NewAssetButtonStyles from "src/components/NewAssetButton/NewAssetButton.module.css";
 
 export enum ButtonType {

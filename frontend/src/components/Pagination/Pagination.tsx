@@ -1,6 +1,7 @@
 import PaginationStyles from "src/components/Pagination/Pagination.module.css";
 import { Select } from "src/components/Select";
 import { Button } from "src/components/Button";
+import { Icon } from "src/components/design-system/Icon";
 
 export type PaginationProps = {
   totalPages: number;
@@ -78,9 +79,7 @@ function renderEllipsisButton(
       onClick={() => onPageClick(newPage)}
       className={PaginationStyles.paginationButton}
     >
-      <span className={`material-symbols-outlined ${PaginationStyles.icon}`}>
-        more_horiz
-      </span>
+      <Icon type="more_horiz" color="default" />
     </Button>
   );
 }
@@ -101,9 +100,7 @@ function renderPages(
       onClick={() => onPageClick(Math.max(0, currentPage - 1))}
       className={PaginationStyles.paginationButton}
     >
-      <span className={`material-symbols-outlined ${PaginationStyles.icon}`}>
-        chevron_left
-      </span>
+      <Icon type="chevron_left" color="default" />
     </Button>,
     ...pageItems.map((item) =>
       typeof item === "number"
@@ -123,9 +120,7 @@ function renderPages(
       onClick={() => onPageClick(Math.min(totalPages - 1, currentPage + 1))}
       className={PaginationStyles.paginationButton}
     >
-      <span className={`material-symbols-outlined ${PaginationStyles.icon}`}>
-        chevron_right
-      </span>
+      <Icon type="chevron_right" color="default" />
     </Button>,
   ];
 }

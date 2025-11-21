@@ -1,10 +1,26 @@
 import SidebarStyles from "src/components/Sidebar/Sidebar.module.css";
-import { NavLink } from "react-router";
+import { NavLink, useLocation } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
 import * as NavigationMenu from "@radix-ui/react-navigation-menu";
-import { IconButton } from "src/components/design-system";
+import {
+  IconButtonLink,
+  IconButtonLinkState,
+} from "src/components/design-system";
 
 export function Sidebar() {
+  const location = useLocation();
+
+  const getState = (path: string) => {
+    if (path === APP_ROUTES.INDEX) {
+      return location.pathname === APP_ROUTES.INDEX
+        ? IconButtonLinkState.ACTIVE
+        : IconButtonLinkState.INACTIVE;
+    }
+    return location.pathname.startsWith(path)
+      ? IconButtonLinkState.ACTIVE
+      : IconButtonLinkState.INACTIVE;
+  };
+
   return (
     <div className={SidebarStyles.sidebar}>
       <NavigationMenu.Root>
@@ -19,36 +35,33 @@ export function Sidebar() {
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
               <NavLink to={APP_ROUTES.INDEX} className={SidebarStyles.link}>
-                <IconButton
+                <IconButtonLink
                   type="home"
-                  backgroundColor="white"
-                  iconColor="black"
-                  tooltip={{ text: "Home", direction: "top" }}
-                ></IconButton>
+                  state={getState(APP_ROUTES.INDEX)}
+                  tooltip={{ text: "Home", direction: "right" }}
+                />
               </NavLink>
             </NavigationMenu.Link>
           </NavigationMenu.Item>
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
               <NavLink to={APP_ROUTES.NOTEBOOKS} className={SidebarStyles.link}>
-                <IconButton
-                  type="book_2"
-                  backgroundColor="white"
-                  iconColor="black"
-                  tooltip={{ text: "Notebooks", direction: "top" }}
-                ></IconButton>
+                <IconButtonLink
+                  type="book"
+                  state={getState(APP_ROUTES.NOTEBOOKS)}
+                  tooltip={{ text: "Notebooks", direction: "right" }}
+                />
               </NavLink>
             </NavigationMenu.Link>
           </NavigationMenu.Item>
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
               <NavLink to={APP_ROUTES.SETTINGS} className={SidebarStyles.link}>
-                <IconButton
+                <IconButtonLink
                   type="settings"
-                  backgroundColor="white"
-                  iconColor="black"
-                  tooltip={{ text: "Settings", direction: "top" }}
-                ></IconButton>
+                  state={getState(APP_ROUTES.SETTINGS)}
+                  tooltip={{ text: "Settings", direction: "right" }}
+                />
               </NavLink>
             </NavigationMenu.Link>
           </NavigationMenu.Item>

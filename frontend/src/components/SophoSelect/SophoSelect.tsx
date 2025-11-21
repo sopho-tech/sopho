@@ -1,6 +1,7 @@
 import * as Select from "@radix-ui/react-select";
 import * as Toolbar from "@radix-ui/react-toolbar";
 import SophoSelectStyles from "src/components/SophoSelect/SophoSelect.module.css";
+import { Icon } from "src/components/design-system/Icon";
 
 type SophoSelectProps = {
   groupName: string;
@@ -34,7 +35,7 @@ export function SophoSelect({
     >
       <Select.ItemText>{option.label}</Select.ItemText>
       <Select.ItemIndicator className={SophoSelectStyles.selectItemIndicator}>
-        <span className="material-symbols-outlined">check_small</span>
+        <Icon type="check" color="default" />
       </Select.ItemIndicator>
     </Select.Item>
   ));
@@ -50,9 +51,9 @@ export function SophoSelect({
             {initialValue?.label}
           </Select.Value>
           <Select.Icon className={SophoSelectStyles.selectIcon} asChild>
-            <span className="material-symbols-outlined">
-              keyboard_arrow_down
-            </span>
+            <div>
+              <Icon type="chevron_down" color="default" />
+            </div>
           </Select.Icon>
         </Select.Trigger>
       </Toolbar.Button>
@@ -62,7 +63,7 @@ export function SophoSelect({
             className={SophoSelectStyles.selectScrollButton}
             asChild
           >
-            <span className="material-symbols-outlined">keyboard_arrow_up</span>
+            <Icon type="chevron_up" color="default" />
           </Select.ScrollUpButton>
           <Select.Viewport className={SophoSelectStyles.selectViewport}>
             <Select.Group>
@@ -76,9 +77,7 @@ export function SophoSelect({
             className={SophoSelectStyles.selectScrollButton}
             asChild
           >
-            <span className="material-symbols-outlined">
-              keyboard_arrow_down
-            </span>
+            <Icon type="chevron_down" color="default" />
           </Select.ScrollDownButton>
           <Select.Arrow />
         </Select.Content>
