@@ -2,15 +2,17 @@
     /* padding: var(--space-xs); */
     /* margin: var(--space-xs); */
     background-color: var(--color-background);
-    border-radius: var(--border-radius-md);
     box-shadow: var(--shadow);
-    flex: 1;
+    flex: 1.5;
+    max-width: 50px;
+    border-right: var(--border-width-thin) solid var(--color-grey);
 }
 
 .navItems {
     display: flex;
     flex-direction: column;
     gap: var(--space-xxs);
+    align-items: center;
 }
 
 .navItem {

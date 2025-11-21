@@ -43,8 +43,8 @@ export function SophoDialog({
                   <Dialog.Close asChild>
                     <IconButton
                       type="close"
-                      backgroundColor="white"
-                      iconColor="black"
+                      backgroundColor="transparent"
+                      iconColor="grey"
                       onClick={handleDialogClose}
                       aria-label="Close"
                     />

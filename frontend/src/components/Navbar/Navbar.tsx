@@ -1,4 +1,3 @@
-import "material-symbols";
 import NavbarStyles from "src/components/Navbar/Navbar.module.css";
 import { SearchBar } from "src/components/SearchBar";
 

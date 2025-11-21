@@ -1,4 +1,5 @@
 import styles from "src/components/ActionButtons/ActionButtons.module.css";
+import { IconButton } from "../design-system";
 
 interface ActionButtonsProps {
   connectionId: string;
@@ -15,33 +16,24 @@ export function ActionButtons({
 }: ActionButtonsProps) {
   return (
     <div className={styles.actionButtonsContainer}>
-      <button
+      <IconButton
+        type="visibility"
+        backgroundColor="transparent"
+        iconColor="grey"
         onClick={() => onViewClick(connectionId)}
-        title="View"
-        className={styles.actionButton}
-      >
-        <span className={`material-symbols-outlined ${styles["button-icon"]}`}>
-          visibility
-        </span>
-      </button>
-      <button
+      />
+      <IconButton
+        type="edit"
+        backgroundColor="transparent"
+        iconColor="grey"
         onClick={() => onEditClick(connectionId)}
-        title="Edit"
-        className={styles.actionButton}
-      >
-        <span className={`material-symbols-outlined ${styles["button-icon"]}`}>
-          edit
-        </span>
-      </button>
-      <button
+      />
+      <IconButton
+        type="delete"
+        backgroundColor="transparent"
+        iconColor="grey"
         onClick={() => onDeleteClick(connectionId)}
-        title="Delete"
-        className={styles.actionButton}
-      >
-        <span className={`material-symbols-outlined ${styles["button-icon"]}`}>
-          delete
-        </span>
-      </button>
+      />
     </div>
   );
 }

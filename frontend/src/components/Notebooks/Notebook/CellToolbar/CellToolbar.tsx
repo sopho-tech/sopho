@@ -1,7 +1,7 @@
 import ToolbarStyles from "src/css/toolbar.module.css";
 import CellToolbarStyles from "src/components/Notebooks/Notebook/CellToolbar/CellToolbar.module.css";
 import * as Toolbar from "@radix-ui/react-toolbar";
-import { ExecuteButton } from "src/components/ExecuteButton/ExecuteButton";
+import { IconButton } from "src/components/design-system/IconButton/IconButton";
 import { useConnections } from "src/api/connection";
 import { SophoSelect } from "src/components/SophoSelect";
 import { useUpdateCell, useCell } from "src/api/cell";
@@ -83,7 +83,12 @@ export function CellToolbar({ cellId }: { cellId: string }) {
           />
         </Toolbar.Button>
         <Toolbar.Button asChild>
-          <ExecuteButton onClick={() => handleExecuteCell(cellId)} />
+          <IconButton
+            type="play"
+            backgroundColor="transparent"
+            iconColor="green"
+            onClick={() => handleExecuteCell(cellId)}
+          />
         </Toolbar.Button>
       </div>
     </Toolbar.Root>

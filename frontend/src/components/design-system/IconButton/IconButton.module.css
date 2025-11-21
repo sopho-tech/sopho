@@ -2,11 +2,12 @@
     padding: var(--space-xs);
     border-radius: var(--border-radius-full);
     display: flex;
-    align-items: center;
+    cursor: pointer;
+    transition: transform 0.1s ease-out;
 }
 
 .button:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
 }
 
 .accent {
@@ -14,7 +15,7 @@
 }
 
 .white {
-    color: var(--color-background);
+    background-color: var(--color-background);
 }
 
 .white:hover {
@@ -23,4 +24,20 @@
 
 .white:active {
     background-color: var(--color-grey-light-1);
+}
+
+.grey {
+    background-color: var(--color-background);
+}
+
+.grey:hover {
+    background-color: var(--color-grey);
+}
+
+.grey:active {
+    background-color: var(--color-grey-light-1);
+}
+
+.transparent {
+    background-color: transparent;
 }

@@ -13,3 +13,5 @@ alwaysApply: false
 - Use tanstack query to store backend state.
 - Use type for react props and states. Use interface only for public APIs.
 - Use Apache ECharts for creating charts.
+- Use Lucide React Icons for icon.
+- Use components from `frontend/src/design-system` for building features.

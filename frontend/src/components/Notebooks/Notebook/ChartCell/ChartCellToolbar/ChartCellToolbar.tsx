@@ -1,7 +1,7 @@
 import ChartCellToolbarStyles from "src/components/Notebooks/Notebook/ChartCell/ChartCellToolbar/ChartCellToolbar.module.css";
 import ToolbarStyles from "src/css/toolbar.module.css";
 import * as Toolbar from "@radix-ui/react-toolbar";
-import { ExecuteButton } from "src/components/ExecuteButton/ExecuteButton";
+import { IconButton } from "src/components/design-system/IconButton/IconButton";
 import { useConnections } from "src/api/connection";
 import { useUpdateCell, useCell, useExecuteCell } from "src/api/cell";
 import { useEffect, useState } from "react";
@@ -95,7 +95,12 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
     <Toolbar.Root className={ToolbarStyles.root} loop>
       <SophoToolTip messageElement={messageElement} children={toolTipTrigger} />
       <Toolbar.Button asChild>
-        <ExecuteButton onClick={handleExecute} />
+        <IconButton
+          type="play"
+          backgroundColor="transparent"
+          iconColor="green"
+          onClick={() => handleExecute()}
+        />
       </Toolbar.Button>
     </Toolbar.Root>
   );

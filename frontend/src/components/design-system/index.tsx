@@ -1,4 +1,8 @@
 export { IconButton } from "src/components/design-system/IconButton";
+export {
+  IconButtonLink,
+  State as IconButtonLinkState,
+} from "src/components/design-system/IconButtonLink";
 export { Icon } from "src/components/design-system/Icon";
 export { Heading } from "src/components/design-system/Heading";
 export { Form } from "src/components/design-system/Form";
