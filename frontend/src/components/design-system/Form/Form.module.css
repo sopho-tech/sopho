@@ -33,15 +33,17 @@
 
 .formLabel {
   font-size: var(--font-size-sm);
+  font-weight: var(--label-font-weight);
+  color: var(--label-color);
 }
 
 .formInput {
   font-size: var(--font-size-sm);
   padding: var(--space-2xs);
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-lg);
   border: var(--border-input);
   transition: border-color 0.2s;
-  color: var(--color-foreground);
+  color: var(--color-text);
   background-color: var(--input-background);
 }
 
@@ -64,7 +66,7 @@
 .formInput:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  background-color: var(--color-background-secondary);
+  background-color: var(--color-grey-100);
 }
 
 .formMessage {

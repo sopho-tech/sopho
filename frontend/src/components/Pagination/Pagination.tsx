@@ -1,7 +1,6 @@
 import PaginationStyles from "src/components/Pagination/Pagination.module.css";
 import { Select } from "src/components/Select";
-import { Button } from "src/components/Button";
-import { Icon } from "src/components/design-system/Icon";
+import { Button } from "src/components/design-system/Button";
 
 export type PaginationProps = {
   totalPages: number;
@@ -51,13 +50,13 @@ function renderPageButton(
   return (
     <Button
       key={pageIndex}
-      variant="neutral"
+      label={(pageIndex + 1).toString()}
+      shape="square"
+      backgroundColor="white"
+      size="sm"
       disabled={pageIndex === currentPage}
-      onClick={() => onPageClick(pageIndex)}
-      className={PaginationStyles.paginationButton}
-    >
-      {pageIndex + 1}
-    </Button>
+      onClick={({ event }) => onPageClick(pageIndex)}
+    />
   );
 }
 
@@ -75,12 +74,13 @@ function renderEllipsisButton(
   return (
     <Button
       key={`ellipsis-${direction}`}
-      variant="neutral"
-      onClick={() => onPageClick(newPage)}
-      className={PaginationStyles.paginationButton}
-    >
-      <Icon type="more_horiz" color="default" />
-    </Button>
+      label=""
+      shape="square"
+      backgroundColor="white"
+      size="sm"
+      leadingIconName="more_horiz"
+      onClick={({ event }) => onPageClick(newPage)}
+    />
   );
 }
 
@@ -95,13 +95,14 @@ function renderPages(
   return [
     <Button
       key="first"
-      variant="neutral"
+      label=""
+      shape="square"
+      backgroundColor="white"
+      size="sm"
+      leadingIconName="chevron_left"
       disabled={currentPage === 0}
-      onClick={() => onPageClick(Math.max(0, currentPage - 1))}
-      className={PaginationStyles.paginationButton}
-    >
-      <Icon type="chevron_left" color="default" />
-    </Button>,
+      onClick={({ event }) => onPageClick(Math.max(0, currentPage - 1))}
+    />,
     ...pageItems.map((item) =>
       typeof item === "number"
         ? renderPageButton(item, currentPage, onPageClick)
@@ -115,13 +116,16 @@ function renderPages(
     ),
     <Button
       key="last"
-      variant="neutral"
+      label=""
+      shape="square"
+      backgroundColor="white"
+      size="sm"
+      leadingIconName="chevron_right"
       disabled={currentPage === totalPages - 1}
-      onClick={() => onPageClick(Math.min(totalPages - 1, currentPage + 1))}
-      className={PaginationStyles.paginationButton}
-    >
-      <Icon type="chevron_right" color="default" />
-    </Button>,
+      onClick={({ event }) =>
+        onPageClick(Math.min(totalPages - 1, currentPage + 1))
+      }
+    />,
   ];
 }
 

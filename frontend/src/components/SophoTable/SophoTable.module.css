@@ -1,68 +1,68 @@
 .overallContainer {
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-    flex: 1;
-    justify-content: space-between;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1;
+  justify-content: space-between;
 }
 
 .tableContainer {
-    overflow-y: auto;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-    border-radius: var(--border-radius-lg) var(--border-radius-lg) var(--border-radius-lg) var(--border-radius-lg);
-    border: var(--border-width-medium) solid var(--color-grey);
+  overflow-y: auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  border-radius: var(--border-radius-lg) var(--border-radius-lg)
+    var(--border-radius-lg) var(--border-radius-lg);
+  border: var(--border-width-medium) solid var(--color-grey-500);
 }
 
 .table {
-    width: 100%;
-    border-collapse: collapse;
-    box-shadow: var(--shadow);
+  width: 100%;
+  border-collapse: collapse;
+  box-shadow: var(--shadow);
 }
 
 .tableHeaderCell,
 .tableDataCell {
-    padding: var(--space-xs);
-    text-align: left;
-    font: var(--font-primary);
+  padding: var(--space-xs);
+  text-align: left;
+  font: var(--font-primary);
 }
 
 .tableHeaderCell {
-    background-color: var(--color-accent-light-3);
-    color: var(--color-grey-dark-3);
-    font-weight: var(--font-weight-bold);
-    position: sticky;
-    top: 0px;
+  background-color: var(--color-primary-200);
+  color: var(--color-grey-800);
+  font-weight: var(--font-weight-bold);
+  position: sticky;
+  top: 0px;
 }
- 
+
 .tableDataCell {
-    border-bottom: var(--border-table-cell);
+  border-bottom: var(--border-table-cell);
 }
 
 .tableBodyRow:hover {
-    background-color: var(--color-grey-light-2);
+  background-color: var(--color-grey-300);
 }
 
 .tableBody tr:last-child td {
-    border-bottom: none;
+  border-bottom: none;
 }
 
 .tableBody tc:last-child td {
-    border-right: none;
+  border-right: none;
 }
 
 .thead th:last-child {
-    border-right: none;
+  border-right: none;
 }
 
 .thead th:first-child {
-    
 }
 
 .tableBody td:last-child {
-    border-right: none;
+  border-right: none;
 }

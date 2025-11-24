@@ -44,6 +44,7 @@ export function Button({
   fullWidth = false,
   size,
   type = "button",
+  emphasis,
 }: ButtonProps) {
   const backgroundColorClassName = styles[backgroundColor];
   const sizeClassName =

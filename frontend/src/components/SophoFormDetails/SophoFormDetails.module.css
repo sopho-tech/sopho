@@ -17,12 +17,14 @@
 }
 
 .detailLabel {
-  color: var(--color-grey-dark-2);
+  color: var(--label-color);
   font-size: var(--font-size-sm);
   width: 100px;
+  font-weight: var(--label-font-weight);
 }
 
 .detailValue {
   display: flex;
   font-size: var(--font-size-sm);
+  color: var(--label-value-color);
 }

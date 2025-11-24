@@ -129,6 +129,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
       backgroundColor="green"
       size="sm"
       shape="rectangle"
+      emphasis="secondary"
     />
   );
   return (
