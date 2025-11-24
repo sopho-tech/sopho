@@ -10,6 +10,9 @@ import {
   findAccordionsWithInvalidFields,
 } from "./utils/validation";
 import { deriveDefaultValues, convertValuesToFormData } from "./utils/values";
+import { BannerSlim } from "../BannerSlim";
+import { revalidateLogic, useStore } from "@tanstack/react-form";
+import { getErrorSummary } from "./utils/errorSummary";
 
 type FormProps = {
   fields: FormField[];
@@ -51,8 +54,12 @@ export function Form({
       const formData = convertValuesToFormData(value as Record<string, any>);
       onSubmitCallback(formData);
     },
+    validationLogic: revalidateLogic({
+      mode: "submit",
+      modeAfterSubmission: "change",
+    }),
     validators: {
-      onSubmit({ value }) {
+      onDynamic({ value }) {
         const { errorMap, invalidFields } = validateFields(
           fields,
           value as Record<string, any>
@@ -70,11 +77,10 @@ export function Form({
           setAccordionState(newAccordionState);
 
           return {
-            form: "Invalid data",
+            form: "form validation",
             fields: errorMap,
           };
         }
-
         return undefined;
       },
     },
@@ -94,8 +100,14 @@ export function Form({
     }),
   });
 
+  const formFieldMeta = useStore(form.store, (state) => state.fieldMeta);
+
   return (
     <div className={`${FormStyles.formRoot} ${rootStyleClass || ""}`}>
+      <BannerSlim
+        type="error"
+        message={getErrorSummary(formFieldMeta, fields)}
+      />
       <form.AppForm>
         <div className={fieldsContainerStyleClass || FormStyles.formElements}>
           {fields.map((field) => (

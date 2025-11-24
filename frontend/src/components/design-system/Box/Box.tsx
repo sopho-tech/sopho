@@ -2,14 +2,12 @@ import styles from "src/components/design-system/Box/Box.module.css";
 import type {
   SharedLayoutProps,
   BoxElement,
-  ColorVariant,
   Display,
 } from "src/components/design-system/datatypes";
 import { getSharedLayoutStyles } from "src/components/design-system/utils";
 
 export type BoxProps = SharedLayoutProps & {
   as?: BoxElement;
-  color?: ColorVariant;
   display?: Display;
   children: React.ReactNode;
 };

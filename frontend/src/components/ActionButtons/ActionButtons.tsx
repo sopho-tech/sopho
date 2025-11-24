@@ -19,19 +19,19 @@ export function ActionButtons({
       <IconButton
         type="visibility"
         backgroundColor="transparent"
-        iconColor="grey"
+        iconColor="black"
         onClick={() => onViewClick(connectionId)}
       />
       <IconButton
         type="edit"
         backgroundColor="transparent"
-        iconColor="grey"
+        iconColor="black"
         onClick={() => onEditClick(connectionId)}
       />
       <IconButton
         type="delete"
         backgroundColor="transparent"
-        iconColor="grey"
+        iconColor="black"
         onClick={() => onDeleteClick(connectionId)}
       />
     </div>

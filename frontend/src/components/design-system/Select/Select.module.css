@@ -16,8 +16,7 @@
 	font-size: var(--font-size-sm);
 	background-color: var(--color-background);
 	color: var(--color-foreground);
-	/* box-shadow: var(--shadow); */
-	border: var(--border-width-medium) solid var(--color-grey);
+	border: var(--border-width-medium) solid var(--color-grey-dark-2);
 	overflow: hidden;
 }
 
