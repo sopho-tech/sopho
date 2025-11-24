@@ -1,43 +1,43 @@
 .button {
-    padding: var(--space-xs);
-    border-radius: var(--border-radius-full);
-    display: flex;
-    cursor: pointer;
-    transition: transform 0.1s ease-out;
+  padding: var(--space-xs);
+  border-radius: var(--border-radius-full);
+  display: flex;
+  cursor: pointer;
+  transition: transform 0.1s ease-out;
 }
 
 .button:active {
-    transform: scale(0.9);
+  transform: scale(0.9);
 }
 
 .accent {
-    color: var(--color-accent);
+  color: var(--color-primary-500);
 }
 
 .white {
-    background-color: var(--color-background);
+  background-color: var(--color-background);
 }
 
 .white:hover {
-    background-color: var(--color-grey);
+  background-color: var(--color-grey-500);
 }
 
 .white:active {
-    background-color: var(--color-grey-light-1);
+  background-color: var(--color-grey-400);
 }
 
 .grey {
-    background-color: var(--color-background);
+  background-color: var(--color-background);
 }
 
 .grey:hover {
-    background-color: var(--color-grey);
+  background-color: var(--color-grey-500);
 }
 
 .grey:active {
-    background-color: var(--color-grey-light-1);
+  background-color: var(--color-grey-400);
 }
 
 .transparent {
-    background-color: transparent;
+  background-color: transparent;
 }

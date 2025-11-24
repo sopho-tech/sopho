@@ -1,38 +1,38 @@
 .button {
-    padding: var(--space-xs);
-    border-radius: var(--border-radius-full);
-    display: flex;
-    cursor: pointer;
-    transition: transform 0.1s ease-out, background-color 0.2s ease-out;
-    border: none;
-    align-items: center;
-    align-content: center;
+  padding: var(--space-xs);
+  border-radius: var(--border-radius-lg);
+  display: flex;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease-out,
+    background-color 0.2s ease-out;
+  border: none;
+  align-items: center;
+  align-content: center;
 }
 
 .button:active {
-    transform: scale(0.9);
+  transform: scale(0.9);
 }
 
 .active {
-    background-color: var(--color-grey-dark-1);
+  background-color: var(--color-primary-400);
 }
 
 .active:hover {
-    background-color: var(--color-grey-dark-2);
+  background-color: var(--color-primary-400);
 }
 
 .active:active {
-    background-color: var(--color-grey-dark-3);
+  background-color: var(--color-primary-200);
 }
 
 .inactive {
-    background-color: var(--color-background);
+  background-color: transparent;
 }
 
 .inactive:hover {
-    background-color: var(--color-grey-light-1);
 }
 
 .inactive:active {
-    background-color: var(--color-grey);
 }

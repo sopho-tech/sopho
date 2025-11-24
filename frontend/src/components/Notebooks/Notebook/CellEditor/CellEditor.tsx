@@ -33,7 +33,7 @@ import { NOTEBOOK_CELL_KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
 import { KeyBinding } from "@codemirror/view";
 
 const myHighlightStyle = HighlightStyle.define([
-  { tag: tags.keyword, color: getCSSVariable("--color-accent-dark-1") },
+  { tag: tags.keyword, color: getCSSVariable("--color-primary-600") },
   {
     tag: tags.comment,
     color: getCSSVariable("--color-grey"),
@@ -44,7 +44,7 @@ const myHighlightStyle = HighlightStyle.define([
   { tag: tags.operator, color: getCSSVariable("--color-foreground") },
   { tag: tags.punctuation, color: getCSSVariable("--color-foreground") },
   { tag: tags.variableName, color: getCSSVariable("--color-foreground") },
-  { tag: tags.typeName, color: getCSSVariable("--color-accent-dark-1") },
+  { tag: tags.typeName, color: getCSSVariable("--color-primary-600") },
 ]);
 
 export function CellEditor({ cellId }: { cellId: string }) {

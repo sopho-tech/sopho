@@ -1,53 +1,52 @@
 .dialogOverlay {
-    background-color: var(--overlay-color);
-    position: fixed;
-    inset: 0;
-    animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: var(--inactive-color-normal);
+  position: fixed;
+  inset: 0;
+  animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dialogContent {
-    background-color: var(--color-grey-light-2);
-    border-radius: var(--border-radius-md);
-    box-shadow: var(--shadow);
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 50%;
-    padding: var(--space-sm);
-    border-radius: var(--border-radius-xl);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
+  background-color: var(--color-grey-200);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  padding: var(--space-sm);
+  border-radius: var(--border-radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
 .dialogTitle {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .dialogTitleHeading {
-    font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-semibold);
 }
 
 .dialogDescription {
-    font-size: var(--font-size-sm);
-    color: var(--color-grey-dark-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-grey-700);
 }
 
 .dialogInfo {
 }
 
 .dialogHeadersContainer {
-    
 }
 
 .dialogHeadersRightContainer {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    gap: var(--space-sm);
-    align-items: center;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  align-items: center;
 }

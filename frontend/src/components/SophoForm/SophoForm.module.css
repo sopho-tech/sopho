@@ -1,149 +1,150 @@
 .formRoot {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
 }
 
 .formElements {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    column-gap: var(--space-sm);
-    row-gap: var(--space-sm);
-    grid-auto-rows: minmax(50px, auto);
-    padding: var(--space-sm);
-    overflow-y: auto;
-    background-color: var(--color-background);
-    border-radius: var(--border-radius-lg);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  column-gap: var(--space-sm);
+  row-gap: var(--space-sm);
+  grid-auto-rows: minmax(50px, auto);
+  padding: var(--space-sm);
+  overflow-y: auto;
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-lg);
 }
 
 .formField {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .formLabelControlRow {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: var(--space-sm);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .formLabel {
-    font-size: var(--font-size-sm);
+  font-size: var(--font-size-sm);
 }
 
 /* Common styles for input and select elements */
 .formInput,
 .formSelect {
-    font-size: var(--font-size-sm);
-    padding: var(--space-2xs);
-    border-radius: var(--border-radius-md);
-    border: var(--border-input);
-    transition: border-color 0.2s;
-    color: var(--color-foreground);
+  font-size: var(--font-size-sm);
+  padding: var(--space-2xs);
+  border-radius: var(--border-radius-lg);
+  border: var(--border-input);
+  transition: border-color 0.2s;
+  color: var(--color-text);
 }
 
 /* Input-specific styles */
 .formInput {
-    background-color: var(--input-background);
+  background-color: var(--input-background);
 }
 
 /* To make the arrow for number input disappear */
-.formInput::-webkit-outer-spin-button, 
+.formInput::-webkit-outer-spin-button,
 .formInput::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+  -webkit-appearance: none;
+  margin: 0;
 }
 
-.formInput[type=number] {
-    -moz-appearance: textfield;
+.formInput[type="number"] {
+  -moz-appearance: textfield;
 }
 
 /* Select-specific styles */
 .formSelect {
-    background-color: var(--color-background);
-    padding-right: var(--space-lg);
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    outline: 0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24' fill='%231f1f1f'%3E%3Cpath d='M480-345 240-585l56-56 184 183 184-183 56 56-240 240Z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0 center;
+  background-color: var(--color-background);
+  padding-right: var(--space-lg);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24' fill='%231f1f1f'%3E%3Cpath d='M480-345 240-585l56-56 184 183 184-183 56 56-240 240Z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0 center;
 }
 
 .placeholderSelect {
-    color: var(--color-foreground-light-4);
+  color: var(--color-grey-800);
 }
 
 /* Common focus state */
 .formInput:focus,
 .formSelect:focus {
-    outline: none;
-    border: var(--border-input-focus);
-    box-shadow: var(--shadow-accent-md);
+  outline: none;
+  border: var(--border-input-focus);
+  box-shadow: var(--shadow-accent-md);
 }
 
 /* Select hover and active states */
-.formSelect:hover, 
+.formSelect:hover,
 .formSelect:active {
-    border: var(--border-input-focus);
-    box-shadow: var(--shadow-accent-md);
+  border: var(--border-input-focus);
+  box-shadow: var(--shadow-accent-md);
 }
 
 /* Common disabled state */
 .formInput:disabled,
 .formSelect:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    background-color: var(--color-background-secondary);
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--color-grey-100);
 }
 
 .formMessage {
-    color: var(--color-red-dark-2);
-    font-size: var(--font-size-sm);
+  color: var(--color-red-dark-2);
+  font-size: var(--font-size-sm);
 }
 
 .formError {
-    color: var(--color-red-dark-2);
-    font-size: var(--font-size-base);
-    padding: 0.5rem;
-    background-color: var(--error-background);
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--color-red-dark-2);
+  color: var(--color-red-dark-2);
+  font-size: var(--font-size-base);
+  padding: 0.5rem;
+  background-color: var(--error-background);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--color-red-dark-2);
 }
 
 .formButtonRow {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--space-md);
-    margin-top: var(--space-xs);
-    padding-top: var(--space-sm);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  margin-top: var(--space-xs);
+  padding-top: var(--space-sm);
 }
 
 .collapsibleContainer {
-    border: var(--border-width-thin) solid var(--color-grey);
-    border-radius: var(--space-xs);
+  border: var(--border-width-thin) solid var(--color-grey-500);
+  border-radius: var(--space-xs);
 }
 
 .collapsibleHeaderContainer {
-    display: flex;
-    flex-direction: row;
+  display: flex;
+  flex-direction: row;
 }
 
 .collapsibleHeaderContainer:hover {
-    background-color: var(--color-grey);
-    cursor: pointer;
+  background-color: var(--color-grey-500);
+  cursor: pointer;
 }
 
 .collapsibleContent {
-    margin-top: var(--space-xs);
-    display: flex;
-    flex-direction: row;
-    gap: var(--space-xs);
+  margin-top: var(--space-xs);
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-xs);
 }
 
-.collapsibleIconExpand, .collapsibleIconCollapse {
-    color: var(--color-grey-dark-2);
+.collapsibleIconExpand,
+.collapsibleIconCollapse {
+  color: var(--color-grey-700);
 }

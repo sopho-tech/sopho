@@ -1,26 +1,26 @@
 .chartControlContainer {
-    flex: 2;
-    margin: var(--space-sm);
-    padding: var(--space-md);
-    border-radius: var(--border-radius-lg);
-    border: var(--border-width-medium) solid var(--color-grey);
+  flex: 2;
+  margin: var(--space-sm);
+  padding: var(--space-md);
+  border-radius: var(--border-radius-lg);
+  border: var(--border-width-thin) solid var(--color-grey-500);
 }
 
 .formElements {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
 }
 
 .formField {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
 }
 
 .accordionTriggerHeading {
-    display: flex;
-    flex-direction: row;
-    gap: var(--space-2xs);
-    justify-content: center;
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-2xs);
+  justify-content: center;
 }

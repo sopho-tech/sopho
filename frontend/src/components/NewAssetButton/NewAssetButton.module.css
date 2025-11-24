@@ -12,27 +12,27 @@
 /* Primary button variant */
 .buttonStyle {
   color: var(--color-background);
-  background-color: var(--color-accent);
+  background-color: var(--color-primary-500);
 }
 
 .buttonStyle:hover {
-  background-color: var(--color-accent-light-1);
+  background-color: var(--color-primary-400);
 }
 
 .buttonStyle:active {
-  background-color: var(--color-accent-dark-1);
+  background-color: var(--color-primary-600);
 }
 
 /* Back button variant */
 .back__buttonStyle {
-  color: var(--color-foreground);
+  color: var(--color-text);
   background-color: var(--color-background);
 }
 
 .back__buttonStyle:hover {
-  background-color: var(--color-grey-light-2);
+  background-color: var(--color-grey-300);
 }
 
 .back__buttonStyle:active {
-  background-color: var(--color-grey-dark-1);
+  background-color: var(--color-grey-600);
 }

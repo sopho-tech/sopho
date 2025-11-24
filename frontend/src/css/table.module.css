@@ -1,36 +1,36 @@
 .table {
-    border-collapse: collapse;
+  border-collapse: collapse;
 }
 
 .table th,
 .table td {
-    padding: 1rem 1rem;
-    text-align: left;
-    border-left: var(--border-section);
+  padding: 1rem 1rem;
+  text-align: left;
+  border-left: var(--border-section);
 }
 
 .table th {
-    background-color: var(--color-grey-dark-1);
-    color: var(--color-background);
+  background-color: var(--color-grey-600);
+  color: var(--color-background);
 }
 
 .table th:first-child,
 .table td:first-child {
-    border-left: none;
+  border-left: none;
 }
 
 .table tbody tr:nth-of-type(even) {
-    background-color: var(--color-background);
+  background-color: var(--color-background);
 }
 
 .table tbody tr:hover {
-    background-color: var(--color-grey);
+  background-color: var(--color-grey-500);
 }
 
 .table thead {
-    border-bottom: 2px solid var(--color-grey-dark-2);
+  border-bottom: 2px solid var(--color-grey-700);
 }
 
 .table tfoot {
-    border-top: 2px solid var(--color-grey-dark-2);
+  border-top: 2px solid var(--color-grey-700);
 }

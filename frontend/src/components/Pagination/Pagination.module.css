@@ -1,41 +1,42 @@
 .container {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: row;
-    gap: var(--space-md);
-    align-items: center;
-    justify-content: space-between;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-md);
+  align-items: center;
+  justify-content: space-between;
 }
 
 .pageButtonsContainer {
-    display: flex;
-    flex-direction: row;
-    gap: var(--space-2xs);
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-2xs);
 }
 
 .paginationButton {
-    font-size: var(--font-size-sm);
-    width: 35px;
-    height: 35px;
+  font-size: var(--font-size-sm);
+  width: 35px;
+  height: 35px;
 }
 
 .icon {
-    font-size: var(--font-size-lg);
+  font-size: var(--font-size-lg);
 }
 
-.summary, .pageSizeSelectionLabel {
-    font-size: var(--font-size-sm);
-    color: var(--color-grey-dark-2);
+.summary,
+.pageSizeSelectionLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-grey-700);
 }
 
 .summary {
-    min-width: 200px;
-    font-variant-numeric: tabular-nums;
+  min-width: 200px;
+  font-variant-numeric: tabular-nums;
 }
 
 .pageSizeSelectionContainer {
-    display: flex;
-    flex-direction: row;
-    gap: var(--space-xs);
-    align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-xs);
+  align-items: center;
 }

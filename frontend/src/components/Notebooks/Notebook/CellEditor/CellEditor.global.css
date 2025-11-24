@@ -5,47 +5,47 @@
 }
 
 .cm-editor.cm-focused {
-    outline: none;
+  outline: none;
 }
 
 .cm-editor .cm-content {
-    color: var(--color-foreground);
+  color: var(--color-text);
 }
 
 .cm-editor .cm-gutters {
-    background-color: var(--color-grey);
+  background-color: var(--color-grey-200);
 }
 
-.cm-editor .cm-activeLine { 
-    background-color: var(--color-grey);
+.cm-editor .cm-activeLine {
+  background-color: var(--color-grey-200);
 }
 
-.cm-editor .cm-activeLineGutter { 
-    background-color: var(--color-grey);
-    color: var(--color-foreground);
+.cm-editor .cm-activeLineGutter {
+  background-color: var(--color-grey-200);
+  color: var(--color-text);
 }
 
-.cm-editor .cm-lineNumbers { 
-    font-size: var(--font-size-xs);
-    width: 1.25rem 
+.cm-editor .cm-lineNumbers {
+  font-size: var(--font-size-xs);
+  width: 1.25rem;
 }
 
 .cm-editor .cm-foldGutter {
-    font-size: var(--font-size-xs);
+  font-size: var(--font-size-xs);
 }
 
 .cm-editor .cm-foldGutter .span {
-    width: 1rem;
+  width: 1rem;
 }
 
 .cm-editor .cm-selectionLayer .cm-selectionBackground {
-    background-color: var(--color-grey);
+  background-color: var(--color-grey-300);
 }
 
 .cm-editor .cm-cursorLayer .cm-cursor {
-    background-color: var(--color-grey);
+  background-color: var(--color-grey-300);
 }
 
 .cm-editor .cm-line ::selection {
-    background-color: var(--color-grey);
+  background-color: var(--color-grey-300);
 }

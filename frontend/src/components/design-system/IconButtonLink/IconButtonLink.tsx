@@ -19,7 +19,7 @@ type IconButtonLinkProps = {
 };
 
 export function IconButtonLink({ state, type, tooltip }: IconButtonLinkProps) {
-  const iconColor = state === State.ACTIVE ? "white" : "black";
+  const iconColor = state === State.ACTIVE ? "white" : "grey";
   const className = styles[state.toLowerCase()];
 
   const button = (

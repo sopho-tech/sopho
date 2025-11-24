@@ -1,71 +1,71 @@
 .icon {
-    flex-shrink: 0;
-    max-width: none;
-    width: 20px;
-    height: 20px;
+  flex-shrink: 0;
+  max-width: none;
+  width: 20px;
+  height: 20px;
 }
 
 .accent {
-    color: var(--color-accent);
+  color: var(--color-primary-500);
 }
 
 .accent:hover {
-    color: var(--color-accent-dark-1);
+  color: var(--color-primary-600);
 }
 
 .accent:active {
-    color: var(--color-accent-light-1);
+  color: var(--color-primary-400);
 }
 
 .white {
-    color: var(--color-background);
+  color: var(--color-background);
 }
 
 .white:hover {
-    color: var(--color-background-dark-1);
+  color: var(--color-grey-200);
 }
 
 .white:active {
-    color: var(--color-background-light-1);
+  color: var(--color-grey-100);
 }
 
 .grey {
-    color: var(--color-grey-dark-2);
+  color: var(--color-grey-500);
 }
 
 .grey:hover {
-    color: var(--color-grey-dark-3);
+  color: var(--color-grey-600);
 }
 
 .grey:active {
-    color: var(--color-grey-dark-1);
+  color: var(--color-grey-400);
 }
 
 .green {
-    fill: var(--color-green-dark-2);
-    stroke-width: 0;
+  fill: var(--color-green-dark-2);
+  stroke-width: 0;
 }
 
 .green:hover {
-    fill: var(--color-green-dark-3);
+  fill: var(--color-green-dark-3);
 }
 
 .green:active {
-    color: var(--color-green-dark-1);
+  color: var(--color-green-dark-1);
 }
 
 .black {
-    color: var(--color-foreground-light-3);
+  color: var(--color-grey-800);
 }
 
 .black:hover {
-    color: var(--color-foreground);
+  color: var(--color-text);
 }
 
 .black:active {
-    color: var(--color-foreground-light-5);
+  color: var(--color-grey-900);
 }
 
 .filled {
-    font-variation-settings: 'FILL' 1;
+  font-variation-settings: "FILL" 1;
 }

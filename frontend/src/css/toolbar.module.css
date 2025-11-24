@@ -1,31 +1,30 @@
 .root {
-    background-color: var(--color-grey);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 var(--space-2xs) 0 var(--space-2xs);
-    height: 35px;
+  background-color: var(--color-grey-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-2xs) 0 var(--space-2xs);
+  height: 35px;
 }
 
-
 .cellNameContainer {
-    padding: 0 var(--space-xs) 0 var(--space-xs);
-    color: var(--color-grey-dark-2);
-    font-size: var(--font-size-sm);
-    border-radius: var(--border-radius-lg);
+  padding: 0 var(--space-xs) 0 var(--space-xs);
+  color: var(--color-grey-700);
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-lg);
 }
 
 .cellNameContainer:hover {
-    background-color: var(--color-grey-light-3);
+  background-color: var(--color-grey-100);
 }
 
 .cellNameToolTipContainer {
-    font-size: var(--font-size-xs);
-	line-height: var(--line-height-tightest);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tightest);
 }
 
 .cellNameToolTipHeader {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    padding-bottom: var(--space-2xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  padding-bottom: var(--space-2xs);
 }

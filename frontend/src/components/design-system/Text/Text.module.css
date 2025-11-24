@@ -1,59 +1,59 @@
 .default {
-    color: var(--font-color);
+  color: var(--color-grey-900);
 }
 
 .white {
-    color: var(--color-background);
+  color: var(--color-background);
 }
 
 .subtle {
-    color: var(--font-color-subtle);
+  color: var(--font-color-subtle);
 }
 
 .disabled {
-    color: var(--font-color-disabled);
+  color: var(--font-color-disabled);
 }
 
 .error {
-    color: var(--color-red);
+  color: var(--color-red);
 }
 
 .fontSize-xs {
-    font-size: var(--font-size-xs);
+  font-size: var(--font-size-xs);
 }
 
 .fontSize-sm {
-    font-size: var(--font-size-sm);
+  font-size: var(--font-size-sm);
 }
 
 .fontSize-base {
-    font-size: var(--font-size-base);
+  font-size: var(--font-size-base);
 }
 
 .fontSize-lg {
-    font-size: var(--font-size-lg);
+  font-size: var(--font-size-lg);
 }
 
 .fontSize-xl {
-    font-size: var(--font-size-xl);
+  font-size: var(--font-size-xl);
 }
 
 .fontSize-2xl {
-    font-size: var(--font-size-2xl);
+  font-size: var(--font-size-2xl);
 }
 
 .fontSize-3xl {
-    font-size: var(--font-size-3xl);
+  font-size: var(--font-size-3xl);
 }
 
 .fontSize-4xl {
-    font-size: var(--font-size-4xl);
+  font-size: var(--font-size-4xl);
 }
 
 .fontSize-5xl {
-    font-size: var(--font-size-5xl);
+  font-size: var(--font-size-5xl);
 }
 
 .fontSize-6xl {
-    font-size: var(--font-size-6xl);
+  font-size: var(--font-size-6xl);
 }

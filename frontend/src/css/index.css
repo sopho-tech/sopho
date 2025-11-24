@@ -82,32 +82,27 @@ button {
 
 :root {
   /* Color System */
-  --color-background: #FFFFFF;
-  --color-background-dark-1: hsla(249, 99%, 99%, 1);
-  --color-background-dark-2: hsla(249, 99%, 90%, 1);
+  --color-primary-base: 250, 23%, 26%;
+  --color-primary-900: hsla(250, 23%, 26%, 1);
+  --color-primary-800: hsla(250, 31%, 40%, 1);
+  --color-primary-700: hsla(250, 40%, 51%, 1);
+  --color-primary-600: hsla(250, 49%, 58%, 1);
+  --color-primary-500: hsla(250, 59%, 67%, 1);
+  --color-primary-400: hsla(250, 70%, 75%, 1);
+  --color-primary-300: hsla(250, 78%, 81%, 1);
+  --color-primary-200: hsla(250, 88%, 86%, 1);
+  --color-primary-100: hsla(240, 80%, 95%, 1);
 
-  --color-foreground: hsl(0, 0%, 0%, 1);
-  --color-foreground-light-1: hsl(0, 0%, 5%, 1);
-  --color-foreground-light-2: hsl(0, 0%, 7.5%, 1);
-  --color-foreground-light-3: hsl(0, 0%, 10%, 1);
-  --color-foreground-light-4: hsl(0, 0%, 50.5%, 1);
-  --color-foreground-light-5: hsl(0, 0%, 75.5%, 1);
-
-  --color-accent-base: 249, 95%, 75%;
-  --color-accent: hsla(var(--color-accent-base));
-  --color-accent-dark-1: hsla(249, 95%, 70%, 1);
-  --color-accent-light-1: hsla(249, 95%, 80%, 1);
-  --color-accent-light-2: hsla(249, 95%, 90%, 1);
-  --color-accent-light-3: hsla(249, 95%, 95%, 1);
-  --color-accent-gradient: linear-gradient(130deg, var(--color-accent), var(--color-foreground));
-
-  --color-grey: hsl(0, 0%, 88%, 1);
-  --color-grey-dark-1: hsl(0, 0%, 68%, 1);
-  --color-grey-dark-2: hsl(0, 0%, 48%, 1);
-  --color-grey-dark-3: hsl(0, 0%, 28%, 1);
-  --color-grey-light-1: hsl(0, 0%, 92%, 1);
-  --color-grey-light-2: hsl(0, 0%, 95%, 1);
-  --color-grey-light-3: hsla(0, 0%, 96%, 1);
+  /* Greys */
+  --color-grey-900: hsla(252, 5%, 16%, 1);
+  --color-grey-800: hsla(251, 5%, 26%, 1);
+  --color-grey-700: hsla(250, 5%, 40%, 1);
+  --color-grey-600: hsla(253, 5%, 55%, 1);
+  --color-grey-500: hsla(250, 5%, 68%, 1);
+  --color-grey-400: hsla(250, 5%, 75%, 1);
+  --color-grey-300: hsla(248, 5%, 82%, 1);
+  --color-grey-200: hsla(245, 5%, 90%, 1);
+  --color-grey-100: hsla(240, 30%, 98%, 1);
 
   --color-green: hsl(84, 96%, 64%, 1);
   --color-green-dark-1: hsl(84, 62%, 52%, 1);
@@ -131,32 +126,27 @@ button {
   --color-red-dark-5: hsl(0, 85%, 12%, 1);
   --color-red-dark-6: hsl(0, 90%, 5%, 1);
 
-  /* Semantic Colors */
-  --instructional-text-color: var(--color-grey);
-  --primary-color: var(--color-background);
-  --secondary-color: var(--color-accent-dark-1);
-  --secondary-color-hover: var(--color-accent);
-  --secondary-color-clicked: var(--color-red-dark-2);
-  --border-color: var(--border-color-default);
-  --highlight-color: var(--color-grey-dark-1);
-  --hover-color: var(--color-grey-dark-1);
-  --error-color: var(--color-red-dark-2);
-  --active-color: var(--color-grey);
-  --action-color: var(--color-green-dark-2);
+  /* Semantic Variables */
+  --color-background: var(--color-grey-100);
+  --color-hover: var(--color-grey-200);
+  --color-text: var(--color-grey-900);
+  --color-text-placeholder: var(--color-grey-200);
   --overlay-color: hsla(0, 0%, 0%, 0.6);
-
   --inactive-color-normal: rgba(0, 0, 0, 0.5);
   --inactive-color-high: rgba(0, 0, 0, 0.1);
+  --shadow-color: hsla(0, 0%, 0%, 0.2);
+  --font-color: var(--color-grey-900);
+  --label-color: var(--color-grey-900);
+  --label-value-color: var(--color-grey-700);
 
-  /* Glows */
-  --glow-elevation-1: 0px 0px 20px 4px hsla(var(--color-accent-base), 0.34);
-  --glow-elevation-2: 0px 0px 20px 5px hsla(var(--color-accent-base), 0.4);
-  --glow-elevation-3: 0px 0px 20px 6px hsla(var(--color-accent-base), 0.5);
-
+  --label-font-weight: var(--font-weight-medium);
 
   /* Font Families */
-  --font-primary: normal 400 var(--font-size-base) "Roboto", sans-serif;
-  --font-secondary: normal 400 var(--font-size-base) "Playfair Display", serif;
+  --font-family-primary: "Roboto", sans-serif;
+  --font-family-secondary: "Playfair Display", serif;
+  --font-primary: normal 400 var(--font-size-base) var(--font-family-primary);
+  --font-secondary: normal 400 var(--font-size-base)
+    var(--font-family-secondary);
 
   /* Typography Scale */
   --font-size-xs: 0.75rem;
@@ -202,11 +192,6 @@ button {
   --letter-spacing-normal: 0;
   --letter-spacing-wide: 0.05em;
 
-  /* Font Colors */
-  --font-color: var(--color-foreground);
-  --font-color-subtle: var(--color-foreground-light-4);
-  --font-color-disabled: var(--color-foreground-light-5);
-
   /* Spacing System */
   --space-2xs: 0.25rem;
   /* 4px */
@@ -244,27 +229,37 @@ button {
   --border-style-dotted: dotted;
 
   /* Border Colors */
-  --border-color-default: var(--color-grey-dark-1);
-  --border-color-light: var(--color-grey-dark-1);
-  --border-color-dark: var(--color-grey-dark-3);
-  --border-color-focus: var(--color-accent);
+  --border-color-default: var(--color-grey-500);
+  --border-color-light: var(--color-grey-400);
+  --border-color-dark: var(--color-grey-700);
+  --border-color-focus: var(--color-primary-500);
   --border-color-error: var(--color-red-dark-2);
   --border-color-success: var(--color-green-dark-2);
 
   /* Semantic Borders */
-  --border-input: var(--border-width-medium) var(--border-style-solid) var(--border-color-default);
-  --border-input-focus: var(--border-width-medium) var(--border-style-solid) var(--border-color-focus);
-  --border-input-error: var(--border-width-medium) var(--border-style-solid) var(--border-color-error);
-  --border-input-hide: var(--border-width-medium) var(--border-style-solid) var(--color-background);
+  --border-input: var(--border-width-medium) var(--border-style-solid)
+    var(--border-color-default);
+  --border-input-focus: var(--border-width-medium) var(--border-style-solid)
+    var(--border-color-focus);
+  --border-input-error: var(--border-width-medium) var(--border-style-solid)
+    var(--border-color-error);
+  --border-input-hide: var(--border-width-medium) var(--border-style-solid)
+    var(--color-background);
 
-  --border-section: var(--border-width-medium) var(--border-style-solid) var(--border-color-default);
-  --border-card: var(--border-width-thin) var(--border-style-solid) var(--border-color-light);
-  --border-cell: var(--border-width-medium) var(--border-style-solid) var(--border-color-default);
- 
-  --border-table-cell: var(--border-width-thin) var(--border-style-solid) var(--border-color-light);
+  --border-section: var(--border-width-medium) var(--border-style-solid)
+    var(--border-color-default);
+  --border-card: var(--border-width-thin) var(--border-style-solid)
+    var(--border-color-light);
+  --border-cell: var(--border-width-medium) var(--border-style-solid)
+    var(--border-color-default);
 
-  --border-divider: var(--border-width-thin) var(--border-style-solid) var(--border-color-light);
-  --border-separator: var(--border-width-thin) var(--border-style-dashed) var(--border-color-default);
+  --border-table-cell: var(--border-width-thin) var(--border-style-solid)
+    var(--border-color-light);
+
+  --border-divider: var(--border-width-thin) var(--border-style-solid)
+    var(--border-color-light);
+  --border-separator: var(--border-width-thin) var(--border-style-dashed)
+    var(--border-color-default);
 
   /* Border Radius */
   --border-radius-none: 0;
@@ -287,61 +282,17 @@ button {
   --icon-xl: 2rem;
   --icon-2xl: 3rem;
 
-  /* Shadow System - Elevation Levels */
-  /* Extra small - subtle lift */
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  
-  /* Small - cards, buttons */
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
-               0 1px 2px -1px rgba(0, 0, 0, 0.1);
-  
-  /* Medium - dropdowns, popovers */
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-               0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  
-  /* Large - modals, overlays */
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-               0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  
-  /* Extra large - major UI elements */
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-               0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  
-  /* 2X large - maximum elevation */
-  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  
-  /* Inner shadow - inset elements */
-  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
-  
-  /* Interaction States */
-  --shadow-hover: 0 10px 20px -5px rgba(0, 0, 0, 0.15),
-                  0 6px 12px -6px rgba(0, 0, 0, 0.12);
-  
-  --shadow-focus: 0 0 0 3px hsla(var(--color-accent-base), 0.3),
-                  0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  
-  --shadow-active: 0 1px 2px 0 rgba(0, 0, 0, 0.15);
-  
-  /* Colored Shadows - for accent elements */
-  --shadow-accent-sm: 0 2px 8px -2px hsla(var(--color-accent-base), 0.3),
-                      0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  
-  --shadow-accent-md: 0 4px 16px -4px hsla(var(--color-accent-base), 0.4),
-                      0 2px 6px -2px rgba(0, 0, 0, 0.1);
-  
-  --shadow-accent-lg: 0 8px 24px -6px hsla(var(--color-accent-base), 0.5),
-                      0 4px 12px -4px rgba(0, 0, 0, 0.15);
-  
-  /* Semantic Shadows - common use cases */
-  --shadow-card: var(--shadow-sm);
-  --shadow-card-hover: var(--shadow-md);
-  --shadow-dropdown: var(--shadow-lg);
-  --shadow-modal: var(--shadow-2xl);
-  --shadow-button: var(--shadow-xs);
-  --shadow-button-hover: var(--shadow-sm);
-  
-  /* Legacy support (deprecated - use specific shadows above) */
-  --shadow: var(--shadow-sm);
+  /* Shadow System */
+  --shadow-xs: 0 1px 3px hsla(0, 0%, 0%, 0.12), 0 1px 2px hsla(0, 0%, 0%, 0.24);
+  --shadow-sm: 0 3px 6px hsla(0, 0%, 0%, 0.15), 0 2px 4px hsla(0, 0%, 0%, 0.12);
+  --shadow-md:
+    0 3px 6px hsla(0, 0%, 0%, 0.1), 0 10px 20px hsla(0, 0%, 0%, 0.15);
+  --shadow-lg:
+    0 5px 10px hsla(0, 0%, 0%, 0.05), 0 15px 25px hsla(0, 0%, 0%, 0.15);
+  --shadow-xl: 0 20px 40px hsla(0, 0%, 0%, 0.2);
+
+  --shadow-primary-inset: inset 0 1px 0 var(--color-primary-100);
+  --shadow-green-inset: inset 0 1px 0 var(--color-green);
 
   /* z-index */
   --z-index-1: 1;
@@ -356,9 +307,9 @@ button {
   --z-index-10: 10;
 
   /* transitions */
-  --transition-bg-color: background-color 0.2s ease, transform 0.2s ease
-
-  font-size: var(--font-size-base);
+  --transition-bg-color:
+    background-color 0.2s ease,
+    transform 0.2s ease font-size: var(--font-size-base);
 }
 
 html {
@@ -367,9 +318,9 @@ html {
 }
 
 body {
-  color: var(--color-foreground);
+  color: var(--color-text);
   background-color: var(--color-background);
-  font-family: var(--font-inter-sans-serif);
+  font-family: var(--font-family-primary);
 }
 
 h1 {
@@ -416,6 +367,6 @@ h6 {
 }
 
 a {
-  color: var(--color-foreground);
+  color: var(--color-text);
   text-decoration: none;
 }
