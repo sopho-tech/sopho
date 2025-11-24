@@ -6,6 +6,8 @@ export type ButtonType = "submit" | "button";
 
 export type ButtonEmphasis = "primary" | "secondary" | "tertiary";
 
+export type BorderRadius = "sm" | "md" | "lg" | "xl" | "2xl" | "full";
+
 export type IconColor =
   | "accent"
   | "white"
@@ -38,7 +40,8 @@ export type IconType =
   | "chevron_right"
   | "chevron_down"
   | "chevron_up"
-  | "check";
+  | "check"
+  | "triangle_alert";
 
 export type FlexValue = "grow" | "shrink" | "none" | NumberString;
 
@@ -60,6 +63,15 @@ export type AlignItems =
   | "center"
   | "stretch"
   | "baseline";
+
+export type AlignContent =
+  | "flex-start"
+  | "flex-end"
+  | "center"
+  | "space-between"
+  | "space-around"
+  | "space-evenly"
+  | "stretch";
 
 export type ColorVariant = "default" | "info" | "error" | "warning";
 
@@ -90,6 +102,8 @@ export type BoxElement =
   | "summary";
 
 export type SharedLayoutProps = {
+  borderRadius?: BorderRadius;
+  color?: ColorVariant;
   direction?: Direction;
   gap?: SpacingSize;
   paddingX?: SpacingSize;
@@ -102,6 +116,7 @@ export type SharedLayoutProps = {
   overflow?: OverflowValue;
   justifyContent?: JustifyContent;
   alignItems?: AlignItems;
+  alignContent?: AlignContent;
   top?: SpacingValue;
   bottom?: SpacingValue;
   left?: SpacingValue;

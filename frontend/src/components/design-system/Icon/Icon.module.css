@@ -54,6 +54,18 @@
     color: var(--color-green-dark-1);
 }
 
+.black {
+    color: var(--color-foreground-light-3);
+}
+
+.black:hover {
+    color: var(--color-foreground);
+}
+
+.black:active {
+    color: var(--color-foreground-light-5);
+}
+
 .filled {
     font-variation-settings: 'FILL' 1;
 }

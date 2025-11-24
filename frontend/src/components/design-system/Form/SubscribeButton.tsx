@@ -14,7 +14,7 @@ export function SubscribeButton({ label }: { label: string }) {
           backgroundColor="accent"
           size="sm"
           shape="rectangle"
-          type="button"
+          type="submit"
           disabled={isSubmitting}
         />
       )}

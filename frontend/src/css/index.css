@@ -86,7 +86,7 @@ button {
   --color-background-dark-1: hsla(249, 99%, 99%, 1);
   --color-background-dark-2: hsla(249, 99%, 90%, 1);
 
-  --color-foreground: #000000;
+  --color-foreground: hsl(0, 0%, 0%, 1);
   --color-foreground-light-1: hsl(0, 0%, 5%, 1);
   --color-foreground-light-2: hsl(0, 0%, 7.5%, 1);
   --color-foreground-light-3: hsl(0, 0%, 10%, 1);
@@ -117,6 +117,12 @@ button {
   --color-green-dark-5: hsl(84, 73%, 12%, 1);
   --color-green-dark-6: hsl(84, 67%, 5%, 1);
 
+  --color-red-light-1: hsl(0, 80%, 70%, 1);
+  --color-red-light-2: hsl(0, 75%, 80%, 1);
+  --color-red-light-3: hsl(0, 70%, 85%, 1);
+  --color-red-light-4: hsl(0, 65%, 90%, 1);
+  --color-red-light-5: hsl(0, 100%, 94%, 1);
+  --color-red-light-6: hsl(0, 55%, 98%, 1);
   --color-red: hsl(0, 84%, 60%, 1);
   --color-red-dark-1: hsl(0, 72%, 50%, 1);
   --color-red-dark-2: hsl(0, 75%, 40%, 1);

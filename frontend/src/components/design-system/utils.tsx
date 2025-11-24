@@ -88,6 +88,10 @@ function getSizeValue(
   return value;
 }
 
+function getBorderRadius(borderRadius: string) {
+  return getCSSVariable(`--border-radius-${borderRadius}`);
+}
+
 export function getSharedLayoutStyles(
   props: SharedLayoutProps
 ): React.CSSProperties {
@@ -104,6 +108,7 @@ export function getSharedLayoutStyles(
     overflow,
     justifyContent,
     alignItems,
+    alignContent,
     position,
     top,
     bottom,
@@ -112,6 +117,7 @@ export function getSharedLayoutStyles(
     zIndex,
     height,
     width,
+    borderRadius,
   } = props;
 
   const gapSize = gap ? getCSSVariable(`--space-${gap}`) : undefined;
@@ -154,6 +160,8 @@ export function getSharedLayoutStyles(
     ...(width !== undefined && { width: getSizeValue(width) }),
     ...(justifyContent && { justifyContent }),
     ...(alignItems && { alignItems }),
+    ...(alignContent && { alignContent }),
+    ...(borderRadius && { borderRadius: getBorderRadius(borderRadius) }),
     ...getFlexStyles(flex),
     ...getOverflowStyles(overflow),
   };

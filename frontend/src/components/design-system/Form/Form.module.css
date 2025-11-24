@@ -1,7 +1,7 @@
 .formRoot {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-lg);
   width: 100%;
 }
 
@@ -69,14 +69,13 @@
 
 .formMessage {
   color: var(--color-red-dark-2);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
 }
 
 .formButtonRow {
   display: flex;
   justify-content: flex-end;
   gap: var(--space-md);
-  margin-top: var(--space-xs);
-  padding-top: var(--space-sm);
+  /* margin-top: var(--space-xs);
+  padding-top: var(--space-sm); */
 }
-

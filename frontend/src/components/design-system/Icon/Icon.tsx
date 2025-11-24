@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
+  TriangleAlert,
   LucideIcon,
 } from "lucide-react";
 
@@ -45,6 +46,7 @@ const iconMap: Record<IconType, LucideIcon> = {
   chevron_down: ChevronDown,
   chevron_up: ChevronUp,
   check: Check,
+  triangle_alert: TriangleAlert,
 };
 
 type IconProps = {
