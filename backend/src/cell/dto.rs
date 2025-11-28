@@ -1,10 +1,14 @@
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
-use crate::entity;
-use crate::cell::constants::CellType;
+use crate::cell::constants::AxisMinorTickShow;
+use crate::cell::constants::AxisTickShow;
 use crate::cell::constants::CellStatus;
+use crate::cell::constants::CellType;
+use crate::cell::constants::ChartOrientation;
+use crate::cell::constants::SortOrder;
 use crate::common::errors::SophoError;
+use crate::entity;
 use chrono::{DateTime, FixedOffset};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChartContent {
@@ -12,6 +16,19 @@ pub struct ChartContent {
     pub y_axis: String,
     pub chart_type: Option<String>,
     pub cell_id: Option<Uuid>,
+    #[serde(deserialize_with = "ChartOrientation::deserialize_option_from_str")]
+    #[serde(serialize_with = "ChartOrientation::serialize_option_to_str")]
+    pub orientation: Option<ChartOrientation>,
+    pub y_axis_aggregate_function: Option<String>,
+    #[serde(deserialize_with = "SortOrder::deserialize_option_from_str")]
+    #[serde(serialize_with = "SortOrder::serialize_option_to_str")]
+    pub y_axis_sort_order: Option<SortOrder>,
+    #[serde(deserialize_with = "AxisTickShow::deserialize_option_from_str")]
+    #[serde(serialize_with = "AxisTickShow::serialize_option_to_str")]
+    pub axis_tick_show: Option<AxisTickShow>,
+    #[serde(deserialize_with = "AxisMinorTickShow::deserialize_option_from_str")]
+    #[serde(serialize_with = "AxisMinorTickShow::serialize_option_to_str")]
+    pub axis_minor_tick_show: Option<AxisMinorTickShow>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -2,13 +2,16 @@ import * as RadixSelect from "@radix-ui/react-select";
 import SelectStyles from "src/components/design-system/Select/Select.module.css";
 import { Icon } from "src/components/design-system/Icon";
 
+export type SelectOption = {
+  label: string | React.ReactNode;
+  value: string;
+  textValue?: string;
+};
+
 export type SelectProps = {
   placeholderText: string;
   groupName: string;
-  options: {
-    label: string;
-    value: string;
-  }[];
+  options: SelectOption[];
   value: string;
   onValueChange: (value: string) => void;
 };
@@ -21,14 +24,29 @@ export function Select({
   onValueChange,
 }: SelectProps) {
   const selectedOption = options.find((option) => option.value === value);
+
+  const getTextValue = (option: SelectOption): string => {
+    if (option.textValue) {
+      return option.textValue;
+    }
+    if (typeof option.label === "string") {
+      return option.label;
+    }
+    return "";
+  };
+
   const selectItems = options?.map((option) => (
     <RadixSelect.Item
       key={option.value}
       value={option.value}
-      textValue={option.label}
+      textValue={getTextValue(option)}
       className={SelectStyles.selectItem}
     >
-      <RadixSelect.ItemText>{option.label}</RadixSelect.ItemText>
+      {typeof option.label === "string" ? (
+        <RadixSelect.ItemText>{option.label}</RadixSelect.ItemText>
+      ) : (
+        <RadixSelect.ItemText asChild>{option.label}</RadixSelect.ItemText>
+      )}
       <RadixSelect.ItemIndicator className={SelectStyles.selectItemIndicator}>
         <Icon type="check" color="default" />
       </RadixSelect.ItemIndicator>

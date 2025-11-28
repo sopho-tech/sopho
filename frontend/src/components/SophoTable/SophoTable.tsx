@@ -44,6 +44,7 @@ type SophoTableProps<T> = {
   isError?: boolean;
   loadingComponent?: React.ReactNode;
   errorComponent?: React.ReactNode;
+  overallContainerStyle?: string;
   tableContainerStyle?: string;
   tableHeaderCellStyle?: string;
   tableDataCellStyle?: string;
@@ -94,6 +95,7 @@ export function SophoTable<T>({
   isError = false,
   loadingComponent = <div>Loading...</div>,
   errorComponent = <div>Error fetching data</div>,
+  overallContainerStyle,
   tableHeaderCellStyle,
   tableDataCellStyle,
   tableFirstHeaderCellStyle,
@@ -136,7 +138,9 @@ export function SophoTable<T>({
   }
 
   return (
-    <div className={styles.overallContainer}>
+    <div
+      className={`${styles.overallContainer} ${overallContainerStyle || ""}`}
+    >
       <div className={`${styles.tableContainer} ${tableContainerStyle}`}>
         <table className={styles.table}>
           <thead className={styles.thead}>

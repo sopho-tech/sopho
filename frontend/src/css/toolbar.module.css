@@ -9,7 +9,7 @@
 
 .cellNameContainer {
   padding: 0 var(--space-xs) 0 var(--space-xs);
-  color: var(--color-grey-700);
+  color: var(--color-grey-900);
   font-size: var(--font-size-sm);
   border-radius: var(--border-radius-lg);
 }

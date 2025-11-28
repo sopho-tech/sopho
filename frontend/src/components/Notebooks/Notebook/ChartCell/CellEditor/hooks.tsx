@@ -10,13 +10,17 @@ import {
 import { ChartType } from "src/components/Chart";
 import type { ExecuteCellResponseDto } from "src/components/Notebooks/Notebook/Cell/dto";
 import { useNotebookStore } from "src/components/Notebooks/store";
+import { Icon, Flex, Text } from "src/components/design-system";
+import { IconType } from "src/components/design-system/datatypes";
+import { ColumnDataType } from "src/constants/database_types";
+import { AggregateFunction } from "src/components/Notebooks/dto";
 
 export function useSourceCellExecution(
   cellId: string,
   chartContent: ChartContent | null
 ) {
   const handleExecuteCell = useHandleExecuteCell();
-  const { getOutput, setOutputState, getOutputState } = useCellOutputStore();
+  const { getOutput, setOutputState } = useCellOutputStore();
   const [sourceCellId, setSourceCellId] = useState<string | null>(
     chartContent?.cell_id || null
   );
@@ -61,6 +65,26 @@ export function useSourceCellExecution(
   };
 }
 
+function getIconForDataType(dataType: ColumnDataType): IconType {
+  switch (dataType) {
+    case ColumnDataType.INT4:
+    case ColumnDataType.INT8:
+      return "hash";
+    case ColumnDataType.TEXT:
+    case ColumnDataType.VARCHAR:
+      return "type";
+    case ColumnDataType.TIMESTAMP:
+    case ColumnDataType.TIMESTAMPTZ:
+      return "calendar";
+    case ColumnDataType.BOOL:
+      return "check_square";
+    case ColumnDataType.UUID:
+      return "key";
+    default:
+      return "book";
+  }
+}
+
 export function useFormOptions(
   sourceCellOutput: ExecuteCellResponseDto | null | undefined
 ) {
@@ -87,20 +111,70 @@ export function useFormOptions(
     []
   );
 
-  const columnOptions = useMemo(
+  const yAxisAggregateFunctionsOptions = useMemo(
     () =>
-      sourceCellOutput?.column_names && sourceCellOutput.column_names.length > 0
-        ? sourceCellOutput.column_names.map((column) => ({
-            value: column,
-            label: column,
+      Object.entries(AggregateFunction).map(([key, value]) => ({
+        value,
+        label: key.charAt(0) + key.slice(1).toLowerCase(),
+      })),
+    []
+  );
+
+  const xAxisColumnOptions = useMemo(
+    () =>
+      sourceCellOutput?.columns && sourceCellOutput.columns.length > 0
+        ? sourceCellOutput.columns.map((column) => ({
+            value: column.column_name,
+            label: (
+              <Flex direction="row" gap="2xs" alignItems="center">
+                <Icon
+                  type={getIconForDataType(column.data_type)}
+                  color="default"
+                  strokeWidth={1.5}
+                  size="sm"
+                />
+                <Text>{column.column_name}</Text>
+              </Flex>
+            ),
+            textValue: column.column_name,
           }))
         : [],
-    [sourceCellOutput?.column_names]
+    [sourceCellOutput?.columns]
+  );
+
+  const yAxisColumnOptions = useMemo(
+    () =>
+      sourceCellOutput?.columns && sourceCellOutput.columns.length > 0
+        ? sourceCellOutput.columns
+            // .filter(
+            //   (column) =>
+            //     column.data_type === ColumnDataType.INT4 ||
+            //     column.data_type === ColumnDataType.INT8
+            // )
+            .map((column) => ({
+              value: column.column_name,
+              label: (
+                <Flex direction="row" gap="2xs" alignItems="center">
+                  <Icon
+                    type={getIconForDataType(column.data_type)}
+                    color="default"
+                    strokeWidth={1.5}
+                    size="sm"
+                  />
+                  <Text>{column.column_name}</Text>
+                </Flex>
+              ),
+              textValue: column.column_name,
+            }))
+        : [],
+    [sourceCellOutput?.columns]
   );
 
   return {
     cellOptions,
     chartOptions,
-    columnOptions,
+    xAxisColumnOptions,
+    yAxisColumnOptions,
+    yAxisAggregateFunctionsOptions,
   };
 }

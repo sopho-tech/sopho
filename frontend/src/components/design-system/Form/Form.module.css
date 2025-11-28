@@ -21,7 +21,8 @@
   display: flex;
   flex-direction: row;
   gap: var(--space-md);
-  align-content: center;
+  align-items: center;
+  width: 100%;
 }
 
 .formLabelControlRow {
@@ -35,6 +36,7 @@
   font-size: var(--font-size-sm);
   font-weight: var(--label-font-weight);
   color: var(--label-color);
+  min-width: 90px;
 }
 
 .formInput {

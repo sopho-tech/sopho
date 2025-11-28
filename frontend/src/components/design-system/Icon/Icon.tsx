@@ -1,4 +1,8 @@
-import { IconColor, IconType } from "src/components/design-system/datatypes";
+import {
+  IconColor,
+  IconSize,
+  IconType,
+} from "src/components/design-system/datatypes";
 import styles from "src/components/design-system/Icon/Icon.module.css";
 import {
   Plus,
@@ -22,6 +26,11 @@ import {
   ChevronUp,
   Check,
   TriangleAlert,
+  Hash,
+  Type,
+  Calendar,
+  CheckSquare,
+  Key,
   LucideIcon,
 } from "lucide-react";
 
@@ -47,20 +56,38 @@ const iconMap: Record<IconType, LucideIcon> = {
   chevron_up: ChevronUp,
   check: Check,
   triangle_alert: TriangleAlert,
+  hash: Hash,
+  type: Type,
+  calendar: Calendar,
+  check_square: CheckSquare,
+  key: Key,
+};
+
+const sizeMap: Record<IconSize, number> = {
+  sm: 14,
+  md: 20,
+  lg: 24,
 };
 
 type IconProps = {
   type: IconType;
   color: IconColor;
   strokeWidth?: number;
+  size?: IconSize;
 };
 
-export function Icon({ type, color, strokeWidth = 2.25 }: IconProps) {
+export function Icon({
+  type,
+  color,
+  strokeWidth = 2.25,
+  size = "md",
+}: IconProps) {
   const className = styles[color];
   const IconComponent = iconMap[type];
+  const iconSize = sizeMap[size];
   return (
     <IconComponent
-      size={20}
+      size={iconSize}
       className={`${styles.icon} ${className}`}
       strokeWidth={strokeWidth}
     />

@@ -1,7 +1,6 @@
 .default {
-    background-color: var(--color-background);
 }
 
 .error {
-    background-color: var(--color-red-light-5);
+  background-color: var(--color-red-light-5);
 }

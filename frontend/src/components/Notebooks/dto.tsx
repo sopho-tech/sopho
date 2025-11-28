@@ -14,3 +14,11 @@ export enum NotebookPageStateEnum {
   LIST = "LIST",
   CREATE_NOTEBOOK_DIALOG = "CREATE_NOTEBOOK_DIALOG",
 }
+
+export enum AggregateFunction {
+  MAX = "MAX",
+  MIN = "MIN",
+  SUM = "SUM",
+  COUNT = "COUNT",
+  AVG = "AVG",
+}

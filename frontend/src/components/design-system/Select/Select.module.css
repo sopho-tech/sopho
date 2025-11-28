@@ -1,6 +1,5 @@
 .root {
-  background-color: var(--color-grey-800);
-  border-radius: var(--border-radius-normal);
+  border-radius: var(--border-radius-large);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -14,7 +13,7 @@
   border-radius: var(--border-radius-lg);
   padding: 0 var(--space-2xs);
   font-size: var(--font-size-sm);
-  background-color: var(--color-background);
+  background-color: var(--color-grey-100);
   color: var(--color-text);
   border: var(--border-width-thin) solid var(--color-grey-500);
   overflow: hidden;
@@ -27,10 +26,11 @@
   text-overflow: ellipsis;
   text-align: left;
   min-width: 0;
+  padding: var(--space-2xs);
 }
 
 .selectTrigger:hover {
-  background-color: var(--color-grey-500);
+  background-color: var(--color-grey-200);
 }
 .selectTrigger:focus {
   box-shadow: 0 0 0 2px var(--color-grey-500);
@@ -62,7 +62,7 @@
   display: flex;
   align-items: center;
   height: 25px;
-  padding: 0 35px 0 25px;
+  padding: var(--space-md) var(--space-lg) var(--space-md) var(--space-lg);
   position: relative;
   user-select: none;
 }
@@ -73,7 +73,7 @@
 }
 .selectItem[data-highlighted] {
   outline: none;
-  background-color: var(--color-grey-500);
+  background-color: var(--color-grey-200);
 }
 
 .selectLabel {
@@ -92,8 +92,6 @@
 .selectItemIndicator {
   position: absolute;
   left: 0;
-  width: 25px;
-  display: inline-flex;
   align-items: center;
   justify-content: center;
 }

@@ -1,3 +1,5 @@
+import { ColumnDataType } from "src/constants/database_types";
+
 export enum CellType {
   TEXT = "TEXT",
   CODE = "CODE",
@@ -20,11 +22,26 @@ export enum ExecutionState {
   FAILED = "FAILED",
 }
 
+export enum AxisTickShow {
+  SHOW = "SHOW",
+  HIDE = "HIDE",
+}
+
+export enum AxisMinorTickShow {
+  SHOW = "SHOW",
+  HIDE = "HIDE",
+}
+
 export type ChartContent = {
   x_axis: string;
   y_axis: string;
   chart_type?: string;
   cell_id?: string;
+  orientation?: string;
+  y_axis_aggregate_function?: string;
+  y_axis_sort_order?: string;
+  axis_tick_show?: string;
+  axis_minor_tick_show?: string;
 };
 
 export type CellDto = {
@@ -46,7 +63,7 @@ export type CreateCellDto = {
 };
 
 export type ExecuteCellResponseDto = {
-  column_names: string[] | null;
+  columns: Array<{ column_name: string; data_type: ColumnDataType }> | null;
   data: Record<string, unknown>[] | null;
 };
 
