@@ -228,52 +228,37 @@ pub async fn execute_cell(app_state: AppState, id: Uuid) -> impl IntoResponse {
     }
 }
 
-async fn execute_sql_cell(
+async fn get_database_connection(
     app_state: AppState,
-    cell: entity::cell::Model,
-) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let connection_id = match cell.connection_id {
-        Some(connection_id) => connection_id,
-        None => {
-            return (
-                StatusCode::PRECONDITION_FAILED,
-                axum::Json(serde_json::json!({ "error": "Cell has no connection assigned" })),
-            );
-        }
-    };
-    let cell_content = match cell.content {
-        Some(cell_content) => cell_content,
-        None => {
-            return (
-                StatusCode::PRECONDITION_FAILED,
-                axum::Json(serde_json::json!({ "error": "Cell has no content" })),
-            );
-        }
-    };
-
+    connection_id: Uuid,
+) -> Result<PgConnection, (http::StatusCode, axum::Json<JsonValue>)> {
     let connection = connection_service::execute_get_connection(app_state, connection_id).await;
     let connection = match connection {
         Ok(connection) => connection,
         Err(e) => {
-            return (
+            return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
+            ));
         }
     };
 
     let database_url = database_utils::get_database_url(&connection);
     let database_connection = PgConnection::connect(&database_url).await;
-    let mut database_connection = match database_connection {
-        Ok(database_connection) => database_connection,
-        Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
-    let result = sqlx::query(&cell_content)
+    match database_connection {
+        Ok(database_connection) => Ok(database_connection),
+        Err(e) => Err((
+            StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        )),
+    }
+}
+
+async fn execute_query_and_format_results(
+    mut database_connection: PgConnection,
+    query: &str,
+) -> (http::StatusCode, axum::Json<JsonValue>) {
+    let result = sqlx::query(query)
         .fetch_all(&mut database_connection)
         .await;
     let rows = match result {
@@ -286,12 +271,17 @@ async fn execute_sql_cell(
         }
     };
 
-    let mut column_names: Vec<String> = Vec::new();
+    let mut columns: Vec<serde_json::Value> = Vec::new();
     if let Some(first_row) = rows.get(0) {
-        column_names = first_row
+        columns = first_row
             .columns()
             .iter()
-            .map(|col| col.name().to_string())
+            .map(|col| {
+                serde_json::json!({
+                    "column_name": col.name().to_string(),
+                    "data_type": col.type_info().to_string()
+                })
+            })
             .collect();
     }
 
@@ -356,15 +346,75 @@ async fn execute_sql_cell(
         }
         json_rows.push(serde_json::Value::Object(map));
     }
-    return (
+    (
         StatusCode::OK,
         axum::Json(serde_json::json!(
             {
-                "column_names": column_names,
+                "columns": columns,
                 "data": json_rows,
             }
         )),
-    );
+    )
+}
+
+fn build_aggregated_query(
+    source_query: &str,
+    x_axis: &str,
+    y_axis: &str,
+    aggregate_fn: &str,
+) -> String {
+    format!(
+        "SELECT {}, {}({}) AS {} FROM ({}) AS subquery GROUP BY {}",
+        x_axis, aggregate_fn, y_axis, y_axis, source_query, x_axis
+    )
+}
+
+fn get_sql_query_from_cell(cell: &entity::cell::Model) -> Result<String, (http::StatusCode, axum::Json<JsonValue>)> {
+    let cell_content = match &cell.content {
+        Some(cell_content) => cell_content,
+        None => {
+            return Err((
+                StatusCode::PRECONDITION_FAILED,
+                axum::Json(serde_json::json!({ "error": "Cell has no content" })),
+            ));
+        }
+    };
+
+    match CellContent::parse(cell_content, &CellType::Sql) {
+        Ok(CellContent::Sql(sql_content)) => Ok(sql_content.query),
+        Ok(_) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": "Cell content is not SQL" })),
+        )),
+        Err(_) => Ok(cell_content.clone()),
+    }
+}
+
+async fn execute_sql_cell(
+    app_state: AppState,
+    cell: entity::cell::Model,
+) -> (http::StatusCode, axum::Json<JsonValue>) {
+    let connection_id = match cell.connection_id {
+        Some(connection_id) => connection_id,
+        None => {
+            return (
+                StatusCode::PRECONDITION_FAILED,
+                axum::Json(serde_json::json!({ "error": "Cell has no connection assigned" })),
+            );
+        }
+    };
+
+    let query = match get_sql_query_from_cell(&cell) {
+        Ok(query) => query,
+        Err(err) => return err,
+    };
+
+    let database_connection = match get_database_connection(app_state, connection_id).await {
+        Ok(conn) => conn,
+        Err(err) => return err,
+    };
+
+    execute_query_and_format_results(database_connection, &query).await
 }
 
 async fn execute_chart_cell(
@@ -390,8 +440,8 @@ async fn execute_chart_cell(
             )
         }
     };
-    let cell_content = match cell_content {
-        CellContent::Chart(cell_content) => cell_content,
+    let chart_content = match cell_content {
+        CellContent::Chart(chart_content) => chart_content,
         _ => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -399,8 +449,8 @@ async fn execute_chart_cell(
             )
         }
     };
-    let cell_id = match cell_content.cell_id {
-        Some(cell_id) => cell_id,
+    let source_cell_id = match chart_content.cell_id {
+        Some(source_cell_id) => source_cell_id,
         None => {
             return (
                 StatusCode::PRECONDITION_FAILED,
@@ -408,9 +458,9 @@ async fn execute_chart_cell(
             )
         }
     };
-    let cell = execute_get_cell(&app_state, cell_id).await;
-    let cell = match cell {
-        Ok(cell) => cell,
+    let source_cell = execute_get_cell(&app_state, source_cell_id).await;
+    let source_cell = match source_cell {
+        Ok(source_cell) => source_cell,
         Err(e) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -418,5 +468,43 @@ async fn execute_chart_cell(
             );
         }
     };
-    return execute_sql_cell(app_state, cell).await;
+
+    let source_query = match get_sql_query_from_cell(&source_cell) {
+        Ok(query) => query,
+        Err(err) => return err,
+    };
+
+    let aggregate_fn = match &chart_content.y_axis_aggregate_function {
+        Some(fn_name) => fn_name.as_str(),
+        None => {
+            return (
+                StatusCode::PRECONDITION_FAILED,
+                axum::Json(serde_json::json!({ "error": "ChartCell has no aggregate function specified" })),
+            );
+        }
+    };
+
+    let aggregated_query = build_aggregated_query(
+        &source_query,
+        &chart_content.x_axis,
+        &chart_content.y_axis,
+        aggregate_fn,
+    );
+
+    let connection_id = match source_cell.connection_id {
+        Some(connection_id) => connection_id,
+        None => {
+            return (
+                StatusCode::PRECONDITION_FAILED,
+                axum::Json(serde_json::json!({ "error": "Source cell has no connection assigned" })),
+            );
+        }
+    };
+
+    let database_connection = match get_database_connection(app_state, connection_id).await {
+        Ok(conn) => conn,
+        Err(err) => return err,
+    };
+
+    execute_query_and_format_results(database_connection, &aggregated_query).await
 }

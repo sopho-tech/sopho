@@ -26,7 +26,7 @@ export type FormField = {
   type: FormFieldType;
   initialValue?: string;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  options?: { value: string; label: string }[];
+  options?: { value: string; label: string | React.ReactNode; textValue?: string }[];
   selectedValue?: string;
   placeholder?: string;
   defaultValue?: string | number | null;

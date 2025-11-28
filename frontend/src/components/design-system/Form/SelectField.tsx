@@ -1,12 +1,13 @@
 import { useFieldContext } from "src/components/design-system/Form/form-context";
-import { Select } from "src/components/design-system";
+import { Select, SelectOption } from "src/components/design-system";
 import FormStyles from "src/components/design-system/Form/Form.module.css";
+import { Fragment } from "react/jsx-runtime";
 
 type SelectFieldProps = {
   label: string;
   groupName: string;
   placeholderText: string;
-  options: { label: string; value: string }[];
+  options: SelectOption[];
   onChange?: (value: string) => void;
 };
 
@@ -20,7 +21,7 @@ export function SelectField({
   const field = useFieldContext<string>();
 
   return (
-    <label className={FormStyles.formField}>
+    <Fragment>
       <span className={FormStyles.formLabel}>{label}</span>
       <Select
         groupName={groupName}
@@ -32,6 +33,6 @@ export function SelectField({
         placeholderText={placeholderText}
         value={field.state.value}
       />
-    </label>
+    </Fragment>
   );
 }

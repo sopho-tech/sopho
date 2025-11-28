@@ -4,6 +4,7 @@ import {
 } from "src/components/Notebooks/Notebook/Cell";
 import { SophoTable, ColumnConfig } from "src/components/SophoTable/SophoTable";
 import CellOutputStles from "src/components/Notebooks/Notebook/CellOutput/CellOutput.module.css";
+import CellStyles from "src/css/cell.module.css";
 
 interface CellOutputProps {
   cellId: string;
@@ -15,11 +16,11 @@ export function CellOutput({ cellId }: CellOutputProps) {
   const outputState = getOutputState(cellId);
 
   const columns: ColumnConfig<Record<string, any>>[] =
-    output?.column_names?.map((column_name) => ({
-      key: column_name,
-      header: column_name,
+    output?.columns?.map((column) => ({
+      key: column.column_name,
+      header: column.column_name,
       type: "accessor" as const,
-      accessor: column_name,
+      accessor: column.column_name,
       cell: (props: any) => props.getValue(),
     })) ?? [];
 
@@ -36,6 +37,7 @@ export function CellOutput({ cellId }: CellOutputProps) {
     <SophoTable
       columns={columns}
       data={data}
+      overallContainerStyle={CellStyles.outputContainer}
       tableContainerStyle={CellOutputStles.container}
       tableHeaderCellStyle={CellOutputStles.tableHeaderCell}
       tableDataCellStyle={CellOutputStles.tableDataCell}

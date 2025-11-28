@@ -1,5 +1,5 @@
 import PaginationStyles from "src/components/Pagination/Pagination.module.css";
-import { Select } from "src/components/Select";
+import { Select } from "src/components/design-system";
 import { Button } from "src/components/design-system/Button";
 
 export type PaginationProps = {

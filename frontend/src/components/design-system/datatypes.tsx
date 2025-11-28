@@ -41,7 +41,14 @@ export type IconType =
   | "chevron_down"
   | "chevron_up"
   | "check"
-  | "triangle_alert";
+  | "triangle_alert"
+  | "hash"
+  | "type"
+  | "calendar"
+  | "check_square"
+  | "key";
+
+export type IconSize = "sm" | "md" | "lg";
 
 export type FlexValue = "grow" | "shrink" | "none" | NumberString;
 

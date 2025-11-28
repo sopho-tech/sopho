@@ -1,11 +1,11 @@
-use axum::Router;
-use axum::extract::State;   
+use crate::cell::dto;
+use crate::cell::service;
+use crate::common::AppState;
+use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::{get, post, put};
-use crate::cell::dto;
+use axum::Router;
 use uuid::Uuid;
-use crate::common::AppState;
-use crate::cell::service;
 
 pub fn routes(app_state: AppState) -> Router {
     Router::new()

@@ -1,9 +1,8 @@
 .chartControlContainer {
-  flex: 2;
+  flex: 1.25;
   margin: var(--space-sm);
   padding: var(--space-md);
-  border-radius: var(--border-radius-lg);
-  border: var(--border-width-thin) solid var(--color-grey-500);
+  border-right: var(--border-width-thin) solid var(--color-grey-500);
 }
 
 .formElements {
@@ -14,8 +13,8 @@
 
 .formField {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2xs);
+  flex-direction: row;
+  gap: var(--space-xs);
 }
 
 .accordionTriggerHeading {

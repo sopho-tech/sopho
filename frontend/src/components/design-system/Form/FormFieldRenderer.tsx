@@ -35,7 +35,7 @@ export function FormFieldRenderer({
     }
     case FormFieldType.SELECT: {
       return (
-        <form.AppField key={field.key} name={field.key}>
+        <form.AppField key={field.key} name={field.key} className>
           {(fieldState: any) => (
             <div className={`${FormStyles.formField} ${fieldStyleClass || ""}`}>
               <SelectField
@@ -68,4 +68,3 @@ export function FormFieldRenderer({
       return null;
   }
 }
-
