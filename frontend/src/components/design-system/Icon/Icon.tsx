@@ -32,6 +32,7 @@ import {
   CheckSquare,
   Key,
   LucideIcon,
+  Info,
 } from "lucide-react";
 
 const iconMap: Record<IconType, LucideIcon> = {
@@ -61,6 +62,7 @@ const iconMap: Record<IconType, LucideIcon> = {
   calendar: Calendar,
   check_square: CheckSquare,
   key: Key,
+  info: Info,
 };
 
 const sizeMap: Record<IconSize, number> = {

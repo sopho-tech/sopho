@@ -71,6 +71,11 @@ export function CellEditor({ cellId }: { cellId: string }) {
       type: FormFieldType.SELECT,
       options: cellOptions,
       selectedValue: chartContent?.cell_id,
+      infoIconToolTipMessage: (
+        <div className={CellEditorStyle.infoTooltipMessage}>
+          Select the source SQL Cell whose query you want to visualize
+        </div>
+      ),
     },
     {
       key: "chart_type",
@@ -80,6 +85,11 @@ export function CellEditor({ cellId }: { cellId: string }) {
       type: FormFieldType.SELECT,
       options: chartOptions,
       selectedValue: chartContent?.chart_type,
+      infoIconToolTipMessage: (
+        <div className={CellEditorStyle.infoTooltipMessage}>
+          Select the type of chart you want to visualize data as
+        </div>
+      ),
     },
     {
       key: "x_axis_settings",
@@ -102,6 +112,11 @@ export function CellEditor({ cellId }: { cellId: string }) {
             type: FormFieldType.SELECT,
             options: xAxisColumnOptions,
             selectedValue: chartContent?.x_axis,
+            infoIconToolTipMessage: (
+              <div className={CellEditorStyle.infoTooltipMessage}>
+                Select the column from the SQL query's output to be x-axis
+              </div>
+            ),
           },
         ],
       },
@@ -127,15 +142,26 @@ export function CellEditor({ cellId }: { cellId: string }) {
             type: FormFieldType.SELECT,
             options: yAxisColumnOptions,
             selectedValue: chartContent?.y_axis,
+            infoIconToolTipMessage: (
+              <div className={CellEditorStyle.infoTooltipMessage}>
+                Select the column from the SQL query's output for y-axis
+              </div>
+            ),
           },
           {
             key: "y_axis_aggregate_function",
             name: "Aggregate by",
             required: true,
-            errorMessage: "Please select the column for y-axis",
+            errorMessage:
+              "Please select the aggregate function for y-axis column",
             type: FormFieldType.SELECT,
             options: yAxisAggregateFunctionsOptions,
             selectedValue: chartContent?.y_axis_aggregate_function,
+            infoIconToolTipMessage: (
+              <div className={CellEditorStyle.infoTooltipMessage}>
+                Select the function to aggregate the y-axis column
+              </div>
+            ),
           },
           {
             key: "y_axis_sort_order",
@@ -149,6 +175,11 @@ export function CellEditor({ cellId }: { cellId: string }) {
               { value: "DESC", label: "Descending" },
             ],
             selectedValue: chartContent?.y_axis_sort_order || "NONE",
+            infoIconToolTipMessage: (
+              <div className={CellEditorStyle.infoTooltipMessage}>
+                Specify how the chart should be sorted according to y-axis
+              </div>
+            ),
           },
         ],
       },
@@ -177,6 +208,11 @@ export function CellEditor({ cellId }: { cellId: string }) {
               { value: "HORIZONTAL", label: "Horizontal" },
             ],
             selectedValue: chartContent?.orientation || "VERTICAL",
+            infoIconToolTipMessage: (
+              <div className={CellEditorStyle.infoTooltipMessage}>
+                Choose how the chart should be layed out
+              </div>
+            ),
           },
           {
             key: "axis_tick_show",
@@ -189,6 +225,11 @@ export function CellEditor({ cellId }: { cellId: string }) {
               { value: "HIDE", label: "Hide" },
             ],
             selectedValue: chartContent?.axis_tick_show || "SHOW",
+            infoIconToolTipMessage: (
+              <div className={CellEditorStyle.infoTooltipMessage}>
+                Choose whether to show the ticks in x-axis
+              </div>
+            ),
           },
           {
             key: "axis_minor_tick_show",
@@ -201,6 +242,11 @@ export function CellEditor({ cellId }: { cellId: string }) {
               { value: "HIDE", label: "Hide" },
             ],
             selectedValue: chartContent?.axis_minor_tick_show || "SHOW",
+            infoIconToolTipMessage: (
+              <div className={CellEditorStyle.infoTooltipMessage}>
+                Choose whether to show the minor ticks in x-axis
+              </div>
+            ),
           },
         ],
       },

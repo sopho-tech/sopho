@@ -46,7 +46,8 @@ export type IconType =
   | "type"
   | "calendar"
   | "check_square"
-  | "key";
+  | "key"
+  | "info";
 
 export type IconSize = "sm" | "md" | "lg";
 

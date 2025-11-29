@@ -33,5 +33,6 @@ export type FormField = {
   disabled?: boolean;
   collapsibleConfig?: CollapsibleConfig;
   validator?: FieldValidator;
+  infoIconToolTipMessage?: React.ReactNode;
 };
 

@@ -1,3 +1,8 @@
+.tooltipTrigger {
+  cursor: pointer;
+  display: inline-block;
+}
+
 .tooltipArrow {
   fill: var(--color-grey-700);
 }
@@ -5,11 +10,11 @@
 .tooltipContent {
   border-radius: var(--border-radius-lg);
   padding: var(--space-xs);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-tightest);
-  color: var(--color-background);
-  background-color: var(--color-grey-700);
-  box-shadow: var(--shadow-lg);
+  color: var(--color-grey-100);
+  background-color: var(--color-grey-800);
+  box-shadow: var(--shadow-xl);
   user-select: none;
   animation-duration: 400ms;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
