@@ -1,0 +1,34 @@
+.container {
+  display: flex;
+  align-items: center;
+  align-content: center;
+}
+
+/* Hover container - apply to parent element that triggers hover */
+.hoverContainer {
+  position: relative;
+}
+
+/* Hover icon - apply to wrapper around InfoIconTooltip */
+.hoverIcon {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.85);
+  transition:
+    opacity 0.2s ease-in-out,
+    transform 0.2s ease-in-out,
+    visibility 0s linear 0.2s;
+  pointer-events: none;
+  display: inline-flex;
+}
+
+.hoverContainer:hover .hoverIcon {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  transition:
+    opacity 0.2s ease-in-out,
+    transform 0.2s ease-in-out,
+    visibility 0s;
+  pointer-events: auto;
+}

@@ -1,4 +1,5 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
+import React from "react";
 import SophoToolTipStyles from "src/components/SophoToolTip/SophoToolTip.module.css";
 
 type SophoToolTipProps = {
@@ -25,7 +26,18 @@ export function SophoToolTip({
         defaultOpen={defaultOpen}
         onOpenChange={onOpenChange}
       >
-        <Tooltip.Trigger asChild>{children}</Tooltip.Trigger>
+        <Tooltip.Trigger asChild>
+          {React.isValidElement(children) ? (
+            React.cloneElement(children as React.ReactElement<any>, {
+              className:
+                `${SophoToolTipStyles.tooltipTrigger} ${(children as React.ReactElement<any>).props?.className || ""}`.trim(),
+            })
+          ) : (
+            <span className={SophoToolTipStyles.tooltipTrigger}>
+              {children}
+            </span>
+          )}
+        </Tooltip.Trigger>
         <Tooltip.Portal>
           <Tooltip.Content
             className={SophoToolTipStyles.tooltipContent}

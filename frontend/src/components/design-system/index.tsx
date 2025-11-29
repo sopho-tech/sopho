@@ -11,3 +11,4 @@ export type { SelectOption } from "src/components/design-system/Select";
 export { Flex } from "src/components/design-system/Flex/Flex";
 export { Text } from "src/components/design-system/Text";
 export { BannerSlim } from "src/components/design-system/BannerSlim";
+export { InfoIconTooltip, InfoIconTooltipStyles } from "src/components/design-system/InfoIconTooltip";

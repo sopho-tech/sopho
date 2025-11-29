@@ -2,6 +2,10 @@ import { useFieldContext } from "src/components/design-system/Form/form-context"
 import { Select, SelectOption } from "src/components/design-system";
 import FormStyles from "src/components/design-system/Form/Form.module.css";
 import { Fragment } from "react/jsx-runtime";
+import {
+  InfoIconTooltip,
+  InfoIconTooltipStyles,
+} from "src/components/design-system";
 
 type SelectFieldProps = {
   label: string;
@@ -9,6 +13,7 @@ type SelectFieldProps = {
   placeholderText: string;
   options: SelectOption[];
   onChange?: (value: string) => void;
+  infoIconToolTipMessage?: React.ReactNode;
 };
 
 export function SelectField({
@@ -17,12 +22,29 @@ export function SelectField({
   placeholderText,
   options,
   onChange,
+  infoIconToolTipMessage,
 }: SelectFieldProps) {
   const field = useFieldContext<string>();
 
+  function renderInfoIconTooltip() {
+    if (!infoIconToolTipMessage) {
+      return null;
+    }
+    return (
+      <div className={InfoIconTooltipStyles.hoverIcon}>
+        <InfoIconTooltip messageElement={infoIconToolTipMessage} />
+      </div>
+    );
+  }
+
   return (
     <Fragment>
-      <span className={FormStyles.formLabel}>{label}</span>
+      <div
+        className={`${FormStyles.formLabelIconContainer} ${InfoIconTooltipStyles.hoverContainer}`}
+      >
+        <span className={FormStyles.formLabel}>{label}</span>
+        {renderInfoIconTooltip()}
+      </div>
       <Select
         groupName={groupName}
         onValueChange={(value) => {

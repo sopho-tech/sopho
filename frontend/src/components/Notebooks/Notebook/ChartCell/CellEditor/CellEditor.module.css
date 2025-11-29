@@ -14,7 +14,7 @@
 .formField {
   display: flex;
   flex-direction: row;
-  gap: var(--space-xs);
+  gap: var(--space-lg);
 }
 
 .accordionTriggerHeading {
@@ -22,4 +22,9 @@
   flex-direction: row;
   gap: var(--space-2xs);
   justify-content: center;
+}
+
+.infoTooltipMessage {
+  line-height: var(--line-height-relaxed);
+  width: 200px;
 }

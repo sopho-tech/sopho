@@ -32,11 +32,17 @@
   gap: var(--space-sm);
 }
 
+.formLabelIconContainer {
+  min-width: 100px;
+  display: flex;
+  align-items: last baseline;
+  gap: var(--space-2xs);
+}
+
 .formLabel {
   font-size: var(--font-size-sm);
   font-weight: var(--label-font-weight);
   color: var(--label-color);
-  min-width: 90px;
 }
 
 .formInput {

@@ -45,6 +45,7 @@ export function FormFieldRenderer({
                 }
                 placeholderText={field.placeholder || "Select an option"}
                 options={field.options || []}
+                infoIconToolTipMessage={field.infoIconToolTipMessage}
               />
               <FieldError errors={fieldState.state.meta.errors} />
             </div>
