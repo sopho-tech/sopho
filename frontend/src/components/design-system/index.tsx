@@ -11,4 +11,12 @@ export type { SelectOption } from "src/components/design-system/Select";
 export { Flex } from "src/components/design-system/Flex/Flex";
 export { Text } from "src/components/design-system/Text";
 export { BannerSlim } from "src/components/design-system/BannerSlim";
-export { InfoIconTooltip, InfoIconTooltipStyles } from "src/components/design-system/InfoIconTooltip";
+export {
+  InfoIconTooltip,
+  InfoIconTooltipStyles,
+} from "src/components/design-system/InfoIconTooltip";
+export { SegmentedControl } from "src/components/design-system/SegmentedControl";
+export type {
+  SegmentedControlOption,
+  SegmentedControlProps,
+} from "src/components/design-system/SegmentedControl";

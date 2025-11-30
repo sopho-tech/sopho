@@ -3,16 +3,21 @@ import { Cell } from "src/components/Notebooks/Notebook/Cell";
 import { ChartCell } from "src/components/Notebooks/Notebook/ChartCell";
 import { NotebookMenuBar } from "src/components/Notebooks/Notebook/NotebookMenuBar";
 import { useNotebookStore } from "src/components/Notebooks/store";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNotebook } from "src/api/notebook/queries";
 import { CellType } from "src/components/Notebooks/Notebook/Cell/dto";
 import { KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
 import { useHandleExecuteCell } from "src/components/Notebooks/Notebook/Cell";
 import { useKeyboardShortcut } from "src/utils/keyboard_shortcuts/hooks";
-import { Heading } from "src/components/design-system";
+import { Heading, SegmentedControl } from "src/components/design-system";
 import { Text } from "src/components/design-system/Text/Text";
 import { Flex } from "src/components/design-system/Flex/Flex";
 import { Sticky } from "src/components/design-system/Sticky/Sticky";
+
+enum ViewType {
+  NOTEBOOK = "NOTEBOOK",
+  DASHBOARD = "DASHBOARD",
+}
 
 export function Notebook() {
   let params = useParams();
@@ -21,6 +26,7 @@ export function Notebook() {
   const query = useNotebook(params.id!);
   const handleExecuteCell = useHandleExecuteCell();
   const notebookRef = useRef<HTMLDivElement>(null);
+  const [viewType, setViewType] = useState<ViewType>(ViewType.NOTEBOOK);
 
   function handleExecute() {
     handleExecuteCell(activeCellId);
@@ -77,7 +83,28 @@ export function Notebook() {
       overflow="scrollY"
     >
       <Flex direction="column" gap="sm">
-        <Heading accessbilityLevel={1}>{query.data.name}</Heading>
+        <Flex direction="row" justifyContent="space-between">
+          <Heading accessbilityLevel={1}>{query.data.name}</Heading>
+          <SegmentedControl
+            options={[
+              {
+                label: "Notebook",
+                value: "notebook",
+                leadingIcon: "book",
+              },
+              {
+                label: "Dashboard",
+                value: "dashboard",
+                leadingIcon: "calendar",
+              },
+            ]}
+            value={viewType.toLowerCase()}
+            onValueChange={(v) =>
+              setViewType(ViewType[v.toUpperCase() as keyof typeof ViewType])
+            }
+            size="md"
+          />
+        </Flex>
         <Text as="p" color="subtle">
           {query.data.description}
         </Text>
