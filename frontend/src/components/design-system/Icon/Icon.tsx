@@ -78,12 +78,7 @@ type IconProps = {
   size?: IconSize;
 };
 
-export function Icon({
-  type,
-  color,
-  strokeWidth = 2.25,
-  size = "md",
-}: IconProps) {
+export function Icon({ type, color, strokeWidth = 2, size = "md" }: IconProps) {
   const className = styles[color];
   const IconComponent = iconMap[type];
   const iconSize = sizeMap[size];
