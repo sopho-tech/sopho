@@ -1,0 +1,48 @@
+use crate::common::AppState;
+use crate::common::Pagination;
+use crate::canvas::dto;
+use crate::canvas::service;
+use axum::extract::Path;
+use axum::extract::{Json, Query, State};
+use axum::response::IntoResponse;
+use axum::routing::{get, post, delete};
+use axum::Router;
+use uuid::Uuid;
+
+pub fn routes(app_state: AppState) -> Router {
+    Router::new()
+        .route("/{id}", get(get_canvas))
+        .route("/{id}", delete(delete_canvas))
+        .route("/", get(get_all_canvases))
+        .route("/", post(create_canvas))
+        .with_state(app_state)
+}
+
+async fn get_canvas(
+    State(app_state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> impl IntoResponse {
+    service::get_canvas(app_state, id).await
+}
+
+async fn get_all_canvases(
+    State(app_state): State<AppState>,
+    pagination: Query<Pagination>,
+) -> impl IntoResponse {
+    service::get_all_canvases(app_state, pagination).await
+}
+
+async fn create_canvas(
+    State(app_state): State<AppState>,
+    Json(payload): Json<dto::CreateCanvasDto>,
+) -> impl IntoResponse {
+    service::create_canvas(app_state, payload).await
+}
+
+async fn delete_canvas(
+    State(app_state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> impl IntoResponse {
+    service::delete_canvas(app_state, id).await
+}
+

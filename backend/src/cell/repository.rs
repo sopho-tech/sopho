@@ -1,4 +1,4 @@
-use sea_orm::{ActiveModelTrait, EntityTrait, DatabaseConnection, DbErr};
+use sea_orm::{ActiveModelTrait, EntityTrait, DatabaseConnection, DbErr, DatabaseTransaction};
 use crate::entity::cell;
 use uuid::Uuid;
 use sea_orm::Set;
@@ -46,4 +46,15 @@ pub async fn update_cell(db: &DatabaseConnection, cell_id: Uuid, payload: dto::C
         }
         Err(e) => Err(e),
     }
+}
+
+pub async fn delete_cells_by_notebook_id_transaction(
+    txn: &DatabaseTransaction,
+    notebook_id: Uuid,
+) -> Result<(), DbErr> {
+    cell::Entity::delete_many()
+        .filter(cell::Column::NotebookId.eq(notebook_id))
+        .exec(txn)
+        .await?;
+    Ok(())
 }

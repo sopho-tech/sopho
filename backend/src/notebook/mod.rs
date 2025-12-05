@@ -1,4 +1,4 @@
-mod service;
+pub mod service;
 mod dto;
 mod controller;
 mod repository;

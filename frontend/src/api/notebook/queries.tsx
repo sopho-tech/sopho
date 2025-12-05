@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
-import { NotebookDto } from "src/components/Notebooks/dto";
+import { NotebookDto } from "src/components/Notebook/dto";
 import { PaginatedData, PaginatedDataResponse } from "../dto";
 
 // Query keys for notebooks
@@ -18,6 +18,8 @@ export const notebookKeys = {
     [...notebookKeys.lists(), { page, pageSize }] as const,
   details: () => [...notebookKeys.all, "detail"] as const,
   detail: (id: string) => [...notebookKeys.details(), id] as const,
+  byCanvas: (canvasId: string) =>
+    [...notebookKeys.all, "byCanvas", canvasId] as const,
 };
 
 // API functions
@@ -101,6 +103,14 @@ const notebookApi = {
       throw new Error(`Failed to delete notebook: ${response.statusText}`);
     }
   },
+
+  getNotebooksByCanvasId: async (canvasId: string): Promise<NotebookDto[]> => {
+    const response = await ApiService.get({
+      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.NOTEBOOK.GET_BY_CANVAS_ID?.replace(":canvas_id", canvasId) || `/notebooks/canvas/${canvasId}`}`,
+      onlyBody: true,
+    });
+    return response as NotebookDto[];
+  },
 };
 
 // Query hooks
@@ -117,6 +127,14 @@ export const useAllNotebooks = (page?: number, pageSize?: number) => {
     queryKey: notebookKeys.listPaginated(page ?? 1, pageSize ?? 10),
     queryFn: () => notebookApi.getAllNotebooks(page, pageSize),
     placeholderData: keepPreviousData,
+  });
+};
+
+export const useNotebooksByCanvasId = (canvasId: string) => {
+  return useQuery({
+    queryKey: notebookKeys.byCanvas(canvasId),
+    queryFn: () => notebookApi.getNotebooksByCanvasId(canvasId),
+    enabled: !!canvasId,
   });
 };
 

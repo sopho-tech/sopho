@@ -3,15 +3,24 @@ use crate::notebook::dto;
 use chrono::Utc;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait};
-use sea_orm::{DatabaseTransaction, Order, QueryOrder};
+use sea_orm::{ColumnTrait, DatabaseTransaction, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
-pub async fn save_notebook(
+pub async fn save_notebook_connection(
     db: &DatabaseConnection,
     notebook: notebook::Model,
 ) -> Result<notebook::Model, DbErr> {
     let notebook_active_model: notebook::ActiveModel = notebook.into();
     let notebook_active_model = notebook_active_model.insert(db).await?;
+    Ok(notebook_active_model.into())
+}
+
+pub async fn save_notebook_transaction(
+    txn: &DatabaseTransaction,
+    notebook: notebook::Model,
+) -> Result<notebook::Model, DbErr> {
+    let notebook_active_model: notebook::ActiveModel = notebook.into();
+    let notebook_active_model = notebook_active_model.insert(txn).await?;
     Ok(notebook_active_model.into())
 }
 
@@ -63,4 +72,48 @@ pub async fn update_notebook(
         }
         Err(e) => Err(e),
     }
+}
+
+pub async fn get_notebook_by_canvas_id(
+    db: &DatabaseConnection,
+    canvas_id: Uuid,
+) -> Result<notebook::Model, DbErr> {
+    let notebook = notebook::Entity::find()
+        .filter(notebook::Column::CanvasId.eq(canvas_id))
+        .one(db)
+        .await?;
+    match notebook {
+        Some(model) => Ok(model),
+        None => Err(DbErr::RecordNotFound("Notebook not found".into())),
+    }
+}
+
+pub async fn get_notebooks_by_canvas_id_connection(
+    db: &DatabaseConnection,
+    canvas_id: Uuid,
+) -> Result<Vec<notebook::Model>, DbErr> {
+    let notebooks = notebook::Entity::find()
+        .filter(notebook::Column::CanvasId.eq(canvas_id))
+        .all(db)
+        .await?;
+    Ok(notebooks)
+}
+
+pub async fn get_notebook_by_canvas_id_transaction(
+    txn: &DatabaseTransaction,
+    canvas_id: Uuid,
+) -> Result<notebook::Model, DbErr> {
+    let notebook = notebook::Entity::find()
+        .filter(notebook::Column::CanvasId.eq(canvas_id))
+        .one(txn)
+        .await?;
+    match notebook {
+        Some(model) => Ok(model),
+        None => Err(DbErr::RecordNotFound("Notebook not found".into())),
+    }
+}
+
+pub async fn delete_notebook_transaction(txn: &DatabaseTransaction, id: Uuid) -> Result<(), DbErr> {
+    notebook::Entity::delete_by_id(id).exec(txn).await?;
+    Ok(())
 }

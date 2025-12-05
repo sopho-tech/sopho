@@ -45,10 +45,10 @@ export function Sidebar() {
           </NavigationMenu.Item>
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
-              <NavLink to={APP_ROUTES.NOTEBOOKS} className={SidebarStyles.link}>
+              <NavLink to={APP_ROUTES.CANVASES} className={SidebarStyles.link}>
                 <IconButtonLink
                   type="book"
-                  state={getState(APP_ROUTES.NOTEBOOKS)}
+                  state={getState(APP_ROUTES.CANVASES)}
                   tooltip={{ text: "Notebooks", direction: "right" }}
                 />
               </NavLink>

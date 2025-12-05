@@ -1,0 +1,36 @@
+use uuid::Uuid;
+use chrono::{DateTime, FixedOffset};
+use serde::{Serialize, Deserialize};
+use crate::entity;
+use crate::canvas::constants::CanvasStatus;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateCanvasDto {
+    pub name: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CanvasDto {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    #[serde(serialize_with = "CanvasStatus::serialize_to_str")]
+    pub status: CanvasStatus,
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
+}
+
+impl From<entity::canvas::Model> for CanvasDto {
+    fn from(model: entity::canvas::Model) -> Self {
+        CanvasDto {
+            id: model.id,
+            name: model.name,
+            description: model.description,
+            status: CanvasStatus::from_str(&model.status).unwrap(),
+            created_at: model.created_at,
+            updated_at: model.updated_at,
+        }
+    }
+}
+

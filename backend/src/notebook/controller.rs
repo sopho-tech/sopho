@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 pub fn routes(app_state: AppState) -> Router {
     Router::new()
+        .route("/canvas/{canvas_id}", get(get_notebooks_by_canvas_id))
         .route("/{id}", get(get_notebook))
         .route("/", get(get_all_notebooks))
         .route("/", post(create_notebook))
@@ -36,4 +37,11 @@ async fn create_notebook(
     Json(payload): Json<dto::CreateNotebookDto>,
 ) -> impl IntoResponse {
     service::create_notebook(app_state, payload).await
+}
+
+async fn get_notebooks_by_canvas_id(
+    State(app_state): State<AppState>,
+    Path(canvas_id): Path<Uuid>,
+) -> impl IntoResponse {
+    service::get_notebooks_by_canvas_id(app_state, canvas_id).await
 }
