@@ -3,9 +3,8 @@ use std::borrow::Cow;
 use anyhow::bail;
 use serde::Deserialize;
 use anyhow;
-use crate::db;
 use reqwest;
-
+use crate::db;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Configurations {

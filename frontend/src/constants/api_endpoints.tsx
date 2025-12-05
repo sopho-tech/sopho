@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
     CREATE: "/api/v1/notebook",
     GET_ALL: "/api/v1/notebook",
     GET_BY_ID: "/api/v1/notebook/:id",
+    GET_BY_CANVAS_ID: "/api/v1/notebook/canvas/:canvas_id",
     UPDATE: "/api/v1/notebook/:id",
     DELETE: "/api/v1/notebook/:id",
   },
@@ -24,5 +25,11 @@ export const API_ENDPOINTS = {
     UPDATE: "/api/v1/cell/:id",
     DELETE: "/api/v1/cell/:id",
     EXECUTE: "/api/v1/cell/:id/execute",
+  },
+  CANVAS: {
+    CREATE: "/api/v1/canvas",
+    GET_ALL: "/api/v1/canvas",
+    GET_BY_ID: "/api/v1/canvas/:id",
+    DELETE: "/api/v1/canvas/:id",
   },
 };

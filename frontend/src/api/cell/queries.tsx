@@ -5,7 +5,7 @@ import {
   CellDto,
   CreateCellDto,
   ExecuteCellResponseDto,
-} from "src/components/Notebooks/Notebook/Cell/dto";
+} from "src/components/Notebook/Cell/dto";
 import { notebookKeys } from "src/api/notebook/queries";
 
 export const cellKeys = {

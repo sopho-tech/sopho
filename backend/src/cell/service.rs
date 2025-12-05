@@ -508,3 +508,10 @@ async fn execute_chart_cell(
 
     execute_query_and_format_results(database_connection, &aggregated_query).await
 }
+
+pub async fn delete_cells_by_notebook_id_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    notebook_id: Uuid,
+) -> Result<(), sea_orm::DbErr> {
+    repository::delete_cells_by_notebook_id_transaction(txn, notebook_id).await
+}

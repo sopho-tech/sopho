@@ -8,6 +8,7 @@ use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use chrono::Utc;
+use sea_orm::DatabaseTransaction;
 use uuid::Uuid;
 
 pub async fn does_notebook_exist(app_state: &AppState, id: Uuid) -> bool {
@@ -82,19 +83,46 @@ pub async fn get_all_notebooks(
     }
 }
 
+pub async fn get_notebooks_by_canvas_id(app_state: AppState, canvas_id: Uuid) -> impl IntoResponse {
+    let notebooks = repository::get_notebooks_by_canvas_id_connection(
+        &app_state.database_connection,
+        canvas_id,
+    )
+    .await;
+    match notebooks {
+        Ok(notebooks) => {
+            let response_dto_list: Vec<dto::NotebookDto> = notebooks
+                .iter()
+                .map(|notebook| dto::NotebookDto::from(notebook.clone()))
+                .collect();
+
+            (
+                StatusCode::OK,
+                axum::Json(serde_json::json!(response_dto_list)),
+            )
+        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        ),
+    }
+}
+
 pub async fn create_notebook(
     app_state: AppState,
     payload: dto::CreateNotebookDto,
 ) -> impl IntoResponse {
     let notebook = entity::notebook::Model {
         id: Uuid::new_v4(),
+        canvas_id: Uuid::new_v4(),
         name: payload.name,
         description: payload.description,
         status: NotebookStatus::Active.to_string(),
         created_at: Utc::now().into(),
         updated_at: Utc::now().into(),
     };
-    let notebook = repository::save_notebook(&app_state.database_connection, notebook).await;
+    let notebook =
+        repository::save_notebook_connection(&app_state.database_connection, notebook).await;
     match notebook {
         Ok(notebook) => {
             let response_dto = dto::NotebookDto::from(notebook);
@@ -108,4 +136,36 @@ pub async fn create_notebook(
             axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
     }
+}
+
+pub async fn create_notebook_transaction(
+    txn: &DatabaseTransaction,
+    canvas_id: Uuid,
+    name: String,
+    description: Option<String>,
+) -> Result<entity::notebook::Model, sea_orm::DbErr> {
+    let notebook = entity::notebook::Model {
+        id: Uuid::new_v4(),
+        canvas_id,
+        name,
+        description,
+        status: NotebookStatus::Active.to_string(),
+        created_at: Utc::now().into(),
+        updated_at: Utc::now().into(),
+    };
+    repository::save_notebook_transaction(txn, notebook).await
+}
+
+pub async fn get_notebook_by_canvas_id_transaction(
+    txn: &DatabaseTransaction,
+    canvas_id: Uuid,
+) -> Result<entity::notebook::Model, sea_orm::DbErr> {
+    repository::get_notebook_by_canvas_id_transaction(txn, canvas_id).await
+}
+
+pub async fn delete_notebook_transaction(
+    txn: &DatabaseTransaction,
+    id: Uuid,
+) -> Result<(), sea_orm::DbErr> {
+    repository::delete_notebook_transaction(txn, id).await
 }

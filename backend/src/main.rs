@@ -1,5 +1,4 @@
 mod monitor;
-mod migrator;
 mod db;
 mod dashboard;
 mod entity;
@@ -8,6 +7,7 @@ mod common;
 mod authentication;
 mod notebook;
 mod cell;
+mod canvas;
 
 use std::path::Path;
 use axum::{
@@ -56,6 +56,7 @@ async fn main() {
         .nest("/api/v1/notebook", notebook::routes(app_state.clone()))
         .nest("/api/v1/cell", cell::routes(app_state.clone()))
         .nest("/api/v1/auth", authentication::routes(app_state.clone()))
+        .nest("/api/v1/canvas", canvas::routes(app_state.clone()))
         .fallback_service(static_files_service)
         .layer(middleware::from_fn(print_request_response))
         .layer(TraceLayer::new_for_http())

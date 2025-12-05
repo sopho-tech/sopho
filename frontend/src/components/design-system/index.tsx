@@ -1,3 +1,4 @@
+export { Button } from "src/components/design-system/Button";
 export { IconButton } from "src/components/design-system/IconButton";
 export {
   IconButtonLink,

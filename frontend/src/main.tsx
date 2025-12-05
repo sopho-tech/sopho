@@ -5,14 +5,14 @@ import Home from "src/components/Home/Home";
 import SignUp from "src/components/SignUp/SignUp";
 import SignIn from "src/components/SignIn/SignIn";
 import { Settings } from "src/components/Settings";
-import { Notebooks } from "src/components/Notebooks";
 import { ProtectedRoute } from "src/components/ProtectedRoute";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import { ReactQueryClientProvider } from "./utils/react_query_provider";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { APP_ROUTES } from "src/constants/app_routes";
-import { Notebook } from "src/components/Notebooks/Notebook";
 import theme from "src/assets/echart_themes/theme.json";
+import { Canvases } from "src/components/Canvases";
+import { Canvas } from "src/components/Canvases/Canvas";
 
 registerTheme("theme", theme);
 
@@ -29,12 +29,12 @@ const router = createBrowserRouter([
         element: <Settings />,
       },
       {
-        path: APP_ROUTES.NOTEBOOKS,
-        element: <Notebooks />,
+        path: APP_ROUTES.CANVASES,
+        element: <Canvases />,
       },
       {
-        path: APP_ROUTES.NOTEBOOK,
-        element: <Notebook />,
+        path: APP_ROUTES.CANVAS,
+        element: <Canvas />,
       },
     ],
   },
