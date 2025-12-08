@@ -1,7 +1,7 @@
 use crate::cell::service as cell_service;
 use crate::common::{AppState, PaginatedResponse, Pagination};
 use crate::entity;
-use crate::notebook::constants::NotebookStatus;
+use crate::notebook::constants::{NotebookStatus, QueryFilters};
 use crate::notebook::dto;
 use crate::notebook::repository;
 use axum::extract::Query;
@@ -22,7 +22,8 @@ pub async fn get_notebook(app_state: AppState, id: Uuid) -> impl IntoResponse {
     match notebook {
         Ok(notebook) => {
             let mut response_dto = dto::NotebookDto::from(notebook);
-            let cells = cell_service::get_cells_by_notebook_id(&app_state, id).await;
+            let cells =
+                cell_service::get_cells_by_notebook_id_and_cell_type(&app_state, id, None).await;
             match cells {
                 Ok(cells) => {
                     response_dto.cells = cells;
@@ -80,6 +81,43 @@ pub async fn get_all_notebooks(
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
+    }
+}
+
+pub async fn get_cells_by_notebook_id(
+    app_state: AppState,
+    notebook_id: Uuid,
+    filters: Query<QueryFilters>,
+) -> impl IntoResponse {
+    let notebook = repository::get_notebook(&app_state.database_connection, notebook_id).await;
+    let notebook = match notebook {
+        Ok(notebook) => notebook,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(serde_json::json!({ "error": e.to_string() })),
+            )
+        }
+    };
+
+    let cells = cell_service::get_cells_by_notebook_id_and_cell_type(
+        &app_state,
+        notebook_id,
+        filters.cell_type(),
+    )
+    .await;
+    match cells {
+        Ok(cells) => {
+            let mut response_dto = dto::NotebookDto::from(notebook);
+            response_dto.cells = cells;
+            return (StatusCode::OK, axum::Json(serde_json::json!(response_dto)));
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(serde_json::json!({ "error": e.to_string() })),
+            )
+        }
     }
 }
 

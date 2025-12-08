@@ -1,15 +1,14 @@
-use uuid::Uuid;
-use chrono::{DateTime, FixedOffset};
-use serde::{Serialize, Deserialize};
-use crate::entity;
 use crate::cell::dto::CellDto;
+use crate::entity;
+use chrono::{DateTime, FixedOffset};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateNotebookDto {
     pub name: String,
     pub description: Option<String>,
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NotebookDto {

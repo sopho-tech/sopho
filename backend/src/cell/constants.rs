@@ -53,6 +53,35 @@ impl CellType {
         let s = value.to_string();
         serializer.serialize_str(&s)
     }
+
+    pub fn deserialize_option_from_str<'de, D>(deserializer: D) -> Result<Option<Self>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s: Option<String> = Option::deserialize(deserializer)?;
+        match s {
+            Some(s) => Self::from_str(&s)
+                .map(Some)
+                .map_err(serde::de::Error::custom),
+            None => Ok(None),
+        }
+    }
+
+    pub fn serialize_option_to_str<S>(
+        value: &Option<Self>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match value {
+            Some(v) => {
+                let s = v.to_string();
+                serializer.serialize_some(&s)
+            }
+            None => serializer.serialize_none(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

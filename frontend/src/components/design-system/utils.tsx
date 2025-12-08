@@ -6,6 +6,8 @@ import type {
   SpacingValue,
   SpacingSize,
   NumberString,
+  BorderVariant,
+  ShadowVariant,
 } from "src/components/design-system/datatypes";
 
 export function getFlexStyles(
@@ -92,6 +94,41 @@ function getBorderRadius(borderRadius: string) {
   return getCSSVariable(`--border-radius-${borderRadius}`);
 }
 
+function getBorderStyles(
+  border: BorderVariant | undefined
+): React.CSSProperties {
+  if (border === undefined) return {};
+
+  const borderMapping: Record<BorderVariant, string> = {
+    default: "var(--border-default-thin)",
+  };
+
+  const borderValue = borderMapping[border];
+  if (!borderValue) return {};
+
+  return { border: borderValue };
+}
+
+function getShadowStyles(
+  shadow: ShadowVariant | undefined
+): React.CSSProperties {
+  if (shadow === undefined) return {};
+
+  const shadowMapping: Record<ShadowVariant, string> = {
+    "2xs": "var(--shadow-2xs)",
+    xs: "var(--shadow-xs)",
+    sm: "var(--shadow-sm)",
+    md: "var(--shadow-md)",
+    lg: "var(--shadow-lg)",
+    xl: "var(--shadow-xl)",
+  };
+
+  const shadowValue = shadowMapping[shadow];
+  if (!shadowValue) return {};
+
+  return { boxShadow: shadowValue };
+}
+
 export function getSharedLayoutStyles(
   props: SharedLayoutProps
 ): React.CSSProperties {
@@ -118,6 +155,8 @@ export function getSharedLayoutStyles(
     height,
     width,
     borderRadius,
+    border,
+    shadow,
   } = props;
 
   const gapSize = gap ? getCSSVariable(`--space-${gap}`) : undefined;
@@ -162,6 +201,8 @@ export function getSharedLayoutStyles(
     ...(alignItems && { alignItems }),
     ...(alignContent && { alignContent }),
     ...(borderRadius && { borderRadius: getBorderRadius(borderRadius) }),
+    ...getBorderStyles(border),
+    ...getShadowStyles(shadow),
     ...getFlexStyles(flex),
     ...getOverflowStyles(overflow),
   };

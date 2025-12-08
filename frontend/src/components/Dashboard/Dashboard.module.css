@@ -1,0 +1,110 @@
+.gridItem {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  position: relative;
+}
+
+.gridItem * {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.layout {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.layoutEditing {
+  border: var(--border-primary-medium);
+  border-radius: var(--border-radius-lg);
+}
+
+.dragHandle {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-md);
+  cursor: grab;
+  transition:
+    opacity 0.15s ease,
+    background-color 0.15s ease;
+  z-index: var(--z-index-2);
+}
+
+.dragHandle:hover {
+  background-color: var(--color-grey-200);
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+  background-color: var(--color-primary-100);
+}
+
+.gridItem :global(.react-resizable-handle),
+.gridItem :global(.react-resizable-handle-se) {
+  position: absolute !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  background: transparent !important;
+  cursor: nwse-resize !important;
+  transition: opacity 0.2s ease;
+  z-index: var(--z-index-2) !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.gridItem :global(.react-resizable-handle)::after,
+.gridItem :global(.react-resizable-handle-se)::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  width: 15px !important;
+  height: 15px !important;
+  min-width: 15px !important;
+  min-height: 15px !important;
+  border-radius: 0 0 var(--border-radius-lg) 0 !important;
+  transition: background-color 0.2s ease;
+  pointer-events: none;
+  box-sizing: border-box !important;
+}
+
+.gridItem :global(.react-grid-item.react-draggable-dragging) {
+  background-color: var(--color-primary-200) !important;
+  border-radius: var(--border-radius-md) !important;
+}
+
+.gridItem :global(.react-grid-item.react-draggable-dragging)::before {
+  background-color: var(--color-primary-200) !important;
+  border-radius: var(--border-radius-md) !important;
+}
+
+:global(.react-grid-item.react-draggable-dragging) {
+  background-color: var(--color-primary-200) !important;
+  border-radius: var(--border-radius-md) !important;
+}
+
+:global(.react-grid-placeholder) {
+  background-color: var(--color-primary-200) !important;
+  border-radius: var(--border-radius-md) !important;
+  opacity: 0.3 !important;
+}

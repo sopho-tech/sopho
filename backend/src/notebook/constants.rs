@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
-
+use crate::cell::constants::CellType;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum NotebookStatus {
@@ -40,5 +40,20 @@ impl NotebookStatus {
     {
         let s = value.to_string();
         serializer.serialize_str(&s)
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct QueryFilters {
+    #[serde(
+        deserialize_with = "CellType::deserialize_option_from_str",
+        serialize_with = "CellType::serialize_option_to_str"
+    )]
+    cell_type: Option<CellType>,
+}
+
+impl QueryFilters {
+    pub fn cell_type(&self) -> Option<CellType> {
+        return self.cell_type.clone();
     }
 }

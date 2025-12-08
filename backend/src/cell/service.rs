@@ -69,12 +69,24 @@ async fn generate_cell_name(
     }
 }
 
-pub async fn get_cells_by_notebook_id(
+pub async fn get_cells_by_notebook_id_and_cell_type(
     app_state: &AppState,
     notebook_id: Uuid,
+    cell_type: Option<CellType>,
 ) -> Result<Vec<dto::CellDto>, SophoError> {
-    let cells =
-        repository::get_cells_by_notebook_id(&app_state.database_connection, notebook_id).await;
+    let cells = match cell_type {
+        Some(cell_type) => {
+            repository::get_cells_by_notebook_id_and_cell_type(
+                &app_state.database_connection,
+                notebook_id,
+                cell_type,
+            )
+            .await
+        }
+        None => {
+            repository::get_cells_by_notebook_id(&app_state.database_connection, notebook_id).await
+        }
+    };
     match cells {
         Ok(cells) => {
             let response_dtos: Vec<dto::CellDto> = cells
@@ -91,7 +103,7 @@ async fn get_number_of_cells_in_notebook(
     app_state: &AppState,
     notebook_id: Uuid,
 ) -> Result<i32, SophoError> {
-    let cells = get_cells_by_notebook_id(&app_state, notebook_id).await;
+    let cells = get_cells_by_notebook_id_and_cell_type(&app_state, notebook_id, None).await;
     match cells {
         Ok(cells) => Ok(cells.len() as i32),
         Err(e) => Err(e),
@@ -103,7 +115,7 @@ async fn get_number_of_cells_in_notebook_by_type(
     id: Uuid,
     cell_type: CellType,
 ) -> Result<i32, SophoError> {
-    let cells = get_cells_by_notebook_id(&app_state, id).await;
+    let cells = get_cells_by_notebook_id_and_cell_type(&app_state, id, None).await;
     match cells {
         Ok(cells) => {
             let count = cells
@@ -258,9 +270,7 @@ async fn execute_query_and_format_results(
     mut database_connection: PgConnection,
     query: &str,
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let result = sqlx::query(query)
-        .fetch_all(&mut database_connection)
-        .await;
+    let result = sqlx::query(query).fetch_all(&mut database_connection).await;
     let rows = match result {
         Ok(rows) => rows,
         Err(e) => {
@@ -300,6 +310,10 @@ async fn execute_query_and_format_results(
                 }
                 "UUID" => row.try_get::<Uuid, _>(i).map(|v| serde_json::json!(v)),
                 "TEXT" => {
+                    let value = row.try_get::<String, _>(i);
+                    value.map(serde_json::Value::String)
+                }
+                "JSONB" => {
                     let value = row.try_get::<String, _>(i);
                     value.map(serde_json::Value::String)
                 }
@@ -369,7 +383,9 @@ fn build_aggregated_query(
     )
 }
 
-fn get_sql_query_from_cell(cell: &entity::cell::Model) -> Result<String, (http::StatusCode, axum::Json<JsonValue>)> {
+fn get_sql_query_from_cell(
+    cell: &entity::cell::Model,
+) -> Result<String, (http::StatusCode, axum::Json<JsonValue>)> {
     let cell_content = match &cell.content {
         Some(cell_content) => cell_content,
         None => {
@@ -479,7 +495,9 @@ async fn execute_chart_cell(
         None => {
             return (
                 StatusCode::PRECONDITION_FAILED,
-                axum::Json(serde_json::json!({ "error": "ChartCell has no aggregate function specified" })),
+                axum::Json(
+                    serde_json::json!({ "error": "ChartCell has no aggregate function specified" }),
+                ),
             );
         }
     };
@@ -496,7 +514,9 @@ async fn execute_chart_cell(
         None => {
             return (
                 StatusCode::PRECONDITION_FAILED,
-                axum::Json(serde_json::json!({ "error": "Source cell has no connection assigned" })),
+                axum::Json(
+                    serde_json::json!({ "error": "Source cell has no connection assigned" }),
+                ),
             );
         }
     };

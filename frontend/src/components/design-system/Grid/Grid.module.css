@@ -1,0 +1,22 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-rows: minmax(200px, auto);
+  column-gap: var(--grid-column-gap, var(--space-sm));
+  row-gap: var(--grid-row-gap, var(--space-sm));
+}
+
+.grid[data-gutter="sm"] {
+  --grid-column-gap: var(--space-sm);
+  --grid-row-gap: var(--space-sm);
+}
+
+.grid[data-gutter="md"] {
+  --grid-column-gap: var(--space-md);
+  --grid-row-gap: var(--space-md);
+}
+
+.grid[data-gutter="lg"] {
+  --grid-column-gap: var(--space-lg);
+  --grid-row-gap: var(--space-lg);
+}

@@ -1,12 +1,13 @@
-use sea_orm::{ActiveModelTrait, EntityTrait, DatabaseConnection, DbErr, DatabaseTransaction};
-use crate::entity::cell;
-use uuid::Uuid;
-use sea_orm::Set;
-use chrono::Utc;
+use crate::cell::constants::CellType;
 use crate::cell::dto;
-use sea_orm::QueryFilter;
+use crate::entity::cell;
+use chrono::Utc;
 use sea_orm::ColumnTrait;
-
+use sea_orm::Condition;
+use sea_orm::QueryFilter;
+use sea_orm::Set;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait};
+use uuid::Uuid;
 
 pub async fn save_cell(db: &DatabaseConnection, cell: cell::Model) -> Result<cell::Model, DbErr> {
     let cell_active_model: cell::ActiveModel = cell.into();
@@ -22,12 +23,34 @@ pub async fn get_cell(db: &DatabaseConnection, id: Uuid) -> Result<cell::Model, 
     }
 }
 
-pub async fn get_cells_by_notebook_id(db: &DatabaseConnection, notebook_id: Uuid) -> Result<Vec<cell::Model>, DbErr> {
-    let cells = cell::Entity::find().filter(cell::Column::NotebookId.eq(notebook_id)).all(db).await?;
+pub async fn get_cells_by_notebook_id(
+    db: &DatabaseConnection,
+    notebook_id: Uuid,
+) -> Result<Vec<cell::Model>, DbErr> {
+    let cells = cell::Entity::find()
+        .filter(cell::Column::NotebookId.eq(notebook_id))
+        .all(db)
+        .await?;
     Ok(cells)
 }
 
-pub async fn update_cell(db: &DatabaseConnection, cell_id: Uuid, payload: dto::CellDto) -> Result<cell::Model, DbErr> {
+pub async fn get_cells_by_notebook_id_and_cell_type(
+    db: &DatabaseConnection,
+    notebook_id: Uuid,
+    cell_type: CellType,
+) -> Result<Vec<cell::Model>, DbErr> {
+    let condition = Condition::all()
+        .add(cell::Column::NotebookId.eq(notebook_id))
+        .add(cell::Column::CellType.eq(cell_type.to_string()));
+    let cells = cell::Entity::find().filter(condition).all(db).await?;
+    Ok(cells)
+}
+
+pub async fn update_cell(
+    db: &DatabaseConnection,
+    cell_id: Uuid,
+    payload: dto::CellDto,
+) -> Result<cell::Model, DbErr> {
     let cell = get_cell(&db, cell_id).await;
     match cell {
         Ok(cell) => {

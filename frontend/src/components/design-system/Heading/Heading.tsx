@@ -1,9 +1,24 @@
 import { useMemo } from "react";
+import { getCSSVariable } from "src/utils/css_util";
+
+export type FontSize =
+  | "xs"
+  | "sm"
+  | "base"
+  | "lg"
+  | "xl"
+  | "2xl"
+  | "3xl"
+  | "4xl"
+  | "5xl"
+  | "6xl";
+
+export type FontWeight = "light" | "normal" | "medium" | "semibold" | "bold";
 
 type HeadingProps = {
   accessbilityLevel: 1 | 2 | 3 | 4 | 5 | 6;
-  weight?: number | string;
-  size?: number | string;
+  weight?: FontWeight;
+  size?: FontSize;
   children: React.ReactNode;
 };
 
@@ -19,6 +34,16 @@ const headingComponents: Record<
   6: "h6",
 };
 
+function getFontSize(size: FontSize | undefined): string | undefined {
+  if (size === undefined) return undefined;
+  return getCSSVariable(`--font-size-${size}`);
+}
+
+function getFontWeight(weight: FontWeight | undefined): string | undefined {
+  if (weight === undefined) return undefined;
+  return getCSSVariable(`--font-weight-${weight}`);
+}
+
 export function Heading({
   accessbilityLevel,
   children,
@@ -29,11 +54,14 @@ export function Heading({
 
   const style = useMemo(() => {
     const styles: React.CSSProperties = {};
-    if (weight !== undefined) {
-      styles.fontWeight = weight;
+    const fontSize = getFontSize(size);
+    const fontWeight = getFontWeight(weight);
+
+    if (fontSize !== undefined) {
+      styles.fontSize = fontSize;
     }
-    if (size !== undefined) {
-      styles.fontSize = size;
+    if (fontWeight !== undefined) {
+      styles.fontWeight = fontWeight;
     }
     return Object.keys(styles).length > 0 ? styles : undefined;
   }, [weight, size]);

@@ -47,7 +47,8 @@ export type IconType =
   | "calendar"
   | "check_square"
   | "key"
-  | "info";
+  | "info"
+  | "grip_vertical";
 
 export type IconSize = "sm" | "md" | "lg";
 
@@ -81,7 +82,11 @@ export type AlignContent =
   | "space-evenly"
   | "stretch";
 
-export type ColorVariant = "default" | "info" | "error" | "warning";
+export type ColorVariant = "default" | "info" | "error" | "warning" | "white";
+
+export type BorderVariant = "default";
+
+export type ShadowVariant = "2xs" | "xs" | "sm" | "md" | "lg" | "xl";
 
 export type Postition = "sticky" | "absolute" | "relative";
 
@@ -111,6 +116,8 @@ export type BoxElement =
 
 export type SharedLayoutProps = {
   borderRadius?: BorderRadius;
+  border?: BorderVariant;
+  shadow?: ShadowVariant;
   color?: ColorVariant;
   direction?: Direction;
   gap?: SpacingSize;

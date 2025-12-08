@@ -15,8 +15,8 @@ impl MigrationTrait for Migration {
                     .col(pk_uuid(Dashboard::Id))
                     .col(uuid(Dashboard::CanvasId))
                     .col(string(Dashboard::Name))
-                    .col(string(Dashboard::Title))
                     .col(string(Dashboard::Description))
+                    .col(json_binary_null(Dashboard::Layout))
                     .col(string(Dashboard::Status))
                     .to_owned(),
             ))
@@ -36,7 +36,7 @@ enum Dashboard {
     Id,
     CanvasId,
     Name,
-    Title,
     Description,
+    Layout,
     Status,
 }
