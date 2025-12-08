@@ -49,13 +49,14 @@ export function Button({
   const backgroundColorClassName = styles[backgroundColor];
   const sizeClassName =
     styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`];
+  const fullWidthClassName = fullWidth ? styles.fullWidth : "";
   const textColor = backgroundColor === "white" ? "default" : "white";
   const iconColor = backgroundColor === "white" ? "black" : "white";
   return (
     <button
       type={type}
       disabled={disabled}
-      className={`${styles.button} ${sizeClassName} ${backgroundColorClassName}`}
+      className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${fullWidthClassName}`}
       onClick={(e) => onClick({ event: e })}
     >
       {leadingIconName && (

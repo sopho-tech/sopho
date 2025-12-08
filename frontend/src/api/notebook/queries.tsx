@@ -20,6 +20,9 @@ export const notebookKeys = {
   detail: (id: string) => [...notebookKeys.details(), id] as const,
   byCanvas: (canvasId: string) =>
     [...notebookKeys.all, "byCanvas", canvasId] as const,
+  cells: () => [...notebookKeys.all, "cells"] as const,
+  cellsByNotebook: (notebookId: string, cellType?: string) =>
+    [...notebookKeys.cells(), notebookId, { cellType }] as const,
 };
 
 // API functions
@@ -111,6 +114,23 @@ const notebookApi = {
     });
     return response as NotebookDto[];
   },
+
+  getCellsByNotebookId: async (
+    notebookId: string,
+    cellType?: string
+  ): Promise<NotebookDto> => {
+    const url = new URL(
+      `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.NOTEBOOK.GET_CELLS_BY_NOTEBOOK_ID?.replace(":id", notebookId) || `/notebooks/${notebookId}/cells`}`
+    );
+    if (cellType) {
+      url.searchParams.set("cell_type", cellType);
+    }
+    const response = await ApiService.get({
+      url: url.toString(),
+      onlyBody: true,
+    });
+    return response as NotebookDto;
+  },
 };
 
 // Query hooks
@@ -135,6 +155,14 @@ export const useNotebooksByCanvasId = (canvasId: string) => {
     queryKey: notebookKeys.byCanvas(canvasId),
     queryFn: () => notebookApi.getNotebooksByCanvasId(canvasId),
     enabled: !!canvasId,
+  });
+};
+
+export const useCellsByNotebookId = (notebookId: string, cellType?: string) => {
+  return useQuery({
+    queryKey: notebookKeys.cellsByNotebook(notebookId, cellType),
+    queryFn: () => notebookApi.getCellsByNotebookId(notebookId, cellType),
+    enabled: !!notebookId,
   });
 };
 

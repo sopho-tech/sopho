@@ -9,8 +9,9 @@ pub struct Model {
     pub id: Uuid,
     pub canvas_id: Uuid,
     pub name: String,
-    pub title: String,
     pub description: String,
+    #[sea_orm(column_type = "JsonBinary", nullable)]
+    pub layout: Option<Json>,
     pub status: String,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,

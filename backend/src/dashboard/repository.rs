@@ -1,7 +1,9 @@
+use crate::dashboard::dto;
 use crate::entity::dashboard;
+use chrono::Utc;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
-    QueryFilter,
+    QueryFilter, Set,
 };
 use uuid::Uuid;
 
@@ -65,4 +67,30 @@ pub async fn delete_dashboard_transaction(
 ) -> Result<(), DbErr> {
     dashboard::Entity::delete_by_id(id).exec(txn).await?;
     Ok(())
+}
+
+pub async fn update_dashboard(
+    db: &DatabaseConnection,
+    dashboard_id: Uuid,
+    payload: dto::DashboardDto,
+) -> Result<dashboard::Model, DbErr> {
+    let dashboard = get_dashboard(&db, dashboard_id).await;
+    match dashboard {
+        Ok(dashboard) => {
+            let mut dashboard_entity: dashboard::ActiveModel = dashboard.into();
+            if let Some(name) = payload.name {
+                dashboard_entity.name = Set(name);
+            }
+            if let Some(description) = payload.description {
+                dashboard_entity.description = Set(description);
+            }
+            dashboard_entity.status = Set(payload.status.to_string());
+            dashboard_entity.layout = Set(dto::Layout::to_json(payload.layout));
+            dashboard_entity.updated_at = Set(Utc::now().into());
+
+            let dashboard_entity = dashboard_entity.update(db).await;
+            return dashboard_entity;
+        }
+        Err(e) => Err(e),
+    }
 }

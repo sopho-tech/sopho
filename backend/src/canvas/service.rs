@@ -125,8 +125,8 @@ pub async fn create_canvas(
         &txn,
         canvas_id,
         payload.name.clone(),
-        payload.name.clone(),
         payload.description.clone().unwrap_or_default(),
+        None,
     )
     .await
     {

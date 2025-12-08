@@ -10,6 +10,7 @@ import {
 } from "src/components/design-system";
 import { Notebook } from "src/components/Notebook";
 import { useCanvasStore } from "src/components/Canvases/store";
+import { Dashboard } from "src/components/Dashboard";
 
 enum ViewType {
   NOTEBOOK = "NOTEBOOK",
@@ -39,7 +40,7 @@ export function Canvas() {
 
   const renderView = () => {
     if (viewType == ViewType.DASHBOARD) {
-      return null;
+      return <Dashboard />;
     }
     return <Notebook />;
   };

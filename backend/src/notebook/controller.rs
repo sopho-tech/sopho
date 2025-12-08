@@ -1,5 +1,6 @@
 use crate::common::AppState;
 use crate::common::Pagination;
+use crate::notebook::constants::QueryFilters;
 use crate::notebook::dto;
 use crate::notebook::service;
 use axum::extract::Path;
@@ -13,6 +14,7 @@ pub fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/canvas/{canvas_id}", get(get_notebooks_by_canvas_id))
         .route("/{id}", get(get_notebook))
+        .route("/{id}/cells", get(get_cells_by_notebook_id))
         .route("/", get(get_all_notebooks))
         .route("/", post(create_notebook))
         .with_state(app_state)
@@ -30,6 +32,14 @@ async fn get_all_notebooks(
     pagination: Query<Pagination>,
 ) -> impl IntoResponse {
     service::get_all_notebooks(app_state, pagination).await
+}
+
+async fn get_cells_by_notebook_id(
+    State(app_state): State<AppState>,
+    Path(id): Path<Uuid>,
+    filters: Query<QueryFilters>,
+) -> impl IntoResponse {
+    service::get_cells_by_notebook_id(app_state, id, filters).await
 }
 
 async fn create_notebook(

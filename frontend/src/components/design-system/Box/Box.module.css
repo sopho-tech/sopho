@@ -1,6 +1,10 @@
 .default {
 }
 
+.white {
+  background-color: var(--color-grey-100);
+}
+
 .error {
   background-color: var(--color-red-light-5);
 }

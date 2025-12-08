@@ -230,7 +230,7 @@ button {
 
   /* Border Colors */
   --border-color-default: var(--color-grey-500);
-  --border-color-light: var(--color-grey-400);
+  --border-color-light: var(--color-grey-200);
   --border-color-dark: var(--color-grey-700);
   --border-color-focus: var(--color-primary-500);
   --border-color-error: var(--color-red-dark-2);
@@ -241,10 +241,6 @@ button {
     var(--border-color-default);
   --border-input-focus: var(--border-width-medium) var(--border-style-solid)
     var(--border-color-focus);
-  --border-input-error: var(--border-width-medium) var(--border-style-solid)
-    var(--border-color-error);
-  --border-input-hide: var(--border-width-medium) var(--border-style-solid)
-    var(--color-background);
 
   --border-section: var(--border-width-medium) var(--border-style-solid)
     var(--border-color-default);
@@ -252,14 +248,18 @@ button {
     var(--border-color-light);
   --border-cell: var(--border-width-medium) var(--border-style-solid)
     var(--border-color-default);
-
   --border-table-cell: var(--border-width-thin) var(--border-style-solid)
     var(--border-color-light);
-
   --border-divider: var(--border-width-thin) var(--border-style-solid)
     var(--border-color-light);
   --border-separator: var(--border-width-thin) var(--border-style-dashed)
     var(--border-color-default);
+  --border-default-thin: var(--border-width-thin) var(--border-style-solid)
+    var(--border-color-light);
+  --border-default-medium: var(--border-width-medium) var(--border-style-solid)
+    var(--border-color-light);
+  --border-primary-medium: var(--border-width-medium) var(--border-style-solid)
+    var(--color-primary-200);
 
   /* Border Radius */
   --border-radius-none: 0;
@@ -283,6 +283,8 @@ button {
   --icon-2xl: 3rem;
 
   /* Shadow System */
+  --shadow-2xs:
+    0 1px 2px hsla(0, 0%, 0%, 0.08), 0 1px 1px hsla(0, 0%, 0%, 0.12);
   --shadow-xs: 0 1px 3px hsla(0, 0%, 0%, 0.12), 0 1px 2px hsla(0, 0%, 0%, 0.24);
   --shadow-sm: 0 3px 6px hsla(0, 0%, 0%, 0.15), 0 2px 4px hsla(0, 0%, 0%, 0.12);
   --shadow-md:

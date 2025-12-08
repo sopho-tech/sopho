@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
     GET_ALL: "/api/v1/notebook",
     GET_BY_ID: "/api/v1/notebook/:id",
     GET_BY_CANVAS_ID: "/api/v1/notebook/canvas/:canvas_id",
+    GET_CELLS_BY_NOTEBOOK_ID: "/api/v1/notebook/:id/cells",
     UPDATE: "/api/v1/notebook/:id",
     DELETE: "/api/v1/notebook/:id",
   },
@@ -31,5 +32,10 @@ export const API_ENDPOINTS = {
     GET_ALL: "/api/v1/canvas",
     GET_BY_ID: "/api/v1/canvas/:id",
     DELETE: "/api/v1/canvas/:id",
+  },
+  DASHBOARD: {
+    GET_BY_ID: "/api/v1/dashboard/:id",
+    GET_BY_CANVAS_ID: "/api/v1/dashboard/canvas/:canvas_id",
+    UPDATE: "/api/v1/dashboard/:id",
   },
 };

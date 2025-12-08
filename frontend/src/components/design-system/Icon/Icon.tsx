@@ -33,6 +33,7 @@ import {
   Key,
   LucideIcon,
   Info,
+  GripVertical,
 } from "lucide-react";
 
 const iconMap: Record<IconType, LucideIcon> = {
@@ -63,6 +64,7 @@ const iconMap: Record<IconType, LucideIcon> = {
   check_square: CheckSquare,
   key: Key,
   info: Info,
+  grip_vertical: GripVertical,
 };
 
 const sizeMap: Record<IconSize, number> = {
