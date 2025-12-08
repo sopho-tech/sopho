@@ -1,4 +1,8 @@
-import { IconColor, IconType } from "src/components/design-system/datatypes";
+import {
+  IconColor,
+  IconSize,
+  IconType,
+} from "src/components/design-system/datatypes";
 import styles from "src/components/design-system/IconButton/IconButton.module.css";
 import { Icon } from "src/components/design-system/Icon";
 import { SophoToolTip } from "src/components/SophoToolTip/SophoToolTip";
@@ -7,6 +11,7 @@ type IconButtonProps = {
   type: IconType;
   backgroundColor: IconColor;
   iconColor: IconColor;
+  iconSize?: IconSize;
   tooltip?: {
     text: string;
     direction?: "top" | "right" | "bottom" | "left";
@@ -18,13 +23,14 @@ export function IconButton({
   type,
   backgroundColor,
   iconColor,
+  iconSize,
   tooltip,
   onClick,
 }: IconButtonProps) {
   const className = styles[backgroundColor];
   const button = (
     <button className={`${styles.button} ${className}`} onClick={onClick}>
-      <Icon color={iconColor} type={type}></Icon>
+      <Icon color={iconColor} type={type} size={iconSize}></Icon>
     </button>
   );
 

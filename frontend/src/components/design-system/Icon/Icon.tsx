@@ -34,6 +34,10 @@ import {
   LucideIcon,
   Info,
   GripVertical,
+  Star,
+  Link,
+  Save,
+  CircleX,
 } from "lucide-react";
 
 const iconMap: Record<IconType, LucideIcon> = {
@@ -42,6 +46,7 @@ const iconMap: Record<IconType, LucideIcon> = {
   book: BookOpen,
   settings: Settings,
   close: X,
+  circle_x: CircleX,
   swap_horiz: ArrowLeftRight,
   swap_vert: ArrowUpDown,
   visibility: Eye,
@@ -65,6 +70,9 @@ const iconMap: Record<IconType, LucideIcon> = {
   key: Key,
   info: Info,
   grip_vertical: GripVertical,
+  star: Star,
+  link: Link,
+  save: Save,
 };
 
 const sizeMap: Record<IconSize, number> = {

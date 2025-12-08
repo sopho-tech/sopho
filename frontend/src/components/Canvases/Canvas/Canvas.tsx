@@ -2,15 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { useCanvas } from "src/api/canvas/queries";
 import { useNotebooksByCanvasId } from "src/api/notebook/queries";
-import {
-  Flex,
-  Heading,
-  SegmentedControl,
-  Text,
-} from "src/components/design-system";
+import { Flex, Heading, Text } from "src/components/design-system";
 import { Notebook } from "src/components/Notebook";
 import { useCanvasStore } from "src/components/Canvases/store";
 import { Dashboard } from "src/components/Dashboard";
+import { CanvasButtons } from "src/components/Canvases/CanvasButtons";
 
 enum ViewType {
   NOTEBOOK = "NOTEBOOK",
@@ -57,24 +53,11 @@ export function Canvas() {
       <Flex direction="column" gap="sm">
         <Flex direction="row" justifyContent="space-between">
           <Heading accessbilityLevel={1}>{query.data.name}</Heading>
-          <SegmentedControl
-            options={[
-              {
-                label: "Notebook",
-                value: "notebook",
-                leadingIcon: "book",
-              },
-              {
-                label: "Dashboard",
-                value: "dashboard",
-                leadingIcon: "calendar",
-              },
-            ]}
-            value={viewType.toLowerCase()}
-            onValueChange={(v) =>
+          <CanvasButtons
+            viewType={viewType.toLowerCase()}
+            onViewTypeChange={(v: string) =>
               setViewType(ViewType[v.toUpperCase() as keyof typeof ViewType])
             }
-            size="md"
           />
         </Flex>
         <Text as="p" color="subtle">

@@ -18,6 +18,7 @@ export type IconColor =
   | "warning"
   | "green"
   | "grey"
+  | "red"
   | "transparent";
 
 export type IconType =
@@ -26,6 +27,7 @@ export type IconType =
   | "book"
   | "settings"
   | "close"
+  | "circle_x"
   | "swap_horiz"
   | "swap_vert"
   | "visibility"
@@ -48,7 +50,11 @@ export type IconType =
   | "check_square"
   | "key"
   | "info"
-  | "grip_vertical";
+  | "grip_vertical"
+  | "star"
+  | "link"
+  | "save"
+  | "circle_x";
 
 export type IconSize = "sm" | "md" | "lg";
 

@@ -1,11 +1,14 @@
+import React from "react";
 import SegmentedControlStyles from "src/components/design-system/SegmentedControl/SegmentedControl.module.css";
 import { IconType } from "src/components/design-system/datatypes";
 import { Icon } from "../Icon";
+import { SophoToolTip } from "src/components/SophoToolTip/SophoToolTip";
 
 export type SegmentedControlOption = {
-  label: string;
+  label?: string;
   value: string;
   leadingIcon?: IconType;
+  tooltip?: string | React.ReactNode;
 };
 
 export type SegmentedControlProps = {
@@ -27,9 +30,8 @@ export function SegmentedControl({
       {options.map((option) => {
         const isSelected = option.value === value;
         const iconColor = isSelected ? "accent" : "grey";
-        return (
+        const button = (
           <button
-            key={option.value}
             type="button"
             role="tab"
             aria-selected={isSelected}
@@ -48,9 +50,27 @@ export function SegmentedControl({
                 ></Icon>
               </span>
             )}
-            <span className={SegmentedControlStyles.label}>{option.label}</span>
+            {option.label && (
+              <span className={SegmentedControlStyles.label}>
+                {option.label}
+              </span>
+            )}
           </button>
         );
+
+        if (option.tooltip) {
+          return (
+            <SophoToolTip
+              key={option.value}
+              messageElement={option.tooltip}
+              tooltipSide="bottom"
+            >
+              {button}
+            </SophoToolTip>
+          );
+        }
+
+        return <React.Fragment key={option.value}>{button}</React.Fragment>;
       })}
     </div>
   );
