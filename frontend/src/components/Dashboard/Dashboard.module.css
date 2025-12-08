@@ -18,11 +18,12 @@
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+  border-radius: var(--border-radius-lg);
+  border: var(--border-default-medium);
 }
 
 .layoutEditing {
   border: var(--border-primary-medium);
-  border-radius: var(--border-radius-lg);
 }
 
 .dragHandle {

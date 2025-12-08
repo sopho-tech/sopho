@@ -1,11 +1,11 @@
-use crate::common::AppState;
-use crate::common::Pagination;
 use crate::canvas::dto;
 use crate::canvas::service;
+use crate::common::AppState;
+use crate::common::Pagination;
 use axum::extract::Path;
 use axum::extract::{Json, Query, State};
 use axum::response::IntoResponse;
-use axum::routing::{get, post, delete};
+use axum::routing::{delete, get, post};
 use axum::Router;
 use uuid::Uuid;
 
@@ -18,10 +18,7 @@ pub fn routes(app_state: AppState) -> Router {
         .with_state(app_state)
 }
 
-async fn get_canvas(
-    State(app_state): State<AppState>,
-    Path(id): Path<Uuid>,
-) -> impl IntoResponse {
+async fn get_canvas(State(app_state): State<AppState>, Path(id): Path<Uuid>) -> impl IntoResponse {
     service::get_canvas(app_state, id).await
 }
 
@@ -45,4 +42,3 @@ async fn delete_canvas(
 ) -> impl IntoResponse {
     service::delete_canvas(app_state, id).await
 }
-

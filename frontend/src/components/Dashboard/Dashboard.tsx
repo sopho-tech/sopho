@@ -1,20 +1,19 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useParams } from "react-router";
 import RGL, { WidthProvider, Layout } from "react-grid-layout";
 import { getInstanceByDom } from "echarts";
 import { useCellsByNotebookId } from "src/api/notebook/queries";
-import {
-  useDashboardByCanvasId,
-  useUpdateDashboard,
-} from "src/api/dashboard/queries";
+import { useDashboardByCanvasId } from "src/api/dashboard/queries";
 import { useCanvasStore } from "src/components/Canvases/store";
 import { CellType } from "src/components/Notebook/Cell";
 import { DashboardChart } from "src/components/Dashboard/DashboardChart";
+import { convertDtoToRGLayout } from "src/components/Dashboard/dto";
 import {
-  convertRGLayoutToDto,
-  convertDtoToRGLayout,
-} from "src/components/Dashboard/dto";
-import { Button, Flex, Icon } from "src/components/design-system";
+  useDashboardStore,
+  DashboardMode,
+} from "src/components/Dashboard/store";
+import { useDashboardSave } from "src/components/Dashboard/hooks";
+import { Icon } from "src/components/design-system";
 import styles from "src/components/Dashboard/Dashboard.module.css";
 import "react-grid-layout/css/styles.css";
 
@@ -24,23 +23,27 @@ export function Dashboard() {
   const params = useParams();
   const canvasId = params.id || "";
   const { activeNotebookId } = useCanvasStore();
+  const { mode, layout, setLayout } = useDashboardStore();
   const cellsByNotebookIdQuery = useCellsByNotebookId(
     activeNotebookId,
     CellType.CHART
   );
   const dashboardQuery = useDashboardByCanvasId(canvasId);
-  const updateDashboardMutation = useUpdateDashboard();
   const cells = cellsByNotebookIdQuery.data?.cells ?? [];
-  const [layout, setLayout] = useState<Layout[]>([]);
+  const isEditing = mode === DashboardMode.EDITING;
+
+  useDashboardSave(dashboardQuery.data);
 
   useEffect(() => {
     if (dashboardQuery.data?.layout) {
       setLayout(convertDtoToRGLayout(dashboardQuery.data.layout));
     }
-  }, [dashboardQuery.data]);
+  }, [dashboardQuery.data, setLayout]);
 
   const handleLayoutChange = (newLayout: Layout[]) => {
-    setLayout(newLayout);
+    if (isEditing) {
+      setLayout(newLayout);
+    }
   };
 
   const handleDrag = () => {
@@ -72,50 +75,34 @@ export function Dashboard() {
   }
 
   return (
-    <Flex direction="column" gap="md">
-      <Button
-        label="Save"
-        shape="rectangle"
-        size="sm"
-        backgroundColor="accent"
-        onClick={() => {
-          if (!dashboardQuery.data || !activeNotebookId) {
-            return;
-          }
-          const layoutDto = convertRGLayoutToDto(layout, activeNotebookId);
-          updateDashboardMutation.mutate({
-            dashboardId: dashboardQuery.data.id,
-            payload: {
-              ...dashboardQuery.data,
-              layout: layoutDto,
-            },
-          });
-        }}
-      />
-      <ReactGridLayout
-        className={`${styles.layout} ${styles.layoutEditing}`}
-        layout={layout}
-        cols={12}
-        rowHeight={100}
-        margin={[10, 10]}
-        onLayoutChange={handleLayoutChange}
-        onDragStart={handleDragStart}
-        onDrag={handleDrag}
-        onDragStop={handleDragStop}
-        onResize={handleDrag}
-        onResizeStop={handleDrag}
-        useCSSTransforms={true}
-        draggableHandle={`.${styles.dragHandle}`}
-      >
-        {cells.map((cell) => (
-          <div key={cell.id} className={styles.gridItem}>
+    <ReactGridLayout
+      className={`${styles.layout} ${isEditing ? styles.layoutEditing : ""}`}
+      layout={layout}
+      cols={12}
+      rowHeight={100}
+      margin={[10, 10]}
+      containerPadding={[10, 10]}
+      onLayoutChange={handleLayoutChange}
+      onDragStart={handleDragStart}
+      onDrag={handleDrag}
+      onDragStop={handleDragStop}
+      onResize={handleDrag}
+      onResizeStop={handleDrag}
+      useCSSTransforms={true}
+      draggableHandle={`.${styles.dragHandle}`}
+      isDraggable={isEditing}
+      isResizable={isEditing}
+    >
+      {cells.map((cell) => (
+        <div key={cell.id} className={styles.gridItem}>
+          {isEditing && (
             <div className={styles.dragHandle}>
               <Icon type="grip_vertical" color="grey" size="sm" />
             </div>
-            <DashboardChart cellId={cell.id} />
-          </div>
-        ))}
-      </ReactGridLayout>
-    </Flex>
+          )}
+          <DashboardChart cellId={cell.id} />
+        </div>
+      ))}
+    </ReactGridLayout>
   );
 }

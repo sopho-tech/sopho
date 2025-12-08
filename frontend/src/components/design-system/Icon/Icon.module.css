@@ -64,6 +64,18 @@
   color: var(--color-grey-900);
 }
 
+.red {
+  color: var(--color-red);
+}
+
+.red:hover {
+  color: var(--color-red-dark-1);
+}
+
+.red:active {
+  color: var(--color-red-light-1);
+}
+
 .filled {
   font-variation-settings: "FILL" 1;
 }
