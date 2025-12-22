@@ -2,7 +2,6 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
   flex: 1;
   justify-content: space-between;
 }
@@ -13,10 +12,8 @@
   scrollbar-width: thin;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  border-radius: var(--border-radius-lg) var(--border-radius-lg)
-    var(--border-radius-lg) var(--border-radius-lg);
-  border: var(--border-width-medium) solid var(--color-grey-500);
+  border-radius: var(--border-radius-lg);
+  border: var(--border-default-medium);
 }
 
 .table {
@@ -27,25 +24,26 @@
 
 .tableHeaderCell,
 .tableDataCell {
-  padding: var(--space-xs);
   text-align: left;
   font: var(--font-primary);
 }
 
 .tableHeaderCell {
-  background-color: var(--color-primary-200);
-  color: var(--color-grey-800);
-  font-weight: var(--font-weight-bold);
+  padding: var(--space-sm);
+  border-bottom: var(--border-table-cell);
+  color: var(--font-color);
+  font-weight: var(--font-weight-medium);
   position: sticky;
   top: 0px;
 }
 
 .tableDataCell {
+  padding: var(--space-xs);
   border-bottom: var(--border-table-cell);
 }
 
 .tableBodyRow:hover {
-  background-color: var(--color-grey-300);
+  background-color: var(--color-grey-200);
 }
 
 .tableBody tr:last-child td {

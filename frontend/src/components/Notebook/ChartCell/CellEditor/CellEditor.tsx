@@ -258,7 +258,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
       key="run"
       label="Run"
       onClick={() => handleExecuteCell(cellId, true)}
-      backgroundColor="green"
+      backgroundColor="transparent"
       size="sm"
       shape="rectangle"
       emphasis="secondary"

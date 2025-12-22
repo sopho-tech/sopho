@@ -48,7 +48,7 @@ export function Select({
         <RadixSelect.ItemText asChild>{option.label}</RadixSelect.ItemText>
       )}
       <RadixSelect.ItemIndicator className={SelectStyles.selectItemIndicator}>
-        <Icon type="check" color="default" />
+        <Icon size="sm" type="check" color="default" />
       </RadixSelect.ItemIndicator>
     </RadixSelect.Item>
   ));

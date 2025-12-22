@@ -144,6 +144,8 @@ button {
   /* Font Families */
   --font-family-primary: "Roboto", sans-serif;
   --font-family-secondary: "Playfair Display", serif;
+  --font-family-mono:
+    "JetBrains Mono", "Fira Code", "SF Mono", Menlo, monospace;
   --font-primary: normal 400 var(--font-size-base) var(--font-family-primary);
   --font-secondary: normal 400 var(--font-size-base)
     var(--font-family-secondary);
@@ -230,8 +232,9 @@ button {
 
   /* Border Colors */
   --border-color-default: var(--color-grey-500);
+  --border-color-background: var(--color-grey-100);
   --border-color-light: var(--color-grey-200);
-  --border-color-dark: var(--color-grey-700);
+  --border-color-dark: var(--color-grey-300);
   --border-color-focus: var(--color-primary-500);
   --border-color-error: var(--color-red-dark-2);
   --border-color-success: var(--color-green-dark-2);
@@ -260,6 +263,14 @@ button {
     var(--border-color-light);
   --border-primary-medium: var(--border-width-medium) var(--border-style-solid)
     var(--color-primary-200);
+  --border-background-thin: var(--border-width-thin) var(--border-style-solid)
+    var(--border-color-background);
+  --border-dark-thin: var(--border-width-thin) var(--border-style-solid)
+    var(--border-color-dark);
+  --border-dark-medium: var(--border-width-medium) var(--border-style-solid)
+    var(--border-color-dark);
+  --border-focus-medium: var(--border-width-medium) var(--border-style-solid)
+    var(--border-color-dark);
 
   /* Border Radius */
   --border-radius-none: 0;

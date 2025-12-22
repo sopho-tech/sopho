@@ -33,7 +33,7 @@
   background-color: var(--color-grey-200);
 }
 .selectTrigger:focus {
-  box-shadow: 0 0 0 2px var(--color-grey-500);
+  box-shadow: var(--shadow-2xs);
 }
 .selectTrigger[data-placeholder] {
   color: var(--inactive-color-normal);
@@ -78,7 +78,7 @@
 
 .selectLabel {
   padding: 0 25px;
-  font-size: 12px;
+  font-size: var(--font-size-base);
   line-height: 25px;
   color: var(--inactive-color-normal);
 }

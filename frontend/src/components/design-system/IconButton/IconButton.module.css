@@ -16,15 +16,15 @@
 }
 
 .white {
-  background-color: var(--color-background);
+  color: var(--color-grey-100);
 }
 
 .white:hover {
-  background-color: var(--color-grey-500);
+  color: var(--color-grey-500);
 }
 
 .white:active {
-  background-color: var(--color-grey-400);
+  color: var(--color-grey-400);
 }
 
 .grey {

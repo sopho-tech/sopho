@@ -1,4 +1,5 @@
 import { useFieldContext } from "src/components/design-system/Form/form-context";
+import { Input } from "src/components/design-system/Input";
 
 type TextFieldProps = {
   label: string;
@@ -9,7 +10,10 @@ export function TextField({ label }: TextFieldProps) {
   return (
     <label>
       <span>{label}</span>
-      <input value={field.state.value} />
+      <Input
+        value={field.state.value}
+        onChange={(e) => field.handleChange(e.target.value)}
+      />
     </label>
   );
 }

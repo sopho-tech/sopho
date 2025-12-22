@@ -1,9 +1,6 @@
-import { Box } from "src/components/design-system/Box/Box";
-import type { SharedLayoutProps } from "src/components/design-system/datatypes";
+import { Box, type BoxProps } from "src/components/design-system/Box/Box";
 
-type FlexProps = SharedLayoutProps & {
-  children: React.ReactNode;
-};
+type FlexProps = Omit<BoxProps, "display">;
 
 export function Flex(props: FlexProps) {
   return <Box display="flex" {...props} />;

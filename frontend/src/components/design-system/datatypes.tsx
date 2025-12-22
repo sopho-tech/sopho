@@ -38,6 +38,7 @@ export type IconType =
   | "arrow_up"
   | "arrow_down"
   | "more_horiz"
+  | "more_vert"
   | "chevron_left"
   | "chevron_right"
   | "chevron_down"
@@ -54,7 +55,8 @@ export type IconType =
   | "star"
   | "link"
   | "save"
-  | "circle_x";
+  | "circle_x"
+  | "search";
 
 export type IconSize = "sm" | "md" | "lg";
 

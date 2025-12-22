@@ -1,6 +1,7 @@
 import PaginationStyles from "src/components/Pagination/Pagination.module.css";
 import { Select } from "src/components/design-system";
 import { Button } from "src/components/design-system/Button";
+import { IconButton } from "src/components/design-system/IconButton/IconButton";
 
 export type PaginationProps = {
   totalPages: number;
@@ -47,15 +48,16 @@ function renderPageButton(
   currentPage: number,
   onPageClick: (newPage: number) => void
 ): React.ReactElement {
+  const isActive = pageIndex === currentPage;
   return (
     <Button
       key={pageIndex}
       label={(pageIndex + 1).toString()}
       shape="square"
-      backgroundColor="white"
+      backgroundColor={isActive ? "lightgrey" : "white"}
       size="sm"
-      disabled={pageIndex === currentPage}
-      onClick={({ event }) => onPageClick(pageIndex)}
+      disabled={isActive}
+      onClick={() => onPageClick(pageIndex)}
     />
   );
 }
@@ -79,7 +81,7 @@ function renderEllipsisButton(
       backgroundColor="white"
       size="sm"
       leadingIconName="more_horiz"
-      onClick={({ event }) => onPageClick(newPage)}
+      onClick={() => onPageClick(newPage)}
     />
   );
 }
@@ -93,15 +95,17 @@ function renderPages(
   const pageItems = getPageItems(currentPage, totalPages);
 
   return [
-    <Button
+    <IconButton
       key="first"
-      label=""
-      shape="square"
+      type="chevron_left"
       backgroundColor="white"
-      size="sm"
-      leadingIconName="chevron_left"
-      disabled={currentPage === 0}
-      onClick={({ event }) => onPageClick(Math.max(0, currentPage - 1))}
+      iconColor="grey"
+      iconSize="sm"
+      onClick={() => {
+        if (currentPage > 0) {
+          onPageClick(Math.max(0, currentPage - 1));
+        }
+      }}
     />,
     ...pageItems.map((item) =>
       typeof item === "number"
@@ -114,17 +118,17 @@ function renderPages(
             onPageClick
           )
     ),
-    <Button
+    <IconButton
       key="last"
-      label=""
-      shape="square"
+      type="chevron_right"
       backgroundColor="white"
-      size="sm"
-      leadingIconName="chevron_right"
-      disabled={currentPage === totalPages - 1}
-      onClick={({ event }) =>
-        onPageClick(Math.min(totalPages - 1, currentPage + 1))
-      }
+      iconColor="grey"
+      iconSize="sm"
+      onClick={() => {
+        if (currentPage < totalPages - 1) {
+          onPageClick(Math.min(totalPages - 1, currentPage + 1));
+        }
+      }}
     />,
   ];
 }

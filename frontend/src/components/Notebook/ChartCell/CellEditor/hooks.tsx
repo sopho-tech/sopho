@@ -3,18 +3,13 @@ import { useHandleExecuteCell } from "src/components/Notebook/Cell";
 import { useCellOutputStore } from "src/components/Notebook/Cell/store";
 import type { ChartContent } from "src/components/Notebook/Cell/dto";
 import { useNotebook } from "src/api/notebook/queries";
-import {
-  CellOutputState,
-  CellType,
-} from "src/components/Notebook/Cell/dto";
+import { CellOutputState, CellType } from "src/components/Notebook/Cell/dto";
 import { ChartType } from "src/components/Chart";
 import type { ExecuteCellResponseDto } from "src/components/Notebook/Cell/dto";
-import { useNotebookStore } from "src/components/Notebook/store";
 import { Icon, Flex, Text } from "src/components/design-system";
-import { IconType } from "src/components/design-system/datatypes";
-import { ColumnDataType } from "src/constants/database_types";
 import { AggregateFunction } from "src/components/Notebook/dto";
 import { useCanvasStore } from "src/components/Canvases/store";
+import { getIconForDataType } from "src/utils/column_utils";
 
 export function useSourceCellExecution(
   cellId: string,
@@ -64,26 +59,6 @@ export function useSourceCellExecution(
     sourceCellOutput,
     executeSourceCell,
   };
-}
-
-function getIconForDataType(dataType: ColumnDataType): IconType {
-  switch (dataType) {
-    case ColumnDataType.INT4:
-    case ColumnDataType.INT8:
-      return "hash";
-    case ColumnDataType.TEXT:
-    case ColumnDataType.VARCHAR:
-      return "type";
-    case ColumnDataType.TIMESTAMP:
-    case ColumnDataType.TIMESTAMPTZ:
-      return "calendar";
-    case ColumnDataType.BOOL:
-      return "check_square";
-    case ColumnDataType.UUID:
-      return "key";
-    default:
-      return "book";
-  }
 }
 
 export function useFormOptions(

@@ -16,7 +16,7 @@
 }
 
 .sizeSm {
-  padding: var(--space-xs);
+  padding: var(--space-2xs) var(--space-xs) var(--space-2xs) var(--space-xs);
   font-size: var(--font-size-sm);
 }
 
@@ -70,6 +70,18 @@
   background-color: var(--color-red-dark-2);
 }
 
+.lightgrey {
+  background-color: var(--color-grey-300);
+}
+
+.lightgrey:hover {
+  background-color: var(--color-grey-400);
+}
+
+.lightgrey:active {
+  background-color: var(--color-grey-200);
+}
+
 .grey {
   background-color: var(--color-grey-500);
 }
@@ -84,6 +96,7 @@
 
 .transparent {
   background-color: transparent;
+  outline: var(--border-default-medium);
 }
 
 .transparent:hover {

@@ -1,0 +1,162 @@
+.overallContainer {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1;
+  /* justify-content: space-between; */
+}
+
+.tableContainer {
+  overflow-y: auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  border-radius: var(--border-radius-lg);
+  border: var(--border-dark-thin);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  box-shadow: var(--shadow);
+  table-layout: fixed;
+}
+
+.tableHeaderCell,
+.tableDataCell {
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tableHeaderCell {
+  font-family: var(--font-family-primary);
+  color: var(--color-grey-800);
+  font-weight: var(--font-weight-medium);
+  position: sticky;
+  top: 0px;
+  border-left: var(--border-dark-thin);
+  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-2xs);
+  user-select: none;
+  background-color: var(--color-grey-100);
+  box-shadow: 0 var(--border-width-thin) 0 0 var(--color-grey-300);
+  font-size: var(--font-size-sm);
+}
+
+.tableHeaderCellHovered {
+}
+
+.tableDataCell {
+  padding: var(--space-2xs);
+  border-bottom: var(--border-dark-thin);
+  border-left: var(--border-dark-thin);
+  font-size: var(--font-size-sm);
+}
+
+.tableBodyRow:hover {
+  background-color: var(--color-grey-200);
+}
+
+.tableDataCellHovered {
+  background-color: var(--color-grey-200);
+}
+
+.tableBody tr:last-child td {
+  border-bottom: none;
+}
+
+.tableBody tc:last-child td {
+  border-right: none;
+}
+
+.thead {
+  border-bottom: var(--border-dark-thin);
+}
+
+.thead th:last-child {
+  border-right: none;
+}
+
+.thead th:first-child {
+  border-left: none;
+}
+
+.sortIconSlot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.tableBody td:last-child {
+  border-right: none;
+}
+
+.tableBody td:first-child {
+  border-left: none;
+}
+
+.cellAlignLeft {
+  text-align: left;
+}
+
+.cellAlignRight {
+  text-align: right;
+}
+
+.cellFontMono {
+  font-family: var(--font-family-mono);
+}
+
+.resizer {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 5px;
+  background-color: var(--color-grey-600);
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+.resizer.ltr {
+  right: 0;
+}
+
+.resizer.rtl {
+  left: 0;
+}
+
+.resizer.isResizing {
+  background: var(--color-grey-800);
+}
+
+.isResizingColumn {
+  user-select: none;
+}
+
+@media (hover: hover) {
+  .resizer {
+    opacity: 0;
+  }
+
+  *:hover > .resizer {
+    opacity: 1;
+  }
+
+  .isResizingColumn *:hover > .resizer:not(.isResizing) {
+    opacity: 0;
+  }
+
+  .resizer.isResizing {
+    opacity: 1;
+  }
+}
+
+.paginationControl {
+  gap: var(--space-xl);
+}

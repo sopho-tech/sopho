@@ -20,6 +20,7 @@ import {
   ArrowUp,
   ArrowDown,
   MoreHorizontal,
+  MoreVertical,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -38,6 +39,7 @@ import {
   Link,
   Save,
   CircleX,
+  Search,
 } from "lucide-react";
 
 const iconMap: Record<IconType, LucideIcon> = {
@@ -57,6 +59,7 @@ const iconMap: Record<IconType, LucideIcon> = {
   arrow_up: ArrowUp,
   arrow_down: ArrowDown,
   more_horiz: MoreHorizontal,
+  more_vert: MoreVertical,
   chevron_left: ChevronLeft,
   chevron_right: ChevronRight,
   chevron_down: ChevronDown,
@@ -73,6 +76,7 @@ const iconMap: Record<IconType, LucideIcon> = {
   star: Star,
   link: Link,
   save: Save,
+  search: Search,
 };
 
 const sizeMap: Record<IconSize, number> = {
@@ -88,7 +92,12 @@ type IconProps = {
   size?: IconSize;
 };
 
-export function Icon({ type, color, strokeWidth = 2, size = "md" }: IconProps) {
+export function Icon({
+  type,
+  color,
+  strokeWidth = 2.25,
+  size = "md",
+}: IconProps) {
   const className = styles[color];
   const IconComponent = iconMap[type];
   const iconSize = sizeMap[size];

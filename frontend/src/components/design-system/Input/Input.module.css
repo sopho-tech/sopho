@@ -1,0 +1,64 @@
+.container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  font-size: var(--font-size-sm);
+  padding: var(--space-2xs);
+  padding-right: calc(var(--space-2xs) + 28px + var(--space-2xs));
+  border-radius: var(--border-radius-lg);
+  border: var(--border-dark-medium);
+  transition: border-color 0.2s;
+  color: var(--color-text);
+  background-color: var(--input-background);
+}
+
+.inputWithLeadingIcon {
+  padding-left: calc(var(--space-2xs) + 20px + var(--space-2xs));
+}
+
+.input::-webkit-outer-spin-button,
+.input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.input:focus {
+  outline: none;
+  border: var(--border-focus-medium);
+  box-shadow: var(--shadow-2xs);
+}
+
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--color-grey-100);
+}
+
+.leadingIcon {
+  position: absolute;
+  left: var(--space-2xs);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  z-index: var(--z-index-1);
+}
+
+.clearButton {
+  position: absolute;
+  right: var(--space-2xs);
+  display: flex;
+  align-items: center;
+  z-index: var(--z-index-1);
+}
+
+.clearButtonHidden {
+  visibility: hidden;
+  pointer-events: none;
+}

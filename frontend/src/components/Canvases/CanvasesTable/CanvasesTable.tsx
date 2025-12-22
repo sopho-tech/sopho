@@ -4,6 +4,9 @@ import { useAllCanvases } from "src/api/canvas/queries";
 import { useCanvasesPagination } from "src/components/Canvases/hooks.tsx";
 import { createCanvasesTableColumns } from "src/components/Canvases/CanvasesTable/canvasesTableColumns";
 import styles from "src/components/Canvases/CanvasesTable/CanvasesTable.module.css";
+import { useNavigate } from "react-router";
+import { APP_ROUTES } from "src/constants/app_routes";
+import { CanvasDto } from "src/components/Canvases/dto";
 
 type CanvasesTableProps = {
   onViewClick: (id: string) => void;
@@ -16,6 +19,7 @@ export function CanvasesTable({
   onEditClick,
   onDeleteClick,
 }: CanvasesTableProps) {
+  const navigate = useNavigate();
   const {
     pagination,
     handlePaginationChange,
@@ -35,6 +39,12 @@ export function CanvasesTable({
     onDeleteClick,
   });
 
+  const handleRowClick = (row: CanvasDto) => {
+    if (row.id) {
+      navigate(APP_ROUTES.CANVAS.replace(":id", row.id));
+    }
+  };
+
   return (
     <Flex direction="column" flex="grow" marginTop="lg" overflow="hidden">
       <SophoTable
@@ -43,6 +53,7 @@ export function CanvasesTable({
         data={canvases?.data ?? []}
         isLoading={isLoading}
         isError={isError}
+        onRowClick={handleRowClick}
         paginationConfig={{
           pagination,
           totalItems: canvases?.totalItems ?? 0,
@@ -54,11 +65,6 @@ export function CanvasesTable({
           onPageClick: handlePageClick,
           paginationContainerClassName: styles.paginationContainer,
         }}
-        tableContainerStyle={styles.tableContainer}
-        tableHeaderCellStyle={styles.tableHeaderCell}
-        tableDataCellStyle={styles.tableDataCell}
-        tableFirstHeaderCellStyle={styles.tableFirstHeaderCell}
-        tableLastHeaderCellStyle={styles.tableLastHeaderCell}
       />
     </Flex>
   );

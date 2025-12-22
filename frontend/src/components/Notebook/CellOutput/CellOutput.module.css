@@ -1,18 +1,15 @@
-.container {
-  overflow-x: auto;
-  border-top: var(--border-width-thin) solid var(--color-grey-600);
-  border-radius: 0;
-}
-
 .tableHeaderCell {
-  background-color: var(--color-grey-500);
-  padding: var(--space-xs);
-  font-size: var(--font-size-sm);
-  border-right: var(--border-width-thin) solid var(--color-grey-600);
+  /* background-color: var(--color-grey-200); */
+  /* padding: var(--space-xs); */
+  /* font-size: var(--font-size-sm); */
 }
 
 .tableDataCell {
-  padding: var(--space-xs);
-  font-size: var(--font-size-sm);
-  border-right: var(--border-width-thin) solid var(--color-grey-600);
+  /* padding: var(--space-xs); */
+  /* font-size: var(--font-size-sm); */
+}
+
+.outputContainer {
+  /* overflow-x: auto; */
+  /* padding: var(--space-lg); */
 }
