@@ -9,7 +9,8 @@ type TextProps = {
     | "disabled"
     | "error"
     | "success"
-    | "warning";
+    | "warning"
+    | "black";
   fontSize?:
     | "xs"
     | "sm"

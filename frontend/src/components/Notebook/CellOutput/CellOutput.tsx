@@ -2,9 +2,10 @@ import {
   CellOutputState,
   useCellOutputStore,
 } from "src/components/Notebook/Cell";
-import { SophoTable, ColumnConfig } from "src/components/SophoTable/SophoTable";
+import { DataTable, ColumnConfig, Box } from "src/components/design-system";
 import CellOutputStles from "src/components/Notebook/CellOutput/CellOutput.module.css";
 import CellStyles from "src/css/cell.module.css";
+import { TableType } from "src/components/design-system/DataTable";
 
 interface CellOutputProps {
   cellId: string;
@@ -22,6 +23,7 @@ export function CellOutput({ cellId }: CellOutputProps) {
       type: "accessor" as const,
       accessor: column.column_name,
       cell: (props: any) => props.getValue(),
+      dataType: column.data_type,
     })) ?? [];
 
   const data = output?.data ?? [];
@@ -34,13 +36,16 @@ export function CellOutput({ cellId }: CellOutputProps) {
     return null;
 
   return (
-    <SophoTable
-      columns={columns}
-      data={data}
-      overallContainerStyle={CellStyles.outputContainer}
-      tableContainerStyle={CellOutputStles.container}
-      tableHeaderCellStyle={CellOutputStles.tableHeaderCell}
-      tableDataCellStyle={CellOutputStles.tableDataCell}
-    />
+    <Box paddingX="lg" paddingY="lg">
+      <DataTable
+        tableType={TableType.CLIENT_SIDE_PAGINATED}
+        columns={columns}
+        data={data}
+        overallContainerStyle={`${CellStyles.outputContainerSql} ${CellOutputStles.outputContainer}`}
+        tableContainerStyle={`${CellOutputStles.tableContainer}`}
+        tableHeaderCellStyle={CellOutputStles.tableHeaderCell}
+        tableDataCellStyle={CellOutputStles.tableDataCell}
+      />
+    </Box>
   );
 }

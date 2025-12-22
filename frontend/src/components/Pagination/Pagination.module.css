@@ -2,7 +2,7 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: row;
-  gap: var(--space-md);
+  gap: var(--space-xl);
   align-items: center;
   justify-content: space-between;
 }
@@ -30,7 +30,6 @@
 }
 
 .summary {
-  min-width: 200px;
   font-variant-numeric: tabular-nums;
 }
 

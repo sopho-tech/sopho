@@ -23,6 +23,7 @@ type ButtonProps = {
     | "accent"
     | "green"
     | "red"
+    | "lightgrey"
     | "grey"
     | "transparent"
     | "white";
@@ -32,6 +33,17 @@ type ButtonProps = {
   type?: ButtonType;
   emphasis?: ButtonEmphasis;
 };
+
+function getTextColor(backgroundColor: string) {
+  switch (backgroundColor) {
+    case "accent":
+      return "white";
+    case "grey":
+      return "black";
+    default:
+      return "default";
+  }
+}
 
 export function Button({
   onClick,
@@ -50,8 +62,8 @@ export function Button({
   const sizeClassName =
     styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`];
   const fullWidthClassName = fullWidth ? styles.fullWidth : "";
-  const textColor = backgroundColor === "white" ? "default" : "white";
-  const iconColor = backgroundColor === "white" ? "black" : "white";
+  const textColor = getTextColor(backgroundColor);
+  const iconColor = backgroundColor === "white" ? "grey" : "white";
   return (
     <button
       type={type}

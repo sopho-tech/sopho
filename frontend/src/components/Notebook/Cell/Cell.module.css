@@ -2,6 +2,6 @@
   display: flex;
   flex-direction: column;
   border-radius: var(--border-radius-lg);
-  border: var(--border-width-thin) solid var(--color-grey-500);
+  outline: var(--border-dark-thin);
   overflow: hidden;
 }

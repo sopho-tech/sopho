@@ -1,5 +1,6 @@
 import styles from "src/components/ActionButtons/ActionButtons.module.css";
-import { IconButton } from "../design-system";
+import { DropdownMenu, Icon } from "src/components/design-system";
+import type { DropdownMenuItem } from "src/components/design-system";
 
 interface ActionButtonsProps {
   connectionId: string;
@@ -14,25 +15,35 @@ export function ActionButtons({
   onEditClick,
   onDeleteClick,
 }: ActionButtonsProps) {
+  const items: DropdownMenuItem[] = [
+    {
+      icon: "visibility",
+      label: "View",
+      onClick: () => onViewClick(connectionId),
+    },
+    {
+      icon: "edit",
+      label: "Edit",
+      onClick: () => onEditClick(connectionId),
+    },
+    {
+      icon: "delete",
+      label: "Delete",
+      onClick: () => onDeleteClick(connectionId),
+    },
+  ];
+
   return (
-    <div className={styles.actionButtonsContainer}>
-      <IconButton
-        type="visibility"
-        backgroundColor="transparent"
-        iconColor="black"
-        onClick={() => onViewClick(connectionId)}
-      />
-      <IconButton
-        type="edit"
-        backgroundColor="transparent"
-        iconColor="black"
-        onClick={() => onEditClick(connectionId)}
-      />
-      <IconButton
-        type="delete"
-        backgroundColor="transparent"
-        iconColor="black"
-        onClick={() => onDeleteClick(connectionId)}
+    <div onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu
+        trigger={
+          <button className={styles.trigger}>
+            <Icon type="more_vert" color="grey" size="md" />
+          </button>
+        }
+        items={items}
+        align="start"
+        side="bottom"
       />
     </div>
   );

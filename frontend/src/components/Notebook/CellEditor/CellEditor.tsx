@@ -24,7 +24,7 @@ import { sql, PostgreSQL } from "@codemirror/lang-sql";
 import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
 import { tags } from "@lezer/highlight";
 import { useCell, useUpdateCell } from "src/api/cell/queries";
-import styles from "src/components/Notebook/Cell/Cell.module.css";
+import CellEditorStyles from "src/components/Notebook/CellEditor/CellEditor.module.css";
 import "src/components/Notebook/CellEditor/CellEditor.global.css";
 import { getCSSVariable } from "src/utils/css_util";
 import { useNotebookStore } from "src/components/Notebook/store";
@@ -148,5 +148,5 @@ export function CellEditor({ cellId }: { cellId: string }) {
     };
   }, [cellId, query.isPending]);
 
-  return <div ref={editorRef} className={styles.cellContentEditable} />;
+  return <div ref={editorRef} className={CellEditorStyles.container} />;
 }

@@ -51,6 +51,7 @@ type SophoTableProps<T> = {
   tableFirstHeaderCellStyle?: string;
   tableLastHeaderCellStyle?: string;
   paginationConfig?: PaginationConfig;
+  onRowClick?: (row: T) => void;
 };
 
 function createReactTable<T>(
@@ -102,6 +103,7 @@ export function SophoTable<T>({
   tableLastHeaderCellStyle,
   paginationConfig,
   tableContainerStyle,
+  onRowClick,
 }: SophoTableProps<T>) {
   const columnHelper = createColumnHelper<T>();
 
@@ -169,7 +171,12 @@ export function SophoTable<T>({
           </thead>
           <tbody className={styles.tableBody}>
             {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className={styles.tableBodyRow}>
+              <tr
+                key={row.id}
+                className={styles.tableBodyRow}
+                onClick={() => onRowClick?.(row.original)}
+                style={{ cursor: onRowClick ? "pointer" : "default" }}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}

@@ -13,6 +13,8 @@ export { Form } from "src/components/design-system/Form";
 export { Select } from "src/components/design-system/Select";
 export type { SelectOption } from "src/components/design-system/Select";
 export { Text } from "src/components/design-system/Text";
+export { Input } from "src/components/design-system/Input";
+export type { InputProps } from "src/components/design-system/Input";
 export { BannerSlim } from "src/components/design-system/BannerSlim";
 export {
   InfoIconTooltip,
@@ -23,3 +25,7 @@ export type {
   SegmentedControlOption,
   SegmentedControlProps,
 } from "src/components/design-system/SegmentedControl";
+export { DataTable } from "src/components/design-system/DataTable";
+export type { ColumnConfig } from "src/components/design-system/DataTable";
+export { DropdownMenu } from "src/components/design-system/DropdownMenu";
+export type { DropdownMenuItem } from "src/components/design-system/DropdownMenu";
