@@ -10,7 +10,7 @@ const layoutPropKeys: (keyof SharedLayoutProps)[] = [
   "borderRadius",
   "border",
   "shadow",
-  "color",
+  "backgroundColor",
   "direction",
   "gap",
   "paddingX",
@@ -24,6 +24,7 @@ const layoutPropKeys: (keyof SharedLayoutProps)[] = [
   "justifyContent",
   "alignItems",
   "alignContent",
+  "alignSelf",
   "top",
   "bottom",
   "left",
@@ -44,7 +45,7 @@ export type BoxProps = SharedLayoutProps & {
 
 export function Box({
   as = "div",
-  color = "default",
+  backgroundColor = "default",
   display,
   ref,
   children,
@@ -65,16 +66,30 @@ export function Box({
 
   const layoutStyles = getSharedLayoutStyles(layoutProps);
 
+  const backgroundColorClassName = styles[backgroundColor];
+  const mergedClassName = htmlProps.className
+    ? `${backgroundColorClassName} ${htmlProps.className}`.trim()
+    : backgroundColorClassName;
+
+  const {
+    className: _,
+    style: htmlStyle,
+    ...htmlPropsWithoutClassNameAndStyle
+  } = htmlProps;
+
+  const mergedStyle = {
+    display,
+    ...layoutStyles,
+    ...sx,
+    ...htmlStyle,
+  };
+
   return (
     <Component
       ref={ref as any}
-      className={styles[color]}
-      style={{
-        display,
-        ...layoutStyles,
-        ...sx,
-      }}
-      {...htmlProps}
+      className={mergedClassName}
+      style={mergedStyle}
+      {...htmlPropsWithoutClassNameAndStyle}
     >
       {children}
     </Component>

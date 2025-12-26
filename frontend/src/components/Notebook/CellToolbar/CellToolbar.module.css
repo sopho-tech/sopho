@@ -1,3 +1,11 @@
+.toolbar {
+  background-color: var(--color-grey-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-2xs) 0 var(--space-2xs);
+}
+
 .rightSideContainer {
   display: flex;
   flex-direction: row;

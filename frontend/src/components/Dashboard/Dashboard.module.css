@@ -20,6 +20,11 @@
   -ms-user-select: none;
   border-radius: var(--border-radius-lg);
   border: var(--border-default-medium);
+  flex: 1;
+  min-height: 100%;
+  min-width: 0;
+  width: 100%;
+  align-self: stretch;
 }
 
 .layoutEditing {
@@ -27,15 +32,9 @@
 }
 
 .dragHandle {
-  position: absolute;
-  top: var(--space-xs);
-  right: var(--space-xs);
-  width: 28px;
-  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--border-radius-md);
   cursor: grab;
   transition:
     opacity 0.15s ease,
@@ -43,13 +42,8 @@
   z-index: var(--z-index-2);
 }
 
-.dragHandle:hover {
-  background-color: var(--color-grey-200);
-}
-
 .dragHandle:active {
   cursor: grabbing;
-  background-color: var(--color-primary-100);
 }
 
 .gridItem :global(.react-resizable-handle),

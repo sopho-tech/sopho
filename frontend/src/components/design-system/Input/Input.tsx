@@ -35,7 +35,21 @@ export function Input({
   leadingIcon,
   ...otherProps
 }: InputProps) {
-  const hasValue = value !== "" && value !== null && value !== undefined;
+  const hasValue = (() => {
+    if (value === null || value === undefined) {
+      return false;
+    }
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+    if (typeof value === "string") {
+      return value.trim() !== "";
+    }
+    if (typeof value === "number") {
+      return true;
+    }
+    return Boolean(value);
+  })();
 
   const handleClear = () => {
     const syntheticEvent = {

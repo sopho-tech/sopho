@@ -11,6 +11,7 @@ export type PaginationProps = {
   onChangePageSize: (newValue: string) => void;
   onPageClick: (newPage: number) => void;
   containerClassName?: string;
+  showRowsPerPage?: boolean;
 };
 
 type PageItem = number | "ellipsis-left" | "ellipsis-right";
@@ -141,6 +142,7 @@ export function Pagination({
   onChangePageSize,
   onPageClick,
   containerClassName,
+  showRowsPerPage = true,
 }: PaginationProps) {
   const pages = renderPages(currentPage, totalPages, onPageClick);
 
@@ -158,23 +160,25 @@ export function Pagination({
         items{" "}
       </p>
       <div className={PaginationStyles.pageButtonsContainer}>{pages}</div>
-      <div className={PaginationStyles.pageSizeSelectionContainer}>
-        <span className={PaginationStyles.pageSizeSelectionLabel}>
-          Rows per page:
-        </span>
-        <Select
-          placeholderText="Select page size"
-          groupName="Page Sizes"
-          value={pageSize.toString()}
-          onValueChange={handleValueChange}
-          options={[
-            { label: "10", value: "10" },
-            { label: "20", value: "20" },
-            { label: "50", value: "50" },
-            { label: "100", value: "100" },
-          ]}
-        />
-      </div>
+      {showRowsPerPage && (
+        <div className={PaginationStyles.pageSizeSelectionContainer}>
+          <span className={PaginationStyles.pageSizeSelectionLabel}>
+            Rows per page:
+          </span>
+          <Select
+            placeholderText="Select page size"
+            groupName="Page Sizes"
+            value={pageSize.toString()}
+            onValueChange={handleValueChange}
+            options={[
+              { label: "10", value: "10" },
+              { label: "20", value: "20" },
+              { label: "50", value: "50" },
+              { label: "100", value: "100" },
+            ]}
+          />
+        </div>
+      )}
     </div>
   );
 }

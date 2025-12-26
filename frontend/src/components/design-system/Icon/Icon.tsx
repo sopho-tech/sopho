@@ -40,6 +40,8 @@ import {
   Save,
   CircleX,
   Search,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 
 const iconMap: Record<IconType, LucideIcon> = {
@@ -77,6 +79,8 @@ const iconMap: Record<IconType, LucideIcon> = {
   link: Link,
   save: Save,
   search: Search,
+  sparkles: Sparkles,
+  refresh: RefreshCw,
 };
 
 const sizeMap: Record<IconSize, number> = {

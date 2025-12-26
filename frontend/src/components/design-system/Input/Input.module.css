@@ -59,6 +59,5 @@
 }
 
 .clearButtonHidden {
-  visibility: hidden;
-  pointer-events: none;
+  display: none;
 }

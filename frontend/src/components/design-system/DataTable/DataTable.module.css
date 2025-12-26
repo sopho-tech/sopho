@@ -61,6 +61,49 @@
   background-color: var(--color-grey-200);
 }
 
+.tableBodyRowDragging {
+  opacity: 0.5;
+  /* background-color: var(--color-grey-200); */
+}
+
+.dragPreviewContainer {
+  background-color: white;
+  border-radius: var(--border-radius-xl);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: var(--border-dark-thin);
+  isolation: isolate;
+  -webkit-mask-image: radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
+}
+
+.dragPreview {
+  background-color: white;
+  margin: 0;
+  box-shadow: none;
+}
+
+.dragPreviewRow {
+  background-color: white;
+}
+
+.dragPreviewRow tr {
+  background-color: white;
+}
+
+.dragPreviewRow tr td {
+  background-color: white;
+  border: none;
+  border-left: var(--border-dark-thin);
+}
+
+.dragPreviewRow tr td:first-child {
+  border-left: none;
+}
+
+.dragPreviewCell {
+  background-color: white;
+}
+
 .tableDataCellHovered {
   background-color: var(--color-grey-200);
 }

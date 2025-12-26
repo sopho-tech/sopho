@@ -7,6 +7,8 @@ import {
   useDashboardStore,
   DashboardMode,
 } from "src/components/Dashboard/store";
+import { useParams } from "react-router";
+import { useDashboardReset } from "src/components/Dashboard/hooks";
 
 type CanvasButtonsProps = {
   viewType: string;
@@ -17,21 +19,15 @@ export function CanvasButtons({
   viewType,
   onViewTypeChange,
 }: CanvasButtonsProps) {
-  const { mode, setMode, requestSave } = useDashboardStore();
+  const params = useParams();
+  const canvasId = params.id || "";
+  const { mode } = useDashboardStore();
   const isEditing = mode === DashboardMode.EDITING;
   const isDashboardView = viewType === "dashboard";
-
-  const handleEditSaveClick = () => {
-    if (isEditing) {
-      requestSave();
-    } else {
-      setMode(DashboardMode.EDITING);
-    }
-  };
-
-  const handleCancelClick = () => {
-    setMode(DashboardMode.VIEWING);
-  };
+  const { handleCancelClick, handleEditSaveClick } = useDashboardReset(
+    canvasId,
+    isDashboardView
+  );
 
   return (
     <Flex direction="row" gap="sm">
