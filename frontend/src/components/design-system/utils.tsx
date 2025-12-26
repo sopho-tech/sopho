@@ -82,7 +82,7 @@ function getSpacingValue(
 
 function getSizeValue(
   value: NumberString | undefined
-): string | number | undefined {
+): string | undefined {
   if (value === undefined) return undefined;
   if (typeof value === "number") {
     return `${value}px`;
@@ -146,6 +146,7 @@ export function getSharedLayoutStyles(
     justifyContent,
     alignItems,
     alignContent,
+    alignSelf,
     position,
     top,
     bottom,
@@ -200,6 +201,7 @@ export function getSharedLayoutStyles(
     ...(justifyContent && { justifyContent }),
     ...(alignItems && { alignItems }),
     ...(alignContent && { alignContent }),
+    ...(alignSelf && { alignSelf }),
     ...(borderRadius && { borderRadius: getBorderRadius(borderRadius) }),
     ...getBorderStyles(border),
     ...getShadowStyles(shadow),

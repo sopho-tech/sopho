@@ -1,6 +1,5 @@
-import ToolbarStyles from "src/css/toolbar.module.css";
 import CellToolbarStyles from "src/components/Notebook/CellToolbar/CellToolbar.module.css";
-import * as Toolbar from "@radix-ui/react-toolbar";
+import { Toolbar } from "src/components/design-system/Toolbar";
 import { IconButton } from "src/components/design-system/IconButton/IconButton";
 import { useConnections } from "src/api/connection";
 import { SophoSelect } from "src/components/SophoSelect";
@@ -57,21 +56,21 @@ export function CellToolbar({ cellId }: { cellId: string }) {
   }
 
   const messageElement = (
-    <aside className={ToolbarStyles.cellNameToolTipContainer}>
-      <h3 className={ToolbarStyles.cellNameToolTipHeader}>Cell Name</h3>
-      <p className={ToolbarStyles.cellNameToolTipDescription}>
+    <aside className={CellToolbarStyles.cellNameToolTipContainer}>
+      <h3 className={CellToolbarStyles.cellNameToolTipHeader}>Cell Name</h3>
+      <p className={CellToolbarStyles.cellNameToolTipDescription}>
         Double click to edit
       </p>
     </aside>
   );
   const toolTipTrigger = (
-    <div className={ToolbarStyles.cellNameContainer}>
+    <div className={CellToolbarStyles.cellNameContainer}>
       <span>{getCellQuery.data?.name}</span>
     </div>
   );
 
   return (
-    <Toolbar.Root className={ToolbarStyles.root} loop>
+    <Toolbar loop className={CellToolbarStyles.toolbar}>
       <SophoToolTip messageElement={messageElement} children={toolTipTrigger} />
       <div className={CellToolbarStyles.rightSideContainer}>
         <Toolbar.Button asChild>
@@ -91,6 +90,6 @@ export function CellToolbar({ cellId }: { cellId: string }) {
           />
         </Toolbar.Button>
       </div>
-    </Toolbar.Root>
+    </Toolbar>
   );
 }

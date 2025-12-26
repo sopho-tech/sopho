@@ -56,7 +56,9 @@ export type IconType =
   | "link"
   | "save"
   | "circle_x"
-  | "search";
+  | "search"
+  | "sparkles"
+  | "refresh";
 
 export type IconSize = "sm" | "md" | "lg";
 
@@ -90,7 +92,13 @@ export type AlignContent =
   | "space-evenly"
   | "stretch";
 
-export type ColorVariant = "default" | "info" | "error" | "warning" | "white";
+export type ColorVariant =
+  | "default"
+  | "info"
+  | "error"
+  | "warning"
+  | "white"
+  | "grey";
 
 export type BorderVariant = "default";
 
@@ -126,7 +134,7 @@ export type SharedLayoutProps = {
   borderRadius?: BorderRadius;
   border?: BorderVariant;
   shadow?: ShadowVariant;
-  color?: ColorVariant;
+  backgroundColor?: ColorVariant;
   direction?: Direction;
   gap?: SpacingSize;
   paddingX?: SpacingSize;
@@ -140,6 +148,7 @@ export type SharedLayoutProps = {
   justifyContent?: JustifyContent;
   alignItems?: AlignItems;
   alignContent?: AlignContent;
+  alignSelf?: AlignItems;
   top?: SpacingValue;
   bottom?: SpacingValue;
   left?: SpacingValue;

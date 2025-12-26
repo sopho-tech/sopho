@@ -1,5 +1,8 @@
 import { useEffect, useCallback } from "react";
-import { useUpdateDashboard } from "src/api/dashboard/queries";
+import {
+  useUpdateDashboard,
+  useDashboardByCanvasId,
+} from "src/api/dashboard/queries";
 import { useCanvasStore } from "src/components/Canvases/store";
 import {
   useDashboardStore,
@@ -56,37 +59,53 @@ export function useDashboardSave(dashboardData: DashboardDto | undefined) {
   };
 }
 
-export function useSaveDashboard(dashboardData: DashboardDto | undefined) {
-  const { activeNotebookId } = useCanvasStore();
-  const { layout, setMode } = useDashboardStore();
-  const updateDashboardMutation = useUpdateDashboard();
+export function useDashboardReset(canvasId: string, isDashboardView: boolean) {
+  const {
+    mode,
+    setMode,
+    requestSave,
+    resetFromBackendData,
+    setShowChartBrowser,
+  } = useDashboardStore();
+  const dashboardQuery = useDashboardByCanvasId(canvasId);
+  const isEditing = mode === DashboardMode.EDITING;
 
-  const save = useCallback(() => {
-    setMode(DashboardMode.VIEWING);
-
-    if (!dashboardData || !activeNotebookId) {
-      return;
-    }
-
-    const layoutDto = convertRGLayoutToDto(layout, activeNotebookId);
-    updateDashboardMutation.mutate(
-      {
-        dashboardId: dashboardData.id,
-        payload: {
-          ...dashboardData,
-          layout: layoutDto,
-        },
-      },
-      {
-        onError: () => {
-          setMode(DashboardMode.EDITING);
-        },
+  const handleCancelClick = useCallback(async () => {
+    if (isDashboardView) {
+      const { data } = await dashboardQuery.refetch();
+      if (data) {
+        resetFromBackendData(data);
       }
-    );
-  }, [dashboardData, activeNotebookId, layout, setMode, updateDashboardMutation]);
+    }
+    setShowChartBrowser(false);
+    setMode(DashboardMode.VIEWING);
+  }, [isDashboardView, dashboardQuery, resetFromBackendData, setMode]);
+
+  const handleEditSaveClick = useCallback(async () => {
+    if (isEditing) {
+      requestSave();
+      setShowChartBrowser(false);
+    } else {
+      if (isDashboardView) {
+        const { data } = await dashboardQuery.refetch();
+        if (data) {
+          resetFromBackendData(data);
+        }
+      }
+      setMode(DashboardMode.EDITING);
+      setShowChartBrowser(true);
+    }
+  }, [
+    isEditing,
+    isDashboardView,
+    dashboardQuery,
+    resetFromBackendData,
+    setMode,
+    requestSave,
+  ]);
 
   return {
-    save,
-    isSaving: updateDashboardMutation.isPending,
+    handleCancelClick,
+    handleEditSaveClick,
   };
 }

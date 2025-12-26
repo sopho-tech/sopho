@@ -13,7 +13,7 @@ export function BannerSlim({ type, message }: BannerSlimProps) {
   }
   return (
     <Flex
-      color="error"
+      backgroundColor="error"
       borderRadius="lg"
       paddingX="xs"
       paddingY="xs"

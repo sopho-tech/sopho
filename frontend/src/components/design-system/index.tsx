@@ -29,3 +29,4 @@ export { DataTable } from "src/components/design-system/DataTable";
 export type { ColumnConfig } from "src/components/design-system/DataTable";
 export { DropdownMenu } from "src/components/design-system/DropdownMenu";
 export type { DropdownMenuItem } from "src/components/design-system/DropdownMenu";
+export { Toolbar } from "src/components/design-system/Toolbar";

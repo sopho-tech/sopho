@@ -8,3 +8,7 @@
 .error {
   background-color: var(--color-red-light-5);
 }
+
+.grey {
+  background-color: var(--color-grey-200);
+}

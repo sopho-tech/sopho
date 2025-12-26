@@ -1,5 +1,8 @@
 import { Layout } from "react-grid-layout";
 
+export const DEFAULT_CHART_WIDTH = 4;
+export const DEFAULT_CHART_HEIGHT = 3;
+
 export type LayoutDto = {
   cell_id: string;
   notebook_id: string;
@@ -38,8 +41,7 @@ export function convertDtoToRGLayout(layoutDto: LayoutDto[]): Layout[] {
     y: item.y_position,
     w: item.x_size,
     h: item.y_size,
-    minW: 4,
-    minH: 3,
+    minW: DEFAULT_CHART_WIDTH,
+    minH: DEFAULT_CHART_HEIGHT,
   }));
 }
-
