@@ -1,10 +1,7 @@
-import ChartCellToolbarStyles from "src/components/Notebook/ChartCell/ChartCellToolbar/ChartCellToolbar.module.css";
 import ToolbarStyles from "src/css/toolbar.module.css";
 import * as Toolbar from "@radix-ui/react-toolbar";
 import { IconButton } from "src/components/design-system/IconButton/IconButton";
-import { useConnections } from "src/api/connection";
-import { useUpdateCell, useCell, useExecuteCell } from "src/api/cell";
-import { useEffect, useState } from "react";
+import { useCell, useExecuteCell } from "src/api/cell";
 import {
   CellOutputState,
   useCellOutputStore,
@@ -13,52 +10,9 @@ import { ExecutionState } from "src/components/Notebook/Cell";
 import { SophoToolTip } from "src/components/SophoToolTip";
 
 export function ChartCellToolbar({ cellId }: { cellId: string }) {
-  const query = useConnections();
-  const updateCellMutation = useUpdateCell();
   const executeCellMutation = useExecuteCell();
   const getCellQuery = useCell(cellId);
-  const [options, setOptions] = useState<
-    { label: string; value: string }[] | undefined
-  >(undefined);
-  const [initialValue, setInitialValue] = useState<
-    { label: string; value: string } | undefined
-  >(undefined);
   const { setOutput, setExecutionState, setOutputState } = useCellOutputStore();
-
-  useEffect(() => {
-    if (!query.data || !getCellQuery.data) return;
-
-    const connectionOptions = query.data.map((connection) => ({
-      label: connection.name,
-      value: connection.id,
-    }));
-
-    const cellConnectionId = getCellQuery.data.connection_id;
-    const foundConnection = query.data.find(
-      (connection) => connection.id === cellConnectionId
-    );
-
-    const newInitialValue =
-      foundConnection && cellConnectionId
-        ? { label: foundConnection.name, value: cellConnectionId }
-        : undefined;
-
-    setOptions(connectionOptions);
-    setInitialValue(newInitialValue);
-  }, [query.data, getCellQuery.data]);
-
-  function handleValueChange(value: string | null) {
-    const cell = getCellQuery.data;
-    if (!cell) throw new Error("Cell not found");
-
-    updateCellMutation.mutate({
-      cellId: cellId,
-      payload: {
-        ...cell,
-        connection_id: value,
-      },
-    });
-  }
 
   function handleExecute() {
     setExecutionState(cellId, ExecutionState.RUNNING);

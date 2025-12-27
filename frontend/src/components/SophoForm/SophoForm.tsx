@@ -71,7 +71,13 @@ function renderCollapsibleSection(
       ),
     },
   ];
-  return <Accordion items={items} />;
+  return (
+    <Accordion
+      items={items}
+      value={[]}
+      onValueChange={() => {}}
+    />
+  );
 }
 
 function ControlledSelect({
@@ -236,26 +242,6 @@ export function SophoForm({
   formFieldStyleClass,
   formRootStyleClass,
 }: SophoFormProps) {
-  const [openCollapsibles, setOpenCollapsibles] = useState<Set<string>>(
-    new Set()
-  );
-
-  const isCollapsibleOpen = (key: string): boolean => {
-    return openCollapsibles.has(key);
-  };
-
-  const handleCollapsibleOpenChange = (key: string, open: boolean): void => {
-    setOpenCollapsibles((prev) => {
-      const next = new Set(prev);
-      if (open) {
-        next.add(key);
-      } else {
-        next.delete(key);
-      }
-      return next;
-    });
-  };
-
   const handleFormChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {

@@ -12,7 +12,8 @@ use crate::notebook::does_notebook_exist;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use chrono::Utc;
-use chrono::{DateTime, FixedOffset};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
+use rust_decimal::Decimal;
 use sqlx::postgres::PgConnection;
 use sqlx::types::JsonValue;
 use sqlx::Column;
@@ -321,14 +322,16 @@ async fn execute_query_and_format_results(
                     let value = row.try_get::<String, _>(i);
                     value.map(serde_json::Value::String)
                 }
+                "DATE" => row.try_get::<NaiveDate, _>(i).map(|v| serde_json::json!(v)),
                 "TIMESTAMP" => row
-                    .try_get::<DateTime<FixedOffset>, _>(i)
+                    .try_get::<NaiveDateTime, _>(i)
                     .map(|v| serde_json::json!(v)),
                 "TIMESTAMPTZ" => row
                     .try_get::<DateTime<FixedOffset>, _>(i)
                     .map(|v| serde_json::json!(v)),
                 "INT4" => row.try_get::<i32, _>(i).map(|v| serde_json::json!(v)),
                 "INT8" => row.try_get::<i64, _>(i).map(|v| serde_json::json!(v)),
+                "NUMERIC" => row.try_get::<Decimal, _>(i).map(|v| serde_json::json!(v)),
                 _ => {
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,

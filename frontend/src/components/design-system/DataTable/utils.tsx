@@ -1,6 +1,5 @@
 import {
   ColumnDef,
-  createColumnHelper,
   getCoreRowModel,
   useReactTable,
   PaginationState,
@@ -16,7 +15,6 @@ import { Pagination } from "src/components/Pagination";
 import {
   TableType,
   PaginationConfig,
-  ColumnConfig,
 } from "src/components/design-system/DataTable/types";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
 

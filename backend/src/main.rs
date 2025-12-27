@@ -1,15 +1,18 @@
-mod monitor;
-mod db;
-mod dashboard;
-mod entity;
-mod connection;
-mod common;
 mod authentication;
-mod notebook;
-mod cell;
 mod canvas;
+mod cell;
+mod common;
+mod connection;
+mod dashboard;
+mod db;
+mod entity;
+mod monitor;
+mod notebook;
 
-use std::path::Path;
+use crate::common::AppState;
+use axum::http::HeaderValue;
+use axum::http::Method;
+use axum::response::Html;
 use axum::{
     body::{Body, Bytes},
     extract::Request,
@@ -18,25 +21,25 @@ use axum::{
     response::{IntoResponse, Response},
     Router,
 };
-use http_body_util::BodyExt;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use std::env;
 use dotenv::dotenv;
-use crate::common::AppState;
-use tower_http::services::ServeDir;
+use http::header;
+use http_body_util::BodyExt;
+use std::env;
+use std::path::PathBuf;
 use tower_cookies::CookieManagerLayer;
 use tower_http::cors::CorsLayer;
-use axum::http::Method;
-use http::header;
-use axum::http::HeaderValue;
+use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
     let app_state = AppState::from_env().await.unwrap();
 
-    db::run_migrations(&app_state.database_connection).await.unwrap();
+    db::run_migrations(&app_state.database_connection)
+        .await
+        .unwrap();
 
     tracing_subscriber::registry()
         .with(
@@ -47,7 +50,9 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let static_files_service = ServeDir::new(Path::new(app_state.config.frontend_dir.as_ref()));
+    let frontend_dir = PathBuf::from(app_state.config.frontend_dir.as_ref());
+    let index_path = frontend_dir.join("index.html");
+    let static_files_service = ServeDir::new(&frontend_dir);
 
     let mut app = Router::new()
         .nest("/api/v1/monitor", monitor::routes())
@@ -58,6 +63,24 @@ async fn main() {
         .nest("/api/v1/auth", authentication::routes(app_state.clone()))
         .nest("/api/v1/canvas", canvas::routes(app_state.clone()))
         .fallback_service(static_files_service)
+        .layer(middleware::from_fn(move |req: Request, next: Next| {
+            let index_path = index_path.clone();
+            async move {
+                let res = next.run(req).await;
+                let (parts, body) = res.into_parts();
+                let status = parts.status;
+
+                // If the response is 404, serve index.html instead
+                if status == StatusCode::NOT_FOUND {
+                    match tokio::fs::read_to_string(&index_path).await {
+                        Ok(html) => Html(html).into_response(),
+                        Err(_) => Response::from_parts(parts, body),
+                    }
+                } else {
+                    Response::from_parts(parts, body)
+                }
+            }
+        }))
         .layer(middleware::from_fn(print_request_response))
         .layer(TraceLayer::new_for_http())
         .layer(CookieManagerLayer::new());
@@ -65,9 +88,7 @@ async fn main() {
     if app_state.config.environment == "development" {
         let cors = CorsLayer::new()
             .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-            .allow_origin(
-                HeaderValue::from_str("http://localhost:3000").unwrap()
-            )
+            .allow_origin(HeaderValue::from_str("http://localhost:3000").unwrap())
             .allow_credentials(true)
             .allow_headers([header::CONTENT_TYPE]);
         app = app.layer(cors);
@@ -79,8 +100,6 @@ async fn main() {
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
 }
-
-
 
 async fn print_request_response(
     req: Request,

@@ -7,7 +7,7 @@ type BannerSlimProps = {
   message: string | undefined;
 };
 
-export function BannerSlim({ type, message }: BannerSlimProps) {
+export function BannerSlim({ type: _type, message }: BannerSlimProps) {
   if (!message) {
     return null;
   }
