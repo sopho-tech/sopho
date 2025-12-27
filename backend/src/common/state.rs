@@ -1,10 +1,10 @@
-use sea_orm::DatabaseConnection;
-use std::borrow::Cow;
-use anyhow::bail;
-use serde::Deserialize;
-use anyhow;
-use reqwest;
 use crate::db;
+use anyhow;
+use anyhow::bail;
+use reqwest;
+use sea_orm::DatabaseConnection;
+use serde::Deserialize;
+use std::borrow::Cow;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Configurations {
@@ -31,10 +31,15 @@ impl Configurations {
             port: match dotenv::var("PORT") {
                 Ok(port) => port.parse()?,
                 _ => 8000,
-            },  
-            frontend_dir: match dotenv::var("FRONTEND_DIR") {
-                Ok(frontend_dir) => frontend_dir.into(),
-                Err(err) => bail!("missing FRONTEND_DIR: {err}"),
+            },
+            frontend_dir: {
+                let manifest_dir = env!("CARGO_MANIFEST_DIR");
+                let backend_dir = std::path::Path::new(manifest_dir);
+                let project_root = backend_dir.parent().ok_or_else(|| {
+                    anyhow::anyhow!("Could not determine project root from CARGO_MANIFEST_DIR")
+                })?;
+                let frontend_dist = project_root.join("frontend").join("dist");
+                frontend_dist.to_string_lossy().into_owned().into()
             },
             google_client_id: match dotenv::var("GOOGLE_CLIENT_ID") {
                 Ok(google_client_id) => google_client_id.into(),

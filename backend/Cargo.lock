@@ -1707,6 +1707,7 @@ dependencies = [
  "migration",
  "reqwest",
  "rig-core",
+ "rust_decimal",
  "sea-orm",
  "serde",
  "serde_json",

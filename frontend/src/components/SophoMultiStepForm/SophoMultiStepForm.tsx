@@ -189,7 +189,7 @@ export function SophoMultiStepForm({
         handleBackCallback,
         isFirstStep,
         isLastStep,
-        buttomRowStyleClass
+        buttomRowStyleClass || ""
       )}
     </Form.Root>
   );

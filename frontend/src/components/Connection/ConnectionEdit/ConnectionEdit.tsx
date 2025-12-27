@@ -9,7 +9,6 @@ import {
 import { SourceTypeEnum } from "src/constants/database_types";
 import { SophoDialog } from "src/components/SophoDialog";
 import { useConnection, useUpdateConnection } from "src/api/connection/queries";
-import ConnectionEditStyles from "src/components/Connection/ConnectionEdit/ConnectionEdit.module.css";
 
 const sourceTypeOptions = Object.values(SourceTypeEnum).map((type) => ({
   value: type,

@@ -1,4 +1,4 @@
-import { Row, Table } from "@tanstack/react-table";
+import { Row } from "@tanstack/react-table";
 import { ColumnConfig } from "src/components/design-system/DataTable/types";
 import { TableRow } from "src/components/design-system/DataTable/components/TableRow";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";

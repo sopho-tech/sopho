@@ -50,13 +50,13 @@ export function Button({
   leadingIconName,
   trailingIconName,
   label,
-  shape,
+  shape: _shape,
   backgroundColor,
   disabled = false,
   fullWidth = false,
   size,
   type = "button",
-  emphasis,
+  emphasis: _emphasis,
 }: ButtonProps) {
   const backgroundColorClassName = styles[backgroundColor];
   const sizeClassName =

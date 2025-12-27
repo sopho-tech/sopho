@@ -1,4 +1,4 @@
-import { FormField, FormFieldType } from "./types";
+import { FormField } from "./types";
 import type { AccordionItemConfig } from "src/components/Accordion/Accordion";
 import { Accordion } from "src/components/Accordion";
 import { FormFieldRenderer } from "./FormFieldRenderer";

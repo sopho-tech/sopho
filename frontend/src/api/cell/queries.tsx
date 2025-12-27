@@ -144,7 +144,7 @@ export const useDeleteCell = (notebookId?: string) => {
 export const useExecuteCell = () => {
   return useMutation({
     mutationFn: cellApi.executeCell,
-    onSuccess: (data) => {},
+    onSuccess: () => {},
     onError: (error) => {
       console.error("Failed to execute cell:", error);
     },
