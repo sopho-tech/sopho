@@ -24,7 +24,7 @@
 
 .trigger[data-highlighted],
 .trigger[data-state="open"] {
-  background-color: var(--color-grey-600);
+  background-color: var(--color-grey-400);
 }
 
 .content,
@@ -75,8 +75,8 @@
 .radioItem[data-highlighted] {
   background-image: linear-gradient(
     135deg,
-    var(--color-grey-600) 0%,
-    var(--color-grey-600) 100%
+    var(--color-grey-200) 0%,
+    var(--color-grey-200) 100%
   );
   color: var(--color-text);
 }

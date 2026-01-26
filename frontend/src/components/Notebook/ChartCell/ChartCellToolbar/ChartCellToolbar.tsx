@@ -7,7 +7,7 @@ import {
   useCellOutputStore,
 } from "src/components/Notebook/Cell";
 import { ExecutionState } from "src/components/Notebook/Cell";
-import { SophoToolTip } from "src/components/SophoToolTip";
+import { ToolTip } from "src/components/design-system/ToolTip";
 
 export function ChartCellToolbar({ cellId }: { cellId: string }) {
   const executeCellMutation = useExecuteCell();
@@ -47,7 +47,7 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
 
   return (
     <Toolbar.Root className={ToolbarStyles.root} loop>
-      <SophoToolTip messageElement={messageElement} children={toolTipTrigger} />
+      <ToolTip messageElement={messageElement} children={toolTipTrigger} />
       <Toolbar.Button asChild>
         <IconButton
           type="play"

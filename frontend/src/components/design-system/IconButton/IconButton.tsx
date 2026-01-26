@@ -5,7 +5,7 @@ import {
 } from "src/components/design-system/datatypes";
 import styles from "src/components/design-system/IconButton/IconButton.module.css";
 import { Icon } from "src/components/design-system/Icon";
-import { SophoToolTip } from "src/components/SophoToolTip/SophoToolTip";
+import { ToolTip } from "src/components/design-system/ToolTip";
 
 type IconButtonProps = {
   type: IconType;
@@ -36,12 +36,12 @@ export function IconButton({
 
   if (tooltip) {
     return (
-      <SophoToolTip
+      <ToolTip
         messageElement={tooltip.text}
         tooltipSide={tooltip.direction || "top"}
       >
         {button}
-      </SophoToolTip>
+      </ToolTip>
     );
   }
 

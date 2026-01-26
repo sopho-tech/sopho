@@ -32,6 +32,10 @@ svg {
   max-width: 100%;
 }
 
+button {
+  all: unset;
+}
+
 input,
 button,
 textarea,

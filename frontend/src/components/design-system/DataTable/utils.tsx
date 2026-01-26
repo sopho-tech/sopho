@@ -11,7 +11,7 @@ import {
   Table,
 } from "@tanstack/react-table";
 import { ColumnDataType } from "src/constants/database_types";
-import { Pagination } from "src/components/Pagination";
+import { Pagination } from "src/components/design-system/Pagination";
 import {
   TableType,
   PaginationConfig,
