@@ -8,7 +8,7 @@ import {
   OnChangeFn,
 } from "@tanstack/react-table";
 import styles from "src/components/SophoTable/SophoTable.module.css";
-import { Pagination } from "src/components/Pagination";
+import { Pagination } from "src/components/design-system/Pagination";
 
 export enum TableType {
   FULL = "FULL",

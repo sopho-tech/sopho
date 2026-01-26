@@ -30,3 +30,12 @@ export type { ColumnConfig } from "src/components/design-system/DataTable";
 export { DropdownMenu } from "src/components/design-system/DropdownMenu";
 export type { DropdownMenuItem } from "src/components/design-system/DropdownMenu";
 export { Toolbar } from "src/components/design-system/Toolbar";
+export { Accordion } from "src/components/design-system/Accordion";
+export type {
+  AccordionItemConfig,
+  AccordionProps,
+} from "src/components/design-system/Accordion";
+export { Pagination } from "src/components/design-system/Pagination";
+export type { PaginationProps } from "src/components/design-system/Pagination";
+export { ToolTip } from "src/components/design-system/ToolTip";
+export type { ToolTipProps } from "src/components/design-system/ToolTip";

@@ -1,7 +1,7 @@
 import { IconType } from "src/components/design-system/datatypes";
 import styles from "src/components/design-system/IconButtonLink/IconButtonLink.module.css";
 import { Icon } from "src/components/design-system/Icon";
-import { SophoToolTip } from "src/components/SophoToolTip/SophoToolTip";
+import { ToolTip } from "src/components/design-system/ToolTip";
 
 export enum State {
   ACTIVE = "ACTIVE",
@@ -30,12 +30,12 @@ export function IconButtonLink({ state, type, tooltip }: IconButtonLinkProps) {
 
   if (tooltip) {
     return (
-      <SophoToolTip
+      <ToolTip
         messageElement={tooltip.text}
         tooltipSide={tooltip.direction || "top"}
       >
         {button}
-      </SophoToolTip>
+      </ToolTip>
     );
   }
 

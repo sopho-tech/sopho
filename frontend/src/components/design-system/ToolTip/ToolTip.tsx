@@ -1,8 +1,8 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
 import React from "react";
-import SophoToolTipStyles from "src/components/SophoToolTip/SophoToolTip.module.css";
+import ToolTipStyles from "src/components/design-system/ToolTip/ToolTip.module.css";
 
-type SophoToolTipProps = {
+type ToolTipProps = {
   messageElement: React.ReactNode;
   children: React.ReactNode;
   open?: boolean;
@@ -11,14 +11,14 @@ type SophoToolTipProps = {
   tooltipSide?: "top" | "right" | "bottom" | "left";
 };
 
-export function SophoToolTip({
+export function ToolTip({
   messageElement,
   children,
   open,
   defaultOpen,
   onOpenChange,
   tooltipSide = "top",
-}: SophoToolTipProps) {
+}: ToolTipProps) {
   return (
     <Tooltip.Provider delayDuration={100}>
       <Tooltip.Root
@@ -30,24 +30,24 @@ export function SophoToolTip({
           {React.isValidElement(children) ? (
             React.cloneElement(children as React.ReactElement<any>, {
               className:
-                `${SophoToolTipStyles.tooltipTrigger} ${(children as React.ReactElement<any>).props?.className || ""}`.trim(),
+                `${ToolTipStyles.tooltipTrigger} ${(children as React.ReactElement<any>).props?.className || ""}`.trim(),
             })
           ) : (
-            <span className={SophoToolTipStyles.tooltipTrigger}>
+            <span className={ToolTipStyles.tooltipTrigger}>
               {children}
             </span>
           )}
         </Tooltip.Trigger>
         <Tooltip.Portal>
           <Tooltip.Content
-            className={SophoToolTipStyles.tooltipContent}
+            className={ToolTipStyles.tooltipContent}
             sideOffset={5}
             side={tooltipSide}
             asChild
           >
             <div>
               {messageElement}
-              <Tooltip.Arrow className={SophoToolTipStyles.tooltipArrow} />
+              <Tooltip.Arrow className={ToolTipStyles.tooltipArrow} />
             </div>
           </Tooltip.Content>
         </Tooltip.Portal>
@@ -55,3 +55,4 @@ export function SophoToolTip({
     </Tooltip.Provider>
   );
 }
+

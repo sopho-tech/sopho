@@ -1,6 +1,6 @@
 import { FormField } from "./types";
-import type { AccordionItemConfig } from "src/components/Accordion/Accordion";
-import { Accordion } from "src/components/Accordion";
+import type { AccordionItemConfig } from "src/components/design-system/Accordion/Accordion";
+import { Accordion } from "src/components/design-system/Accordion";
 import { FormFieldRenderer } from "./FormFieldRenderer";
 
 type CollapsibleFieldProps = {

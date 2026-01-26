@@ -2,7 +2,7 @@ import React from "react";
 import SegmentedControlStyles from "src/components/design-system/SegmentedControl/SegmentedControl.module.css";
 import { IconType } from "src/components/design-system/datatypes";
 import { Icon } from "../Icon";
-import { SophoToolTip } from "src/components/SophoToolTip/SophoToolTip";
+import { ToolTip } from "src/components/design-system/ToolTip";
 
 export type SegmentedControlOption = {
   label?: string;
@@ -60,13 +60,13 @@ export function SegmentedControl({
 
         if (option.tooltip) {
           return (
-            <SophoToolTip
+            <ToolTip
               key={option.value}
               messageElement={option.tooltip}
               tooltipSide="bottom"
             >
               {button}
-            </SophoToolTip>
+            </ToolTip>
           );
         }
 

@@ -1,4 +1,4 @@
-import { SophoToolTip } from "src/components/SophoToolTip";
+import { ToolTip } from "src/components/design-system/ToolTip";
 import { Icon } from "src/components/design-system";
 import styles from "src/components/design-system/InfoIconTooltip/InfoIconTooltip.module.css";
 
@@ -13,6 +13,6 @@ export function InfoIconTooltip({ messageElement }: InfoIconTooltipProps) {
     </span>
   );
   return (
-    <SophoToolTip messageElement={messageElement} children={toolTipTrigger} />
+    <ToolTip messageElement={messageElement} children={toolTipTrigger} />
   );
 }

@@ -1,8 +1,10 @@
 <div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/sopho_logo_with_name_dark.svg">
-    <img src="assets/sopho_logo_with_name_light.svg" alt="Sopho Logo" width="200"/>
-  </picture>
+  <a href="https://www.sopho.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="assets/sopho-logo-with-name-dark.svg">
+      <img src="assets/sopho-logo-with-name-light.svg" alt="Sopho Logo" width="200"/>
+    </picture>
+  </a>
 </div>
 
 <h3 align="center">
@@ -14,6 +16,7 @@
 Single platform for analytics, business intelligence, dashboards, notebooks, visualizations, and collaboration.
 
 ## Demo
+
 [soho-demo.mov](https://github.com/user-attachments/assets/5dec457a-a227-4763-b403-05dea827216f)
 
 ## Table of Contents

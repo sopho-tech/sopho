@@ -1,4 +1,4 @@
-import PaginationStyles from "src/components/Pagination/Pagination.module.css";
+import PaginationStyles from "src/components/design-system/Pagination/Pagination.module.css";
 import { Select } from "src/components/design-system";
 import { Button } from "src/components/design-system/Button";
 import { IconButton } from "src/components/design-system/IconButton/IconButton";

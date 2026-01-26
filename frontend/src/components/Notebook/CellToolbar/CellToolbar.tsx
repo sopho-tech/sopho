@@ -5,7 +5,7 @@ import { useConnections } from "src/api/connection";
 import { SophoSelect } from "src/components/SophoSelect";
 import { useUpdateCell, useCell } from "src/api/cell";
 import { useEffect, useState } from "react";
-import { SophoToolTip } from "src/components/SophoToolTip";
+import { ToolTip } from "src/components/design-system/ToolTip";
 import { useHandleExecuteCell } from "src/components/Notebook/Cell";
 
 export function CellToolbar({ cellId }: { cellId: string }) {
@@ -71,7 +71,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
 
   return (
     <Toolbar loop className={CellToolbarStyles.toolbar}>
-      <SophoToolTip messageElement={messageElement} children={toolTipTrigger} />
+      <ToolTip messageElement={messageElement} children={toolTipTrigger} />
       <div className={CellToolbarStyles.rightSideContainer}>
         <Toolbar.Button asChild>
           <SophoSelect

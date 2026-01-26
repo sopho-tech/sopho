@@ -96,7 +96,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
       name: (
         <Flex direction="row" gap="2xs" justifyContent="center">
           <Icon type="swap_horiz" color="default" />
-          <Text>X-axis</Text>
+          <Text fontSize="sm">X-axis</Text>
         </Flex>
       ),
       required: false,
@@ -126,7 +126,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
       name: (
         <Flex direction="row" gap="2xs" justifyContent="center">
           <Icon type="swap_vert" color="default" />
-          <Text>Y-axis</Text>
+          <Text fontSize="sm">Y-axis</Text>
         </Flex>
       ),
       required: false,
@@ -189,7 +189,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
       name: (
         <Flex direction="row" gap="xs" alignItems="center">
           <Icon type="settings" color="default" />
-          <Text>Display</Text>
+          <Text fontSize="sm">Display</Text>
         </Flex>
       ),
       required: false,

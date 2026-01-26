@@ -3,7 +3,7 @@ import { useState, Fragment, useEffect } from "react";
 import FormStyles from "src/components/SophoForm/SophoForm.module.css";
 import { Button } from "src/components/design-system/Button";
 import { mergeForms } from "src/utils/form_utils";
-import { Accordion } from "../Accordion";
+import { Accordion } from "src/components/design-system/Accordion";
 
 export type CollapsibleConfig = {
   formElements: SophoFormElement[];

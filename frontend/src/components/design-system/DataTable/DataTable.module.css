@@ -16,10 +16,11 @@
   gap: var(--space-sm);
   border-radius: var(--border-radius-lg);
   border: var(--border-dark-thin);
+  width: fit-content;
+  max-width: 100%;
 }
 
 .table {
-  width: 100%;
   border-collapse: collapse;
   box-shadow: var(--shadow);
   table-layout: fixed;
