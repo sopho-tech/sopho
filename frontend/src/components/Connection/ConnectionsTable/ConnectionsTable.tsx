@@ -11,7 +11,11 @@ import {
   useConnections,
   useDeleteConnection,
 } from "src/api/connection/queries";
-import { SophoTable, ColumnConfig } from "src/components/SophoTable/SophoTable";
+import {
+  DataTable,
+  TableType,
+  ColumnConfig,
+} from "src/components/design-system/DataTable";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 
 export function ConnectionsTable() {
@@ -108,11 +112,14 @@ export function ConnectionsTable() {
 
   return (
     <div className={ConnectionsStyles.connectionsTable}>
-      <SophoTable
+      <DataTable
+        tableType={TableType.CLIENT_SIDE_PAGINATED}
         columns={columns}
         data={connectionsData ?? []}
         isLoading={isLoading}
         isError={isError}
+        enableColumnResizing={false}
+        getRowId={(row) => row.id}
       />
     </div>
   );
