@@ -9,6 +9,7 @@ import styles from "src/components/SignIn/SignIn.module.css";
 import { MeshGradient } from "@paper-design/shaders-react";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { useCreateSession, useSessionValid } from "src/api/auth_api";
+import logo from "src/assets/images/logo.svg";
 
 export default function SignIn() {
   const navigate = useNavigate();
@@ -99,6 +100,9 @@ export default function SignIn() {
         className={styles.formContainer}
         backgroundColor="white"
       >
+        <Flex justifyContent="center" alignItems="center" marginBottom="md">
+          <img src={logo} alt="Logo" className={styles.logo} />
+        </Flex>
         <Heading accessbilityLevel={1} size="xl" textAlign="center">
           Welcome !
         </Heading>

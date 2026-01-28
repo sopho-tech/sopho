@@ -1,9 +1,9 @@
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
-use crate::entity;
-use crate::connection::constants::SourceType;
 use crate::connection::constants::ConnectionStatus;
+use crate::connection::constants::SourceType;
+use crate::entity;
 use chrono::{DateTime, FixedOffset};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateConnectionDto {
     pub name: String,
