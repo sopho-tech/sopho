@@ -1,7 +1,7 @@
 use crate::cell::constants::CellType;
 use crate::cell::dto;
+use crate::common::time_utils;
 use crate::entity::cell;
-use chrono::Utc;
 use sea_orm::ColumnTrait;
 use sea_orm::Condition;
 use sea_orm::QueryFilter;
@@ -61,7 +61,7 @@ pub async fn update_cell(
             cell_entity.name = Set(payload.name.clone());
             cell_entity.content = Set(payload.content.clone());
             cell_entity.status = Set(payload.status.to_string());
-            cell_entity.updated_at = Set(Utc::now().into());
+            cell_entity.updated_at = Set(time_utils::now_utc_into());
             cell_entity.created_at = Set(payload.created_at);
 
             let cell_entity = cell_entity.update(db).await;

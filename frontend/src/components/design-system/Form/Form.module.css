@@ -17,7 +17,7 @@
   border-radius: var(--border-radius-lg);
 }
 
-.formField {
+.formFieldContainer {
   display: flex;
   flex-direction: row;
   gap: var(--space-md);

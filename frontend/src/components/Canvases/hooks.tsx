@@ -19,7 +19,7 @@ export function useCanvasesPagination() {
     setPagination((prev) =>
       typeof updaterOrValue === "function"
         ? updaterOrValue(prev)
-        : updaterOrValue
+        : updaterOrValue,
     );
   };
 

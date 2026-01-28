@@ -4,5 +4,5 @@ export const APP_ROUTES = {
   CANVASES: "/canvas",
   SETTINGS: "/settings",
   SIGN_IN: "/signin",
-  SIGN_UP: "/signup",
+  PROFILE: "/profile",
 };

@@ -1,5 +1,6 @@
 import { FormField, FormFieldType } from "./types";
 import { TextField } from "./TextField";
+import { PasswordField } from "./PasswordField";
 import { SelectField } from "./SelectField";
 import { CollapsibleField } from "./CollapsibleField";
 import { FieldError } from "./FieldError";
@@ -11,6 +12,7 @@ type FormFieldRendererProps = {
   accordionState: Map<string, boolean>;
   setAccordionState: React.Dispatch<React.SetStateAction<Map<string, boolean>>>;
   fieldStyleClass?: string;
+  readonly?: boolean;
 };
 
 export function FormFieldRenderer({
@@ -19,14 +21,40 @@ export function FormFieldRenderer({
   accordionState,
   setAccordionState,
   fieldStyleClass,
+  readonly = false,
 }: FormFieldRendererProps) {
   switch (field.type) {
     case FormFieldType.INPUT: {
       return (
         <form.AppField key={field.key} name={field.key}>
           {(fieldState: any) => (
+            <div className={`${FormStyles.formFieldContainer}`}>
+              <TextField
+                label={String(field.name)}
+                placeholder={field.placeholder}
+                showLabel={field.showLabel}
+                icon={field.icon}
+                readonly={readonly}
+                containerStyleClass={fieldStyleClass}
+              />
+              <FieldError errors={fieldState.state.meta.errors} />
+            </div>
+          )}
+        </form.AppField>
+      );
+    }
+    case FormFieldType.INPUT_PASSWORD: {
+      return (
+        <form.AppField key={field.key} name={field.key}>
+          {(fieldState: any) => (
             <div className={`${FormStyles.formField} ${fieldStyleClass || ""}`}>
-              <TextField label={String(field.name)} />
+              <PasswordField
+                label={String(field.name)}
+                placeholder={field.placeholder}
+                showLabel={field.showLabel}
+                icon={field.icon}
+                readonly={readonly}
+              />
               <FieldError errors={fieldState.state.meta.errors} />
             </div>
           )}
@@ -46,6 +74,8 @@ export function FormFieldRenderer({
                 placeholderText={field.placeholder || "Select an option"}
                 options={field.options || []}
                 infoIconToolTipMessage={field.infoIconToolTipMessage}
+                showLabel={field.showLabel}
+                readonly={readonly}
               />
               <FieldError errors={fieldState.state.meta.errors} />
             </div>
@@ -62,6 +92,7 @@ export function FormFieldRenderer({
           accordionState={accordionState}
           setAccordionState={setAccordionState}
           fieldStyleClass={fieldStyleClass}
+          readonly={readonly}
         />
       );
     }

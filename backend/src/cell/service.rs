@@ -5,13 +5,13 @@ use crate::cell::dto::CellContent;
 use crate::cell::repository;
 use crate::common::database_utils;
 use crate::common::errors::SophoError;
+use crate::common::time_utils;
 use crate::common::AppState;
 use crate::connection::service as connection_service;
 use crate::entity;
 use crate::notebook::does_notebook_exist;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use chrono::Utc;
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
 use sqlx::postgres::PgConnection;
@@ -172,8 +172,8 @@ pub async fn create_cell(app_state: AppState, payload: dto::CreateCellDto) -> im
         notebook_id: payload.notebook_id,
         connection_id: payload.connection_id,
         display_order: display_order,
-        created_at: Utc::now().into(),
-        updated_at: Utc::now().into(),
+        created_at: time_utils::now_utc_into(),
+        updated_at: time_utils::now_utc_into(),
     };
 
     match repository::save_cell(&app_state.database_connection, cell_entity).await {

@@ -8,12 +8,14 @@ import {
 } from "src/components/design-system";
 
 type SelectFieldProps = {
-  label: string;
+  label?: string;
   groupName: string;
   placeholderText: string;
   options: SelectOption[];
   onChange?: (value: string) => void;
   infoIconToolTipMessage?: React.ReactNode;
+  showLabel?: boolean;
+  readonly?: boolean;
 };
 
 export function SelectField({
@@ -23,6 +25,8 @@ export function SelectField({
   options,
   onChange,
   infoIconToolTipMessage,
+  showLabel = true,
+  readonly = false,
 }: SelectFieldProps) {
   const field = useFieldContext<string>();
 
@@ -39,21 +43,28 @@ export function SelectField({
 
   return (
     <Fragment>
-      <div
-        className={`${FormStyles.formLabelIconContainer} ${InfoIconTooltipStyles.hoverContainer}`}
-      >
-        <span className={FormStyles.formLabel}>{label}</span>
-        {renderInfoIconTooltip()}
-      </div>
+      {((showLabel && label) || infoIconToolTipMessage) && (
+        <div
+          className={`${FormStyles.formLabelIconContainer} ${InfoIconTooltipStyles.hoverContainer}`}
+        >
+          {showLabel && label && (
+            <span className={FormStyles.formLabel}>{label}</span>
+          )}
+          {renderInfoIconTooltip()}
+        </div>
+      )}
       <Select
         groupName={groupName}
         onValueChange={(value) => {
-          field.handleChange(value);
-          onChange?.(value);
+          if (!readonly) {
+            field.handleChange(value);
+            onChange?.(value);
+          }
         }}
         options={options}
         placeholderText={placeholderText}
         value={field.state.value}
+        disabled={readonly}
       />
     </Fragment>
   );

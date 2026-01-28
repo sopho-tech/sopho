@@ -16,6 +16,7 @@ impl MigrationTrait for Migration {
                     .table(User::Table)
                     .col(pk_uuid(User::Id))
                     .col(string(User::Username))
+                    .col(string(User::PasswordHash))
                     .col(string(User::Email))
                     .col(string(User::FullName))
                     .to_owned(),
@@ -35,6 +36,7 @@ pub enum User {
     Table,
     Id,
     Username,
+    PasswordHash,
     Email,
     FullName,
 }

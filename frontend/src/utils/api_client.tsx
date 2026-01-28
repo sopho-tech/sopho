@@ -1,14 +1,16 @@
 export const ApiService = {
-  post: async ({
+  post: async <T = any,>({
     url,
     data,
     headers,
     credentials = true,
+    onlyBody = true,
   }: {
     url: string;
     data?: any;
     headers?: Record<string, string>;
     credentials?: boolean;
+    onlyBody?: boolean;
   }) => {
     const response = await fetch(url, {
       headers: headers,
@@ -17,9 +19,12 @@ export const ApiService = {
       credentials: credentials ? "include" : undefined,
     });
     if (!response.ok) {
-      throw new Error(`Failed to post: ${response.statusText}`);
+      throw response;
     }
-    return response.json();
+    if (onlyBody) {
+      return response.json() as Promise<T>;
+    }
+    return response;
   },
   get: async <T = any,>({
     url,
@@ -37,21 +42,26 @@ export const ApiService = {
       method: "GET",
       credentials: credentials ? "include" : undefined,
     });
+    if (!response.ok) {
+      throw response;
+    }
     if (onlyBody) {
       return response.json() as Promise<T>;
     }
     return response;
   },
-  put: async ({
+  put: async <T = any,>({
     url,
     data,
     headers,
     credentials = true,
+    onlyBody = true,
   }: {
     url: string;
     data?: any;
     headers?: Record<string, string>;
     credentials?: boolean;
+    onlyBody?: boolean;
   }) => {
     const response = await fetch(url, {
       headers: headers,
@@ -59,6 +69,12 @@ export const ApiService = {
       body: data ? JSON.stringify(data) : undefined,
       credentials: credentials ? "include" : undefined,
     });
-    return response.json();
+    if (!response.ok) {
+      throw response;
+    }
+    if (onlyBody) {
+      return response.json() as Promise<T>;
+    }
+    return response;
   },
 };

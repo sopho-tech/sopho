@@ -65,6 +65,17 @@ export function Sidebar() {
               </NavLink>
             </NavigationMenu.Link>
           </NavigationMenu.Item>
+          <NavigationMenu.Item className={SidebarStyles.navItem}>
+            <NavigationMenu.Link asChild>
+              <NavLink to={APP_ROUTES.PROFILE} className={SidebarStyles.link}>
+                <IconButtonLink
+                  type="user"
+                  state={getState(APP_ROUTES.PROFILE)}
+                  tooltip={{ text: "Profile", direction: "right" }}
+                />
+              </NavLink>
+            </NavigationMenu.Link>
+          </NavigationMenu.Item>
         </NavigationMenu.List>
       </NavigationMenu.Root>
     </div>

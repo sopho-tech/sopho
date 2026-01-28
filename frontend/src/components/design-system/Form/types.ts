@@ -1,5 +1,8 @@
+import { IconType } from "src/components/design-system/datatypes";
+
 export enum FormFieldType {
   INPUT = "INPUT",
+  INPUT_PASSWORD = "INPUT_PASSWORD",
   SELECT = "SELECT",
   COLLAPSIBLE = "COLLAPSIBLE",
 }
@@ -34,5 +37,7 @@ export type FormField = {
   collapsibleConfig?: CollapsibleConfig;
   validator?: FieldValidator;
   infoIconToolTipMessage?: React.ReactNode;
+  showLabel?: boolean;
+  icon?: IconType;
 };
 

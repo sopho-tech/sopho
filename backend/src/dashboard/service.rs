@@ -1,3 +1,4 @@
+use crate::common::time_utils;
 use crate::common::AppState;
 use crate::dashboard::constants::DashboardStatus;
 use crate::dashboard::dto;
@@ -6,7 +7,6 @@ use crate::dashboard::repository;
 use crate::entity;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use chrono::Utc;
 use sea_orm::DatabaseTransaction;
 use uuid::Uuid;
 
@@ -64,8 +64,8 @@ pub async fn create_dashboard(
         name: payload.name,
         description: payload.description,
         status: DashboardStatus::Active.to_string(),
-        created_at: Utc::now().into(),
-        updated_at: Utc::now().into(),
+        created_at: time_utils::now_utc_into(),
+        updated_at: time_utils::now_utc_into(),
         layout: None,
     };
 
@@ -106,8 +106,8 @@ pub async fn create_dashboard_transaction(
         description,
         layout: Layout::to_json(layout),
         status: DashboardStatus::Active.to_string(),
-        created_at: Utc::now().into(),
-        updated_at: Utc::now().into(),
+        created_at: time_utils::now_utc_into(),
+        updated_at: time_utils::now_utc_into(),
     };
     repository::save_dashboard_transaction(txn, dashboard_entity).await
 }

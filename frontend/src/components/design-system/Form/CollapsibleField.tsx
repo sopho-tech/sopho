@@ -9,6 +9,7 @@ type CollapsibleFieldProps = {
   accordionState: Map<string, boolean>;
   setAccordionState: React.Dispatch<React.SetStateAction<Map<string, boolean>>>;
   fieldStyleClass?: string;
+  readonly?: boolean;
 };
 
 export function CollapsibleField({
@@ -17,6 +18,7 @@ export function CollapsibleField({
   accordionState,
   setAccordionState,
   fieldStyleClass,
+  readonly = false,
 }: CollapsibleFieldProps) {
   if (!field.collapsibleConfig) {
     return null;
@@ -34,6 +36,7 @@ export function CollapsibleField({
           accordionState={accordionState}
           setAccordionState={setAccordionState}
           fieldStyleClass={fieldStyleClass}
+          readonly={readonly}
         />
       )),
     },

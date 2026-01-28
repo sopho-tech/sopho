@@ -14,7 +14,6 @@ install:
 run:
 	@echo "Starting backend server..."
 	cd backend && \
-	GOOGLE_REDIRECT_URI="http://localhost:3000" \
 	ENVIRONMENT="development" \
 	COOKIE_DOMAIN="localhost" \
 	COOKIE_SECURE="false" \
@@ -25,7 +24,6 @@ dev:
 	@echo "Starting backend and frontend in development mode..."
 	@trap 'kill 0' EXIT; \
 	(cd backend && \
-	GOOGLE_REDIRECT_URI="http://localhost:3000" \
 	ENVIRONMENT="development" \
 	COOKIE_DOMAIN="localhost" \
 	COOKIE_SECURE="false" \

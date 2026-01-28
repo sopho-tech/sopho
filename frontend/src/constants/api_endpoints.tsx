@@ -2,6 +2,9 @@ export const API_ENDPOINTS = {
   AUTH: {
     CREATE_SESSION: "/api/v1/auth/session",
     GET_SESSION: "/api/v1/auth/session",
+    DELETE_SESSION: "/api/v1/auth/session",
+    GET_PROFILE_DETAILS: "/api/v1/auth/me",
+    REFRESH_TOKEN: "/api/v1/auth/refresh",
   },
   CONNECTION: {
     CREATE: "/api/v1/connection",

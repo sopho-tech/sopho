@@ -72,7 +72,7 @@ function renderButtonRow(
   handleBackCallback: () => void,
   isFirstStep: boolean,
   isLastStep: boolean,
-  buttomRowStyleClass: string
+  buttomRowStyleClass: string,
 ) {
   const showBack = currentStep.showBackButton !== false && !isFirstStep;
   const showNext = currentStep.showNextButton !== false;
@@ -189,7 +189,7 @@ export function SophoMultiStepForm({
         handleBackCallback,
         isFirstStep,
         isLastStep,
-        buttomRowStyleClass || ""
+        buttomRowStyleClass || "",
       )}
     </Form.Root>
   );
