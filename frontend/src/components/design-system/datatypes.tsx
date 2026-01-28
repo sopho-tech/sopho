@@ -31,6 +31,7 @@ export type IconType =
   | "swap_horiz"
   | "swap_vert"
   | "visibility"
+  | "visibility_off"
   | "edit"
   | "delete"
   | "play"
@@ -58,7 +59,10 @@ export type IconType =
   | "circle_x"
   | "search"
   | "sparkles"
-  | "refresh";
+  | "refresh"
+  | "email"
+  | "lock"
+  | "user";
 
 export type IconSize = "sm" | "md" | "lg";
 

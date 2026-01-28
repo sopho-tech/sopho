@@ -4,6 +4,8 @@ globs: *.rs
 alwaysApply: false
 ---
 
+# General
+
 - Always use the latest version of rust packages.
 - Always ensure test coverage is above 90%.
 - For rust the backend framework used is axum.
@@ -12,8 +14,8 @@ alwaysApply: false
 - Create folders for modules if needed. Always arrange code properly.
 - Always use sea-orm for orm and queries.
 - I am making data visualization / query backend.
-- Use @tanstack/react-query for data fetching at client side in the frontend.
-- Use tailwind css, and react functions and eslint.
-- Use radix-ui wherever possible for components instead of creating from scratch.
-- Use google's material-symbols for icons.
 - Do not add comments when generating code.
+
+# Design
+
+- Modules can interact with each other using functions in service.rs. Do not use repository.rs or other files directly in other modules. Use it through service.rs.

@@ -8,10 +8,11 @@ alwaysApply: false
 - Use css modules.
 - Do not generate comments in code.
 - Use css variables from `frontend/src/css/index.css` if possible and add new variables if needed.
-- Use radix-ui primitives for anything that is possible.
 - Use zustand for global and local client frontend state.
 - Use tanstack query to store backend state.
 - Use type for react props and states. Use interface only for public APIs.
 - Use Apache ECharts for creating charts.
 - Use Lucide React Icons for icon.
 - Use components from `frontend/src/design-system` for building features.
+- Use @tanstack/react-query for data fetching at client side in the frontend.
+- Use radix-ui wherever possible for components instead of creating from scratch.

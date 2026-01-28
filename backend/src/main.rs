@@ -6,6 +6,7 @@ mod connection;
 mod dashboard;
 mod db;
 mod entity;
+mod middlewares;
 mod monitor;
 mod notebook;
 
@@ -50,18 +51,50 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    authentication::service::seed_admin_user(&app_state).await;
+
     let frontend_dir = PathBuf::from(app_state.config.frontend_dir.as_ref());
     let index_path = frontend_dir.join("index.html");
     let static_files_service = ServeDir::new(&frontend_dir);
 
     let mut app = Router::new()
         .nest("/api/v1/monitor", monitor::routes())
-        .nest("/api/v1/dashboard", dashboard::routes(app_state.clone()))
-        .nest("/api/v1/connection", connection::routes(app_state.clone()))
-        .nest("/api/v1/notebook", notebook::routes(app_state.clone()))
-        .nest("/api/v1/cell", cell::routes(app_state.clone()))
         .nest("/api/v1/auth", authentication::routes(app_state.clone()))
-        .nest("/api/v1/canvas", canvas::routes(app_state.clone()))
+        .nest(
+            "/api/v1/dashboard",
+            dashboard::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
+                app_state.clone(),
+                middlewares::auth_middleware_fn,
+            )),
+        )
+        .nest(
+            "/api/v1/connection",
+            connection::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
+                app_state.clone(),
+                middlewares::auth_middleware_fn,
+            )),
+        )
+        .nest(
+            "/api/v1/notebook",
+            notebook::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
+                app_state.clone(),
+                middlewares::auth_middleware_fn,
+            )),
+        )
+        .nest(
+            "/api/v1/cell",
+            cell::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
+                app_state.clone(),
+                middlewares::auth_middleware_fn,
+            )),
+        )
+        .nest(
+            "/api/v1/canvas",
+            canvas::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
+                app_state.clone(),
+                middlewares::auth_middleware_fn,
+            )),
+        )
         .fallback_service(static_files_service)
         .layer(middleware::from_fn(move |req: Request, next: Next| {
             let index_path = index_path.clone();

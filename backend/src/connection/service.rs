@@ -1,11 +1,11 @@
-use crate::connection::repository;
-use crate::connection::dto;
-use crate::entity;
-use crate::connection::constants::ConnectionStatus;
-use uuid::Uuid;
-use axum::http::StatusCode;
-use chrono::Utc;
+use crate::common::time_utils;
 use crate::common::AppState;
+use crate::connection::constants::ConnectionStatus;
+use crate::connection::dto;
+use crate::connection::repository;
+use crate::entity;
+use axum::http::StatusCode;
+use uuid::Uuid;
 use axum::response::IntoResponse;
 use sqlx::Connection;
 use crate::connection::constants::SourceType;
@@ -83,8 +83,8 @@ pub async fn create_connection(
         schema: payload.schema,
         username: payload.username,
         source_type: payload.source_type.to_string(),
-        created_at: Utc::now().into(),
-        updated_at: Utc::now().into(),
+        created_at: time_utils::now_utc_into(),
+        updated_at: time_utils::now_utc_into(),
     };
 
     let database_url = database_utils::get_database_url(&connection_entity);

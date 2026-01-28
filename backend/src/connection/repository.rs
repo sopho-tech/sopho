@@ -1,9 +1,9 @@
-use sea_orm::{ActiveModelTrait, EntityTrait, DatabaseConnection, DbErr};
-use crate::entity::connection;
-use uuid::Uuid;
-use sea_orm::Set;
+use crate::common::time_utils;
 use crate::connection::dto;
-use chrono::Utc;
+use crate::entity::connection;
+use sea_orm::Set;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait};
+use uuid::Uuid;
 
 pub async fn save_connection(db: &DatabaseConnection, connection: connection::Model) -> Result<connection::Model, DbErr> {
     let connection_active_model: connection::ActiveModel = connection.into();
@@ -39,7 +39,7 @@ pub async fn update_connection(db: &DatabaseConnection, connection_id: Uuid, pay
             connection_entity.schema = Set(payload.schema);
             connection_entity.username = Set(payload.username);
             connection_entity.source_type = Set(payload.source_type.to_string());
-            connection_entity.updated_at = Set(Utc::now().into());
+            connection_entity.updated_at = Set(time_utils::now_utc_into());
             connection_entity.created_at = Set(payload.created_at);
 
             let connection_entity = connection_entity.update(db).await;

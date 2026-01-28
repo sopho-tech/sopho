@@ -2,6 +2,8 @@
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
+  min-width: 0;
 }
 
 .input {
@@ -13,6 +15,9 @@
   transition: border-color 0.2s;
   color: var(--color-text);
   background-color: var(--input-background);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .inputWithLeadingIcon {
@@ -43,7 +48,7 @@
 
 .leadingIcon {
   position: absolute;
-  left: var(--space-2xs);
+  left: var(--space-xs);
   display: flex;
   align-items: center;
   pointer-events: none;
@@ -52,7 +57,7 @@
 
 .clearButton {
   position: absolute;
-  right: var(--space-2xs);
+  right: var(--space-xs);
   display: flex;
   align-items: center;
   z-index: var(--z-index-1);

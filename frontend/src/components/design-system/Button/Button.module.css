@@ -5,14 +5,19 @@
   border-radius: var(--border-radius-lg);
   transition: transform 0.15s ease-in-out;
   width: fit-content;
-}
-
-.fullWidth {
-  width: 100%;
+  box-shadow: var(--shadow-2xs);
 }
 
 .button:active {
   transform: scale(0.95);
+}
+
+.button:hover {
+  box-shadow: var(--shadow-xs);
+}
+
+.fullWidth {
+  width: 100%;
 }
 
 .sizeSm {
@@ -31,16 +36,15 @@
 }
 
 .accent {
-  background-color: var(--color-primary-500);
-  box-shadow: var(--shadow-primary-inset), var(--shadow-xs);
+  background-color: var(--color-primary-300);
 }
 
 .accent:hover {
-  background-color: var(--color-primary-600);
+  background-color: var(--color-primary-400);
 }
 
 .accent:active {
-  background-color: var(--color-primary-400);
+  background-color: var(--color-primary-200);
   box-shadow: none;
 }
 

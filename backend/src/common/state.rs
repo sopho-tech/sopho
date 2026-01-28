@@ -17,6 +17,10 @@ pub struct Configurations {
     pub environment: Cow<'static, str>,
     pub cookie_domain: Cow<'static, str>,
     pub cookie_secure: bool,
+    pub admin_username: Cow<'static, str>,
+    pub admin_password: Cow<'static, str>,
+    pub admin_email: Cow<'static, str>,
+    pub admin_full_name: Cow<'static, str>,
 }
 
 impl Configurations {
@@ -64,6 +68,22 @@ impl Configurations {
             cookie_secure: match dotenv::var("COOKIE_SECURE") {
                 Ok(cookie_secure) => cookie_secure.parse()?,
                 Err(err) => bail!("missing COOKIE_SECURE: {err}"),
+            },
+            admin_username: match dotenv::var("ADMIN_USERNAME") {
+                Ok(v) => v.into(),
+                Err(err) => bail!("missing ADMIN_USERNAME: {err}"),
+            },
+            admin_password: match dotenv::var("ADMIN_PASSWORD") {
+                Ok(v) => v.into(),
+                Err(err) => bail!("missing ADMIN_PASSWORD: {err}"),
+            },
+            admin_email: match dotenv::var("ADMIN_EMAIL") {
+                Ok(v) => v.into(),
+                Err(err) => bail!("missing ADMIN_EMAIL: {err}"),
+            },
+            admin_full_name: match dotenv::var("ADMIN_FULL_NAME") {
+                Ok(v) => v.into(),
+                Err(err) => bail!("missing ADMIN_FULL_NAME: {err}"),
             },
         })
     }

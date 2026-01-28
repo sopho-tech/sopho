@@ -1,6 +1,6 @@
+use crate::common::time_utils;
 use crate::dashboard::dto;
 use crate::entity::dashboard;
-use chrono::Utc;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
     QueryFilter, Set,
@@ -86,7 +86,7 @@ pub async fn update_dashboard(
             }
             dashboard_entity.status = Set(payload.status.to_string());
             dashboard_entity.layout = Set(dto::Layout::to_json(payload.layout));
-            dashboard_entity.updated_at = Set(Utc::now().into());
+            dashboard_entity.updated_at = Set(time_utils::now_utc_into());
 
             let dashboard_entity = dashboard_entity.update(db).await;
             return dashboard_entity;

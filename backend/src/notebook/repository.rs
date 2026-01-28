@@ -1,6 +1,6 @@
+use crate::common::time_utils;
 use crate::entity::notebook;
 use crate::notebook::dto;
-use chrono::Utc;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait};
 use sea_orm::{ColumnTrait, DatabaseTransaction, QueryFilter, QueryOrder};
@@ -64,7 +64,7 @@ pub async fn update_notebook(
             notebook_entity.name = Set(payload.name.clone());
             notebook_entity.description = Set(payload.description.clone());
             notebook_entity.status = Set(payload.status.to_string());
-            notebook_entity.updated_at = Set(Utc::now().into());
+            notebook_entity.updated_at = Set(time_utils::now_utc_into());
             notebook_entity.created_at = Set(payload.created_at);
 
             let notebook_entity = notebook_entity.update(txn).await;

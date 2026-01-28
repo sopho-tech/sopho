@@ -1,4 +1,5 @@
 use crate::cell::service as cell_service;
+use crate::common::time_utils;
 use crate::common::{AppState, PaginatedResponse, Pagination};
 use crate::entity;
 use crate::notebook::constants::{NotebookStatus, QueryFilters};
@@ -7,7 +8,6 @@ use crate::notebook::repository;
 use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use chrono::Utc;
 use sea_orm::DatabaseTransaction;
 use uuid::Uuid;
 
@@ -156,8 +156,8 @@ pub async fn create_notebook(
         name: payload.name,
         description: payload.description,
         status: NotebookStatus::Active.to_string(),
-        created_at: Utc::now().into(),
-        updated_at: Utc::now().into(),
+        created_at: time_utils::now_utc_into(),
+        updated_at: time_utils::now_utc_into(),
     };
     let notebook =
         repository::save_notebook_connection(&app_state.database_connection, notebook).await;
@@ -188,8 +188,8 @@ pub async fn create_notebook_transaction(
         name,
         description,
         status: NotebookStatus::Active.to_string(),
-        created_at: Utc::now().into(),
-        updated_at: Utc::now().into(),
+        created_at: time_utils::now_utc_into(),
+        updated_at: time_utils::now_utc_into(),
     };
     repository::save_notebook_transaction(txn, notebook).await
 }

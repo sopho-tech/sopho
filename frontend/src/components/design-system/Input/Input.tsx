@@ -75,17 +75,20 @@ export function Input({
         className={`${styles.input} ${leadingIcon ? styles.inputWithLeadingIcon : ""} ${className || ""}`}
         {...otherProps}
       />
-      <div
-        className={`${styles.clearButton} ${!hasValue ? styles.clearButtonHidden : ""}`}
-      >
-        <IconButton
-          type="close"
-          backgroundColor="transparent"
-          iconColor="grey"
-          iconSize="sm"
-          onClick={handleClear}
-        />
-      </div>
+      {!disabled && (
+        <div
+          className={`${styles.clearButton} ${!hasValue ? styles.clearButtonHidden : ""}`}
+        >
+          <IconButton
+            type="close"
+            backgroundColor="transparent"
+            iconColor="grey"
+            iconSize="sm"
+            onClick={handleClear}
+            tabIndex={-1}
+          />
+        </div>
+      )}
     </div>
   );
 }

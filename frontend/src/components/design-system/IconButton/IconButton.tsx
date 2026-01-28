@@ -17,6 +17,7 @@ type IconButtonProps = {
     direction?: "top" | "right" | "bottom" | "left";
   };
   onClick: () => void;
+  tabIndex?: number;
 };
 
 export function IconButton({
@@ -26,10 +27,11 @@ export function IconButton({
   iconSize,
   tooltip,
   onClick,
+  tabIndex,
 }: IconButtonProps) {
   const className = styles[backgroundColor];
   const button = (
-    <button className={`${styles.button} ${className}`} onClick={onClick}>
+    <button className={`${styles.button} ${className}`} onClick={onClick} tabIndex={tabIndex}>
       <Icon color={iconColor} type={type} size={iconSize}></Icon>
     </button>
   );

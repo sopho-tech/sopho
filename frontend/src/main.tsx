@@ -2,13 +2,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { registerTheme } from "echarts";
 import Home from "src/components/Home/Home";
-import SignUp from "src/components/SignUp/SignUp";
 import SignIn from "src/components/SignIn/SignIn";
 import { Settings } from "src/components/Settings";
+import { Profile } from "src/components/Profile";
 import { ProtectedRoute } from "src/components/ProtectedRoute";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import { ReactQueryClientProvider } from "./utils/react_query_provider";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import { APP_ROUTES } from "src/constants/app_routes";
 import theme from "src/assets/echart_themes/theme.json";
 import { Canvases } from "src/components/Canvases";
@@ -29,6 +28,10 @@ const router = createBrowserRouter([
         element: <Settings />,
       },
       {
+        path: APP_ROUTES.PROFILE,
+        element: <Profile />,
+      },
+      {
         path: APP_ROUTES.CANVASES,
         element: <Canvases />,
       },
@@ -39,10 +42,6 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: APP_ROUTES.SIGN_UP,
-    element: <SignUp />,
-  },
-  {
     path: APP_ROUTES.SIGN_IN,
     element: <SignIn />,
   },
@@ -50,10 +49,8 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <ReactQueryClientProvider>
-        <RouterProvider router={router} />
-      </ReactQueryClientProvider>
-    </GoogleOAuthProvider>
-  </StrictMode>
+    <ReactQueryClientProvider>
+      <RouterProvider router={router} />
+    </ReactQueryClientProvider>
+  </StrictMode>,
 );

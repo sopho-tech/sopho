@@ -22,11 +22,14 @@ type FormProps = {
   submitButtonText?: string;
   showCancelButton?: boolean;
   showSubmitButton?: boolean;
+  showErrorBanner?: boolean;
   additionalButtons?: React.ReactNode[];
-  defaultValues?: Record<string, any>;
   fieldsContainerStyleClass?: string;
   fieldStyleClass?: string;
   rootStyleClass?: string;
+  formButtonRowStyleClass?: string;
+  submitOnEnter?: boolean;
+  readonly?: boolean;
 };
 
 export function Form({
@@ -37,19 +40,22 @@ export function Form({
   submitButtonText = "Submit",
   showCancelButton = true,
   showSubmitButton = true,
+  showErrorBanner = true,
   additionalButtons,
-  defaultValues,
   fieldsContainerStyleClass,
   fieldStyleClass,
   rootStyleClass,
+  formButtonRowStyleClass,
+  submitOnEnter = false,
+  readonly = false,
 }: FormProps) {
-  const finalDefaultValues = defaultValues || deriveDefaultValues(fields);
+  const defaultValues = deriveDefaultValues(fields);
   const [accordionState, setAccordionState] = useState<Map<string, boolean>>(
-    new Map()
+    new Map(),
   );
 
   const form = useAppForm({
-    defaultValues: finalDefaultValues,
+    defaultValues: defaultValues,
     onSubmit: ({ value }: { value: unknown }) => {
       const formData = convertValuesToFormData(value as Record<string, any>);
       onSubmitCallback(formData);
@@ -62,13 +68,13 @@ export function Form({
       onDynamic({ value }) {
         const { errorMap, invalidFields } = validateFields(
           fields,
-          value as Record<string, any>
+          value as Record<string, any>,
         );
 
         if (invalidFields.length > 0) {
           const shouldBeOpenAccordions = findAccordionsWithInvalidFields(
             invalidFields,
-            fields
+            fields,
           );
           const newAccordionState = new Map(accordionState);
           shouldBeOpenAccordions.forEach((key) => {
@@ -102,14 +108,26 @@ export function Form({
 
   const formFieldMeta = useStore(form.store, (state) => state.fieldMeta);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (submitOnEnter && e.key === "Enter") {
+      e.preventDefault();
+      form.handleSubmit();
+    }
+  };
+
   return (
     <div className={`${FormStyles.formRoot} ${rootStyleClass || ""}`}>
-      <BannerSlim
-        type="error"
-        message={getErrorSummary(formFieldMeta, fields)}
-      />
+      {showErrorBanner && (
+        <BannerSlim
+          type="error"
+          message={getErrorSummary(formFieldMeta, fields)}
+        />
+      )}
       <form.AppForm>
-        <div className={fieldsContainerStyleClass || FormStyles.formElements}>
+        <div
+          className={fieldsContainerStyleClass || FormStyles.formElements}
+          onKeyDown={handleKeyDown}
+        >
           {fields.map((field) => (
             <FormFieldRenderer
               key={field.key}
@@ -118,24 +136,28 @@ export function Form({
               accordionState={accordionState}
               setAccordionState={setAccordionState}
               fieldStyleClass={fieldStyleClass}
+              readonly={readonly}
             />
           ))}
         </div>
-        {(showCancelButton || showSubmitButton || additionalButtons) && (
-          <div className={FormStyles.formButtonRow}>
-            {showCancelButton && (
-              <Button
-                label="Cancel"
-                onClick={onCancelCallback}
-                backgroundColor="white"
-                size="sm"
-                shape="rectangle"
-              />
-            )}
-            {showSubmitButton && <SubscribeButton label={submitButtonText} />}
-            {additionalButtons}
-          </div>
-        )}
+        {!readonly &&
+          (showCancelButton || showSubmitButton || additionalButtons) && (
+            <div
+              className={`${FormStyles.formButtonRow} ${formButtonRowStyleClass || ""}`}
+            >
+              {showCancelButton && (
+                <Button
+                  label="Cancel"
+                  onClick={onCancelCallback}
+                  backgroundColor="white"
+                  size="sm"
+                  shape="rectangle"
+                />
+              )}
+              {showSubmitButton && <SubscribeButton label={submitButtonText} />}
+              {additionalButtons}
+            </div>
+          )}
       </form.AppForm>
     </div>
   );

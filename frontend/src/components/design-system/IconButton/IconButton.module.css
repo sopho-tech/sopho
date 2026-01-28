@@ -1,5 +1,4 @@
 .button {
-  padding: var(--space-2xs);
   border-radius: var(--border-radius-full);
   display: flex;
   cursor: pointer;

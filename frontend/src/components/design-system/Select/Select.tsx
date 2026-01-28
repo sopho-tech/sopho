@@ -14,6 +14,7 @@ export type SelectProps = {
   options: SelectOption[];
   value: string;
   onValueChange: (value: string) => void;
+  disabled?: boolean;
 };
 
 export function Select({
@@ -22,6 +23,7 @@ export function Select({
   options,
   value,
   onValueChange,
+  disabled = false,
 }: SelectProps) {
   const selectedOption = options.find((option) => option.value === value);
 
@@ -53,8 +55,8 @@ export function Select({
     </RadixSelect.Item>
   ));
   return (
-    <RadixSelect.Root value={value || ""} onValueChange={onValueChange}>
-      <RadixSelect.Trigger className={SelectStyles.selectTrigger}>
+    <RadixSelect.Root value={value || ""} onValueChange={onValueChange} disabled={disabled}>
+      <RadixSelect.Trigger className={SelectStyles.selectTrigger} disabled={disabled}>
         <RadixSelect.Value placeholder={placeholderText}>
           {selectedOption?.label}
         </RadixSelect.Value>

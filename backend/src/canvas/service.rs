@@ -2,6 +2,7 @@ use crate::canvas::constants::CanvasStatus;
 use crate::canvas::dto;
 use crate::canvas::repository;
 use crate::cell::service as cell_service;
+use crate::common::time_utils;
 use crate::common::{AppState, PaginatedResponse, Pagination};
 use crate::dashboard::service as dashboard_service;
 use crate::entity;
@@ -9,7 +10,6 @@ use crate::notebook::service as notebook_service;
 use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use chrono::Utc;
 use sea_orm::TransactionTrait;
 use uuid::Uuid;
 
@@ -84,7 +84,7 @@ pub async fn create_canvas(
     };
 
     let canvas_id = Uuid::new_v4();
-    let now = Utc::now().into();
+    let now = time_utils::now_utc_into();
 
     let canvas_entity = entity::canvas::Model {
         id: canvas_id,

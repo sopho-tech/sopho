@@ -13,6 +13,7 @@ import {
   ArrowLeftRight,
   ArrowUpDown,
   Eye,
+  EyeOff,
   Pencil,
   Trash2,
   Play,
@@ -42,6 +43,9 @@ import {
   Search,
   Sparkles,
   RefreshCw,
+  Mail,
+  Lock,
+  User,
 } from "lucide-react";
 
 const iconMap: Record<IconType, LucideIcon> = {
@@ -54,6 +58,7 @@ const iconMap: Record<IconType, LucideIcon> = {
   swap_horiz: ArrowLeftRight,
   swap_vert: ArrowUpDown,
   visibility: Eye,
+  visibility_off: EyeOff,
   edit: Pencil,
   delete: Trash2,
   play: Play,
@@ -81,6 +86,9 @@ const iconMap: Record<IconType, LucideIcon> = {
   search: Search,
   sparkles: Sparkles,
   refresh: RefreshCw,
+  email: Mail,
+  lock: Lock,
+  user: User,
 };
 
 const sizeMap: Record<IconSize, number> = {

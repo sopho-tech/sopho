@@ -1,7 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt;
 use std::borrow::Cow;
-
+use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum CookieName {
@@ -52,3 +51,28 @@ impl From<CookieName> for Cow<'static, str> {
         Cow::Borrowed(name.as_str())
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SessionStatus {
+    Active,
+    Inactive,
+}
+
+impl SessionStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SessionStatus::Active => "active",
+            SessionStatus::Inactive => "inactive",
+        }
+    }
+}
+
+impl From<SessionStatus> for String {
+    fn from(status: SessionStatus) -> Self {
+        status.as_str().to_string()
+    }
+}
+
+pub const ACCESS_TOKEN_EXPIRY_HOURS: i64 = 1;
+
+pub const REFRESH_TOKEN_EXPIRY_DAYS: i64 = 15;
