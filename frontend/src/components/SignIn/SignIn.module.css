@@ -44,3 +44,8 @@
   align-items: flex-start;
   gap: var(--space-2xs);
 }
+
+.logo {
+  width: 50px;
+  height: 50px;
+}
