@@ -30,7 +30,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
 
     const cellConnectionId = getCellQuery.data.connection_id;
     const foundConnection = query.data.find(
-      (connection) => connection.id === cellConnectionId
+      (connection) => connection.id === cellConnectionId,
     );
 
     const newInitialValue =

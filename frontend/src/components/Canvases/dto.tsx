@@ -5,6 +5,9 @@ export type CanvasDto = {
   status: string | null;
   created_at: string | null;
   updated_at: string | null;
+  sql_cell_count: number;
+  chart_cell_count: number;
+  dashboard_charts_count: number;
 };
 
 export enum CanvasesPageState {

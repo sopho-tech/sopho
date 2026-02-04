@@ -24,7 +24,6 @@ export function CanvasCreateDialog() {
     if (!open) {
       setCanvasPageState(CanvasesPageState.LIST);
     }
-    console.log("dialog state is :", open);
   };
 
   const mutation = useCreateCanvas({

@@ -62,7 +62,12 @@ export type IconType =
   | "refresh"
   | "email"
   | "lock"
-  | "user";
+  | "user"
+  | "logout"
+  | "layers"
+  | "bar_chart"
+  | "table"
+  | "layout_dashboard";
 
 export type IconSize = "sm" | "md" | "lg";
 

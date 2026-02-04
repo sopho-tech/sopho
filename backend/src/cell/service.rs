@@ -10,6 +10,7 @@ use crate::common::AppState;
 use crate::connection::service as connection_service;
 use crate::entity;
 use crate::notebook::does_notebook_exist;
+use crate::notebook::service as notebook_service;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
@@ -532,9 +533,59 @@ async fn execute_chart_cell(
     execute_query_and_format_results(database_connection, &aggregated_query).await
 }
 
+pub async fn get_last_modified_cells_by_type(
+    app_state: &AppState,
+    cell_type: CellType,
+    limit: u64,
+) -> Result<Vec<entity::cell::Model>, sea_orm::DbErr> {
+    repository::get_latest_cells_by_type(&app_state.database_connection, cell_type, limit).await
+}
+
+pub async fn search_cells_by_name_and_type(
+    app_state: &AppState,
+    search_query: &str,
+    cell_type: CellType,
+    limit: u64,
+) -> Result<Vec<entity::cell::Model>, sea_orm::DbErr> {
+    repository::search_cells_by_name_and_type(
+        &app_state.database_connection,
+        search_query,
+        cell_type,
+        limit,
+    )
+    .await
+}
+
 pub async fn delete_cells_by_notebook_id_transaction(
     txn: &sea_orm::DatabaseTransaction,
     notebook_id: Uuid,
 ) -> Result<(), sea_orm::DbErr> {
     repository::delete_cells_by_notebook_id_transaction(txn, notebook_id).await
+}
+
+pub async fn get_cell_counts_by_canvas_id(
+    app_state: &AppState,
+    canvas_id: Uuid,
+) -> Result<(i32, i32), SophoError> {
+    let notebook = notebook_service::get_notebook_by_canvas_id(app_state, canvas_id)
+        .await
+        .map_err(|e| SophoError::DatabaseError(e))?;
+
+    let sql_count = repository::count_cells_by_notebook_id_and_cell_type(
+        &app_state.database_connection,
+        notebook.id,
+        CellType::Sql,
+    )
+    .await
+    .map_err(|e| SophoError::DatabaseError(e))?;
+
+    let chart_count = repository::count_cells_by_notebook_id_and_cell_type(
+        &app_state.database_connection,
+        notebook.id,
+        CellType::Chart,
+    )
+    .await
+    .map_err(|e| SophoError::DatabaseError(e))?;
+
+    Ok((sql_count as i32, chart_count as i32))
 }

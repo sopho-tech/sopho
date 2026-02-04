@@ -4,37 +4,12 @@ import type {
   BoxElement,
   Display,
 } from "src/components/design-system/datatypes";
-import { getSharedLayoutStyles } from "src/components/design-system/utils";
-
-const layoutPropKeys: (keyof SharedLayoutProps)[] = [
-  "borderRadius",
-  "border",
-  "shadow",
-  "backgroundColor",
-  "direction",
-  "gap",
-  "paddingX",
-  "paddingY",
-  "marginTop",
-  "marginBottom",
-  "marginLeft",
-  "marginRight",
-  "flex",
-  "overflow",
-  "justifyContent",
-  "alignItems",
-  "alignContent",
-  "alignSelf",
-  "top",
-  "bottom",
-  "left",
-  "right",
-  "position",
-  "zIndex",
-  "height",
-  "width",
-  "ref",
-];
+import {
+  getSharedLayoutStyles,
+  separateLayoutProps,
+  mergeBoxStyles,
+  mergeBoxClassName,
+} from "src/components/design-system/utils";
 
 export type BoxProps = SharedLayoutProps & {
   as?: BoxElement;
@@ -53,23 +28,15 @@ export function Box({
   ...props
 }: BoxProps) {
   const Component = as;
-  const layoutProps: SharedLayoutProps = {};
-  const htmlProps: React.HTMLAttributes<HTMLElement> = {};
-
-  Object.entries(props).forEach(([key, value]) => {
-    if (layoutPropKeys.includes(key as keyof SharedLayoutProps)) {
-      (layoutProps as any)[key] = value;
-    } else {
-      (htmlProps as any)[key] = value;
-    }
-  });
+  const { layoutProps, htmlProps } = separateLayoutProps(props);
 
   const layoutStyles = getSharedLayoutStyles(layoutProps);
 
   const backgroundColorClassName = styles[backgroundColor];
-  const mergedClassName = htmlProps.className
-    ? `${backgroundColorClassName} ${htmlProps.className}`.trim()
-    : backgroundColorClassName;
+  const mergedClassName = mergeBoxClassName(
+    backgroundColorClassName,
+    htmlProps.className
+  );
 
   const {
     className: _,
@@ -77,12 +44,7 @@ export function Box({
     ...htmlPropsWithoutClassNameAndStyle
   } = htmlProps;
 
-  const mergedStyle = {
-    display,
-    ...layoutStyles,
-    ...sx,
-    ...htmlStyle,
-  };
+  const mergedStyle = mergeBoxStyles(display, layoutStyles, sx, htmlStyle);
 
   return (
     <Component

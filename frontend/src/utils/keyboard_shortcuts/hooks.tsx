@@ -5,9 +5,9 @@ import {
 } from "src/utils/keyboard_shortcuts/keyboard_shortcuts";
 
 export function useKeyboardShortcut(
-  htmlElementToAttachToRef: RefObject<HTMLDivElement | null>,
   callback: (event: KeyboardEvent) => void,
-  keymap: KeyboardShortcut
+  keymap: KeyboardShortcut,
+  htmlElementToAttachToRef?: RefObject<HTMLDivElement | null>
 ) {
   const handleCallBack = handleKeyboardShortcut(keymap, callback);
 
@@ -18,6 +18,13 @@ export function useKeyboardShortcut(
   });
 
   useEffect(() => {
+    if (!htmlElementToAttachToRef) {
+      document.addEventListener("keydown", handleCallBack);
+      return () => {
+        document.removeEventListener("keydown", handleCallBack);
+      };
+    }
+
     const element = htmlElementToAttachToRef.current;
     if (element != null) {
       element.addEventListener("keydown", handleCallBack);

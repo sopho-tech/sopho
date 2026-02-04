@@ -19,6 +19,9 @@ pub struct CanvasDto {
     pub status: CanvasStatus,
     pub created_at: DateTime<FixedOffset>,
     pub updated_at: DateTime<FixedOffset>,
+    pub sql_cell_count: i32,
+    pub chart_cell_count: i32,
+    pub dashboard_charts_count: i32,
 }
 
 impl From<entity::canvas::Model> for CanvasDto {
@@ -30,6 +33,9 @@ impl From<entity::canvas::Model> for CanvasDto {
             status: CanvasStatus::from_str(&model.status).unwrap(),
             created_at: model.created_at,
             updated_at: model.updated_at,
+            sql_cell_count: 0,
+            chart_cell_count: 0,
+            dashboard_charts_count: 0,
         }
     }
 }

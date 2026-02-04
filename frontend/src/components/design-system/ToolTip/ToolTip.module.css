@@ -4,16 +4,16 @@
 }
 
 .tooltipArrow {
-  fill: var(--color-grey-700);
+  fill: var(--color-grey-100);
 }
 
 .tooltipContent {
   border-radius: var(--border-radius-lg);
-  padding: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-tightest);
-  color: var(--color-grey-100);
-  background-color: var(--color-grey-800);
+  color: var(--color-grey-900);
+  background-color: var(--color-grey-100);
   box-shadow: var(--shadow-xl);
   user-select: none;
   animation-duration: 400ms;
@@ -80,4 +80,3 @@
     transform: translateX(0);
   }
 }
-

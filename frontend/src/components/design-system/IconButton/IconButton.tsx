@@ -31,7 +31,11 @@ export function IconButton({
 }: IconButtonProps) {
   const className = styles[backgroundColor];
   const button = (
-    <button className={`${styles.button} ${className}`} onClick={onClick} tabIndex={tabIndex}>
+    <button
+      className={`${styles.button} ${className}`}
+      onClick={onClick}
+      tabIndex={tabIndex}
+    >
       <Icon color={iconColor} type={type} size={iconSize}></Icon>
     </button>
   );

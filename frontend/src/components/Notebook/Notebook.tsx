@@ -24,9 +24,9 @@ export function Notebook() {
   }
 
   useKeyboardShortcut(
-    notebookRef,
     handleExecute,
-    KEYBOARD_SHORTCUTS.EXECUTE_NOTEBOOK_CELL
+    KEYBOARD_SHORTCUTS.EXECUTE_NOTEBOOK_CELL,
+    notebookRef
   );
 
   if (query.isPending) {

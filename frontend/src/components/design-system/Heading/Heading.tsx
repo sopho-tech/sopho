@@ -25,8 +25,10 @@ export type TextColor =
   | "warning"
   | "black";
 
+export type AccessbilityLevel = 1 | 2 | 3 | 4 | 5 | 6;
+
 type HeadingProps = {
-  accessbilityLevel: 1 | 2 | 3 | 4 | 5 | 6;
+  accessbilityLevel: AccessbilityLevel;
   weight?: FontWeight;
   size?: FontSize;
   textAlign?: "left" | "center" | "right" | "justify" | "start" | "end";
@@ -65,7 +67,7 @@ function getTextColor(color: TextColor | undefined): string | undefined {
     subtle: getCSSVariable("--color-grey-500"),
     disabled: getCSSVariable("--color-grey-500"),
     error: getCSSVariable("--color-red"),
-    success: getCSSVariable("--color-green-dark-2"),
+    success: getCSSVariable("--color-green-500"),
     warning: getCSSVariable("--color-grey-700"),
     black: getCSSVariable("--color-grey-800"),
   };

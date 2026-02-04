@@ -33,9 +33,7 @@ export function ToolTip({
                 `${ToolTipStyles.tooltipTrigger} ${(children as React.ReactElement<any>).props?.className || ""}`.trim(),
             })
           ) : (
-            <span className={ToolTipStyles.tooltipTrigger}>
-              {children}
-            </span>
+            <span className={ToolTipStyles.tooltipTrigger}>{children}</span>
           )}
         </Tooltip.Trigger>
         <Tooltip.Portal>
@@ -47,7 +45,7 @@ export function ToolTip({
           >
             <div>
               {messageElement}
-              <Tooltip.Arrow className={ToolTipStyles.tooltipArrow} />
+              {/* <Tooltip.Arrow className={ToolTipStyles.tooltipArrow} /> */}
             </div>
           </Tooltip.Content>
         </Tooltip.Portal>
@@ -55,4 +53,3 @@ export function ToolTip({
     </Tooltip.Provider>
   );
 }
-

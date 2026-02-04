@@ -2,11 +2,16 @@ use crate::cell::constants::CellType;
 use crate::cell::dto;
 use crate::common::time_utils;
 use crate::entity::cell;
+use sea_orm::sea_query::{Expr, Func};
 use sea_orm::ColumnTrait;
 use sea_orm::Condition;
 use sea_orm::QueryFilter;
+use sea_orm::QueryOrder;
 use sea_orm::Set;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait};
+use sea_orm::{
+    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait, Order,
+    PaginatorTrait,
+};
 use uuid::Uuid;
 
 pub async fn save_cell(db: &DatabaseConnection, cell: cell::Model) -> Result<cell::Model, DbErr> {
@@ -46,6 +51,18 @@ pub async fn get_cells_by_notebook_id_and_cell_type(
     Ok(cells)
 }
 
+pub async fn count_cells_by_notebook_id_and_cell_type(
+    db: &DatabaseConnection,
+    notebook_id: Uuid,
+    cell_type: CellType,
+) -> Result<u64, DbErr> {
+    let condition = Condition::all()
+        .add(cell::Column::NotebookId.eq(notebook_id))
+        .add(cell::Column::CellType.eq(cell_type.to_string()));
+    let count = cell::Entity::find().filter(condition).count(db).await?;
+    Ok(count)
+}
+
 pub async fn update_cell(
     db: &DatabaseConnection,
     cell_id: Uuid,
@@ -80,4 +97,39 @@ pub async fn delete_cells_by_notebook_id_transaction(
         .exec(txn)
         .await?;
     Ok(())
+}
+
+pub async fn search_cells_by_name_and_type(
+    db: &DatabaseConnection,
+    search_query: &str,
+    cell_type: CellType,
+    limit: u64,
+) -> Result<Vec<cell::Model>, DbErr> {
+    let search_pattern = format!("%{}%", search_query.to_lowercase());
+    let condition = Condition::all()
+        .add(cell::Column::Name.is_not_null())
+        .add(Expr::expr(Func::lower(Expr::col(cell::Column::Name))).like(&search_pattern))
+        .add(cell::Column::CellType.eq(cell_type.to_string()));
+    let query = cell::Entity::find()
+        .filter(condition)
+        .order_by(cell::Column::UpdatedAt, Order::Desc);
+    let paginator = query.paginate(db, limit);
+    let cells = paginator.fetch_page(0).await?;
+    Ok(cells)
+}
+
+pub async fn get_latest_cells_by_type(
+    db: &DatabaseConnection,
+    cell_type: CellType,
+    limit: u64,
+) -> Result<Vec<cell::Model>, DbErr> {
+    let condition = Condition::all()
+        .add(cell::Column::Name.is_not_null())
+        .add(cell::Column::CellType.eq(cell_type.to_string()));
+    let query = cell::Entity::find()
+        .filter(condition)
+        .order_by(cell::Column::UpdatedAt, Order::Desc);
+    let paginator = query.paginate(db, limit);
+    let cells = paginator.fetch_page(0).await?;
+    Ok(cells)
 }

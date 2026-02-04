@@ -7,7 +7,7 @@
 }
 
 .subtle {
-  color: var(--font-color-subtle);
+  color: var(--color-grey-500);
 }
 
 .disabled {

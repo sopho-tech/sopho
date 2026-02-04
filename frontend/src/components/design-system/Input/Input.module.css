@@ -20,6 +20,12 @@
   box-sizing: border-box;
 }
 
+.inputWithLaggingElement {
+  padding-right: calc(
+    var(--space-2xs) + 28px + var(--space-2xs) + 70px + var(--space-xs)
+  );
+}
+
 .inputWithLeadingIcon {
   padding-left: calc(var(--space-2xs) + 20px + var(--space-2xs));
 }
@@ -65,4 +71,14 @@
 
 .clearButtonHidden {
   display: none;
+}
+
+.laggingElement {
+  position: absolute;
+  right: var(--space-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  pointer-events: none;
+  z-index: var(--z-index-1);
 }

@@ -9,6 +9,7 @@ mod entity;
 mod middlewares;
 mod monitor;
 mod notebook;
+mod search;
 
 use crate::common::AppState;
 use axum::http::HeaderValue;
@@ -91,6 +92,13 @@ async fn main() {
         .nest(
             "/api/v1/canvas",
             canvas::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
+                app_state.clone(),
+                middlewares::auth_middleware_fn,
+            )),
+        )
+        .nest(
+            "/api/v1/search",
+            search::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
                 app_state.clone(),
                 middlewares::auth_middleware_fn,
             )),

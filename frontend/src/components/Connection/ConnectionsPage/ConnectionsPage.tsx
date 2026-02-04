@@ -19,7 +19,7 @@ export function Connections() {
         alignItems="center"
       >
         <Button
-          label="New Connection"
+          label="New"
           leadingIconName="add"
           backgroundColor="accent"
           shape="rectangle"

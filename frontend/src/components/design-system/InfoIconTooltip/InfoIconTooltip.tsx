@@ -12,7 +12,5 @@ export function InfoIconTooltip({ messageElement }: InfoIconTooltipProps) {
       <Icon type="info" color="grey" size="sm" />
     </span>
   );
-  return (
-    <ToolTip messageElement={messageElement} children={toolTipTrigger} />
-  );
+  return <ToolTip messageElement={messageElement} children={toolTipTrigger} />;
 }

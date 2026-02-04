@@ -10,6 +10,82 @@ import type {
   ShadowVariant,
 } from "src/components/design-system/datatypes";
 
+export const layoutPropKeys: (keyof SharedLayoutProps)[] = [
+  "borderRadius",
+  "border",
+  "shadow",
+  "backgroundColor",
+  "direction",
+  "gap",
+  "paddingX",
+  "paddingY",
+  "marginTop",
+  "marginBottom",
+  "marginLeft",
+  "marginRight",
+  "flex",
+  "overflow",
+  "justifyContent",
+  "alignItems",
+  "alignContent",
+  "alignSelf",
+  "top",
+  "bottom",
+  "left",
+  "right",
+  "position",
+  "zIndex",
+  "height",
+  "width",
+  "ref",
+];
+
+export function separateLayoutProps<T extends Record<string, any>>(
+  props: T
+): {
+  layoutProps: SharedLayoutProps;
+  htmlProps: Omit<T, keyof SharedLayoutProps> & {
+    className?: string;
+    style?: React.CSSProperties;
+  };
+} {
+  const layoutProps: SharedLayoutProps = {};
+  const htmlProps: any = {};
+
+  Object.entries(props).forEach(([key, value]) => {
+    if (layoutPropKeys.includes(key as keyof SharedLayoutProps)) {
+      (layoutProps as any)[key] = value;
+    } else {
+      htmlProps[key] = value;
+    }
+  });
+
+  return { layoutProps, htmlProps };
+}
+
+export function mergeBoxStyles(
+  display: string | undefined,
+  layoutStyles: React.CSSProperties,
+  sx: React.CSSProperties | undefined,
+  htmlStyle: React.CSSProperties | undefined
+): React.CSSProperties {
+  return {
+    display,
+    ...layoutStyles,
+    ...sx,
+    ...htmlStyle,
+  };
+}
+
+export function mergeBoxClassName(
+  backgroundColorClassName: string,
+  htmlClassName?: string
+): string {
+  return htmlClassName
+    ? `${backgroundColorClassName} ${htmlClassName}`.trim()
+    : backgroundColorClassName;
+}
+
 export function getFlexStyles(
   flex: FlexValue | undefined
 ): React.CSSProperties {
@@ -80,9 +156,7 @@ function getSpacingValue(
   return value;
 }
 
-function getSizeValue(
-  value: NumberString | undefined
-): string | undefined {
+function getSizeValue(value: NumberString | undefined): string | undefined {
   if (value === undefined) return undefined;
   if (typeof value === "number") {
     return `${value}px`;
@@ -100,7 +174,7 @@ function getBorderStyles(
   if (border === undefined) return {};
 
   const borderMapping: Record<BorderVariant, string> = {
-    default: "var(--border-default-thin)",
+    default: "var(--border-default-medium)",
   };
 
   const borderValue = borderMapping[border];
