@@ -291,7 +291,6 @@ export function SophoForm({
             <Form.Submit asChild>
               <Button
                 label={submitButtonText}
-                onClick={() => {}}
                 backgroundColor="accent"
                 size="sm"
                 shape="rectangle"

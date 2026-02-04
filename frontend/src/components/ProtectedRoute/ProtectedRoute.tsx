@@ -8,7 +8,7 @@ export function ProtectedRoute() {
   const { data: isAuthenticated, isLoading } = useSessionValid();
 
   const component = (
-    <Flex direction="row" height="100vh" width="100vw" gap="lg">
+    <Flex direction="row" height="100vh" width="100vw">
       <Sidebar />
       <Flex flex="40" overflow="hidden">
         <Outlet />

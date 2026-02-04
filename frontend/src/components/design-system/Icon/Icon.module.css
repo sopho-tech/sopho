@@ -40,16 +40,16 @@
 }
 
 .green {
-  fill: var(--color-green-dark-2);
+  fill: var(--color-green-500);
   stroke-width: 0;
 }
 
 .green:hover {
-  fill: var(--color-green-dark-3);
+  fill: var(--color-green-600);
 }
 
 .green:active {
-  color: var(--color-green-dark-1);
+  color: var(--color-green-400);
 }
 
 .black {

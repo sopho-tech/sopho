@@ -6,6 +6,7 @@ import {
   IconButtonLink,
   IconButtonLinkState,
 } from "src/components/design-system";
+import logo from "src/assets/images/logo.svg";
 
 export function Sidebar() {
   const location = useLocation();
@@ -26,11 +27,9 @@ export function Sidebar() {
       <NavigationMenu.Root>
         <NavigationMenu.List className={SidebarStyles.navItems}>
           <NavigationMenu.Item className={SidebarStyles.companyLogo}>
-            <NavigationMenu.Link asChild>
-              <NavLink to={APP_ROUTES.INDEX} className={SidebarStyles.link}>
-                <span>S</span>
-              </NavLink>
-            </NavigationMenu.Link>
+            <NavLink to={APP_ROUTES.INDEX} className={SidebarStyles.link}>
+              <img src={logo} alt="Logo" className={SidebarStyles.logo} />
+            </NavLink>
           </NavigationMenu.Item>
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
@@ -47,7 +46,7 @@ export function Sidebar() {
             <NavigationMenu.Link asChild>
               <NavLink to={APP_ROUTES.CANVASES} className={SidebarStyles.link}>
                 <IconButtonLink
-                  type="book"
+                  type="layers"
                   state={getState(APP_ROUTES.CANVASES)}
                   tooltip={{ text: "Notebooks", direction: "right" }}
                 />

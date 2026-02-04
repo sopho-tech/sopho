@@ -13,6 +13,7 @@ export type InputProps = {
   className?: string;
   ref?: Ref<HTMLInputElement>;
   leadingIcon?: IconType;
+  laggingElement?: React.ReactNode;
 } & Omit<
   InputHTMLAttributes<HTMLInputElement>,
   | "value"
@@ -33,6 +34,7 @@ export function Input({
   className,
   ref,
   leadingIcon,
+  laggingElement,
   ...otherProps
 }: InputProps) {
   const hasValue = (() => {
@@ -72,9 +74,12 @@ export function Input({
         onChange={onChange}
         placeholder={placeholder}
         disabled={disabled}
-        className={`${styles.input} ${leadingIcon ? styles.inputWithLeadingIcon : ""} ${className || ""}`}
+        className={`${styles.input} ${leadingIcon ? styles.inputWithLeadingIcon : ""} ${laggingElement ? styles.inputWithLaggingElement : ""} ${className || ""}`}
         {...otherProps}
       />
+      {laggingElement && !hasValue && (
+        <div className={styles.laggingElement}>{laggingElement}</div>
+      )}
       {!disabled && (
         <div
           className={`${styles.clearButton} ${!hasValue ? styles.clearButtonHidden : ""}`}

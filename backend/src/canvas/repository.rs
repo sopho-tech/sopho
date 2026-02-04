@@ -1,8 +1,9 @@
 use crate::entity::canvas;
+use sea_orm::sea_query::{Expr, Func};
 use sea_orm::{
     ActiveModelTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait, PaginatorTrait,
 };
-use sea_orm::{Order, QueryOrder};
+use sea_orm::{Order, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
 pub async fn get_canvas(db: &DatabaseConnection, id: Uuid) -> Result<canvas::Model, DbErr> {
@@ -19,7 +20,7 @@ pub async fn get_paginated_canvases(
     page_size: u64,
 ) -> Result<(Vec<canvas::Model>, u64, u64), DbErr> {
     let paginator = canvas::Entity::find()
-        .order_by(canvas::Column::CreatedAt, Order::Desc)
+        .order_by(canvas::Column::UpdatedAt, Order::Desc)
         .paginate(db, page_size);
     let total_items = paginator.num_items().await?;
     let canvases = paginator.fetch_page(page).await?;
@@ -48,4 +49,18 @@ pub async fn save_canvas_connection(
 pub async fn delete_canvas_transaction(txn: &DatabaseTransaction, id: Uuid) -> Result<(), DbErr> {
     canvas::Entity::delete_by_id(id).exec(txn).await?;
     Ok(())
+}
+
+pub async fn search_canvases_by_name(
+    db: &DatabaseConnection,
+    search_query: &str,
+    limit: u64,
+) -> Result<Vec<canvas::Model>, DbErr> {
+    let search_pattern = format!("%{}%", search_query.to_lowercase());
+    let query = canvas::Entity::find()
+        .filter(Expr::expr(Func::lower(Expr::col(canvas::Column::Name))).like(&search_pattern))
+        .order_by(canvas::Column::UpdatedAt, Order::Desc);
+    let paginator = query.paginate(db, limit);
+    let results = paginator.fetch_page(0).await?;
+    Ok(results)
 }

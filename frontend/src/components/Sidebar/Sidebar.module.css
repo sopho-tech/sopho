@@ -1,9 +1,10 @@
 .sidebar {
   /* padding: var(--space-xs); */
   /* margin: var(--space-xs); */
-  background-color: var(--color-grey-200);
+  background-color: var(--color-grey-100);
   flex: 1.5;
   max-width: 50px;
+  border-right: var(--border-divider);
 }
 
 .navItems {
@@ -14,30 +15,15 @@
 }
 
 .navItem {
-  padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+  padding: var(--space-xs);
   border-radius: var(--border-radius-full);
   transition: var(--transition-bg-color);
 }
-
-/* .navItem:hover {
-    background-color: var(--color-grey-500);
-} */
 
 .companyLogo {
-  padding: 1rem 1rem 1rem 1rem;
-  color: var(--color-text);
-  margin-bottom: 2rem;
-  margin-left: auto;
-  margin-right: auto;
-  border-radius: var(--border-radius-full);
-  transition: var(--transition-bg-color);
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-2xl);
 }
-
-.companyLogo:hover {
-  background-color: var(--color-grey-500);
-  transform: translateX(2px);
-}
-
 
 .link {
   text-decoration: none;
@@ -45,4 +31,9 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.logo {
+  width: 34px;
+  height: 34px;
 }

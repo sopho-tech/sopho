@@ -2,3 +2,73 @@
   min-width: 0;
   height: 100%;
 }
+
+/* Responsive column spans using CSS custom properties */
+/* Only applies when data-responsive="true" (i.e., when colSpan is a responsive object) */
+.gridItem[data-responsive="true"] {
+  grid-column: span var(--grid-col-span-default, 12);
+}
+
+@media (width >= 40rem) {
+  .gridItem[data-responsive="true"] {
+    grid-column: span var(--grid-col-span-sm, var(--grid-col-span-default, 12));
+  }
+}
+
+@media (width >= 48rem) {
+  .gridItem[data-responsive="true"] {
+    grid-column: span
+      var(
+        --grid-col-span-md,
+        var(--grid-col-span-sm, var(--grid-col-span-default, 12))
+      );
+  }
+}
+
+@media (width >= 64rem) {
+  .gridItem[data-responsive="true"] {
+    grid-column: span
+      var(
+        --grid-col-span-lg,
+        var(
+          --grid-col-span-md,
+          var(--grid-col-span-sm, var(--grid-col-span-default, 12))
+        )
+      );
+  }
+}
+
+@media (width >= 80rem) {
+  .gridItem[data-responsive="true"] {
+    grid-column: span
+      var(
+        --grid-col-span-xl,
+        var(
+          --grid-col-span-lg,
+          var(
+            --grid-col-span-md,
+            var(--grid-col-span-sm, var(--grid-col-span-default, 12))
+          )
+        )
+      );
+  }
+}
+
+@media (width >= 96rem) {
+  .gridItem[data-responsive="true"] {
+    grid-column: span
+      var(
+        --grid-col-span-2xl,
+        var(
+          --grid-col-span-xl,
+          var(
+            --grid-col-span-lg,
+            var(
+              --grid-col-span-md,
+              var(--grid-col-span-sm, var(--grid-col-span-default, 12))
+            )
+          )
+        )
+      );
+  }
+}

@@ -44,10 +44,29 @@ pub async fn get_all_canvases(
 
     match result {
         Ok((canvases, total_items, total_pages)) => {
-            let response_dto_list: Vec<dto::CanvasDto> = canvases
-                .iter()
-                .map(|canvas| dto::CanvasDto::from(canvas.clone()))
-                .collect();
+            let mut response_dto_list: Vec<dto::CanvasDto> = Vec::new();
+
+            for canvas in canvases.iter() {
+                let mut canvas_dto = dto::CanvasDto::from(canvas.clone());
+
+                let cell_counts_result =
+                    cell_service::get_cell_counts_by_canvas_id(&app_state, canvas.id).await;
+                if let Ok((sql_count, chart_count)) = cell_counts_result {
+                    canvas_dto.sql_cell_count = sql_count;
+                    canvas_dto.chart_cell_count = chart_count;
+                }
+
+                let dashboard_charts_result =
+                    dashboard_service::get_dashboard_charts_count_by_canvas_id(
+                        &app_state, canvas.id,
+                    )
+                    .await;
+                if let Ok(dashboard_charts_count) = dashboard_charts_result {
+                    canvas_dto.dashboard_charts_count = dashboard_charts_count;
+                }
+
+                response_dto_list.push(canvas_dto);
+            }
 
             let paginated_response = PaginatedResponse {
                 data: response_dto_list,
@@ -150,6 +169,23 @@ pub async fn create_canvas(
             axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
     }
+}
+
+pub async fn get_last_modified_canvases(
+    app_state: &AppState,
+    limit: u64,
+) -> Result<Vec<entity::canvas::Model>, sea_orm::DbErr> {
+    repository::get_paginated_canvases(&app_state.database_connection, 0, limit)
+        .await
+        .map(|(canvases, _, _)| canvases)
+}
+
+pub async fn search_canvases_by_name(
+    app_state: &AppState,
+    search_query: &str,
+    limit: u64,
+) -> Result<Vec<entity::canvas::Model>, sea_orm::DbErr> {
+    repository::search_canvases_by_name(&app_state.database_connection, search_query, limit).await
 }
 
 pub async fn delete_canvas(app_state: AppState, id: Uuid) -> impl IntoResponse {

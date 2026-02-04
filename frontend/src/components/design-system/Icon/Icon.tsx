@@ -46,6 +46,11 @@ import {
   Mail,
   Lock,
   User,
+  LogOut,
+  Layers,
+  BarChart,
+  Table,
+  LayoutDashboard,
 } from "lucide-react";
 
 const iconMap: Record<IconType, LucideIcon> = {
@@ -89,6 +94,11 @@ const iconMap: Record<IconType, LucideIcon> = {
   email: Mail,
   lock: Lock,
   user: User,
+  logout: LogOut,
+  layers: Layers,
+  bar_chart: BarChart,
+  table: Table,
+  layout_dashboard: LayoutDashboard,
 };
 
 const sizeMap: Record<IconSize, number> = {

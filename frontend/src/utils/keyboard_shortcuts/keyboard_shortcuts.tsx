@@ -14,6 +14,12 @@ export const KEYBOARD_SHORTCUTS = {
     description: "Execute the notebook cell to generate results",
     preventDefault: true,
   },
+  OPEN_COMMAND_MENU: {
+    key: "k",
+    modifiers: ["meta"],
+    description: "Open the command menu",
+    preventDefault: true,
+  },
 } as const satisfies Record<string, KeyboardShortcut>;
 
 export const NOTEBOOK_CELL_KEYBOARD_SHORTCUTS = [
@@ -22,14 +28,14 @@ export const NOTEBOOK_CELL_KEYBOARD_SHORTCUTS = [
 
 export function matchesAnyShortcut(
   event: KeyboardEvent,
-  shortcuts: KeyboardShortcut[],
+  shortcuts: KeyboardShortcut[]
 ): boolean {
   return shortcuts.some((shortcut) => matchesShortcut(event, shortcut));
 }
 
 export function matchesShortcut(
   event: KeyboardEvent,
-  shortcut: KeyboardShortcut,
+  shortcut: KeyboardShortcut
 ): boolean {
   const keyMatches = event.key.toLowerCase() === shortcut.key.toLowerCase();
 
@@ -72,14 +78,13 @@ export function getShortcutDisplayString(shortcut: KeyboardShortcut): string {
 export function handleKeyboardShortcut(
   shortcut: KeyboardShortcut,
   callback: (event: KeyboardEvent) => void,
-  enabled = true,
+  enabled = true
 ) {
   const handleKeyDown = (event: KeyboardEvent) => {
     event.stopPropagation();
     if (!enabled) return;
 
     if (matchesShortcut(event, shortcut)) {
-      console.log(`event: ${event.key}`);
       if (shortcut.preventDefault) {
         event.preventDefault();
       }

@@ -8,31 +8,31 @@ import {
   IconType,
 } from "src/components/design-system/datatypes";
 import styles from "src/components/design-system/Button/Button.module.css";
+import { motion, type HTMLMotionProps } from "motion/react";
+import { Scale, Duration, EASE } from "src/components/design-system/animation";
 
-type ButtonProps = {
-  onClick: (event: {
-    event:
-      | React.MouseEvent<HTMLButtonElement>
-      | React.KeyboardEvent<HTMLButtonElement>;
-  }) => void;
-  leadingIconName?: IconType;
-  trailingIconName?: IconType;
-  label: string;
-  shape: "pill" | "rectangle" | "square" | "circle";
-  backgroundColor:
-    | "accent"
-    | "green"
-    | "red"
-    | "lightgrey"
-    | "grey"
-    | "transparent"
-    | "white";
-  disabled?: boolean;
-  fullWidth?: boolean;
-  size: ButtonSize;
-  type?: ButtonType;
-  emphasis?: ButtonEmphasis;
-};
+type ButtonProps = Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  keyof HTMLMotionProps<"button">
+> &
+  Omit<HTMLMotionProps<"button">, "children"> & {
+    leadingIconName?: IconType;
+    trailingIconName?: IconType;
+    label: string;
+    shape: "pill" | "rectangle" | "square" | "circle";
+    backgroundColor:
+      | "accent"
+      | "green"
+      | "red"
+      | "lightgrey"
+      | "grey"
+      | "transparent"
+      | "white";
+    fullWidth?: boolean;
+    size: ButtonSize;
+    type?: ButtonType;
+    emphasis?: ButtonEmphasis;
+  };
 
 function getTextColor(backgroundColor: string) {
   switch (backgroundColor) {
@@ -45,39 +45,54 @@ function getTextColor(backgroundColor: string) {
   }
 }
 
-export function Button({
-  onClick,
-  leadingIconName,
-  trailingIconName,
-  label,
-  shape: _shape,
-  backgroundColor,
-  disabled = false,
-  fullWidth = false,
-  size,
-  type = "button",
-  emphasis: _emphasis,
-}: ButtonProps) {
-  const backgroundColorClassName = styles[backgroundColor];
-  const sizeClassName =
-    styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`];
-  const fullWidthClassName = fullWidth ? styles.fullWidth : "";
-  const textColor = getTextColor(backgroundColor);
-  const iconColor = backgroundColor === "white" ? "grey" : "white";
-  return (
-    <button
-      type={type}
-      disabled={disabled}
-      className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${fullWidthClassName}`}
-      onClick={(e) => onClick({ event: e })}
-    >
-      {leadingIconName && (
-        <Icon type={leadingIconName} color={iconColor}></Icon>
-      )}
-      <Text color={textColor}>{label}</Text>
-      {trailingIconName && (
-        <Icon type={trailingIconName} color={iconColor}></Icon>
-      )}
-    </button>
-  );
-}
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      onClick,
+      leadingIconName,
+      trailingIconName,
+      label,
+      shape: _shape,
+      backgroundColor,
+      disabled = false,
+      fullWidth = false,
+      size,
+      type = "button",
+      emphasis: _emphasis,
+      ...restProps
+    },
+    ref
+  ) => {
+    const backgroundColorClassName = styles[backgroundColor];
+    const sizeClassName =
+      styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`];
+    const fullWidthClassName = fullWidth ? styles.fullWidth : "";
+    const textColor = getTextColor(backgroundColor);
+    const iconColor = backgroundColor === "white" ? "grey" : "white";
+
+    return (
+      <motion.button
+        {...restProps}
+        ref={ref}
+        type={type}
+        disabled={disabled}
+        className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${fullWidthClassName}`}
+        onClick={onClick}
+        whileHover={disabled ? undefined : { scale: Scale.HOVER }}
+        whileTap={disabled ? undefined : { scale: Scale.TAP }}
+        transition={{
+          duration: Duration.FAST,
+          ease: EASE,
+        }}
+      >
+        {leadingIconName && (
+          <Icon type={leadingIconName} color={iconColor}></Icon>
+        )}
+        <Text color={textColor}>{label}</Text>
+        {trailingIconName && (
+          <Icon type={trailingIconName} color={iconColor}></Icon>
+        )}
+      </motion.button>
+    );
+  }
+);

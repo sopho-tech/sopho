@@ -75,6 +75,7 @@ export function Profile() {
         backgroundColor="accent"
         size="md"
         shape="rectangle"
+        leadingIconName="logout"
         onClick={() => {
           deleteSessionMutation.mutate();
         }}

@@ -16,15 +16,15 @@
 }
 
 .active {
-  background-color: var(--color-primary-400);
+  background-color: var(--color-primary-200);
 }
 
 .active:hover {
-  background-color: var(--color-primary-400);
+  background-color: var(--color-primary-300);
 }
 
 .active:active {
-  background-color: var(--color-primary-200);
+  background-color: var(--color-primary-100);
 }
 
 .inactive {

@@ -103,18 +103,20 @@ button {
   --color-grey-700: hsla(250, 5%, 40%, 1);
   --color-grey-600: hsla(253, 5%, 55%, 1);
   --color-grey-500: hsla(250, 5%, 68%, 1);
-  --color-grey-400: hsla(250, 5%, 75%, 1);
-  --color-grey-300: hsla(248, 5%, 82%, 1);
-  --color-grey-200: hsla(245, 5%, 90%, 1);
+  --color-grey-400: hsla(250, 5%, 76%, 1);
+  --color-grey-300: hsla(248, 5%, 86%, 1);
+  --color-grey-200: hsla(245, 5%, 95%, 1);
   --color-grey-100: hsla(250, 5%, 99%, 1);
 
-  --color-green: hsl(84, 96%, 64%, 1);
-  --color-green-dark-1: hsl(84, 62%, 52%, 1);
-  --color-green-dark-2: hsl(84, 57%, 42%, 1);
-  --color-green-dark-3: hsl(84, 61%, 31%, 1);
-  --color-green-dark-4: hsl(84, 64%, 20%, 1);
-  --color-green-dark-5: hsl(84, 73%, 12%, 1);
-  --color-green-dark-6: hsl(84, 67%, 5%, 1);
+  --color-green-900: hsl(84, 67%, 5%, 1);
+  --color-green-800: hsl(84, 73%, 12%, 1);
+  --color-green-700: hsl(84, 64%, 20%, 1);
+  --color-green-600: hsl(84, 61%, 31%, 1);
+  --color-green-500: hsl(84, 57%, 42%, 1);
+  --color-green-400: hsl(84, 62%, 52%, 1);
+  --color-green-300: hsl(84, 96%, 64%, 1);
+  --color-green-200: hsl(84, 70%, 85%, 1);
+  --color-green-100: hsl(84, 65%, 95%, 1);
 
   --color-red-light-1: hsl(0, 80%, 70%, 1);
   --color-red-light-2: hsl(0, 75%, 80%, 1);
@@ -130,11 +132,33 @@ button {
   --color-red-dark-5: hsl(0, 85%, 12%, 1);
   --color-red-dark-6: hsl(0, 90%, 5%, 1);
 
+  --color-blue-base: 217, 91%, 60%;
+  --color-blue-900: hsla(217, 80%, 20%, 1);
+  --color-blue-800: hsla(217, 78%, 30%, 1);
+  --color-blue-700: hsla(217, 75%, 40%, 1);
+  --color-blue-600: hsla(217, 72%, 50%, 1);
+  --color-blue-500: hsla(217, 91%, 60%, 1);
+  --color-blue-400: hsla(217, 80%, 70%, 1);
+  --color-blue-300: hsla(217, 75%, 80%, 1);
+  --color-blue-200: hsla(217, 70%, 85%, 1);
+  --color-blue-100: hsla(217, 65%, 95%, 1);
+
+  --color-yellow-base: 48, 96%, 64%;
+  --color-yellow-900: hsla(48, 64%, 20%, 1);
+  --color-yellow-800: hsla(48, 61%, 31%, 1);
+  --color-yellow-700: hsla(48, 57%, 42%, 1);
+  --color-yellow-600: hsla(48, 62%, 52%, 1);
+  --color-yellow-500: hsla(48, 96%, 64%, 1);
+  --color-yellow-400: hsla(48, 80%, 70%, 1);
+  --color-yellow-300: hsla(48, 75%, 80%, 1);
+  --color-yellow-200: hsla(48, 70%, 85%, 1);
+  --color-yellow-100: hsla(48, 65%, 95%, 1);
+
   /* Semantic Variables */
   --color-background: var(--color-grey-100);
   --color-hover: var(--color-grey-200);
   --color-text: var(--color-grey-900);
-  --color-text-placeholder: var(--color-grey-200);
+  --color-text-placeholder: var(--color-grey-500);
   --overlay-color: hsla(0, 0%, 0%, 0.6);
   --inactive-color-normal: rgba(0, 0, 0, 0.5);
   --inactive-color-high: rgba(0, 0, 0, 0.1);
@@ -237,11 +261,11 @@ button {
   /* Border Colors */
   --border-color-default: var(--color-grey-500);
   --border-color-background: var(--color-grey-100);
-  --border-color-light: var(--color-grey-200);
-  --border-color-dark: var(--color-grey-300);
+  --border-color-light: var(--color-grey-300);
+  --border-color-dark: var(--color-grey-400);
   --border-color-focus: var(--color-primary-500);
   --border-color-error: var(--color-red-dark-2);
-  --border-color-success: var(--color-green-dark-2);
+  --border-color-success: var(--color-green-500);
 
   /* Semantic Borders */
   --border-input: var(--border-width-medium) var(--border-style-solid)
@@ -257,7 +281,7 @@ button {
     var(--border-color-default);
   --border-table-cell: var(--border-width-thin) var(--border-style-solid)
     var(--border-color-light);
-  --border-divider: var(--border-width-thin) var(--border-style-solid)
+  --border-divider: var(--border-width-medium) var(--border-style-solid)
     var(--border-color-light);
   --border-separator: var(--border-width-thin) var(--border-style-dashed)
     var(--border-color-default);
@@ -309,7 +333,7 @@ button {
   --shadow-xl: 0 20px 40px hsla(0, 0%, 0%, 0.2);
 
   --shadow-primary-inset: inset 0 1px 0 var(--color-primary-100);
-  --shadow-green-inset: inset 0 1px 0 var(--color-green);
+  --shadow-green-inset: inset 0 1px 0 var(--color-green-300);
 
   /* z-index */
   --z-index-1: 1;

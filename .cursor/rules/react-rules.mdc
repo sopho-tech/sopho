@@ -4,6 +4,7 @@ globs: *.tsx
 alwaysApply: false
 ---
 
+# Overview
 - Do not use relative imports. Always use full absolute imports.
 - Use css modules.
 - Do not generate comments in code.
@@ -16,3 +17,9 @@ alwaysApply: false
 - Use components from `frontend/src/design-system` for building features.
 - Use @tanstack/react-query for data fetching at client side in the frontend.
 - Use radix-ui wherever possible for components instead of creating from scratch.
+
+# Design System
+- Use the components in design-system for creating bigger components.
+- Extend the design-system if the required base component is missing.
+- Use Flex and Box instead of using div.
+- Define CSS in the arguments of Flex and Box. Do not use CSS module files outside of the design-component. Exceptions are allowed, but this is the norm.

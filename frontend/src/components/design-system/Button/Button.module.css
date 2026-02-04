@@ -3,13 +3,9 @@
   align-content: center;
   display: flex;
   border-radius: var(--border-radius-lg);
-  transition: transform 0.15s ease-in-out;
   width: fit-content;
   box-shadow: var(--shadow-2xs);
-}
-
-.button:active {
-  transform: scale(0.95);
+  gap: var(--space-2xs);
 }
 
 .button:hover {
@@ -26,7 +22,7 @@
 }
 
 .sizeMd {
-  padding: var(--space-sm);
+  padding: var(--space-2xs) var(--space-md) var(--space-2xs) var(--space-md);
   font-size: var(--font-size-base);
 }
 
@@ -49,16 +45,16 @@
 }
 
 .green {
-  background-color: var(--color-green-dark-1);
+  background-color: var(--color-green-400);
   box-shadow: var(--shadow-green-inset), var(--shadow-xs);
 }
 
 .green:hover {
-  background-color: var(--color-green-dark-2);
+  background-color: var(--color-green-500);
 }
 
 .green:active {
-  background-color: var(--color-green);
+  background-color: var(--color-green-300);
   box-shadow: none;
 }
 
@@ -75,11 +71,11 @@
 }
 
 .lightgrey {
-  background-color: var(--color-grey-300);
+  background-color: var(--color-grey-200);
 }
 
 .lightgrey:hover {
-  background-color: var(--color-grey-400);
+  background-color: var(--color-grey-300);
 }
 
 .lightgrey:active {

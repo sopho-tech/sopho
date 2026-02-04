@@ -7,7 +7,7 @@
 }
 
 .button > span {
-  color: var(--color-green-dark-2);
+  color: var(--color-green-500);
   font-variation-settings: "FILL" 1;
   box-shadow: var(--shadow);
   border-radius: var(--border-radius-lg);
@@ -16,14 +16,14 @@
 }
 
 .button:hover > span {
-  color: var(--color-green);
+  color: var(--color-green-300);
   background-color: var(--color-grey-200);
   transform: translateY(-1px);
   box-shadow: var(--shadow-hover);
 }
 
 .button:active > span {
-  color: var(--color-green-dark-2);
+  color: var(--color-green-500);
   background-color: var(--color-grey-700);
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);

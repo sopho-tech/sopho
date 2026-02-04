@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { registerTheme } from "echarts";
-import Home from "src/components/Home/Home";
+import {Home} from "src/components/Home/Home";
 import SignIn from "src/components/SignIn/SignIn";
 import { Settings } from "src/components/Settings";
 import { Profile } from "src/components/Profile";

@@ -41,4 +41,7 @@ export const API_ENDPOINTS = {
     GET_BY_CANVAS_ID: "/api/v1/dashboard/canvas/:canvas_id",
     UPDATE: "/api/v1/dashboard/:id",
   },
+  SEARCH: {
+    SEARCH: "/api/v1/search",
+  },
 };

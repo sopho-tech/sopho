@@ -199,7 +199,6 @@ export function renderPaginationControl<T>(
     table.setPageSize(Number(newPageSize));
   };
   const onPageClick = (newPageIndex: number) => {
-    console.log(newPageIndex);
     table.setPageIndex(newPageIndex);
   };
   if (tableType == TableType.CLIENT_SIDE_PAGINATED) {

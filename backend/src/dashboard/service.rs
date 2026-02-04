@@ -30,10 +30,7 @@ pub async fn get_dashboard(app_state: AppState, id: Uuid) -> impl IntoResponse {
     }
 }
 
-pub async fn get_dashboard_by_canvas_id(
-    app_state: AppState,
-    canvas_id: Uuid,
-) -> impl IntoResponse {
+pub async fn get_dashboard_by_canvas_id(app_state: AppState, canvas_id: Uuid) -> impl IntoResponse {
     let dashboard =
         repository::get_dashboard_by_canvas_id(&app_state.database_connection, canvas_id).await;
     match dashboard {
@@ -112,6 +109,13 @@ pub async fn create_dashboard_transaction(
     repository::save_dashboard_transaction(txn, dashboard_entity).await
 }
 
+pub async fn get_dashboard_by_canvas_id_entity(
+    app_state: &AppState,
+    canvas_id: Uuid,
+) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
+    repository::get_dashboard_by_canvas_id(&app_state.database_connection, canvas_id).await
+}
+
 pub async fn get_dashboard_by_canvas_id_transaction(
     txn: &DatabaseTransaction,
     canvas_id: Uuid,
@@ -149,4 +153,20 @@ pub async fn update_dashboard(
             ),
         },
     }
+}
+
+pub async fn get_dashboard_charts_count_by_canvas_id(
+    app_state: &AppState,
+    canvas_id: Uuid,
+) -> Result<i32, sea_orm::DbErr> {
+    let dashboard = get_dashboard_by_canvas_id_entity(app_state, canvas_id).await?;
+
+    if let Some(layout_json) = dashboard.layout {
+        let layout_value: serde_json::Value = layout_json.into();
+        if let Ok(layout_items) = serde_json::from_value::<Vec<serde_json::Value>>(layout_value) {
+            return Ok(layout_items.len() as i32);
+        }
+    }
+
+    Ok(0)
 }
