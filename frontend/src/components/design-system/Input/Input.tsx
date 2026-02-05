@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, Ref } from "react";
+import { InputHTMLAttributes, Ref, useState } from "react";
 import styles from "./Input.module.css";
 import { Icon } from "src/components/design-system/Icon";
 import { IconButton } from "src/components/design-system/IconButton";
@@ -37,6 +37,9 @@ export function Input({
   laggingElement,
   ...otherProps
 }: InputProps) {
+  const [isFocused, setIsFocused] = useState(false);
+  const { onFocus: onFocusProp, onBlur: onBlurProp, ...restProps } = otherProps;
+
   const hasValue = (() => {
     if (value === null || value === undefined) {
       return false;
@@ -60,6 +63,10 @@ export function Input({
     onChange(syntheticEvent);
   };
 
+  const handleClearMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+  };
+
   return (
     <div className={styles.container}>
       {leadingIcon && (
@@ -72,17 +79,26 @@ export function Input({
         type={type}
         value={value}
         onChange={onChange}
+        onFocus={(e) => {
+          setIsFocused(true);
+          onFocusProp?.(e);
+        }}
+        onBlur={(e) => {
+          setIsFocused(false);
+          onBlurProp?.(e);
+        }}
         placeholder={placeholder}
         disabled={disabled}
         className={`${styles.input} ${leadingIcon ? styles.inputWithLeadingIcon : ""} ${laggingElement ? styles.inputWithLaggingElement : ""} ${className || ""}`}
-        {...otherProps}
+        {...restProps}
       />
       {laggingElement && !hasValue && (
         <div className={styles.laggingElement}>{laggingElement}</div>
       )}
       {!disabled && (
         <div
-          className={`${styles.clearButton} ${!hasValue ? styles.clearButtonHidden : ""}`}
+          className={`${styles.clearButton} ${!hasValue || !isFocused ? styles.clearButtonHidden : ""}`}
+          onMouseDown={handleClearMouseDown}
         >
           <IconButton
             type="close"

@@ -427,3 +427,35 @@ impl std::fmt::Display for AxisMinorTickShow {
         write!(f, "{}", self.to_string())
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum ChartType {
+    Bar,
+    Line,
+    Pie,
+}
+
+impl ChartType {
+    pub fn to_string(&self) -> String {
+        match self {
+            ChartType::Bar => "BAR".to_string(),
+            ChartType::Line => "LINE".to_string(),
+            ChartType::Pie => "PIE".to_string(),
+        }
+    }
+
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s {
+            "BAR" => Ok(ChartType::Bar),
+            "LINE" => Ok(ChartType::Line),
+            "PIE" => Ok(ChartType::Pie),
+            _ => Err(format!("Invalid chart type: {}", s)),
+        }
+    }
+}
+
+impl std::fmt::Display for ChartType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
+}

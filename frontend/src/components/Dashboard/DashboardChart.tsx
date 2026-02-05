@@ -1,14 +1,19 @@
 import { useCell, useExecuteCell } from "src/api/cell";
-import { BarChart } from "../Chart";
+import { BarChart, ChartType, LineChart, PieChart } from "../Chart";
 import { getChartContent } from "../Notebook/Cell";
 import { useEffect, useState } from "react";
-import { ExecuteCellResponseDto } from "../Notebook/Cell/dto";
+import {
+  ExecuteCellResponseDto,
+  BarChartContent,
+  LineChartContent,
+  PieChartContent,
+  getChartType,
+} from "../Notebook/Cell/dto";
 import { Flex, Heading, Icon, IconButton } from "src/components/design-system";
 import {
   useDashboardStore,
   DashboardMode,
 } from "src/components/Dashboard/store";
-import { useHandleExecuteCell } from "src/components/Notebook/Cell/hooks";
 import styles from "src/components/Dashboard/Dashboard.module.css";
 
 type DashboardChartProps = {
@@ -22,10 +27,60 @@ function describeCellQuery(cellId: string) {
   return useCell(cellId);
 }
 
+function ChartRenderer({
+  chartContent,
+  output,
+}: {
+  chartContent: BarChartContent | PieChartContent | LineChartContent;
+  output: ExecuteCellResponseDto;
+}) {
+  const chartType = getChartType(chartContent);
+  const dimensions = output.columns?.map((column) => column.column_name) ?? [];
+
+  if (chartType === ChartType.BAR) {
+    const barContent = chartContent as BarChartContent;
+    return (
+      <BarChart
+        xAxis={barContent.x_axis}
+        yAxis={barContent.y_axis}
+        data={output.data as Object[]}
+        xAxisTitle={barContent.x_axis_title}
+        yAxisTitle={barContent.y_axis_title}
+      />
+    );
+  }
+
+  if (chartType === ChartType.LINE) {
+    const lineContent = chartContent as LineChartContent;
+    return (
+      <LineChart
+        xAxis={lineContent.x_axis}
+        yAxis={lineContent.y_axis}
+        data={output.data as Object[]}
+        xAxisTitle={lineContent.x_axis_title}
+        yAxisTitle={lineContent.y_axis_title}
+      />
+    );
+  }
+
+  if (chartType === ChartType.PIE) {
+    const pieContent = chartContent as PieChartContent;
+    return (
+      <PieChart
+        category={pieContent.category}
+        value={pieContent.value}
+        dimensions={dimensions}
+        data={output.data as Object[]}
+      />
+    );
+  }
+
+  return null;
+}
+
 export function DashboardChart({ cellId }: DashboardChartProps) {
   const cellQuery = describeCellQuery(cellId);
   const executeCellMutation = useExecuteCell();
-  const handleExecuteCell = useHandleExecuteCell();
   const chartContent =
     cellQuery && cellQuery.data ? getChartContent(cellQuery.data) : null;
   const [output, setOutput] = useState<ExecuteCellResponseDto | null>(null);
@@ -61,7 +116,12 @@ export function DashboardChart({ cellId }: DashboardChartProps) {
     if (cellId.startsWith("_")) {
       return;
     }
-    handleExecuteCell(cellId, true);
+    executeCellMutation.mutate(cellId, {
+      onSuccess: (data) => {
+        setOutput(data);
+      },
+      onError: () => {},
+    });
   };
 
   return (
@@ -78,10 +138,15 @@ export function DashboardChart({ cellId }: DashboardChartProps) {
       overflow="hidden"
     >
       <Flex direction="row" justifyContent="space-between">
-        <Heading accessbilityLevel={3} size="sm">
+        <Heading
+          accessbilityLevel={3}
+          weight="semibold"
+          size="sm"
+          textColor="subtle"
+        >
           {cellQuery?.data?.name}
         </Heading>
-        <Flex direction="row" gap="2xs">
+        <Flex direction="row" gap="xs">
           <IconButton
             type="refresh"
             backgroundColor="default"
@@ -107,16 +172,7 @@ export function DashboardChart({ cellId }: DashboardChartProps) {
       </Flex>
 
       {!isLoading && (
-        <BarChart
-          xAxis={chartContent.x_axis}
-          yAxis={chartContent.y_axis}
-          data={output.data as Object[]}
-          orientation={chartContent.orientation}
-          dimensions={output.columns?.map((column) => column.column_name) ?? []}
-          sortOrder={chartContent.y_axis_sort_order}
-          axisTickShow={chartContent.axis_tick_show}
-          axisMinorTickShow={chartContent.axis_minor_tick_show}
-        />
+        <ChartRenderer chartContent={chartContent} output={output} />
       )}
     </Flex>
   );

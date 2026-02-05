@@ -16,11 +16,13 @@ export function useSourceCellExecution(
   chartContent: ChartContent | null
 ) {
   const handleExecuteCell = useHandleExecuteCell();
-  const { getOutput, setOutputState } = useCellOutputStore();
   const [sourceCellId, setSourceCellId] = useState<string | null>(
     chartContent?.cell_id || null
   );
-  const sourceCellOutput = sourceCellId ? getOutput(sourceCellId) : null;
+  const sourceCellOutput = useCellOutputStore((state) =>
+    sourceCellId ? state.outputs[sourceCellId] : null
+  );
+  const { setOutputState } = useCellOutputStore.getState();
 
   const onSuccessCallback = () => {
     setOutputState(cellId, CellOutputState.PRESENT);
@@ -121,27 +123,21 @@ export function useFormOptions(
   const yAxisColumnOptions = useMemo(
     () =>
       sourceCellOutput?.columns && sourceCellOutput.columns.length > 0
-        ? sourceCellOutput.columns
-            // .filter(
-            //   (column) =>
-            //     column.data_type === ColumnDataType.INT4 ||
-            //     column.data_type === ColumnDataType.INT8
-            // )
-            .map((column) => ({
-              value: column.column_name,
-              label: (
-                <Flex direction="row" gap="2xs" alignItems="center">
-                  <Icon
-                    type={getIconForDataType(column.data_type)}
-                    color="default"
-                    strokeWidth={1.5}
-                    size="sm"
-                  />
-                  <Text>{column.column_name}</Text>
-                </Flex>
-              ),
-              textValue: column.column_name,
-            }))
+        ? sourceCellOutput.columns.map((column) => ({
+            value: column.column_name,
+            label: (
+              <Flex direction="row" gap="2xs" alignItems="center">
+                <Icon
+                  type={getIconForDataType(column.data_type)}
+                  color="default"
+                  strokeWidth={1.5}
+                  size="sm"
+                />
+                <Text>{column.column_name}</Text>
+              </Flex>
+            ),
+            textValue: column.column_name,
+          }))
         : [],
     [sourceCellOutput?.columns]
   );

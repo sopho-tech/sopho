@@ -4,6 +4,7 @@ import { IconButton } from "src/components/design-system/IconButton";
 import { Input } from "src/components/design-system/Input";
 import { IconType } from "src/components/design-system/datatypes";
 import styles from "./PasswordField.module.css";
+import { FieldError } from "./FieldError";
 
 type PasswordFieldProps = {
   label?: string;
@@ -11,6 +12,8 @@ type PasswordFieldProps = {
   showLabel?: boolean;
   icon?: IconType;
   readonly?: boolean;
+  containerStyleClass?: string;
+  labelStyleClass?: string;
 };
 
 export function PasswordField({
@@ -19,6 +22,8 @@ export function PasswordField({
   showLabel = true,
   icon,
   readonly = false,
+  containerStyleClass,
+  labelStyleClass,
 }: PasswordFieldProps) {
   const field = useFieldContext<string>();
   const [showPassword, setShowPassword] = useState(false);
@@ -31,8 +36,8 @@ export function PasswordField({
   };
 
   return (
-    <label>
-      {showLabel && label && <span>{label}</span>}
+    <label className={containerStyleClass}>
+      {showLabel && label && <span className={labelStyleClass}>{label}</span>}
       <div className={styles.passwordContainer}>
         <div className={styles.passwordInputWrapper}>
           <Input
@@ -45,19 +50,21 @@ export function PasswordField({
             name={fieldName}
             disabled={readonly}
           />
+          {!readonly && (
+            <div className={styles.visibilityButton}>
+              <IconButton
+                type={showPassword ? "visibility_off" : "visibility"}
+                backgroundColor="transparent"
+                iconColor="grey"
+                iconSize="sm"
+                onClick={togglePasswordVisibility}
+                tabIndex={-1}
+              />
+            </div>
+          )}
         </div>
-        {!readonly && (
-          <div className={styles.visibilityButton}>
-            <IconButton
-              type={showPassword ? "visibility_off" : "visibility"}
-              backgroundColor="transparent"
-              iconColor="grey"
-              iconSize="sm"
-              onClick={togglePasswordVisibility}
-              tabIndex={-1}
-            />
-          </div>
-        )}
+
+        <FieldError errors={field.state.meta.errors} />
       </div>
     </label>
   );

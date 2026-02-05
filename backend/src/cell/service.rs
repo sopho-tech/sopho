@@ -387,6 +387,18 @@ fn build_aggregated_query(
     )
 }
 
+fn build_pie_chart_aggregated_query(
+    source_query: &str,
+    category: &str,
+    value: &str,
+    aggregate_fn: &str,
+) -> String {
+    format!(
+        "SELECT {}, {}({}) AS {} FROM ({}) AS subquery GROUP BY {}",
+        category, aggregate_fn, value, value, source_query, category
+    )
+}
+
 fn get_sql_query_from_cell(
     cell: &entity::cell::Model,
 ) -> Result<String, (http::StatusCode, axum::Json<JsonValue>)> {
@@ -437,92 +449,150 @@ async fn execute_sql_cell(
     execute_query_and_format_results(database_connection, &query).await
 }
 
-async fn execute_chart_cell(
-    app_state: AppState,
-    cell: entity::cell::Model,
-) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let content = match cell.content {
+fn parse_chart_content_from_cell(
+    cell: &entity::cell::Model,
+) -> Result<dto::ChartContent, (http::StatusCode, axum::Json<JsonValue>)> {
+    let content = match &cell.content {
         Some(content) => content,
         None => {
-            return (
+            return Err((
                 StatusCode::PRECONDITION_FAILED,
                 axum::Json(serde_json::json!({ "error": "Cell has no content" })),
-            )
+            ));
         }
     };
-    let cell_content = CellContent::parse(&content, &CellType::Chart);
-    let cell_content = match cell_content {
+
+    let cell_content = match CellContent::parse(content, &CellType::Chart) {
         Ok(cell_content) => cell_content,
-        Err(_) => {
-            return (
+        Err(e) => {
+            tracing::error!("Error when parsing cell content: {}", e);
+            return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 axum::Json(serde_json::json!({ "error": "Cell has non serializable content" })),
-            )
+            ));
         }
     };
-    let chart_content = match cell_content {
-        CellContent::Chart(chart_content) => chart_content,
-        _ => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": "Cell has non serializable content" })),
-            )
+
+    match cell_content {
+        CellContent::Chart(chart_content) => Ok(chart_content),
+        _ => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": "Cell has non serializable content" })),
+        )),
+    }
+}
+
+fn get_source_cell_id(chart_content: &dto::ChartContent) -> Uuid {
+    match chart_content {
+        dto::ChartContent::Bar(axis_content) | dto::ChartContent::Line(axis_content) => {
+            axis_content.cell_id
         }
-    };
-    let source_cell_id = match chart_content.cell_id {
-        Some(source_cell_id) => source_cell_id,
-        None => {
-            return (
-                StatusCode::PRECONDITION_FAILED,
-                axum::Json(serde_json::json!({ "error": "ChartCell has no cell id attached" })),
-            )
-        }
-    };
-    let source_cell = execute_get_cell(&app_state, source_cell_id).await;
+        dto::ChartContent::Pie(pie_content) => pie_content.cell_id,
+    }
+}
+
+async fn get_source_cell_for_chart(
+    app_state: &AppState,
+    source_cell_id: Uuid,
+) -> Result<(entity::cell::Model, Uuid, String), (http::StatusCode, axum::Json<JsonValue>)> {
+    let source_cell = execute_get_cell(app_state, source_cell_id).await;
     let source_cell = match source_cell {
         Ok(source_cell) => source_cell,
         Err(e) => {
-            return (
+            return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
+            ));
+        }
+    };
+
+    let connection_id = match source_cell.connection_id {
+        Some(connection_id) => connection_id,
+        None => {
+            return Err((
+                StatusCode::PRECONDITION_FAILED,
+                axum::Json(
+                    serde_json::json!({ "error": "Source cell has no connection assigned" }),
+                ),
+            ));
         }
     };
 
     let source_query = match get_sql_query_from_cell(&source_cell) {
         Ok(query) => query,
+        Err(err) => return Err(err),
+    };
+
+    Ok((source_cell, connection_id, source_query))
+}
+
+fn build_chart_aggregated_query(
+    chart_content: dto::ChartContent,
+    source_query: &str,
+) -> Result<String, (http::StatusCode, axum::Json<JsonValue>)> {
+    match chart_content {
+        dto::ChartContent::Bar(axis_content) | dto::ChartContent::Line(axis_content) => {
+            let aggregate_fn = match &axis_content.y_axis_aggregate_function {
+                Some(fn_name) => fn_name.as_str(),
+                None => {
+                    return Err((
+                        StatusCode::PRECONDITION_FAILED,
+                        axum::Json(serde_json::json!({
+                            "error": "ChartCell has no aggregate function specified"
+                        })),
+                    ));
+                }
+            };
+
+            Ok(build_aggregated_query(
+                source_query,
+                &axis_content.x_axis,
+                &axis_content.y_axis,
+                aggregate_fn,
+            ))
+        }
+        dto::ChartContent::Pie(pie_content) => {
+            let aggregate_fn = match &pie_content.aggregate_function {
+                Some(fn_name) => fn_name.as_str(),
+                None => {
+                    return Err((
+                        StatusCode::PRECONDITION_FAILED,
+                        axum::Json(serde_json::json!({
+                            "error": "ChartCell has no aggregate function specified"
+                        })),
+                    ));
+                }
+            };
+
+            Ok(build_pie_chart_aggregated_query(
+                source_query,
+                &pie_content.category,
+                &pie_content.value,
+                aggregate_fn,
+            ))
+        }
+    }
+}
+
+async fn execute_chart_cell(
+    app_state: AppState,
+    cell: entity::cell::Model,
+) -> (http::StatusCode, axum::Json<JsonValue>) {
+    let chart_content = match parse_chart_content_from_cell(&cell) {
+        Ok(content) => content,
         Err(err) => return err,
     };
 
-    let aggregate_fn = match &chart_content.y_axis_aggregate_function {
-        Some(fn_name) => fn_name.as_str(),
-        None => {
-            return (
-                StatusCode::PRECONDITION_FAILED,
-                axum::Json(
-                    serde_json::json!({ "error": "ChartCell has no aggregate function specified" }),
-                ),
-            );
-        }
-    };
+    let source_cell_id = get_source_cell_id(&chart_content);
+    let (_, connection_id, source_query) =
+        match get_source_cell_for_chart(&app_state, source_cell_id).await {
+            Ok(result) => result,
+            Err(err) => return err,
+        };
 
-    let aggregated_query = build_aggregated_query(
-        &source_query,
-        &chart_content.x_axis,
-        &chart_content.y_axis,
-        aggregate_fn,
-    );
-
-    let connection_id = match source_cell.connection_id {
-        Some(connection_id) => connection_id,
-        None => {
-            return (
-                StatusCode::PRECONDITION_FAILED,
-                axum::Json(
-                    serde_json::json!({ "error": "Source cell has no connection assigned" }),
-                ),
-            );
-        }
+    let aggregated_query = match build_chart_aggregated_query(chart_content, &source_query) {
+        Ok(query) => query,
+        Err(err) => return err,
     };
 
     let database_connection = match get_database_connection(app_state, connection_id).await {

@@ -1,3 +1,4 @@
+import { ChartType } from "src/components/Chart";
 import { ColumnDataType } from "src/constants/database_types";
 
 export enum CellType {
@@ -32,17 +33,43 @@ export enum AxisMinorTickShow {
   HIDE = "HIDE",
 }
 
-export type ChartContent = {
+export type BarChartContent = {
+  cell_id?: string;
   x_axis: string;
   y_axis: string;
   chart_type?: string;
-  cell_id?: string;
   orientation?: string;
   y_axis_aggregate_function?: string;
   y_axis_sort_order?: string;
   axis_tick_show?: string;
   axis_minor_tick_show?: string;
+  x_axis_title?: string;
+  y_axis_title?: string;
 };
+
+export type PieChartContent = {
+  cell_id: string;
+  chart_type: string;
+  category: string;
+  value: string;
+  aggregate_function: string;
+};
+
+export type LineChartContent = {
+  cell_id?: string;
+  x_axis: string;
+  y_axis: string;
+  chart_type?: string;
+  orientation?: string;
+  y_axis_aggregate_function?: string;
+  y_axis_sort_order?: string;
+  axis_tick_show?: string;
+  axis_minor_tick_show?: string;
+  x_axis_title?: string;
+  y_axis_title?: string;
+};
+
+export type ChartContent = BarChartContent | PieChartContent | LineChartContent;
 
 export type CellDto = {
   id: string;
@@ -77,6 +104,15 @@ export function getChartContent(cell: CellDto): ChartContent | null {
     return null;
   }
 }
+
+export const getChartType = (chartContent: ChartContent | null) => {
+  if (!chartContent) {
+    return null;
+  }
+  return ChartType[
+    ChartType[chartContent.chart_type as keyof typeof ChartType]
+  ];
+};
 
 export function serializeChartContent(content: ChartContent): string {
   return JSON.stringify(content);

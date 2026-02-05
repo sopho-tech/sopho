@@ -14,7 +14,13 @@
 .formField {
   display: flex;
   flex-direction: row;
-  gap: var(--space-lg);
+  gap: var(--space-md);
+  align-items: center;
+  width: 100%;
+}
+
+.formLabel {
+  width: 100px;
 }
 
 .accordionTriggerHeading {

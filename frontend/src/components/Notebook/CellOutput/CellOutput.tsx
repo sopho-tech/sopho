@@ -12,9 +12,8 @@ interface CellOutputProps {
 }
 
 export function CellOutput({ cellId }: CellOutputProps) {
-  const { getOutput, getOutputState } = useCellOutputStore();
-  const output = getOutput(cellId);
-  const outputState = getOutputState(cellId);
+  const output = useCellOutputStore((state) => state.outputs[cellId]);
+  const outputState = useCellOutputStore((state) => state.outputStates[cellId]);
 
   const columns: ColumnConfig<Record<string, any>>[] =
     output?.columns?.map((column) => ({

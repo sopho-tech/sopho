@@ -3,21 +3,27 @@ import {
   useCellOutputStore,
 } from "src/components/Notebook/Cell";
 import styles from "src/components/Notebook/ChartCell/CellOutput/CellOutput.module.css";
-import { BarChart } from "src/components/Chart";
+import { BarChart, ChartType, LineChart, PieChart } from "src/components/Chart";
 import { useCell } from "src/api/cell/queries";
 import { getChartContent } from "src/components/Notebook/Cell";
 import cellStyles from "src/css/cell.module.css";
+import {
+  BarChartContent,
+  getChartType,
+  LineChartContent,
+  PieChartContent,
+} from "../../Cell/dto";
 
 interface ChartCellOutputProps {
   cellId: string;
 }
 
 export function CellOutput({ cellId }: ChartCellOutputProps) {
-  const { getOutput, getOutputState } = useCellOutputStore();
-  const outputState = getOutputState(cellId);
+  const output = useCellOutputStore((state) => state.outputs[cellId]);
+  const outputState = useCellOutputStore((state) => state.outputStates[cellId]);
   const cellQuery = useCell(cellId);
   const chartContent = cellQuery.data ? getChartContent(cellQuery.data) : null;
-  const output = cellId ? getOutput(cellId) : null;
+  const chartType = getChartType(chartContent);
 
   function render() {
     if (
@@ -31,18 +37,41 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
     ) {
       return null;
     }
-    return (
-      <BarChart
-        xAxis={chartContent.x_axis}
-        yAxis={chartContent.y_axis}
-        data={output.data}
-        orientation={chartContent.orientation}
-        dimensions={output.columns?.map((column) => column.column_name) ?? []}
-        sortOrder={chartContent.y_axis_sort_order}
-        axisTickShow={chartContent.axis_tick_show}
-        axisMinorTickShow={chartContent.axis_minor_tick_show}
-      />
-    );
+    if (chartType === ChartType.BAR) {
+      const barChartContent = chartContent as BarChartContent;
+      return (
+        <BarChart
+          xAxis={barChartContent.x_axis}
+          yAxis={barChartContent.y_axis}
+          data={output.data}
+          xAxisTitle={barChartContent.x_axis_title}
+          yAxisTitle={barChartContent.y_axis_title}
+        />
+      );
+    }
+    if (chartType === ChartType.LINE) {
+      const lineChartContent = chartContent as LineChartContent;
+      return (
+        <LineChart
+          xAxis={lineChartContent.x_axis}
+          yAxis={lineChartContent.y_axis}
+          data={output.data}
+          xAxisTitle={lineChartContent.x_axis_title}
+          yAxisTitle={lineChartContent.y_axis_title}
+        />
+      );
+    }
+    if (chartType === ChartType.PIE) {
+      const pieChartContent = chartContent as PieChartContent;
+      return (
+        <PieChart
+          category={pieChartContent.category}
+          value={pieChartContent.value}
+          dimensions={output.columns?.map((column) => column.column_name) ?? []}
+          data={output.data}
+        />
+      );
+    }
   }
 
   return (

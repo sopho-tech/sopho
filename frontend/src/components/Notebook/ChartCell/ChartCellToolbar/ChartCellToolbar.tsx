@@ -12,9 +12,10 @@ import { ToolTip } from "src/components/design-system/ToolTip";
 export function ChartCellToolbar({ cellId }: { cellId: string }) {
   const executeCellMutation = useExecuteCell();
   const getCellQuery = useCell(cellId);
-  const { setOutput, setExecutionState, setOutputState } = useCellOutputStore();
 
   function handleExecute() {
+    const { setOutput, setExecutionState, setOutputState } =
+      useCellOutputStore.getState();
     setExecutionState(cellId, ExecutionState.RUNNING);
     executeCellMutation.mutate(cellId, {
       onSuccess: (data) => {

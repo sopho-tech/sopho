@@ -16,6 +16,7 @@ type SelectFieldProps = {
   infoIconToolTipMessage?: React.ReactNode;
   showLabel?: boolean;
   readonly?: boolean;
+  labelStyleClass?: string;
 };
 
 export function SelectField({
@@ -27,6 +28,7 @@ export function SelectField({
   infoIconToolTipMessage,
   showLabel = true,
   readonly = false,
+  labelStyleClass,
 }: SelectFieldProps) {
   const field = useFieldContext<string>();
 
@@ -48,7 +50,9 @@ export function SelectField({
           className={`${FormStyles.formLabelIconContainer} ${InfoIconTooltipStyles.hoverContainer}`}
         >
           {showLabel && label && (
-            <span className={FormStyles.formLabel}>{label}</span>
+            <span className={labelStyleClass || FormStyles.formLabel}>
+              {label}
+            </span>
           )}
           {renderInfoIconTooltip()}
         </div>

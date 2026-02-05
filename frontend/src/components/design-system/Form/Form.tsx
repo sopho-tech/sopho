@@ -28,6 +28,7 @@ type FormProps = {
   fieldStyleClass?: string;
   rootStyleClass?: string;
   formButtonRowStyleClass?: string;
+  labelStyleClass?: string;
   submitOnEnter?: boolean;
   readonly?: boolean;
 };
@@ -46,12 +47,13 @@ export function Form({
   fieldStyleClass,
   rootStyleClass,
   formButtonRowStyleClass,
+  labelStyleClass,
   submitOnEnter = false,
   readonly = false,
 }: FormProps) {
   const defaultValues = deriveDefaultValues(fields);
   const [accordionState, setAccordionState] = useState<Map<string, boolean>>(
-    new Map(),
+    new Map()
   );
 
   const form = useAppForm({
@@ -68,13 +70,13 @@ export function Form({
       onDynamic({ value }) {
         const { errorMap, invalidFields } = validateFields(
           fields,
-          value as Record<string, any>,
+          value as Record<string, any>
         );
 
         if (invalidFields.length > 0) {
           const shouldBeOpenAccordions = findAccordionsWithInvalidFields(
             invalidFields,
-            fields,
+            fields
           );
           const newAccordionState = new Map(accordionState);
           shouldBeOpenAccordions.forEach((key) => {
@@ -125,7 +127,7 @@ export function Form({
       )}
       <form.AppForm>
         <div
-          className={fieldsContainerStyleClass || FormStyles.formElements}
+          className={`${FormStyles.formElements} ${fieldsContainerStyleClass || ""}`}
           onKeyDown={handleKeyDown}
         >
           {fields.map((field) => (
@@ -136,6 +138,7 @@ export function Form({
               accordionState={accordionState}
               setAccordionState={setAccordionState}
               fieldStyleClass={fieldStyleClass}
+              labelStyleClass={labelStyleClass}
               readonly={readonly}
             />
           ))}

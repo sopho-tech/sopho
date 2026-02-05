@@ -30,8 +30,8 @@ export function CanvasButtons({
   );
 
   return (
-    <Flex direction="row" gap="sm">
-      <Flex direction="row" gap="2xs">
+    <Flex direction="row" gap="md">
+      <Flex direction="row" gap="xs">
         <IconButton
           type="star"
           onClick={() => {}}

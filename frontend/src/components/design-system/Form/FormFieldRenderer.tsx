@@ -12,6 +12,7 @@ type FormFieldRendererProps = {
   accordionState: Map<string, boolean>;
   setAccordionState: React.Dispatch<React.SetStateAction<Map<string, boolean>>>;
   fieldStyleClass?: string;
+  labelStyleClass?: string;
   readonly?: boolean;
 };
 
@@ -21,13 +22,14 @@ export function FormFieldRenderer({
   accordionState,
   setAccordionState,
   fieldStyleClass,
+  labelStyleClass,
   readonly = false,
 }: FormFieldRendererProps) {
   switch (field.type) {
     case FormFieldType.INPUT: {
       return (
         <form.AppField key={field.key} name={field.key}>
-          {(fieldState: any) => (
+          {() => (
             <div className={`${FormStyles.formFieldContainer}`}>
               <TextField
                 label={String(field.name)}
@@ -36,8 +38,8 @@ export function FormFieldRenderer({
                 icon={field.icon}
                 readonly={readonly}
                 containerStyleClass={fieldStyleClass}
+                labelStyleClass={labelStyleClass}
               />
-              <FieldError errors={fieldState.state.meta.errors} />
             </div>
           )}
         </form.AppField>
@@ -54,8 +56,10 @@ export function FormFieldRenderer({
                 showLabel={field.showLabel}
                 icon={field.icon}
                 readonly={readonly}
+                containerStyleClass={fieldStyleClass}
+                labelStyleClass={labelStyleClass}
               />
-              <FieldError errors={fieldState.state.meta.errors} />
+              {/* <FieldError errors={fieldState.state.meta.errors} /> */}
             </div>
           )}
         </form.AppField>
@@ -76,6 +80,7 @@ export function FormFieldRenderer({
                 infoIconToolTipMessage={field.infoIconToolTipMessage}
                 showLabel={field.showLabel}
                 readonly={readonly}
+                labelStyleClass={labelStyleClass}
               />
               <FieldError errors={fieldState.state.meta.errors} />
             </div>
@@ -92,6 +97,7 @@ export function FormFieldRenderer({
           accordionState={accordionState}
           setAccordionState={setAccordionState}
           fieldStyleClass={fieldStyleClass}
+          labelStyleClass={labelStyleClass}
           readonly={readonly}
         />
       );
