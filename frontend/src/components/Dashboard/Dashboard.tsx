@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useParams } from "react-router";
 import RGL, { WidthProvider, Layout } from "react-grid-layout";
-import { getInstanceByDom } from "echarts";
 import { useDashboardByCanvasId } from "src/api/dashboard/queries";
 import { DashboardChart } from "src/components/Dashboard/DashboardChart";
 import { DashboardToolbar } from "src/components/Dashboard/DashboardToolbar";
@@ -46,15 +45,9 @@ export function Dashboard() {
 
   const handleDrag = () => {
     const gridItems = document.querySelectorAll(".react-grid-item");
-    gridItems.forEach((item) => {
-      const divs = item.querySelectorAll("div");
-      divs.forEach((div) => {
-        const chart = getInstanceByDom(div as HTMLElement);
-        if (chart) {
-          chart.resize();
-        }
-      });
-    });
+    // gridItems.forEach((item) => {
+    //   const divs = item.querySelectorAll("div");
+    // });
   };
 
   const handleDragStart = () => {
