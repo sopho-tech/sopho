@@ -35,7 +35,7 @@ export function ConnectionDetail() {
             { label: "Source Type", value: connectionDetails.source_type },
             { label: "Host", value: connectionDetails.host },
             { label: "Port", value: connectionDetails.port },
-            { label: "Username", value: "********" },
+            { label: "Username Username Username", value: "********" },
             { label: "Password", value: "********" },
             { label: "Database", value: connectionDetails.database },
             { label: "Description", value: connectionDetails.description },

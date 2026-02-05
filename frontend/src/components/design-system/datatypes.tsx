@@ -137,7 +137,9 @@ export type BoxElement =
   | "nav"
   | "p"
   | "section"
-  | "summary";
+  | "summary"
+  | "ul"
+  | "li";
 
 export type SharedLayoutProps = {
   borderRadius?: BorderRadius;

@@ -9,19 +9,19 @@ import { useHandleExecuteCell } from "src/components/Notebook/Cell";
 import { useKeyboardShortcut } from "src/utils/keyboard_shortcuts/hooks";
 import { Flex } from "src/components/design-system/Flex/Flex";
 import { Sticky } from "src/components/design-system/Sticky/Sticky";
-import { useRef } from "react";
+import { useCallback, useRef, useMemo } from "react";
 import { useCanvasStore } from "src/components/Canvases/store";
 
 export function Notebook() {
-  const { activeCellId } = useNotebookStore();
   const { activeNotebookId } = useCanvasStore();
   const query = useNotebook(activeNotebookId);
   const handleExecuteCell = useHandleExecuteCell();
   const notebookRef = useRef<HTMLDivElement>(null);
 
-  function handleExecute() {
+  const handleExecute = useCallback(() => {
+    const activeCellId = useNotebookStore.getState().activeCellId;
     handleExecuteCell(activeCellId);
-  }
+  }, [handleExecuteCell]);
 
   useKeyboardShortcut(
     handleExecute,
@@ -29,19 +29,7 @@ export function Notebook() {
     notebookRef
   );
 
-  if (query.isPending) {
-    return <span>Loading...</span>;
-  }
-
-  if (query.isError) {
-    return <span>Error...{query.error.message}</span>;
-  }
-
-  if (!query.data) {
-    return <span>No data available</span>;
-  }
-
-  function generateCellComponents() {
+  const cellComponents = useMemo(() => {
     if (!query.data?.cells) return null;
     return query.data.cells
       .sort((a, b) => {
@@ -55,6 +43,18 @@ export function Notebook() {
         }
         return <Cell key={cell.id} cell_id={cell.id} />;
       });
+  }, [query.data?.cells]);
+
+  if (query.isPending) {
+    return <span>Loading...</span>;
+  }
+
+  if (query.isError) {
+    return <span>Error...{query.error.message}</span>;
+  }
+
+  if (!query.data) {
+    return <span>No data available</span>;
   }
 
   return (
@@ -63,7 +63,7 @@ export function Notebook() {
         <NotebookMenuBar />
       </Sticky>
       <Flex direction="column" gap="md">
-        {generateCellComponents()}
+        {cellComponents}
       </Flex>
     </Flex>
   );

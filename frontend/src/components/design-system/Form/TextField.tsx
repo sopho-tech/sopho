@@ -1,6 +1,7 @@
 import { useFieldContext } from "src/components/design-system/Form/form-context";
 import { Input } from "src/components/design-system/Input";
 import { IconType } from "src/components/design-system/datatypes";
+import { FieldError } from "./FieldError";
 
 type TextFieldProps = {
   label?: string;
@@ -9,6 +10,7 @@ type TextFieldProps = {
   icon?: IconType;
   readonly?: boolean;
   containerStyleClass?: string;
+  labelStyleClass?: string;
 };
 
 export function TextField({
@@ -18,12 +20,13 @@ export function TextField({
   icon,
   readonly = false,
   containerStyleClass,
+  labelStyleClass,
 }: TextFieldProps) {
   const field = useFieldContext<string>();
   const fieldName = field.name;
   return (
     <label className={containerStyleClass}>
-      {showLabel && label && <span>{label}</span>}
+      {showLabel && label && <span className={labelStyleClass}>{label}</span>}
       <Input
         type="text"
         value={field.state.value}
@@ -34,6 +37,7 @@ export function TextField({
         name={fieldName}
         disabled={readonly}
       />
+      <FieldError errors={field.state.meta.errors} />
     </label>
   );
 }

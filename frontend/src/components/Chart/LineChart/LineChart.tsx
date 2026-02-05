@@ -1,8 +1,8 @@
 import {
-  Bar,
-  BarChart as RechartsBarChart,
   CartesianGrid,
   Legend,
+  Line,
+  LineChart as RechartsLineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -18,7 +18,10 @@ import {
   renderYAxisLabel,
 } from "../ChartCommon";
 
-export type BarChartProps = {
+export type LineChartType = "linear" | "monotone" | "step";
+
+export type LineChartProps = {
+  type?: LineChartType;
   xAxis: string;
   yAxis: string;
   data: Object[];
@@ -26,30 +29,33 @@ export type BarChartProps = {
   yAxisTitle?: string;
 };
 
-export function BarChart({
+export function LineChart({
+  type = "monotone",
   xAxis,
   yAxis,
   data,
   xAxisTitle,
   yAxisTitle,
-}: BarChartProps) {
+}: LineChartProps) {
   return (
     <ResponsiveContainer
       width="100%"
-      aspect={1.618}
       initialDimension={{ width: 1, height: 1 }}
       debounce={300}
       className={commonStyles.container}
     >
-      <RechartsBarChart responsive data={data} margin={CHART_MARGINS}>
+      <RechartsLineChart responsive data={data} margin={{ ...CHART_MARGINS }}>
         <CartesianGrid
           stroke={getCSSVariable("--color-grey-300")}
           strokeDasharray={"4 1 2"}
         />
-        <Bar
+        <Line
+          type={type}
           dataKey={yAxis}
-          fill={getCSSVariable("--color-primary-500")}
+          stroke={getCSSVariable("--color-primary-500")}
+          strokeWidth={1}
           name={yAxis}
+          activeDot={{ r: 7 }}
         />
         <XAxis dataKey={xAxis} stroke={getCSSVariable("--color-grey-600")}>
           {renderXAxisLabel(xAxisTitle)}
@@ -57,9 +63,9 @@ export function BarChart({
         <YAxis stroke={getCSSVariable("--color-grey-600")}>
           {renderYAxisLabel(yAxisTitle)}
         </YAxis>
-        <Legend {...createLegendProps("rect")} />
-        <Tooltip {...createTooltipProps({ fill: "rgba(0, 0, 0, 0.05)" })} />
-      </RechartsBarChart>
+        <Legend {...createLegendProps("plainline")} />
+        <Tooltip {...createTooltipProps({ strokeDasharray: "3 3" })} />
+      </RechartsLineChart>
     </ResponsiveContainer>
   );
 }

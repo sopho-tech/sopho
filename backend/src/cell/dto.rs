@@ -11,11 +11,21 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ChartContent {
+#[serde(tag = "chart_type")]
+pub enum ChartContent {
+    #[serde(rename = "BAR")]
+    Bar(AxisChartContent),
+    #[serde(rename = "LINE")]
+    Line(AxisChartContent),
+    #[serde(rename = "PIE")]
+    Pie(PieChartContent),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AxisChartContent {
+    pub cell_id: Uuid,
     pub x_axis: String,
     pub y_axis: String,
-    pub chart_type: Option<String>,
-    pub cell_id: Option<Uuid>,
     #[serde(deserialize_with = "ChartOrientation::deserialize_option_from_str")]
     #[serde(serialize_with = "ChartOrientation::serialize_option_to_str")]
     pub orientation: Option<ChartOrientation>,
@@ -29,6 +39,14 @@ pub struct ChartContent {
     #[serde(deserialize_with = "AxisMinorTickShow::deserialize_option_from_str")]
     #[serde(serialize_with = "AxisMinorTickShow::serialize_option_to_str")]
     pub axis_minor_tick_show: Option<AxisMinorTickShow>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PieChartContent {
+    pub cell_id: Uuid,
+    pub category: String,
+    pub value: String,
+    pub aggregate_function: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
