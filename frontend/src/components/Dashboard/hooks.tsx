@@ -3,18 +3,18 @@ import {
   useUpdateDashboard,
   useDashboardByCanvasId,
 } from "src/api/dashboard/queries";
-import { useCanvasStore } from "src/components/Canvases/store";
-import {
-  useDashboardStore,
-  DashboardMode,
-} from "src/components/Dashboard/store";
+import { useStore, DashboardMode } from "src/store";
 import { convertRGLayoutToDto } from "src/components/Dashboard/dto";
 import { DashboardDto } from "src/components/Dashboard/dto";
 
 export function useDashboardSave(dashboardData: DashboardDto | undefined) {
-  const { activeNotebookId } = useCanvasStore();
-  const { layout, saveRequested, setMode, clearSaveRequest } =
-    useDashboardStore();
+  const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);
+  const saveRequested = useStore((state) => state.dashboard.saveRequested);
+  const layout = useStore((state) => state.dashboard.layout);
+  const setMode = useStore((state) => state.dashboard.setMode);
+  const clearSaveRequest = useStore(
+    (state) => state.dashboard.clearSaveRequest
+  );
   const updateDashboardMutation = useUpdateDashboard();
 
   useEffect(() => {
@@ -60,13 +60,15 @@ export function useDashboardSave(dashboardData: DashboardDto | undefined) {
 }
 
 export function useDashboardReset(canvasId: string, isDashboardView: boolean) {
-  const {
-    mode,
-    setMode,
-    requestSave,
-    resetFromBackendData,
-    setShowChartBrowser,
-  } = useDashboardStore();
+  const mode = useStore((state) => state.dashboard.mode);
+  const setMode = useStore((state) => state.dashboard.setMode);
+  const requestSave = useStore((state) => state.dashboard.requestSave);
+  const resetFromBackendData = useStore(
+    (state) => state.dashboard.resetFromBackendData
+  );
+  const setShowChartBrowser = useStore(
+    (state) => state.dashboard.setShowChartBrowser
+  );
   const dashboardQuery = useDashboardByCanvasId(canvasId);
   const isEditing = mode === DashboardMode.EDITING;
 
@@ -79,7 +81,13 @@ export function useDashboardReset(canvasId: string, isDashboardView: boolean) {
     }
     setShowChartBrowser(false);
     setMode(DashboardMode.VIEWING);
-  }, [isDashboardView, dashboardQuery, resetFromBackendData, setMode]);
+  }, [
+    isDashboardView,
+    dashboardQuery,
+    resetFromBackendData,
+    setShowChartBrowser,
+    setMode,
+  ]);
 
   const handleEditSaveClick = useCallback(async () => {
     if (isEditing) {
@@ -100,8 +108,9 @@ export function useDashboardReset(canvasId: string, isDashboardView: boolean) {
     isDashboardView,
     dashboardQuery,
     resetFromBackendData,
-    setMode,
     requestSave,
+    setShowChartBrowser,
+    setMode,
   ]);
 
   return {

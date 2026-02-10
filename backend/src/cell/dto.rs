@@ -35,7 +35,10 @@ pub struct AxisChartContent {
     pub y_axis_sort_order: Option<SortOrder>,
     #[serde(deserialize_with = "AxisTickShow::deserialize_option_from_str")]
     #[serde(serialize_with = "AxisTickShow::serialize_option_to_str")]
-    pub axis_tick_show: Option<AxisTickShow>,
+    pub x_axis_tick_show: Option<AxisTickShow>,
+    #[serde(deserialize_with = "AxisTickShow::deserialize_option_from_str")]
+    #[serde(serialize_with = "AxisTickShow::serialize_option_to_str")]
+    pub y_axis_tick_show: Option<AxisTickShow>,
     #[serde(deserialize_with = "AxisMinorTickShow::deserialize_option_from_str")]
     #[serde(serialize_with = "AxisMinorTickShow::serialize_option_to_str")]
     pub axis_minor_tick_show: Option<AxisMinorTickShow>,

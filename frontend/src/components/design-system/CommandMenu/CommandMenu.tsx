@@ -12,7 +12,7 @@ import {
   KEYBOARD_SHORTCUTS,
   useKeyboardShortcut,
 } from "src/utils/keyboard_shortcuts";
-import { useCanvasStore } from "src/components/Canvases/store";
+import { useStore } from "src/store";
 import { CanvasesPageState } from "src/components/Canvases/dto";
 import { useDebouncedValue } from "src/utils/hooks";
 import { CommandMenuHomePage } from "./CommandMenuHomePage.tsx";
@@ -52,7 +52,7 @@ export const CommandMenu = ({
   onOpenChange,
 }: CommandMenuProps) => {
   const navigate = useNavigate();
-  const { setCanvasPageState } = useCanvasStore();
+  const setCanvasPageState = useStore((state) => state.canvas.setCanvasPageState);
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;

@@ -222,15 +222,27 @@ export function getBarChartFormFields(
             ),
           },
           {
-            key: "axis_tick_show",
-            name: "Axis Tick",
+            key: "x_axis_tick_show",
+            name: "X-Axis Tick",
             required: false,
             errorMessage: "",
             type: FormFieldType.SELECT,
             options: VISIBILITY_OPTIONS,
-            selectedValue: barChartContent?.axis_tick_show || "SHOW",
+            selectedValue: barChartContent?.x_axis_tick_show ?? "SHOW",
             infoIconToolTipMessage: (
-              <InfoTooltip message="Choose whether to show the ticks in x-axis" />
+              <InfoTooltip message="Choose whether to show the ticks on x-axis" />
+            ),
+          },
+          {
+            key: "y_axis_tick_show",
+            name: "Y-Axis Tick",
+            required: false,
+            errorMessage: "",
+            type: FormFieldType.SELECT,
+            options: VISIBILITY_OPTIONS,
+            selectedValue: barChartContent?.y_axis_tick_show ?? "SHOW",
+            infoIconToolTipMessage: (
+              <InfoTooltip message="Choose whether to show the ticks on y-axis" />
             ),
           },
           {
@@ -398,15 +410,27 @@ export function getLineChartFormFields(
             ),
           },
           {
-            key: "axis_tick_show",
-            name: "Axis Tick",
+            key: "x_axis_tick_show",
+            name: "X-Axis Tick",
             required: false,
             errorMessage: "",
             type: FormFieldType.SELECT,
             options: VISIBILITY_OPTIONS,
-            selectedValue: lineChartContent?.axis_tick_show || "SHOW",
+            selectedValue: lineChartContent?.x_axis_tick_show ?? "SHOW",
             infoIconToolTipMessage: (
-              <InfoTooltip message="Choose whether to show the ticks in x-axis" />
+              <InfoTooltip message="Choose whether to show the ticks on x-axis" />
+            ),
+          },
+          {
+            key: "y_axis_tick_show",
+            name: "Y-Axis Tick",
+            required: false,
+            errorMessage: "",
+            type: FormFieldType.SELECT,
+            options: VISIBILITY_OPTIONS,
+            selectedValue: lineChartContent?.y_axis_tick_show ?? "SHOW",
+            infoIconToolTipMessage: (
+              <InfoTooltip message="Choose whether to show the ticks on y-axis" />
             ),
           },
           {
@@ -419,6 +443,18 @@ export function getLineChartFormFields(
             selectedValue: lineChartContent?.axis_minor_tick_show || "SHOW",
             infoIconToolTipMessage: (
               <InfoTooltip message="Choose whether to show the minor ticks in x-axis" />
+            ),
+          },
+          {
+            key: "show_dots",
+            name: "Show Dots",
+            required: false,
+            errorMessage: "",
+            type: FormFieldType.SELECT,
+            options: VISIBILITY_OPTIONS,
+            selectedValue: lineChartContent?.show_dots ?? "SHOW",
+            infoIconToolTipMessage: (
+              <InfoTooltip message="Choose whether to show dots on the line" />
             ),
           },
         ],
@@ -522,7 +558,8 @@ export function extractBarChartFormData(formData: FormData): BarChartContent {
       (formData.get("y_axis_aggregate_function") as string) || undefined,
     y_axis_sort_order:
       (formData.get("y_axis_sort_order") as string) || undefined,
-    axis_tick_show: (formData.get("axis_tick_show") as string) || undefined,
+    x_axis_tick_show: (formData.get("x_axis_tick_show") as string) || undefined,
+    y_axis_tick_show: (formData.get("y_axis_tick_show") as string) || undefined,
     axis_minor_tick_show:
       (formData.get("axis_minor_tick_show") as string) || undefined,
     x_axis_title: (formData.get("x_axis_title") as string) || undefined,
@@ -541,9 +578,11 @@ export function extractLineChartFormData(formData: FormData): LineChartContent {
       (formData.get("y_axis_aggregate_function") as string) || undefined,
     y_axis_sort_order:
       (formData.get("y_axis_sort_order") as string) || undefined,
-    axis_tick_show: (formData.get("axis_tick_show") as string) || undefined,
+    x_axis_tick_show: (formData.get("x_axis_tick_show") as string) || undefined,
+    y_axis_tick_show: (formData.get("y_axis_tick_show") as string) || undefined,
     axis_minor_tick_show:
       (formData.get("axis_minor_tick_show") as string) || undefined,
+    show_dots: (formData.get("show_dots") as string) || "SHOW",
     x_axis_title: (formData.get("x_axis_title") as string)?.trim() || undefined,
     y_axis_title: (formData.get("y_axis_title") as string)?.trim() || undefined,
   };

@@ -10,21 +10,20 @@ import {
   DEFAULT_CHART_WIDTH,
   DEFAULT_CHART_HEIGHT,
 } from "src/components/Dashboard/dto";
-import {
-  useDashboardStore,
-  DashboardMode,
-} from "src/components/Dashboard/store";
 import { useDashboardSave } from "src/components/Dashboard/hooks";
 import styles from "src/components/Dashboard/Dashboard.module.css";
 import "react-grid-layout/css/styles.css";
 import { Flex } from "src/components/design-system";
+import { useStore, DashboardMode } from "src/store";
 
 const ReactGridLayout = WidthProvider(RGL);
 
 export function Dashboard() {
   const params = useParams();
   const canvasId = params.id || "";
-  const { mode, setLayout, getLayout } = useDashboardStore();
+  const mode = useStore((state) => state.dashboard.mode);
+  const getLayout = useStore((state) => state.dashboard.getLayout);
+  const setLayout = useStore((state) => state.dashboard.setLayout);
   const layout = getLayout();
   const dashboardQuery = useDashboardByCanvasId(canvasId);
   const isEditing = mode === DashboardMode.EDITING;

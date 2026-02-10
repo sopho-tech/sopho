@@ -10,14 +10,13 @@ alwaysApply: false
 - Use css modules.
 - Do not generate comments in code.
 - Use css variables from `frontend/src/css/index.css` if possible and add new variables if needed.
-- Use zustand for global and local client frontend state.
-- Use tanstack query to store backend state.
 - Use type for react props and states. Use interface only for public APIs.
 - Use Recharts for creating charts.
 - Use Lucide React Icons for icon.
 - Use components from `frontend/src/design-system` for building features.
 - Use @tanstack/react-query for data fetching at client side in the frontend.
 - Use radix-ui wherever possible for components instead of creating from scratch.
+- Do not use React's Suspense and lazy anywhere in the codebase.
 
 # Design System
 
@@ -25,3 +24,20 @@ alwaysApply: false
 - Extend the design-system if the required base component is missing.
 - Use Flex and Box instead of using div.
 - Define CSS in the arguments of Flex and Box. Do not use CSS module files outside of the design-component. Exceptions are allowed, but this is the norm.
+- Add displayName wherever necessary.
+
+# State Management
+
+- Use tanstack query to store backend state.
+- Use zustand for global and local client frontend state.
+- Use the folder `frontend/src/store` for all state management features globally on the client side for zustand.
+- The folder `frontend/src/store` is layout according to the zustand slice pattern with one single global store.
+- Always maintain one single global store.
+- State variables of a domain belong in one slice file.
+- Always use selectors when accessing the state from the store. Do not use destructuring.
+- When using selectors, select the field required specifically. Not the entire struct that the field is a part of.
+- Keep the rerendering due to the presence of unrequired state variables zero.
+
+# Design Patterns
+
+- Never use Higher Order Component (HOC) pattern. Always resort to using hooks.

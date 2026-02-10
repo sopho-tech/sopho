@@ -332,7 +332,12 @@ async fn execute_query_and_format_results(
                     .map(|v| serde_json::json!(v)),
                 "INT4" => row.try_get::<i32, _>(i).map(|v| serde_json::json!(v)),
                 "INT8" => row.try_get::<i64, _>(i).map(|v| serde_json::json!(v)),
-                "NUMERIC" => row.try_get::<Decimal, _>(i).map(|v| serde_json::json!(v)),
+                "NUMERIC" => row.try_get::<Decimal, _>(i).map(|v| {
+                    let f: f64 = v.try_into().unwrap_or(0.0);
+                    serde_json::Number::from_f64(f)
+                        .map(serde_json::Value::Number)
+                        .unwrap_or(serde_json::Value::Null)
+                }),
                 _ => {
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,

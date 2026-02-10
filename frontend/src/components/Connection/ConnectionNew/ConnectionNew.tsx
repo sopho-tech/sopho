@@ -1,4 +1,4 @@
-import { useConnectionsStore } from "src/components/Connection/store";
+import { useStore } from "src/store";
 import {
   ConnectionDetailsPageStateEnum,
   StatusType,
@@ -126,8 +126,8 @@ const steps: SophoMultiStepFormStep[] = [
 export function ConnectionNew() {
   const createMutation = useCreateConnection();
   const [completedSteps, setCompletedSteps] = useState(0);
-  const { connectionDetailsPageState, setConnectionDetailsPageState } =
-    useConnectionsStore();
+  const connectionDetailsPageState = useStore((state) => state.connection.connectionDetailsPageState);
+  const setConnectionDetailsPageState = useStore((state) => state.connection.setConnectionDetailsPageState);
   const shouldOpenDialog =
     connectionDetailsPageState == ConnectionDetailsPageStateEnum.NEW;
   const totalSteps = steps.length;

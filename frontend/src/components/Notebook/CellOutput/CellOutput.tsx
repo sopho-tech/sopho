@@ -1,7 +1,5 @@
-import {
-  CellOutputState,
-  useCellOutputStore,
-} from "src/components/Notebook/Cell";
+import { CellOutputState } from "src/components/Notebook/Cell";
+import { useStore } from "src/store";
 import { DataTable, ColumnConfig, Box } from "src/components/design-system";
 import CellOutputStles from "src/components/Notebook/CellOutput/CellOutput.module.css";
 import CellStyles from "src/css/cell.module.css";
@@ -12,8 +10,8 @@ interface CellOutputProps {
 }
 
 export function CellOutput({ cellId }: CellOutputProps) {
-  const output = useCellOutputStore((state) => state.outputs[cellId]);
-  const outputState = useCellOutputStore((state) => state.outputStates[cellId]);
+  const output = useStore((state) => state.cell.outputs[cellId]);
+  const outputState = useStore((state) => state.cell.outputStates[cellId]);
 
   const columns: ColumnConfig<Record<string, any>>[] =
     output?.columns?.map((column) => ({

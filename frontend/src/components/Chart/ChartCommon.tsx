@@ -1,8 +1,14 @@
 import {
+  CartesianGrid,
   Label,
-  TooltipContentProps,
+  Legend,
   LegendProps,
+  ResponsiveContainer,
+  Tooltip,
+  TooltipContentProps,
   TooltipProps,
+  XAxis,
+  YAxis,
 } from "recharts";
 import {
   NameType,
@@ -13,10 +19,79 @@ import { Flex } from "src/components/design-system";
 import { getCSSVariable } from "src/utils/css_util";
 import styles from "./ChartCommon.module.css";
 
+export type ChartContainerProps = {
+  children: React.ReactNode;
+  aspect?: number;
+};
+
+export function ChartContainer({ children, aspect }: ChartContainerProps) {
+  return (
+    <ResponsiveContainer
+      width="100%"
+      {...(aspect != null && { aspect })}
+      initialDimension={{ width: 1, height: 1 }}
+      debounce={300}
+      className={styles.container}
+    >
+      {children}
+    </ResponsiveContainer>
+  );
+}
+
+export function ChartCartesianGrid() {
+  return (
+    <CartesianGrid
+      stroke={getCSSVariable("--color-grey-300")}
+      strokeDasharray={"4 1 2"}
+    />
+  );
+}
+
+export type ChartXAxisProps = {
+  dataKey: string;
+  label?: string;
+  showTicks?: boolean;
+};
+
+export function ChartXAxis({
+  dataKey,
+  label,
+  showTicks = true,
+}: ChartXAxisProps) {
+  return (
+    <XAxis
+      dataKey={dataKey}
+      stroke={getCSSVariable("--color-grey-600")}
+      minTickGap={20}
+      tick={showTicks}
+      tickLine={showTicks}
+    >
+      {renderXAxisLabel(label)}
+    </XAxis>
+  );
+}
+
+export type ChartYAxisProps = {
+  label?: string;
+  showTicks?: boolean;
+};
+
+export function ChartYAxis({ label, showTicks = true }: ChartYAxisProps) {
+  return (
+    <YAxis
+      stroke={getCSSVariable("--color-grey-600")}
+      tick={showTicks}
+      tickLine={showTicks}
+    >
+      {renderYAxisLabel(label)}
+    </YAxis>
+  );
+}
+
 export const CHART_MARGINS = {
-  top: 50,
-  right: 50,
-  bottom: 0,
+  top: 10,
+  right: 60,
+  bottom: 50,
   left: 20,
 };
 
@@ -30,23 +105,23 @@ export const TOOLTIP_STYLE = {
 
 export const COMMON_LEGEND_PROPS: Partial<LegendProps> = {
   align: "center",
-  verticalAlign: "bottom",
+  verticalAlign: "top",
   iconSize: 16,
   inactiveColor: "#ccc",
-  layout: "horizontal",
 };
 
 export const renderToolTipContent = (
   props: TooltipContentProps<ValueType, NameType>
 ) => {
-  const { payload } = props;
+  const { label, payload } = props;
   return (
     <Flex direction="column" gap="xs" className={styles.tooltipContent}>
+      {label && <div className={styles.tooltipHeading}>{label}</div>}
       {payload?.map((entry, index) => (
         <div key={`item-${index}`} className={styles.tooltipItem}>
           <div
             className={styles.chartIcon}
-            style={{ backgroundColor: entry.color }}
+            style={{ backgroundColor: entry.color ?? entry.payload.fill }}
           />
           <span></span>
           <span className={`${styles.chartText} ${styles.chartLabel}`}>
@@ -64,13 +139,17 @@ export const renderToolTipContent = (
 };
 
 export const renderLegend = (props: LegendContentProps) => {
-  const { payload } = props;
+  const { payload, layout } = props;
   if (!payload || payload.length === 0) {
     return null;
   }
 
   return (
-    <Flex direction="row" gap="md" className={styles.legendContent}>
+    <Flex
+      direction={layout === "vertical" ? "column" : "row"}
+      gap="md"
+      className={`${styles.legendContent} ${layout === "vertical" ? styles.legendContentRight : ""}`}
+    >
       {payload.map((entry, index) => (
         <div key={`legend-${index}`} className={styles.legendItem}>
           <div
@@ -94,7 +173,7 @@ export const renderXAxisLabel = (xAxisTitle?: string): React.ReactNode => {
 export const renderYAxisLabel = (yAxisTitle?: string): React.ReactNode => {
   if (!yAxisTitle) return null;
   return (
-    <Label value={yAxisTitle} position="insideLeft" angle={-90} offset={-20} />
+    <Label value={yAxisTitle} position="insideLeft" angle={-90} offset={-10} />
   );
 };
 
@@ -115,21 +194,44 @@ export const getPrimaryColorShades = (count: number): string[] => {
   return colors;
 };
 
-export const createTooltipProps = (
-  cursor?: TooltipProps<ValueType, NameType>["cursor"]
-): Partial<TooltipProps<ValueType, NameType>> => ({
+const CHART_TOOLTIP_PROPS: Partial<TooltipProps<ValueType, NameType>> = {
   content: renderToolTipContent,
   contentStyle: TOOLTIP_STYLE,
-  cursor,
+  cursor: { fill: "rgba(0, 0, 0, 0.05)" },
   filterNull: false,
-});
+};
 
-export const createLegendProps = (
-  iconType: LegendProps["iconType"] = "rect",
-  wrapperStyle?: React.CSSProperties
-): Partial<LegendProps> => ({
+const CHART_LEGEND_PROPS: Partial<LegendProps> = {
   ...COMMON_LEGEND_PROPS,
-  iconType,
-  wrapperStyle: wrapperStyle,
+  iconType: "rect",
+  wrapperStyle: { paddingTop: "1rem" },
   content: renderLegend,
-});
+};
+
+export type ChartLegendPosition = "top" | "right";
+
+const LEGEND_POSITION_PROPS: Record<
+  ChartLegendPosition,
+  Pick<LegendProps, "align" | "verticalAlign" | "layout">
+> = {
+  top: { align: "center", verticalAlign: "top", layout: "horizontal" },
+  right: { align: "right", verticalAlign: "middle", layout: "vertical" },
+};
+
+export type ChartLegendProps = {
+  position: ChartLegendPosition;
+};
+
+export function ChartLegend({ position }: ChartLegendProps) {
+  return (
+    <Legend
+      {...CHART_LEGEND_PROPS}
+      {...LEGEND_POSITION_PROPS[position]}
+      wrapperStyle={{ alignContent: "start" }}
+    />
+  );
+}
+
+export function ChartTooltip() {
+  return <Tooltip {...CHART_TOOLTIP_PROPS} />;
+}

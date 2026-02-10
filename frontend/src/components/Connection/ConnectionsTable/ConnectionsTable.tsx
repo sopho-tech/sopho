@@ -1,7 +1,7 @@
 import ConnectionsStyles from "src/components/Connection/ConnectionsPage/ConnectionsPage.module.css";
 import { StatusBadge } from "src/components/StatusBadge/StatusBadge";
 import { ActionButtons } from "src/components/ActionButtons";
-import { useConnectionsStore } from "src/components/Connection/store";
+import { useStore } from "src/store";
 import {
   ConnectionDetailsPageStateEnum,
   StatusType,
@@ -15,8 +15,8 @@ import { SophoTable, ColumnConfig } from "src/components/SophoTable/SophoTable";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 
 export function ConnectionsTable() {
-  const { setConnectionDetailsPageState, setConnectionId } =
-    useConnectionsStore();
+  const setConnectionId = useStore((state) => state.connection.setConnectionId);
+  const setConnectionDetailsPageState = useStore((state) => state.connection.setConnectionDetailsPageState);
   const deleteMutation = useDeleteConnection();
 
   const handleViewConnection = async (id: string) => {

@@ -4,7 +4,7 @@ import { useCanvas } from "src/api/canvas/queries";
 import { useNotebooksByCanvasId } from "src/api/notebook/queries";
 import { Flex, Heading, Text } from "src/components/design-system";
 import { Notebook } from "src/components/Notebook";
-import { useCanvasStore } from "src/components/Canvases/store";
+import { useStore } from "src/store";
 import { Dashboard } from "src/components/Dashboard";
 import { CanvasButtons } from "src/components/Canvases/CanvasButtons";
 
@@ -18,7 +18,7 @@ export function Canvas() {
   const query = useCanvas(params.id!);
   const notebooksQuery = useNotebooksByCanvasId(params.id!);
   const [viewType, setViewType] = useState<ViewType>(ViewType.NOTEBOOK);
-  const { setActiveNotebookId } = useCanvasStore();
+  const setActiveNotebookId = useStore((state) => state.canvas.setActiveNotebookId);
 
   useEffect(() => {
     const firstNotebookId =
@@ -28,7 +28,7 @@ export function Canvas() {
         ? notebooksQuery.data[0].id
         : "";
     setActiveNotebookId(firstNotebookId);
-  }, [notebooksQuery.data]);
+  }, [notebooksQuery.data, setActiveNotebookId]);
 
   if (!query.data) {
     return <span>No data available</span>;
