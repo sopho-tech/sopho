@@ -10,10 +10,7 @@ import {
   getChartType,
 } from "../Notebook/Cell/dto";
 import { Flex, Heading, Icon, IconButton } from "src/components/design-system";
-import {
-  useDashboardStore,
-  DashboardMode,
-} from "src/components/Dashboard/store";
+import { useStore, DashboardMode } from "src/store";
 import styles from "src/components/Dashboard/Dashboard.module.css";
 
 type DashboardChartProps = {
@@ -46,6 +43,8 @@ function ChartRenderer({
         data={output.data as Object[]}
         xAxisTitle={barContent.x_axis_title}
         yAxisTitle={barContent.y_axis_title}
+        xAxisTickShow={barContent.x_axis_tick_show}
+        yAxisTickShow={barContent.y_axis_tick_show}
       />
     );
   }
@@ -59,6 +58,9 @@ function ChartRenderer({
         data={output.data as Object[]}
         xAxisTitle={lineContent.x_axis_title}
         yAxisTitle={lineContent.y_axis_title}
+        showDots={lineContent.show_dots !== "HIDE"}
+        xAxisTickShow={lineContent.x_axis_tick_show}
+        yAxisTickShow={lineContent.y_axis_tick_show}
       />
     );
   }
@@ -84,7 +86,9 @@ export function DashboardChart({ cellId }: DashboardChartProps) {
   const chartContent =
     cellQuery && cellQuery.data ? getChartContent(cellQuery.data) : null;
   const [output, setOutput] = useState<ExecuteCellResponseDto | null>(null);
-  const { mode, getLayout, setLayout } = useDashboardStore();
+  const mode = useStore((state) => state.dashboard.mode);
+  const getLayout = useStore((state) => state.dashboard.getLayout);
+  const setLayout = useStore((state) => state.dashboard.setLayout);
   const isEditing = mode === DashboardMode.EDITING;
 
   useEffect(() => {

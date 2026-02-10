@@ -1,5 +1,5 @@
 import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
-import { useConnectionsStore } from "src/components/Connection/store";
+import { useStore } from "src/store";
 import { StatusBadge } from "src/components/StatusBadge/StatusBadge";
 import { useConnection } from "src/api/connection/queries";
 import { SophoFormDetails } from "src/components/SophoFormDetails/SophoFormDetails";
@@ -8,11 +8,13 @@ import { Fragment } from "react/jsx-runtime";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 
 export function ConnectionDetail() {
-  const {
-    connectionId,
-    connectionDetailsPageState,
-    setConnectionDetailsPageState,
-  } = useConnectionsStore();
+  const connectionId = useStore((state) => state.connection.connectionId);
+  const connectionDetailsPageState = useStore(
+    (state) => state.connection.connectionDetailsPageState
+  );
+  const setConnectionDetailsPageState = useStore(
+    (state) => state.connection.setConnectionDetailsPageState
+  );
 
   const { data: connectionDetails } = useConnection(connectionId);
 

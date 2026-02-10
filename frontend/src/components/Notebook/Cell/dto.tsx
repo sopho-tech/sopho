@@ -41,7 +41,8 @@ export type BarChartContent = {
   orientation?: string;
   y_axis_aggregate_function?: string;
   y_axis_sort_order?: string;
-  axis_tick_show?: string;
+  x_axis_tick_show?: string;
+  y_axis_tick_show?: string;
   axis_minor_tick_show?: string;
   x_axis_title?: string;
   y_axis_title?: string;
@@ -63,8 +64,10 @@ export type LineChartContent = {
   orientation?: string;
   y_axis_aggregate_function?: string;
   y_axis_sort_order?: string;
-  axis_tick_show?: string;
+  x_axis_tick_show?: string;
+  y_axis_tick_show?: string;
   axis_minor_tick_show?: string;
+  show_dots?: string;
   x_axis_title?: string;
   y_axis_title?: string;
 };

@@ -1,20 +1,21 @@
-import { useCanvasStore } from "src/components/Canvases/store";
+import { useStore } from "src/store";
 import { CanvasesPageState } from "src/components/Canvases/dto";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { CanvasDto } from "src/components/Canvases/dto";
 import { useNavigate } from "react-router";
 import { useCreateCanvas } from "src/api/canvas/queries";
+import { Form } from "src/components/design-system/Form/Form";
 import {
-  SophoForm,
-  SophoFormElement,
-  SophoFormElementType,
-} from "src/components/SophoForm/SophoForm";
+  FormField,
+  FormFieldType,
+} from "src/components/design-system/Form/types";
 import { SophoDialog } from "src/components/SophoDialog";
 import styles from "src/components/Canvases/CanvasCreateDialog/CanvasCreateDialog.module.css";
 
 export function CanvasCreateDialog() {
   const navigate = useNavigate();
-  const { canvasPageState, setCanvasPageState } = useCanvasStore();
+  const canvasPageState = useStore((state) => state.canvas.canvasPageState);
+  const setCanvasPageState = useStore((state) => state.canvas.setCanvasPageState);
 
   const handleDialogClose = () => {
     setCanvasPageState(CanvasesPageState.LIST);
@@ -56,28 +57,29 @@ export function CanvasCreateDialog() {
   const shouldOpenDialog =
     canvasPageState === CanvasesPageState.CREATE_CANVAS_DIALOG;
 
-  const formElements: SophoFormElement[] = [
+  const formFields: FormField[] = [
     {
       key: "name",
       name: "Name",
       required: true,
-      error_message: "Please fill name",
-      type: SophoFormElementType.INPUT,
+      errorMessage: "Please fill name",
+      type: FormFieldType.INPUT,
     },
     {
       key: "description",
       name: "Description",
       required: false,
-      error_message: "Please enter description",
-      type: SophoFormElementType.INPUT,
+      errorMessage: "Please enter description",
+      type: FormFieldType.INPUT,
     },
   ];
   const dialogContent = (
-    <SophoForm
-      formElements={formElements}
+    <Form
+      fields={formFields}
       onSubmitCallback={onSubmitCallback}
       onCancelCallback={handleDialogClose}
-      formElementsStyleClass={styles.formElements}
+      fieldStyleClass={styles.formFieldContainer}
+      labelStyleClass={styles.formLabelContainer}
     />
   );
   return (

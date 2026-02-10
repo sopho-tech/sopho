@@ -1,7 +1,5 @@
-import {
-  CellOutputState,
-  useCellOutputStore,
-} from "src/components/Notebook/Cell";
+import { CellOutputState } from "src/components/Notebook/Cell";
+import { useStore } from "src/store";
 import styles from "src/components/Notebook/ChartCell/CellOutput/CellOutput.module.css";
 import { BarChart, ChartType, LineChart, PieChart } from "src/components/Chart";
 import { useCell } from "src/api/cell/queries";
@@ -19,8 +17,8 @@ interface ChartCellOutputProps {
 }
 
 export function CellOutput({ cellId }: ChartCellOutputProps) {
-  const output = useCellOutputStore((state) => state.outputs[cellId]);
-  const outputState = useCellOutputStore((state) => state.outputStates[cellId]);
+  const output = useStore((state) => state.cell.outputs[cellId]);
+  const outputState = useStore((state) => state.cell.outputStates[cellId]);
   const cellQuery = useCell(cellId);
   const chartContent = cellQuery.data ? getChartContent(cellQuery.data) : null;
   const chartType = getChartType(chartContent);
@@ -46,6 +44,8 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
           data={output.data}
           xAxisTitle={barChartContent.x_axis_title}
           yAxisTitle={barChartContent.y_axis_title}
+          xAxisTickShow={barChartContent.x_axis_tick_show}
+          yAxisTickShow={barChartContent.y_axis_tick_show}
         />
       );
     }
@@ -58,6 +58,9 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
           data={output.data}
           xAxisTitle={lineChartContent.x_axis_title}
           yAxisTitle={lineChartContent.y_axis_title}
+          showDots={lineChartContent.show_dots !== "HIDE"}
+          xAxisTickShow={lineChartContent.x_axis_tick_show}
+          yAxisTickShow={lineChartContent.y_axis_tick_show}
         />
       );
     }

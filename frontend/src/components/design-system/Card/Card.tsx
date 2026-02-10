@@ -1,29 +1,42 @@
-import { Flex, MotionFlex, Heading } from "src/components/design-system";
-import { AccessbilityLevel } from "../Heading/Heading";
-import { Scale, Duration, EASE } from "../animation";
+import { Duration, EASE, Scale } from "src/components/design-system/animation";
+import { Flex } from "src/components/design-system/Flex";
+import {
+  AccessbilityLevel,
+  Heading,
+} from "src/components/design-system/Heading/Heading";
+import { MotionFlex } from "src/components/design-system/MotionFlex";
+import { useContext, createContext } from "react";
 
-type CardProps = {
-  className?: string;
+type CardVariant = "outline" | "ghost" | "filled";
+
+type CardRootProps = {
   children: React.ReactNode;
+  className?: string;
+  variant?: CardVariant;
   onClick?: () => void;
 };
 
-const CardRoot = ({ className, children, onClick }: CardProps) => {
-  const baseProps = {
-    backgroundColor: "default" as const,
-    border: "default" as const,
-    borderRadius: "lg" as const,
-    paddingX: "xl" as const,
-    paddingY: "md" as const,
-    direction: "column" as const,
-    gap: "lg" as const,
-    className: className,
-  };
+type CardContextType = {
+  variant?: CardVariant;
+};
 
-  if (onClick) {
-    return (
+const CardContext = createContext<CardContextType | null>(null);
+
+const useCardContext = () => {
+  const context = useContext(CardContext);
+  if (!context) {
+    throw "Card compound components must be used within Card parent component";
+  }
+  return context;
+};
+
+const CardRoot = ({ children, className, variant, onClick }: CardRootProps) => {
+  const contextValue = {
+    variant: variant,
+  };
+  return (
+    <CardContext value={contextValue}>
       <MotionFlex
-        {...baseProps}
         onClick={onClick}
         whileHover={{ scale: Scale.HOVER }}
         whileTap={{ scale: Scale.TAP }}
@@ -32,39 +45,69 @@ const CardRoot = ({ className, children, onClick }: CardProps) => {
           ease: EASE,
         }}
         sx={{ cursor: "pointer" }}
+        className={className}
+        backgroundColor="default"
+        border="default"
+        borderRadius="lg"
+        paddingX="xl"
+        paddingY="md"
+        direction="column"
+        gap="lg"
       >
         {children}
       </MotionFlex>
-    );
-  }
-
-  return <Flex {...baseProps}>{children}</Flex>;
+    </CardContext>
+  );
 };
 
 CardRoot.displayName = "Card";
 
 type CardHeaderProps = {
   children: React.ReactNode;
+  baseAccessbilityLevel: AccessbilityLevel;
 };
 
-const CardHeader = ({ children }: CardHeaderProps) => {
+type CardHeaderContextType = {
+  baseAccessbilityLevel: AccessbilityLevel;
+};
+
+const CardHeaderContext = createContext<CardHeaderContextType | null>(null);
+
+const useCardHeaderContext = () => {
+  const context = useContext(CardHeaderContext);
+  if (!context) {
+    throw "CardHeader compound components must be used within CardHeader parent component";
+  }
+  return context;
+};
+
+const CardHeader = ({ children, baseAccessbilityLevel }: CardHeaderProps) => {
+  const contextValue = {
+    baseAccessbilityLevel: baseAccessbilityLevel,
+  };
   return (
-    <Flex direction="column" gap="sm">
-      {children}
-    </Flex>
+    <CardHeaderContext value={contextValue}>
+      <Flex direction="column" gap="sm">
+        {children}
+      </Flex>
+    </CardHeaderContext>
   );
 };
 
 CardHeader.displayName = "Card.Header";
 
 type CardTitleProps = {
-  accessbilityLevel: AccessbilityLevel;
-  children: React.ReactNode;
+  children: string | null;
 };
 
-const CardTitle = ({ accessbilityLevel, children }: CardTitleProps) => {
+const CardTitle = ({ children }: CardTitleProps) => {
+  const { baseAccessbilityLevel } = useCardHeaderContext();
   return (
-    <Heading accessbilityLevel={accessbilityLevel} size="lg" weight="medium">
+    <Heading
+      accessbilityLevel={baseAccessbilityLevel}
+      size="lg"
+      weight="medium"
+    >
       {children}
     </Heading>
   );
@@ -72,15 +115,14 @@ const CardTitle = ({ accessbilityLevel, children }: CardTitleProps) => {
 
 CardTitle.displayName = "Card.Title";
 
-type CardSubtitleProps = {
-  accessbilityLevel?: AccessbilityLevel;
-  children: React.ReactNode;
-};
+type CardDescriptionProps = CardTitleProps;
 
-const CardSubtitle = ({ accessbilityLevel, children }: CardSubtitleProps) => {
+const CardDescription = ({ children }: CardDescriptionProps) => {
+  const { baseAccessbilityLevel } = useCardHeaderContext();
+  const accessbilityLevel = (baseAccessbilityLevel + 1) as AccessbilityLevel;
   return (
     <Heading
-      accessbilityLevel={accessbilityLevel || 3}
+      accessbilityLevel={accessbilityLevel}
       size="base"
       weight="normal"
       textColor="subtle"
@@ -90,14 +132,18 @@ const CardSubtitle = ({ accessbilityLevel, children }: CardSubtitleProps) => {
   );
 };
 
-CardSubtitle.displayName = "Card.Subtitle";
+CardDescription.displayName = "Card.Description";
 
 type CardContentProps = {
   children: React.ReactNode;
 };
 
 const CardContent = ({ children }: CardContentProps) => {
-  return <>{children}</>;
+  return (
+    <Flex direction="column" gap="sm">
+      {children}
+    </Flex>
+  );
 };
 
 CardContent.displayName = "Card.Content";
@@ -105,6 +151,6 @@ CardContent.displayName = "Card.Content";
 export const Card = Object.assign(CardRoot, {
   Header: CardHeader,
   Title: CardTitle,
-  Subtitle: CardSubtitle,
+  Description: CardDescription,
   Content: CardContent,
 });

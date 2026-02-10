@@ -1,7 +1,7 @@
 import { Cell } from "src/components/Notebook/Cell";
 import { ChartCell } from "src/components/Notebook/ChartCell";
 import { NotebookMenuBar } from "src/components/Notebook/NotebookMenuBar";
-import { useNotebookStore } from "src/components/Notebook/store";
+import { useStore } from "src/store";
 import { useNotebook } from "src/api/notebook/queries";
 import { CellType } from "src/components/Notebook/Cell/dto";
 import { KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
@@ -10,18 +10,17 @@ import { useKeyboardShortcut } from "src/utils/keyboard_shortcuts/hooks";
 import { Flex } from "src/components/design-system/Flex/Flex";
 import { Sticky } from "src/components/design-system/Sticky/Sticky";
 import { useCallback, useRef, useMemo } from "react";
-import { useCanvasStore } from "src/components/Canvases/store";
 
 export function Notebook() {
-  const { activeNotebookId } = useCanvasStore();
+  const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);
+  const activeCellId = useStore((state) => state.notebook.activeCellId);
   const query = useNotebook(activeNotebookId);
   const handleExecuteCell = useHandleExecuteCell();
   const notebookRef = useRef<HTMLDivElement>(null);
 
   const handleExecute = useCallback(() => {
-    const activeCellId = useNotebookStore.getState().activeCellId;
     handleExecuteCell(activeCellId);
-  }, [handleExecuteCell]);
+  }, [handleExecuteCell, activeCellId]);
 
   useKeyboardShortcut(
     handleExecute,

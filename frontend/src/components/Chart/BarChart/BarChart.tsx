@@ -1,21 +1,13 @@
-import {
-  Bar,
-  BarChart as RechartsBarChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import commonStyles from "../ChartCommon.module.css";
+import { Bar, BarChart as RechartsBarChart } from "recharts";
 import { getCSSVariable } from "src/utils/css_util";
 import {
   CHART_MARGINS,
-  createTooltipProps,
-  createLegendProps,
-  renderXAxisLabel,
-  renderYAxisLabel,
+  ChartCartesianGrid,
+  ChartContainer,
+  ChartLegend,
+  ChartTooltip,
+  ChartXAxis,
+  ChartYAxis,
 } from "../ChartCommon";
 
 export type BarChartProps = {
@@ -24,6 +16,9 @@ export type BarChartProps = {
   data: Object[];
   xAxisTitle?: string;
   yAxisTitle?: string;
+  showDots?: boolean;
+  xAxisTickShow?: string;
+  yAxisTickShow?: string;
 };
 
 export function BarChart({
@@ -32,34 +27,25 @@ export function BarChart({
   data,
   xAxisTitle,
   yAxisTitle,
+  xAxisTickShow,
+  yAxisTickShow,
 }: BarChartProps) {
+  const showXTicks = xAxisTickShow !== "HIDE";
+  const showYTicks = yAxisTickShow !== "HIDE";
   return (
-    <ResponsiveContainer
-      width="100%"
-      aspect={1.618}
-      initialDimension={{ width: 1, height: 1 }}
-      debounce={300}
-      className={commonStyles.container}
-    >
+    <ChartContainer aspect={1.618}>
       <RechartsBarChart responsive data={data} margin={CHART_MARGINS}>
-        <CartesianGrid
-          stroke={getCSSVariable("--color-grey-300")}
-          strokeDasharray={"4 1 2"}
-        />
+        <ChartCartesianGrid />
         <Bar
           dataKey={yAxis}
           fill={getCSSVariable("--color-primary-500")}
           name={yAxis}
         />
-        <XAxis dataKey={xAxis} stroke={getCSSVariable("--color-grey-600")}>
-          {renderXAxisLabel(xAxisTitle)}
-        </XAxis>
-        <YAxis stroke={getCSSVariable("--color-grey-600")}>
-          {renderYAxisLabel(yAxisTitle)}
-        </YAxis>
-        <Legend {...createLegendProps("rect")} />
-        <Tooltip {...createTooltipProps({ fill: "rgba(0, 0, 0, 0.05)" })} />
+        <ChartXAxis dataKey={xAxis} label={xAxisTitle} showTicks={showXTicks} />
+        <ChartYAxis label={yAxisTitle} showTicks={showYTicks} />
+        <ChartLegend position="top" />
+        <ChartTooltip />
       </RechartsBarChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 }

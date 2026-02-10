@@ -6,14 +6,14 @@ import {
 } from "src/components/Notebook/Cell";
 import { useCreateCell } from "src/api/cell";
 import { Icon } from "src/components/design-system/Icon";
-import { useCanvasStore } from "src/components/Canvases/store";
+import { useStore } from "src/store";
 
 type NotebookMenuBarProps = {
   style?: React.CSSProperties;
 };
 
 export function NotebookMenuBar({ style }: NotebookMenuBarProps) {
-  const { activeNotebookId } = useCanvasStore();
+  const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);
   const createCellMutation = useCreateCell();
 
   function handleCreateNewCell(cellType: CellType) {

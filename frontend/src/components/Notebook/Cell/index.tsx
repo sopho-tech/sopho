@@ -11,5 +11,4 @@ export {
   getChartContent,
   serializeChartContent,
 } from "src/components/Notebook/Cell/dto";
-export { useCellOutputStore } from "src/components/Notebook/Cell/store";
 export { useHandleExecuteCell } from "src/components/Notebook/Cell/hooks";

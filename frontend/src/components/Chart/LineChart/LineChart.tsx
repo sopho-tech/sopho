@@ -1,21 +1,13 @@
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart as RechartsLineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import commonStyles from "../ChartCommon.module.css";
+import { Line, LineChart as RechartsLineChart } from "recharts";
 import { getCSSVariable } from "src/utils/css_util";
 import {
   CHART_MARGINS,
-  createTooltipProps,
-  createLegendProps,
-  renderXAxisLabel,
-  renderYAxisLabel,
+  ChartCartesianGrid,
+  ChartContainer,
+  ChartLegend,
+  ChartTooltip,
+  ChartXAxis,
+  ChartYAxis,
 } from "../ChartCommon";
 
 export type LineChartType = "linear" | "monotone" | "step";
@@ -27,6 +19,9 @@ export type LineChartProps = {
   data: Object[];
   xAxisTitle?: string;
   yAxisTitle?: string;
+  showDots?: boolean;
+  xAxisTickShow?: string;
+  yAxisTickShow?: string;
 };
 
 export function LineChart({
@@ -36,19 +31,16 @@ export function LineChart({
   data,
   xAxisTitle,
   yAxisTitle,
+  showDots = true,
+  xAxisTickShow,
+  yAxisTickShow,
 }: LineChartProps) {
+  const showXTicks = xAxisTickShow !== "HIDE";
+  const showYTicks = yAxisTickShow !== "HIDE";
   return (
-    <ResponsiveContainer
-      width="100%"
-      initialDimension={{ width: 1, height: 1 }}
-      debounce={300}
-      className={commonStyles.container}
-    >
+    <ChartContainer>
       <RechartsLineChart responsive data={data} margin={{ ...CHART_MARGINS }}>
-        <CartesianGrid
-          stroke={getCSSVariable("--color-grey-300")}
-          strokeDasharray={"4 1 2"}
-        />
+        <ChartCartesianGrid />
         <Line
           type={type}
           dataKey={yAxis}
@@ -56,16 +48,13 @@ export function LineChart({
           strokeWidth={1}
           name={yAxis}
           activeDot={{ r: 7 }}
+          dot={showDots}
         />
-        <XAxis dataKey={xAxis} stroke={getCSSVariable("--color-grey-600")}>
-          {renderXAxisLabel(xAxisTitle)}
-        </XAxis>
-        <YAxis stroke={getCSSVariable("--color-grey-600")}>
-          {renderYAxisLabel(yAxisTitle)}
-        </YAxis>
-        <Legend {...createLegendProps("plainline")} />
-        <Tooltip {...createTooltipProps({ strokeDasharray: "3 3" })} />
+        <ChartXAxis dataKey={xAxis} label={xAxisTitle} showTicks={showXTicks} />
+        <ChartYAxis label={yAxisTitle} showTicks={showYTicks} />
+        <ChartLegend position="top" />
+        <ChartTooltip />
       </RechartsLineChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 }

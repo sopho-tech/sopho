@@ -12,6 +12,13 @@
   padding: var(--space-sm) var(--space-md);
 }
 
+.tooltipHeading {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-grey-900);
+  margin-bottom: var(--space-xs);
+}
+
 .tooltipItem {
   display: grid;
   grid-template-columns: auto var(--space-xs) auto var(--space-md) 1fr auto;
@@ -50,6 +57,10 @@
   align-items: center;
   justify-content: center;
   padding-bottom: var(--space-md);
+}
+
+.legendContentRight {
+  align-items: flex-start;
 }
 
 .legendItem {

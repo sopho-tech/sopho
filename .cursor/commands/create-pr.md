@@ -7,11 +7,13 @@ Create a well-structured pull request with proper description, labels, and revie
 ## Steps
 
 1. **Prepare branch**
+
    - Ensure all changes are committed
    - Push branch to remote
    - Verify branch is up to date with main
 
 2. **Write PR description**
+
    - Summarize changes clearly
    - Include context and motivation
    - List any breaking changes
@@ -36,3 +38,7 @@ feat(frontend): dashboard enhancements
 
 Refs: #50
 ```
+
+## Notes
+
+- Never ever add Co-authored-by: Cursor <cursoragent@cursor.com> in the commit or the PR description

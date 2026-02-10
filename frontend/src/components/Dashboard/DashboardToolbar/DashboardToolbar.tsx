@@ -1,8 +1,10 @@
 import { Flex, IconButton, Toolbar } from "src/components/design-system";
-import { DashboardMode, useDashboardStore } from "../store";
+import { useStore, DashboardMode } from "src/store";
 
 export function DashboardToolbar() {
-  const { mode, showChartBrowser, setShowChartBrowser } = useDashboardStore();
+  const mode = useStore((state) => state.dashboard.mode);
+  const showChartBrowser = useStore((state) => state.dashboard.showChartBrowser);
+  const setShowChartBrowser = useStore((state) => state.dashboard.setShowChartBrowser);
   if (mode == DashboardMode.VIEWING) {
     return null;
   }

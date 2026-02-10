@@ -3,10 +3,7 @@ import {
   IconButton,
   SegmentedControl,
 } from "src/components/design-system";
-import {
-  useDashboardStore,
-  DashboardMode,
-} from "src/components/Dashboard/store";
+import { useStore, DashboardMode } from "src/store";
 import { useParams } from "react-router";
 import { useDashboardReset } from "src/components/Dashboard/hooks";
 
@@ -21,7 +18,7 @@ export function CanvasButtons({
 }: CanvasButtonsProps) {
   const params = useParams();
   const canvasId = params.id || "";
-  const { mode } = useDashboardStore();
+  const mode = useStore((state) => state.dashboard.mode);
   const isEditing = mode === DashboardMode.EDITING;
   const isDashboardView = viewType === "dashboard";
   const { handleCancelClick, handleEditSaveClick } = useDashboardReset(

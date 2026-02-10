@@ -1,4 +1,4 @@
-import { useConnectionsStore } from "src/components/Connection/store";
+import { useStore } from "src/store";
 import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 import {
   SophoForm,
@@ -17,11 +17,9 @@ const sourceTypeOptions = Object.values(SourceTypeEnum).map((type) => ({
 
 export function ConnectionEdit() {
   const updateMutation = useUpdateConnection();
-  const {
-    connectionId,
-    connectionDetailsPageState,
-    setConnectionDetailsPageState,
-  } = useConnectionsStore();
+  const connectionId = useStore((state) => state.connection.connectionId);
+  const connectionDetailsPageState = useStore((state) => state.connection.connectionDetailsPageState);
+  const setConnectionDetailsPageState = useStore((state) => state.connection.setConnectionDetailsPageState);
   const {
     data: connection,
     isLoading,

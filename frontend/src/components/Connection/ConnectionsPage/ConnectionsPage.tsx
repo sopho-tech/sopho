@@ -1,4 +1,4 @@
-import { useConnectionsStore } from "src/components/Connection/store";
+import { useStore } from "src/store";
 import { ConnectionsTable } from "src/components/Connection/ConnectionsTable/ConnectionsTable";
 import { ConnectionDetail } from "src/components/Connection/ConnectionDetail/ConnectionDetail";
 import { ConnectionEdit } from "src/components/Connection/ConnectionEdit/ConnectionEdit";
@@ -8,8 +8,8 @@ import { Button } from "src/components/design-system/Button/Button";
 import { Flex } from "src/components/design-system/Flex/Flex";
 
 export function Connections() {
-  const { connectionDetailsPageState, setConnectionDetailsPageState } =
-    useConnectionsStore();
+  const connectionDetailsPageState = useStore((state) => state.connection.connectionDetailsPageState);
+  const setConnectionDetailsPageState = useStore((state) => state.connection.setConnectionDetailsPageState);
 
   return (
     <Flex direction="column" flex="grow" gap="md" overflow="hidden">

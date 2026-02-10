@@ -1,5 +1,5 @@
 import { Flex } from "src/components/design-system";
-import { DashboardMode, useDashboardStore } from "../store";
+import { useStore, DashboardMode } from "src/store";
 import { useCellsByNotebookId } from "src/api/notebook/queries";
 import {
   getChartContent,
@@ -11,7 +11,6 @@ import {
   TableType,
   ColumnConfig,
 } from "src/components/design-system/DataTable";
-import { useCanvasStore } from "src/components/Canvases/store";
 import { useMemo } from "react";
 
 type ChartCellRow = {
@@ -21,8 +20,10 @@ type ChartCellRow = {
 };
 
 export function ChartBrowser() {
-  const { showChartBrowser, mode, getLayout } = useDashboardStore();
-  const { activeNotebookId } = useCanvasStore();
+  const showChartBrowser = useStore((state) => state.dashboard.showChartBrowser);
+  const mode = useStore((state) => state.dashboard.mode);
+  const getLayout = useStore((state) => state.dashboard.getLayout);
+  const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);
   const cellsQuery = useCellsByNotebookId(activeNotebookId, CellType.CHART);
   const layout = getLayout();
 

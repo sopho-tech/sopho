@@ -1,15 +1,10 @@
-import {
-  ResponsiveContainer,
-  PieChart as RechartsPieChart,
-  Pie,
-  Legend,
-  Tooltip,
-} from "recharts";
-import commonStyles from "../ChartCommon.module.css";
+import { useMemo } from "react";
+import { PieChart as RechartsPieChart, Pie, Label } from "recharts";
 import {
   getPrimaryColorShades,
-  createTooltipProps,
-  createLegendProps,
+  ChartLegend,
+  ChartTooltip,
+  ChartContainer,
 } from "../ChartCommon";
 
 export type PieChartProps = {
@@ -20,7 +15,30 @@ export type PieChartProps = {
   sortOrder?: string;
 };
 
+function getDecimalPlaces(val: unknown): number {
+  const str = String(val ?? "");
+  const dot = str.indexOf(".");
+  return dot === -1 ? 0 : str.length - dot - 1;
+}
+
+function calculateTotal(data: Object[], valueKey: string): number {
+  let maxDecimals = 0;
+  const sum = data.reduce<number>((acc, item) => {
+    const raw = (item as Record<string, unknown>)[valueKey];
+    const num = typeof raw === "number" ? raw : parseFloat(String(raw ?? 0));
+    if (Number.isFinite(num)) {
+      maxDecimals = Math.max(maxDecimals, getDecimalPlaces(raw));
+      return acc + num;
+    }
+    return acc;
+  }, 0);
+  const factor = 10 ** maxDecimals;
+  return Math.round(sum * factor) / factor;
+}
+
 export const PieChart = ({ category, value, data }: PieChartProps) => {
+  console.log(data);
+
   const colors = getPrimaryColorShades(data.length);
 
   const dataWithColors = data.map((item, index) => ({
@@ -28,13 +46,12 @@ export const PieChart = ({ category, value, data }: PieChartProps) => {
     fill: colors[index],
   }));
 
+  const totalCategoryValue = useMemo(
+    () => calculateTotal(data, value),
+    [data, value]
+  );
   return (
-    <ResponsiveContainer
-      width="100%"
-      initialDimension={{ width: 1, height: 1 }}
-      debounce={300}
-      className={commonStyles.container}
-    >
+    <ChartContainer>
       <RechartsPieChart>
         <Pie
           data={dataWithColors}
@@ -45,10 +62,48 @@ export const PieChart = ({ category, value, data }: PieChartProps) => {
           outerRadius="80%"
           nameKey={category}
           paddingAngle={1}
-        />
-        <Legend {...createLegendProps("rect", { paddingTop: "1rem" })} />
-        <Tooltip {...createTooltipProps({ fill: "rgba(0, 0, 0, 0.05)" })} />
+        >
+          <Label
+            position="center"
+            fill="#666"
+            content={(props) => {
+              const vb = (props.viewBox ?? {}) as
+                | { cx?: number; cy?: number }
+                | { x?: number; y?: number; width?: number; height?: number };
+              const x =
+                "cx" in vb && vb.cx != null
+                  ? vb.cx
+                  : "x" in vb && vb.width != null
+                    ? (vb.x ?? 0) + vb.width / 2
+                    : 0;
+              const y =
+                "cy" in vb && vb.cy != null
+                  ? vb.cy
+                  : "y" in vb && vb.height != null
+                    ? (vb.y ?? 0) + vb.height / 2
+                    : 0;
+              return (
+                <text
+                  x={x}
+                  y={y}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="var(--color-grey-900)"
+                >
+                  <tspan x={x} dy="-0.7em" fill="var(--color-grey-500)">
+                    Total
+                  </tspan>
+                  <tspan x={x} dy="1.5em">
+                    {totalCategoryValue}
+                  </tspan>
+                </text>
+              );
+            }}
+          />
+        </Pie>
+        <ChartLegend position="right" />
+        <ChartTooltip />
       </RechartsPieChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 };

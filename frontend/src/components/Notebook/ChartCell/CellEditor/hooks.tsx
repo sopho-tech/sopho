@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useHandleExecuteCell } from "src/components/Notebook/Cell";
-import { useCellOutputStore } from "src/components/Notebook/Cell/store";
+import { useStore } from "src/store";
 import type { ChartContent } from "src/components/Notebook/Cell/dto";
 import { useNotebook } from "src/api/notebook/queries";
 import { CellOutputState, CellType } from "src/components/Notebook/Cell/dto";
@@ -8,7 +8,6 @@ import { ChartType } from "src/components/Chart";
 import type { ExecuteCellResponseDto } from "src/components/Notebook/Cell/dto";
 import { Icon, Flex, Text } from "src/components/design-system";
 import { AggregateFunction } from "src/components/Notebook/dto";
-import { useCanvasStore } from "src/components/Canvases/store";
 import { getIconForDataType } from "src/utils/column_utils";
 
 export function useSourceCellExecution(
@@ -19,10 +18,10 @@ export function useSourceCellExecution(
   const [sourceCellId, setSourceCellId] = useState<string | null>(
     chartContent?.cell_id || null
   );
-  const sourceCellOutput = useCellOutputStore((state) =>
-    sourceCellId ? state.outputs[sourceCellId] : null
+  const sourceCellOutput = useStore((state) =>
+    sourceCellId ? state.cell.outputs[sourceCellId] : null
   );
-  const { setOutputState } = useCellOutputStore.getState();
+  const setOutputState = useStore((state) => state.cell.setOutputState);
 
   const onSuccessCallback = () => {
     setOutputState(cellId, CellOutputState.PRESENT);
@@ -66,7 +65,7 @@ export function useSourceCellExecution(
 export function useFormOptions(
   sourceCellOutput: ExecuteCellResponseDto | null | undefined
 ) {
-  const { activeNotebookId } = useCanvasStore();
+  const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);
   const notebookQuery = useNotebook(activeNotebookId);
 
   const cellOptions = useMemo(

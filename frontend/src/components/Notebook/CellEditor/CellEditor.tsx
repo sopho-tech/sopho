@@ -27,7 +27,7 @@ import { useCell, useUpdateCell } from "src/api/cell/queries";
 import CellEditorStyles from "src/components/Notebook/CellEditor/CellEditor.module.css";
 import "src/components/Notebook/CellEditor/CellEditor.global.css";
 import { getCSSVariable } from "src/utils/css_util";
-import { useNotebookStore } from "src/components/Notebook/store";
+import { useStore } from "src/store";
 import { StateEffect } from "@codemirror/state";
 import { NOTEBOOK_CELL_KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
 import { KeyBinding } from "@codemirror/view";
@@ -52,7 +52,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const updateCellMutation = useUpdateCell();
-  const { setActiveCellId } = useNotebookStore();
+  const setActiveCellId = useStore((state) => state.notebook.setActiveCellId);
   const smokeEffect = StateEffect.define(undefined);
 
   useEffect(() => {

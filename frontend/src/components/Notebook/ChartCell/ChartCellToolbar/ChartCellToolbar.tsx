@@ -2,20 +2,18 @@ import ToolbarStyles from "src/css/toolbar.module.css";
 import * as Toolbar from "@radix-ui/react-toolbar";
 import { IconButton } from "src/components/design-system/IconButton/IconButton";
 import { useCell, useExecuteCell } from "src/api/cell";
-import {
-  CellOutputState,
-  useCellOutputStore,
-} from "src/components/Notebook/Cell";
-import { ExecutionState } from "src/components/Notebook/Cell";
+import { CellOutputState, ExecutionState } from "src/components/Notebook/Cell";
+import { useStore } from "src/store";
 import { ToolTip } from "src/components/design-system/ToolTip";
 
 export function ChartCellToolbar({ cellId }: { cellId: string }) {
   const executeCellMutation = useExecuteCell();
   const getCellQuery = useCell(cellId);
+  const setOutput = useStore((state) => state.cell.setOutput);
+  const setExecutionState = useStore((state) => state.cell.setExecutionState);
+  const setOutputState = useStore((state) => state.cell.setOutputState);
 
   function handleExecute() {
-    const { setOutput, setExecutionState, setOutputState } =
-      useCellOutputStore.getState();
     setExecutionState(cellId, ExecutionState.RUNNING);
     executeCellMutation.mutate(cellId, {
       onSuccess: (data) => {
