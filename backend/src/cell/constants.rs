@@ -459,3 +459,48 @@ impl std::fmt::Display for ChartType {
         write!(f, "{}", self.to_string())
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum CellDisplayOrderMovement {
+    Up,
+    Down,
+    Top,
+    Bottom,
+}
+
+impl CellDisplayOrderMovement {
+    pub fn to_string(&self) -> String {
+        match self {
+            CellDisplayOrderMovement::Up => "UP".to_string(),
+            CellDisplayOrderMovement::Down => "DOWN".to_string(),
+            CellDisplayOrderMovement::Top => "TOP".to_string(),
+            CellDisplayOrderMovement::Bottom => "BOTTOM".to_string(),
+        }
+    }
+
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s {
+            "UP" => Ok(CellDisplayOrderMovement::Up),
+            "DOWN" => Ok(CellDisplayOrderMovement::Down),
+            "TOP" => Ok(CellDisplayOrderMovement::Top),
+            "BOTTOM" => Ok(CellDisplayOrderMovement::Bottom),
+            _ => Err(format!("Invalid movement type: {}", s)),
+        }
+    }
+
+    pub fn deserialize_from_str<'de, D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Self::from_str(&s).map_err(serde::de::Error::custom)
+    }
+
+    pub fn serialize_to_str<S>(value: &Self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let s = value.to_string();
+        serializer.serialize_str(&s)
+    }
+}

@@ -1,5 +1,6 @@
 use crate::cell::constants::AxisMinorTickShow;
 use crate::cell::constants::AxisTickShow;
+use crate::cell::constants::CellDisplayOrderMovement;
 use crate::cell::constants::CellStatus;
 use crate::cell::constants::CellType;
 use crate::cell::constants::ChartOrientation;
@@ -83,6 +84,13 @@ impl CellContent {
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string(self)
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ReorderCellDto {
+    #[serde(deserialize_with = "CellDisplayOrderMovement::deserialize_from_str")]
+    #[serde(serialize_with = "CellDisplayOrderMovement::serialize_to_str")]
+    pub movement_type: CellDisplayOrderMovement,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -77,4 +77,31 @@ export const ApiService = {
     }
     return response;
   },
+  patch: async <T = any,>({
+    url,
+    data,
+    headers,
+    credentials = true,
+    onlyBody = true,
+  }: {
+    url: string;
+    data?: any;
+    headers?: Record<string, string>;
+    credentials?: boolean;
+    onlyBody?: boolean;
+  }) => {
+    const response = await fetch(url, {
+      headers: headers,
+      method: "PATCH",
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: credentials ? "include" : undefined,
+    });
+    if (!response.ok) {
+      throw response;
+    }
+    if (onlyBody) {
+      return response.json() as Promise<T>;
+    }
+    return response;
+  },
 };

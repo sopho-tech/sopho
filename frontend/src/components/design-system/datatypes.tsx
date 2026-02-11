@@ -113,7 +113,7 @@ export type BorderVariant = "default";
 
 export type ShadowVariant = "2xs" | "xs" | "sm" | "md" | "lg" | "xl";
 
-export type Postition = "sticky" | "absolute" | "relative";
+export type Postition = "sticky" | "absolute" | "relative" | "fixed";
 
 export type ZIndex = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10";
 

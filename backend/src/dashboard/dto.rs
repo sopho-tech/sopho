@@ -21,6 +21,10 @@ pub struct Layout {
 }
 
 impl Layout {
+    pub fn cell_id(&self) -> Uuid {
+        self.cell_id
+    }
+
     pub fn to_json(layout: Option<Vec<Layout>>) -> Option<Json> {
         layout.map(|layouts| {
             let value = serde_json::to_value(layouts).unwrap_or(serde_json::Value::Null);

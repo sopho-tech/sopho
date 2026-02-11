@@ -20,7 +20,9 @@ type ChartCellRow = {
 };
 
 export function ChartBrowser() {
-  const showChartBrowser = useStore((state) => state.dashboard.showChartBrowser);
+  const showChartBrowser = useStore(
+    (state) => state.dashboard.showChartBrowser
+  );
   const mode = useStore((state) => state.dashboard.mode);
   const getLayout = useStore((state) => state.dashboard.getLayout);
   const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);

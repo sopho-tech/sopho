@@ -20,6 +20,54 @@ export const KEYBOARD_SHORTCUTS = {
     description: "Open the command menu",
     preventDefault: true,
   },
+  ADD_MARKDOWN_CELL: {
+    key: "m",
+    modifiers: ["meta"],
+    description: "Add markdown cell",
+    preventDefault: true,
+  },
+  ADD_SQL_CELL: {
+    key: "G",
+    modifiers: ["meta"],
+    description: "Add SQL cell",
+    preventDefault: true,
+  },
+  ADD_CHART_CELL: {
+    key: "c",
+    modifiers: ["meta"],
+    description: "Add chart cell",
+    preventDefault: true,
+  },
+  MOVE_CELL_UP: {
+    key: "ArrowUp",
+    modifiers: ["meta"],
+    description: "Move cell up",
+    preventDefault: true,
+  },
+  MOVE_CELL_TOP: {
+    key: "ArrowUp",
+    modifiers: ["meta", "shift"],
+    description: "Move cell to top",
+    preventDefault: true,
+  },
+  MOVE_CELL_DOWN: {
+    key: "ArrowDown",
+    modifiers: ["meta"],
+    description: "Move cell down",
+    preventDefault: true,
+  },
+  MOVE_CELL_BOTTOM: {
+    key: "ArrowDown",
+    modifiers: ["meta", "shift"],
+    description: "Move cell to bottom",
+    preventDefault: true,
+  },
+  DELETE_CELL: {
+    key: "Backspace",
+    modifiers: ["meta"],
+    description: "Delete cell",
+    preventDefault: true,
+  },
 } as const satisfies Record<string, KeyboardShortcut>;
 
 export const NOTEBOOK_CELL_KEYBOARD_SHORTCUTS = [

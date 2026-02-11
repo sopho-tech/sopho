@@ -7,6 +7,7 @@ import {
   ExecuteCellResponseDto,
 } from "src/components/Notebook/Cell/dto";
 import { notebookKeys } from "src/api/notebook/queries";
+import { dashboardKeys } from "src/api/dashboard/queries";
 
 export const cellKeys = {
   all: ["cells"] as const,
@@ -73,6 +74,23 @@ const cellApi = {
     });
     return response as ExecuteCellResponseDto;
   },
+
+  reorderCell: async ({
+    cellId,
+    movementType,
+  }: {
+    cellId: string;
+    movementType: "UP" | "DOWN" | "TOP" | "BOTTOM";
+  }): Promise<CellDto> => {
+    const response = await ApiService.patch({
+      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CELL.REORDER.replace(":id", cellId)}`,
+      data: { movement_type: movementType },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return response as CellDto;
+  },
 };
 
 export const useCell = (cellId: string) => {
@@ -111,6 +129,9 @@ export const useCreateCell = () => {
         queryClient.invalidateQueries({
           queryKey: notebookKeys.detail(data.notebook_id),
         });
+        queryClient.invalidateQueries({
+          queryKey: [...notebookKeys.cells(), data.notebook_id],
+        });
       }
     },
     onError: (error) => {
@@ -119,7 +140,7 @@ export const useCreateCell = () => {
   });
 };
 
-export const useDeleteCell = (notebookId?: string) => {
+export const useDeleteCell = (notebookId?: string, canvasId?: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -132,6 +153,12 @@ export const useDeleteCell = (notebookId?: string) => {
       if (notebookId) {
         queryClient.invalidateQueries({
           queryKey: notebookKeys.detail(notebookId),
+        });
+      }
+
+      if (canvasId) {
+        queryClient.invalidateQueries({
+          queryKey: dashboardKeys.byCanvas(canvasId),
         });
       }
     },
@@ -147,6 +174,39 @@ export const useExecuteCell = () => {
     onSuccess: () => {},
     onError: (error) => {
       console.error("Failed to execute cell:", error);
+    },
+  });
+};
+
+export const useReorderCell = (canvasId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      cellId,
+      movementType,
+    }: {
+      cellId: string;
+      movementType: "UP" | "DOWN" | "TOP" | "BOTTOM";
+    }) => cellApi.reorderCell({ cellId, movementType }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(cellKeys.detail(data.id!), data);
+      if (data.notebook_id) {
+        queryClient.invalidateQueries({
+          queryKey: notebookKeys.detail(data.notebook_id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: [...notebookKeys.cells(), data.notebook_id],
+        });
+      }
+      if (canvasId) {
+        queryClient.invalidateQueries({
+          queryKey: dashboardKeys.byCanvas(canvasId),
+        });
+      }
+    },
+    onError: (error) => {
+      console.error("Failed to reorder cell:", error);
     },
   });
 };

@@ -11,50 +11,87 @@ export type DropdownMenuItem = {
   disabled?: boolean;
 };
 
-type DropdownMenuProps = {
-  trigger: ReactNode;
-  items: DropdownMenuItem[];
+type DropdownMenuRootProps = {
+  children: ReactNode;
+};
+
+function DropdownMenuRoot({ children }: DropdownMenuRootProps) {
+  return <RadixDropdownMenu.Root>{children}</RadixDropdownMenu.Root>;
+}
+
+type DropdownMenuTriggerProps = {
+  children: ReactNode;
+  asChild?: boolean;
+};
+
+function DropdownMenuTrigger({
+  children,
+  asChild = true,
+}: DropdownMenuTriggerProps) {
+  return (
+    <RadixDropdownMenu.Trigger asChild={asChild}>
+      {children}
+    </RadixDropdownMenu.Trigger>
+  );
+}
+
+type DropdownMenuContentProps = {
+  children: ReactNode;
   align?: "start" | "center" | "end";
   side?: "top" | "right" | "bottom" | "left";
   sideOffset?: number;
   alignOffset?: number;
 };
 
-export function DropdownMenu({
-  trigger,
-  items,
+function DropdownMenuContent({
+  children,
   align = "end",
   side = "bottom",
   sideOffset = 5,
   alignOffset,
-}: DropdownMenuProps) {
+}: DropdownMenuContentProps) {
   return (
-    <RadixDropdownMenu.Root>
-      <RadixDropdownMenu.Trigger asChild>{trigger}</RadixDropdownMenu.Trigger>
-      <RadixDropdownMenu.Portal>
-        <RadixDropdownMenu.Content
-          className={styles.content}
-          align={align}
-          side={side}
-          sideOffset={sideOffset}
-          alignOffset={alignOffset}
-        >
-          {items.map((item, index) => (
-            <RadixDropdownMenu.Item
-              key={index}
-              className={styles.item}
-              onClick={item.onClick}
-              disabled={item.disabled}
-            >
-              {item.icon && (
-                <Icon type={item.icon} color="default" size="sm" />
-              )}
-              <span className={styles.label}>{item.label}</span>
-            </RadixDropdownMenu.Item>
-          ))}
-        </RadixDropdownMenu.Content>
-      </RadixDropdownMenu.Portal>
-    </RadixDropdownMenu.Root>
+    <RadixDropdownMenu.Portal>
+      <RadixDropdownMenu.Content
+        className={styles.content}
+        align={align}
+        side={side}
+        sideOffset={sideOffset}
+        alignOffset={alignOffset}
+      >
+        {children}
+      </RadixDropdownMenu.Content>
+    </RadixDropdownMenu.Portal>
   );
 }
 
+type DropdownMenuItemProps = {
+  icon?: IconType;
+  children: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+};
+
+function DropdownMenuItemComponent({
+  icon,
+  children,
+  onClick,
+  disabled,
+}: DropdownMenuItemProps) {
+  return (
+    <RadixDropdownMenu.Item
+      className={styles.item}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {icon && <Icon type={icon} color="default" size="sm" />}
+      <span className={styles.label}>{children}</span>
+    </RadixDropdownMenu.Item>
+  );
+}
+
+export const DropdownMenu = Object.assign(DropdownMenuRoot, {
+  Trigger: DropdownMenuTrigger,
+  Content: DropdownMenuContent,
+  Item: DropdownMenuItemComponent,
+});

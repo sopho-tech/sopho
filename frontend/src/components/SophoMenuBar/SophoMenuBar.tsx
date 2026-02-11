@@ -1,6 +1,5 @@
 import * as Menubar from "@radix-ui/react-menubar";
 import SophoMenuBarStyles from "src/components/SophoMenuBar/SophoMenuBar.module.css";
-import { ReactNode } from "react";
 
 export type MenuItem = {
   label: string;
@@ -9,52 +8,74 @@ export type MenuItem = {
   disabled?: boolean;
 };
 
-export type MenuConfig = {
-  value: string;
-  icon: ReactNode;
-  items: MenuItem[];
-};
-
-type SophoMenuBarProps = {
-  menus: MenuConfig[];
+type SophoMenuBarRootProps = {
+  children: React.ReactNode;
   loop?: boolean;
-  style?: React.CSSProperties;
 };
 
-export function SophoMenuBar({ menus, loop = true, style }: SophoMenuBarProps) {
+const SophoMenuBarRoot = ({ children, loop = true }: SophoMenuBarRootProps) => {
   return (
-    <Menubar.Root className={SophoMenuBarStyles.root} loop={loop} style={style}>
-      {menus.map((menu) => (
-        <Menubar.Menu key={menu.value} value={menu.value}>
-          <Menubar.Trigger className={SophoMenuBarStyles.trigger}>
-            {menu.icon}
-          </Menubar.Trigger>
-          <Menubar.Portal>
-            <Menubar.Content
-              className={SophoMenuBarStyles.content}
-              align="start"
-              sideOffset={5}
-              alignOffset={-3}
-            >
-              {menu.items.map((item, index) => (
-                <Menubar.Item
-                  key={index}
-                  className={SophoMenuBarStyles.item}
-                  onClick={item.onClick}
-                  disabled={item.disabled}
-                >
-                  {item.label}
-                  {item.shortcut && (
-                    <div className={SophoMenuBarStyles.rightSlot}>
-                      {item.shortcut}
-                    </div>
-                  )}
-                </Menubar.Item>
-              ))}
-            </Menubar.Content>
-          </Menubar.Portal>
-        </Menubar.Menu>
-      ))}
+    <Menubar.Root className={SophoMenuBarStyles.root} loop={loop}>
+      {children}
     </Menubar.Root>
   );
-}
+};
+
+SophoMenuBarRoot.displayName = "SophoMenuBar";
+
+type SophoMenuBarMenuProps = {
+  value: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+};
+
+const SophoMenuBarMenu = ({ value, icon, children }: SophoMenuBarMenuProps) => {
+  return (
+    <Menubar.Menu value={value}>
+      <Menubar.Trigger className={SophoMenuBarStyles.trigger}>
+        {icon}
+      </Menubar.Trigger>
+      <Menubar.Portal>
+        <Menubar.Content
+          className={SophoMenuBarStyles.content}
+          align="start"
+          sideOffset={5}
+          alignOffset={-3}
+        >
+          {children}
+        </Menubar.Content>
+      </Menubar.Portal>
+    </Menubar.Menu>
+  );
+};
+
+SophoMenuBarMenu.displayName = "SophoMenuBar.Menu";
+
+type SophoMenuBarItemProps = MenuItem;
+
+const SophoMenuBarItem = ({
+  label,
+  shortcut,
+  onClick,
+  disabled,
+}: SophoMenuBarItemProps) => {
+  return (
+    <Menubar.Item
+      className={SophoMenuBarStyles.item}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {label}
+      {shortcut && (
+        <div className={SophoMenuBarStyles.rightSlot}>{shortcut}</div>
+      )}
+    </Menubar.Item>
+  );
+};
+
+SophoMenuBarItem.displayName = "SophoMenuBar.Item";
+
+export const SophoMenuBar = Object.assign(SophoMenuBarRoot, {
+  Menu: SophoMenuBarMenu,
+  Item: SophoMenuBarItem,
+});

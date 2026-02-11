@@ -143,7 +143,8 @@ function getSpacingValue(
       value.includes("calc(") ||
       value.includes("px") ||
       value.includes("rem") ||
-      value.includes("em"))
+      value.includes("em") ||
+      value.includes("%"))
   ) {
     return value;
   }

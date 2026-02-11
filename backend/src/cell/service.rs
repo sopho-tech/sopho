@@ -1,3 +1,4 @@
+use crate::cell::constants::CellDisplayOrderMovement;
 use crate::cell::constants::CellStatus;
 use crate::cell::constants::CellType;
 use crate::cell::dto;
@@ -8,6 +9,7 @@ use crate::common::errors::SophoError;
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::connection::service as connection_service;
+use crate::dashboard::service as dashboard_service;
 use crate::entity;
 use crate::notebook::does_notebook_exist;
 use crate::notebook::service as notebook_service;
@@ -15,6 +17,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use rust_decimal::Decimal;
+use sea_orm::TransactionTrait;
 use sqlx::postgres::PgConnection;
 use sqlx::types::JsonValue;
 use sqlx::Column;
@@ -192,6 +195,176 @@ pub async fn create_cell(app_state: AppState, payload: dto::CreateCellDto) -> im
     }
 }
 
+pub async fn delete_cell(app_state: AppState, id: Uuid) -> impl IntoResponse {
+    let txn = match app_state.database_connection.begin().await {
+        Ok(t) => t,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(serde_json::json!({ "error": e.to_string() })),
+            )
+        }
+    };
+    let cell = match repository::get_cell_transaction(&txn, id).await {
+        Ok(c) => c,
+        Err(sea_orm::DbErr::RecordNotFound(_)) => {
+            let _ = txn.rollback().await;
+            return (
+                StatusCode::NOT_FOUND,
+                axum::Json(serde_json::json!({ "error": "Cell not found" })),
+            );
+        }
+        Err(e) => {
+            let _ = txn.rollback().await;
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(serde_json::json!({ "error": e.to_string() })),
+            );
+        }
+    };
+    let notebook = match notebook_service::get_notebook_transaction(&txn, cell.notebook_id).await {
+        Ok(n) => n,
+        Err(e) => {
+            let _ = txn.rollback().await;
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(serde_json::json!({ "error": e.to_string() })),
+            );
+        }
+    };
+    if let Err(e) =
+        dashboard_service::remove_cell_from_layout_transaction(&txn, notebook.canvas_id, id).await
+    {
+        let _ = txn.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        );
+    }
+    if let Err(e) = repository::delete_cell_transaction(&txn, id).await {
+        let _ = txn.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        );
+    }
+    match txn.commit().await {
+        Ok(_) => (StatusCode::NO_CONTENT, axum::Json(serde_json::Value::Null)),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        ),
+    }
+}
+
+pub async fn reorder_cell(
+    app_state: AppState,
+    id: Uuid,
+    payload: dto::ReorderCellDto,
+) -> impl IntoResponse {
+    let cell = match execute_get_cell(&app_state, id).await {
+        Ok(c) => c,
+        Err(sea_orm::DbErr::RecordNotFound(_)) => {
+            return (
+                StatusCode::NOT_FOUND,
+                axum::Json(serde_json::json!({ "error": "Cell not found" })),
+            );
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(serde_json::json!({ "error": e.to_string() })),
+            );
+        }
+    };
+    let cells = match repository::get_cells_by_notebook_id(
+        &app_state.database_connection,
+        cell.notebook_id,
+    )
+    .await
+    {
+        Ok(c) => c,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(serde_json::json!({ "error": e.to_string() })),
+            );
+        }
+    };
+    let mut ordered_cells: Vec<entity::cell::Model> = cells;
+    let len = ordered_cells.len() as i32;
+    let current_index = cell.display_order;
+    if current_index < 1 || current_index > len {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": "Cell display_order out of bounds" })),
+        );
+    }
+    let new_index = match payload.movement_type {
+        CellDisplayOrderMovement::Up => {
+            if current_index > 1 {
+                current_index - 1
+            } else {
+                current_index
+            }
+        }
+        CellDisplayOrderMovement::Down => {
+            if current_index < len {
+                current_index + 1
+            } else {
+                current_index
+            }
+        }
+        CellDisplayOrderMovement::Top => 1,
+        CellDisplayOrderMovement::Bottom => len,
+    };
+    if new_index != current_index {
+        let from_pos = (current_index - 1) as usize;
+        let to_pos = (new_index - 1) as usize;
+        let cell_model = ordered_cells.remove(from_pos);
+        ordered_cells.insert(to_pos, cell_model);
+    }
+    let txn = match app_state.database_connection.begin().await {
+        Ok(t) => t,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(serde_json::json!({ "error": e.to_string() })),
+            )
+        }
+    };
+    let mut response_cell = cell.clone();
+    for (i, c) in ordered_cells.iter().enumerate() {
+        let new_order = (i + 1) as i32;
+        if c.display_order != new_order {
+            match repository::update_cell_display_order_transaction(&txn, c.id, new_order).await {
+                Ok(updated) => {
+                    if c.id == id {
+                        response_cell = updated;
+                    }
+                }
+                Err(e) => {
+                    let _ = txn.rollback().await;
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        axum::Json(serde_json::json!({ "error": e.to_string() })),
+                    );
+                }
+            }
+        }
+    }
+    match txn.commit().await {
+        Ok(_) => {
+            let response_dto = dto::CellDto::from(response_cell);
+            (StatusCode::OK, axum::Json(serde_json::json!(response_dto)))
+        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        ),
+    }
+}
+
 pub async fn update_cell(
     app_state: AppState,
     id: Uuid,
@@ -315,10 +488,11 @@ async fn execute_query_and_format_results(
                     let value = row.try_get::<String, _>(i);
                     value.map(serde_json::Value::String)
                 }
-                "JSONB" => {
-                    let value = row.try_get::<String, _>(i);
-                    value.map(serde_json::Value::String)
-                }
+                "JSONB" => row
+                    .try_get::<sqlx::types::Json<serde_json::Value>, _>(i)
+                    .map(|j| {
+                        serde_json::Value::String(serde_json::to_string(&j.0).unwrap_or_default())
+                    }),
                 "VARCHAR" => {
                     let value = row.try_get::<String, _>(i);
                     value.map(serde_json::Value::String)

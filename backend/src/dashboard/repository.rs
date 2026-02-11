@@ -69,6 +69,18 @@ pub async fn delete_dashboard_transaction(
     Ok(())
 }
 
+pub async fn update_dashboard_layout_transaction(
+    txn: &DatabaseTransaction,
+    dashboard: dashboard::Model,
+    layout: Option<Vec<dto::Layout>>,
+) -> Result<dashboard::Model, DbErr> {
+    let mut dashboard_active: dashboard::ActiveModel = dashboard.into();
+    dashboard_active.layout = Set(dto::Layout::to_json(layout));
+    dashboard_active.updated_at = Set(time_utils::now_utc_into());
+    let result = dashboard_active.update(txn).await?;
+    Ok(result.into())
+}
+
 pub async fn update_dashboard(
     db: &DatabaseConnection,
     dashboard_id: Uuid,

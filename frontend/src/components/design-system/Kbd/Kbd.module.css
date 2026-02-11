@@ -5,7 +5,7 @@
   font-family: var(--font-family-base);
   font-weight: var(--font-weight-medium);
   border-radius: var(--border-radius-md);
-  background-color: var(--color-grey-200);
+  background-color: var(--color-grey-300);
   color: var(--color-grey-700);
   user-select: none;
   vertical-align: middle;

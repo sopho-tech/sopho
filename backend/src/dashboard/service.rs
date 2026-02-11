@@ -155,6 +155,33 @@ pub async fn update_dashboard(
     }
 }
 
+pub async fn remove_cell_from_layout_transaction(
+    txn: &DatabaseTransaction,
+    canvas_id: Uuid,
+    cell_id: Uuid,
+) -> Result<(), sea_orm::DbErr> {
+    let dashboard = match repository::get_dashboard_by_canvas_id_transaction(txn, canvas_id).await {
+        Ok(d) => d,
+        Err(_) => return Ok(()),
+    };
+    let mut layout = match dto::Layout::from_json(dashboard.layout.clone()) {
+        Some(l) => l,
+        None => return Ok(()),
+    };
+    layout.retain(|l| l.cell_id() != cell_id);
+    repository::update_dashboard_layout_transaction(
+        txn,
+        dashboard,
+        if layout.is_empty() {
+            None
+        } else {
+            Some(layout)
+        },
+    )
+    .await?;
+    Ok(())
+}
+
 pub async fn get_dashboard_charts_count_by_canvas_id(
     app_state: &AppState,
     canvas_id: Uuid,

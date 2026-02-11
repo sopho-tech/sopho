@@ -3,7 +3,7 @@ use crate::cell::service;
 use crate::common::AppState;
 use axum::extract::State;
 use axum::response::IntoResponse;
-use axum::routing::{get, post, put};
+use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
 use uuid::Uuid;
 
@@ -12,7 +12,9 @@ pub fn routes(app_state: AppState) -> Router {
         .route("/", post(create_cell))
         .route("/{id}", get(get_cell))
         .route("/{id}", put(update_cell))
+        .route("/{id}", delete(delete_cell))
         .route("/{id}/execute", post(execute_cell))
+        .route("/{id}/reorder", patch(reorder_cell))
         .with_state(app_state)
 }
 
@@ -43,4 +45,19 @@ async fn execute_cell(
     axum::extract::Path(id): axum::extract::Path<Uuid>,
 ) -> impl IntoResponse {
     service::execute_cell(app_state, id).await
+}
+
+async fn delete_cell(
+    State(app_state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
+) -> impl IntoResponse {
+    service::delete_cell(app_state, id).await
+}
+
+async fn reorder_cell(
+    State(app_state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
+    axum::extract::Json(payload): axum::extract::Json<dto::ReorderCellDto>,
+) -> impl IntoResponse {
+    service::reorder_cell(app_state, id, payload).await
 }

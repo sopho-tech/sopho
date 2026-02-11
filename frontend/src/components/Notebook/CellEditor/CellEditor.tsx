@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import debounce from "lodash.debounce";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import {
   EditorView,
@@ -23,12 +24,12 @@ import {
 import { sql, PostgreSQL } from "@codemirror/lang-sql";
 import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
 import { tags } from "@lezer/highlight";
-import { useCell, useUpdateCell } from "src/api/cell/queries";
+import { useCell, useUpdateCell, cellKeys } from "src/api/cell/queries";
+import { useQueryClient } from "@tanstack/react-query";
+import { CellDto } from "src/components/Notebook/Cell/dto";
 import CellEditorStyles from "src/components/Notebook/CellEditor/CellEditor.module.css";
 import "src/components/Notebook/CellEditor/CellEditor.global.css";
 import { getCSSVariable } from "src/utils/css_util";
-import { useStore } from "src/store";
-import { StateEffect } from "@codemirror/state";
 import { NOTEBOOK_CELL_KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
 import { KeyBinding } from "@codemirror/view";
 
@@ -49,13 +50,14 @@ const myHighlightStyle = HighlightStyle.define([
 
 export function CellEditor({ cellId }: { cellId: string }) {
   const query = useCell(cellId);
+  const queryClient = useQueryClient();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const updateCellMutation = useUpdateCell();
-  const setActiveCellId = useStore((state) => state.notebook.setActiveCellId);
-  const smokeEffect = StateEffect.define(undefined);
 
   useEffect(() => {
+    let debouncedUpdate: ReturnType<typeof debounce> | undefined;
+
     if (editorRef.current && !viewRef.current && query.data) {
       const customKeymap: KeyBinding[] = NOTEBOOK_CELL_KEYBOARD_SHORTCUTS.map(
         (shortcut) => {
@@ -86,6 +88,16 @@ export function CellEditor({ cellId }: { cellId: string }) {
         }
       );
 
+      debouncedUpdate = debounce((content: string) => {
+        const cell = queryClient.getQueryData<CellDto>(cellKeys.detail(cellId));
+        if (cell) {
+          updateCellMutation.mutate({
+            cellId: cellId,
+            payload: { ...cell, content },
+          });
+        }
+      }, 300);
+
       let state = EditorState.create({
         doc: query.data.content || "",
         extensions: [
@@ -115,21 +127,8 @@ export function CellEditor({ cellId }: { cellId: string }) {
           EditorState.tabSize.of(2),
           EditorState.allowMultipleSelections.of(true),
           EditorView.updateListener.of((update) => {
-            if (query.data) {
-              updateCellMutation.mutate({
-                cellId: cellId,
-                payload: {
-                  ...query.data,
-                  content: update.state.doc.toJSON().join("\n"),
-                },
-              });
-            }
-          }),
-          EditorView.focusChangeEffect.of((_, focusing) => {
-            if (focusing) {
-              setActiveCellId(cellId);
-            }
-            return smokeEffect.of(null);
+            if (!update.docChanged) return;
+            debouncedUpdate?.(update.state.doc.toJSON().join("\n"));
           }),
         ],
       });
@@ -141,6 +140,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
     }
 
     return () => {
+      debouncedUpdate?.cancel();
       if (viewRef.current) {
         viewRef.current.destroy();
         viewRef.current = null;

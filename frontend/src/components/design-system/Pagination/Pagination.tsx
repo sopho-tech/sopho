@@ -165,18 +165,18 @@ export function Pagination({
           <span className={PaginationStyles.pageSizeSelectionLabel}>
             Rows per page:
           </span>
-          <Select
-            placeholderText="Select page size"
-            groupName="Page Sizes"
-            value={pageSize.toString()}
-            onValueChange={handleValueChange}
-            options={[
-              { label: "10", value: "10" },
-              { label: "20", value: "20" },
-              { label: "50", value: "50" },
-              { label: "100", value: "100" },
-            ]}
-          />
+          <Select value={pageSize.toString()} onValueChange={handleValueChange}>
+            <Select.Trigger placeholder="Select page size" />
+            <Select.Content>
+              <Select.Group>
+                <Select.Label>Page Sizes</Select.Label>
+                <Select.Item value="10">10</Select.Item>
+                <Select.Item value="20">20</Select.Item>
+                <Select.Item value="50">50</Select.Item>
+                <Select.Item value="100">100</Select.Item>
+              </Select.Group>
+            </Select.Content>
+          </Select>
         </div>
       )}
     </div>
