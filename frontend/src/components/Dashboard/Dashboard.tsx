@@ -22,9 +22,8 @@ export function Dashboard() {
   const params = useParams();
   const canvasId = params.id || "";
   const mode = useStore((state) => state.dashboard.mode);
-  const getLayout = useStore((state) => state.dashboard.getLayout);
   const setLayout = useStore((state) => state.dashboard.setLayout);
-  const layout = getLayout();
+  const layout = useStore((state) => state.dashboard.layout);
   const dashboardQuery = useDashboardByCanvasId(canvasId);
   const isEditing = mode === DashboardMode.EDITING;
 
@@ -33,6 +32,8 @@ export function Dashboard() {
   useEffect(() => {
     if (dashboardQuery.data?.layout) {
       setLayout(convertDtoToRGLayout(dashboardQuery.data.layout));
+    } else {
+      setLayout([]);
     }
   }, [dashboardQuery.data, setLayout]);
 
@@ -71,7 +72,7 @@ export function Dashboard() {
       return;
     }
     const cellId = e.dataTransfer.getData("text/plain");
-    const latestLayout = getLayout();
+    const latestLayout = useStore.getState().dashboard.layout;
     const existingIds = new Set(latestLayout.map((item) => item.i));
     const newLayout = droppedLayout.map((item) => {
       const isNewItem = !existingIds.has(cellId);

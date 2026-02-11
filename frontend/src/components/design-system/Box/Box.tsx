@@ -14,7 +14,7 @@ import {
 export type BoxProps = SharedLayoutProps & {
   as?: BoxElement;
   display?: Display;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   sx?: React.CSSProperties;
 } & Omit<React.HTMLAttributes<HTMLElement>, keyof SharedLayoutProps | "style">;
 

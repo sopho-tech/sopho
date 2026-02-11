@@ -37,8 +37,6 @@ function calculateTotal(data: Object[], valueKey: string): number {
 }
 
 export const PieChart = ({ category, value, data }: PieChartProps) => {
-  console.log(data);
-
   const colors = getPrimaryColorShades(data.length);
 
   const dataWithColors = data.map((item, index) => ({

@@ -19,8 +19,8 @@ export function HomeHeader() {
         <SearchBar />
       </TopBar.Center>
       <TopBar.Right>
-        <DropdownMenu
-          trigger={
+        <DropdownMenu>
+          <DropdownMenu.Trigger>
             <Button
               label="New"
               leadingIconName="add"
@@ -28,11 +28,20 @@ export function HomeHeader() {
               shape="rectangle"
               size="md"
             />
-          }
-          items={dropdownItems}
-          align="end"
-          side="bottom"
-        />
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end" side="bottom">
+            {dropdownItems.map((item, index) => (
+              <DropdownMenu.Item
+                key={index}
+                icon={item.icon}
+                onClick={item.onClick}
+                disabled={item.disabled}
+              >
+                {item.label}
+              </DropdownMenu.Item>
+            ))}
+          </DropdownMenu.Content>
+        </DropdownMenu>
       </TopBar.Right>
     </TopBar>
   );

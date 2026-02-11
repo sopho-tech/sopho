@@ -37,3 +37,8 @@
 
 .cellNameToolTipDescription {
 }
+
+.toolbar__select-trigger {
+  margin: var(--space-2xs) 0;
+  font-size: var(--font-size-xs);
+}

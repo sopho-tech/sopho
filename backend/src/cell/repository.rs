@@ -34,9 +34,34 @@ pub async fn get_cells_by_notebook_id(
 ) -> Result<Vec<cell::Model>, DbErr> {
     let cells = cell::Entity::find()
         .filter(cell::Column::NotebookId.eq(notebook_id))
+        .order_by_asc(cell::Column::DisplayOrder)
         .all(db)
         .await?;
     Ok(cells)
+}
+
+pub async fn update_cell_display_order(
+    db: &DatabaseConnection,
+    cell_id: Uuid,
+    display_order: i32,
+) -> Result<cell::Model, DbErr> {
+    let cell = get_cell(db, cell_id).await?;
+    let mut cell_entity: cell::ActiveModel = cell.into();
+    cell_entity.display_order = Set(display_order);
+    cell_entity.updated_at = Set(time_utils::now_utc_into());
+    cell_entity.update(db).await.map(Into::into)
+}
+
+pub async fn update_cell_display_order_transaction(
+    txn: &DatabaseTransaction,
+    cell_id: Uuid,
+    display_order: i32,
+) -> Result<cell::Model, DbErr> {
+    let cell = get_cell_transaction(txn, cell_id).await?;
+    let mut cell_entity: cell::ActiveModel = cell.into();
+    cell_entity.display_order = Set(display_order);
+    cell_entity.updated_at = Set(time_utils::now_utc_into());
+    cell_entity.update(txn).await.map(Into::into)
 }
 
 pub async fn get_cells_by_notebook_id_and_cell_type(
@@ -86,6 +111,31 @@ pub async fn update_cell(
         }
         Err(e) => Err(e),
     }
+}
+
+pub async fn delete_cell(
+    db: &DatabaseConnection,
+    id: Uuid,
+) -> Result<sea_orm::DeleteResult, DbErr> {
+    cell::Entity::delete_by_id(id).exec(db).await
+}
+
+pub async fn get_cell_transaction(
+    txn: &DatabaseTransaction,
+    id: Uuid,
+) -> Result<cell::Model, DbErr> {
+    let cell = cell::Entity::find_by_id(id).one(txn).await?;
+    match cell {
+        Some(model) => Ok(model),
+        None => Err(DbErr::RecordNotFound("Cell not found".into())),
+    }
+}
+
+pub async fn delete_cell_transaction(
+    txn: &DatabaseTransaction,
+    id: Uuid,
+) -> Result<sea_orm::DeleteResult, DbErr> {
+    cell::Entity::delete_by_id(id).exec(txn).await
 }
 
 pub async fn delete_cells_by_notebook_id_transaction(

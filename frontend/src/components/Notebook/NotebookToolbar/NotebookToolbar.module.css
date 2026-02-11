@@ -1,0 +1,27 @@
+.toolbar {
+  display: flex;
+  background-color: var(--color-grey-200);
+  padding: var(--space-2xs);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xs);
+  z-index: var(--z-index-10);
+}
+
+.trigger {
+  all: unset;
+  padding: 8px 12px;
+  outline: none;
+  user-select: none;
+  line-height: 1;
+  border-radius: 4px;
+  color: var(--color-text);
+  font-size: var(--button-size-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trigger[data-highlighted],
+.trigger[data-state="open"] {
+  background-color: var(--color-grey-400);
+}

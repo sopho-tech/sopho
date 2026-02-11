@@ -1,8 +1,4 @@
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { DashboardDto } from "src/components/Dashboard/dto";
@@ -82,4 +78,3 @@ export const useUpdateDashboard = () => {
     },
   });
 };
-

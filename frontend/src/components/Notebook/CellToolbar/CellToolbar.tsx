@@ -2,7 +2,7 @@ import CellToolbarStyles from "src/components/Notebook/CellToolbar/CellToolbar.m
 import { Toolbar } from "src/components/design-system/Toolbar";
 import { IconButton } from "src/components/design-system/IconButton/IconButton";
 import { useConnections } from "src/api/connection";
-import { SophoSelect } from "src/components/SophoSelect";
+import { Select } from "src/components/design-system/Select";
 import { useUpdateCell, useCell } from "src/api/cell";
 import { useEffect, useState } from "react";
 import { ToolTip } from "src/components/design-system/ToolTip";
@@ -30,7 +30,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
 
     const cellConnectionId = getCellQuery.data.connection_id;
     const foundConnection = query.data.find(
-      (connection) => connection.id === cellConnectionId,
+      (connection) => connection.id === cellConnectionId
     );
 
     const newInitialValue =
@@ -73,14 +73,27 @@ export function CellToolbar({ cellId }: { cellId: string }) {
     <Toolbar loop className={CellToolbarStyles.toolbar}>
       <ToolTip messageElement={messageElement} children={toolTipTrigger} />
       <div className={CellToolbarStyles.rightSideContainer}>
-        <Toolbar.Button asChild>
-          <SophoSelect
-            groupName="Connections"
-            initialValue={initialValue}
-            onValueChange={handleValueChange}
-            options={options}
-          />
-        </Toolbar.Button>
+        <Select
+          value={initialValue?.value ?? ""}
+          onValueChange={(v: string) => handleValueChange(v || null)}
+        >
+          <Toolbar.Button asChild>
+            <Select.Trigger
+              placeholder="Select a connection"
+              className={CellToolbarStyles["toolbar__select-trigger"]}
+            />
+          </Toolbar.Button>
+          <Select.Content>
+            <Select.Group>
+              <Select.Label>Connections</Select.Label>
+              {(options ?? []).map((opt) => (
+                <Select.Item key={opt.value} value={opt.value}>
+                  {opt.label}
+                </Select.Item>
+              ))}
+            </Select.Group>
+          </Select.Content>
+        </Select>
         <Toolbar.Button asChild>
           <IconButton
             type="play"

@@ -201,6 +201,13 @@ pub async fn get_notebook_by_canvas_id(
     repository::get_notebook_by_canvas_id(&app_state.database_connection, canvas_id).await
 }
 
+pub async fn get_notebook_transaction(
+    txn: &DatabaseTransaction,
+    id: Uuid,
+) -> Result<entity::notebook::Model, sea_orm::DbErr> {
+    repository::get_notebook_transaction(txn, id).await
+}
+
 pub async fn get_notebook_by_canvas_id_transaction(
     txn: &DatabaseTransaction,
     canvas_id: Uuid,

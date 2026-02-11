@@ -74,6 +74,17 @@ pub async fn update_notebook(
     }
 }
 
+pub async fn get_notebook_transaction(
+    txn: &DatabaseTransaction,
+    id: Uuid,
+) -> Result<notebook::Model, DbErr> {
+    let notebook = notebook::Entity::find_by_id(id).one(txn).await?;
+    match notebook {
+        Some(model) => Ok(model),
+        None => Err(DbErr::RecordNotFound("Notebook not found".into())),
+    }
+}
+
 pub async fn get_notebook_by_canvas_id(
     db: &DatabaseConnection,
     canvas_id: Uuid,

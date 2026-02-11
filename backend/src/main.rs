@@ -128,7 +128,13 @@ async fn main() {
 
     if app_state.config.environment == "development" {
         let cors = CorsLayer::new()
-            .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+            .allow_methods([
+                Method::GET,
+                Method::POST,
+                Method::PUT,
+                Method::PATCH,
+                Method::DELETE,
+            ])
             .allow_origin(HeaderValue::from_str("http://localhost:3000").unwrap())
             .allow_credentials(true)
             .allow_headers([header::CONTENT_TYPE]);

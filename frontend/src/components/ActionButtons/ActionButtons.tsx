@@ -35,16 +35,25 @@ export function ActionButtons({
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
-      <DropdownMenu
-        trigger={
+      <DropdownMenu>
+        <DropdownMenu.Trigger>
           <button className={styles.trigger}>
             <Icon type="more_vert" color="grey" size="md" />
           </button>
-        }
-        items={items}
-        align="start"
-        side="bottom"
-      />
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="start" side="bottom">
+          {items.map((item, index) => (
+            <DropdownMenu.Item
+              key={index}
+              icon={item.icon}
+              onClick={item.onClick}
+              disabled={item.disabled}
+            >
+              {item.label}
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.Content>
+      </DropdownMenu>
     </div>
   );
 }

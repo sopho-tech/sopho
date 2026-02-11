@@ -18,7 +18,9 @@ export function Canvas() {
   const query = useCanvas(params.id!);
   const notebooksQuery = useNotebooksByCanvasId(params.id!);
   const [viewType, setViewType] = useState<ViewType>(ViewType.NOTEBOOK);
-  const setActiveNotebookId = useStore((state) => state.canvas.setActiveNotebookId);
+  const setActiveNotebookId = useStore(
+    (state) => state.canvas.setActiveNotebookId
+  );
 
   useEffect(() => {
     const firstNotebookId =
