@@ -24,18 +24,8 @@
   background-color: var(--color-grey-200);
 }
 
-.cellNameToolTipContainer {
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-tightest);
-}
-
-.cellNameToolTipHeader {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  padding-bottom: var(--space-2xs);
-}
-
-.cellNameToolTipDescription {
+.toolbar__inlineEdit {
+  background-color: var(--color-grey-200);
 }
 
 .toolbar__select-trigger {

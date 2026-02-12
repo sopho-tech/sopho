@@ -18,6 +18,7 @@ type IconButtonProps = {
   };
   onClick: () => void;
   tabIndex?: number;
+  className?: string;
 };
 
 export function IconButton({
@@ -28,11 +29,12 @@ export function IconButton({
   tooltip,
   onClick,
   tabIndex,
+  className: customClassName,
 }: IconButtonProps) {
-  const className = styles[backgroundColor];
+  const backgroundColorClassName = styles[backgroundColor];
   const button = (
     <button
-      className={`${styles.button} ${className}`}
+      className={`${styles.button} ${backgroundColorClassName} ${customClassName ?? ""}`.trim()}
       onClick={onClick}
       tabIndex={tabIndex}
     >

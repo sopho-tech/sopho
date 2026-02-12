@@ -188,6 +188,29 @@ pub async fn search_canvases_by_name(
     repository::search_canvases_by_name(&app_state.database_connection, search_query, limit).await
 }
 
+pub async fn update_canvas(
+    app_state: AppState,
+    id: Uuid,
+    payload: dto::CreateCanvasDto,
+) -> impl IntoResponse {
+    match repository::update_canvas(&app_state.database_connection, id, payload).await {
+        Ok(canvas) => {
+            let response_dto = dto::CanvasDto::from(canvas);
+            (StatusCode::OK, axum::Json(serde_json::json!(response_dto)))
+        }
+        Err(e) => match e {
+            sea_orm::DbErr::RecordNotFound(_) => (
+                StatusCode::NOT_FOUND,
+                axum::Json(serde_json::json!({ "error": "Canvas not found" })),
+            ),
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                axum::Json(serde_json::json!({ "error": e.to_string() })),
+            ),
+        },
+    }
+}
+
 pub async fn delete_canvas(app_state: AppState, id: Uuid) -> impl IntoResponse {
     // Start a transaction
     let txn = match app_state.database_connection.begin().await {

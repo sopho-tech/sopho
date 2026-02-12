@@ -1,11 +1,11 @@
 import CellToolbarStyles from "src/components/Notebook/CellToolbar/CellToolbar.module.css";
 import { Toolbar } from "src/components/design-system/Toolbar";
 import { IconButton } from "src/components/design-system/IconButton/IconButton";
+import { InlineEdit } from "src/components/design-system/InlineEdit";
 import { useConnections } from "src/api/connection";
 import { Select } from "src/components/design-system/Select";
 import { useUpdateCell, useCell } from "src/api/cell";
 import { useEffect, useState } from "react";
-import { ToolTip } from "src/components/design-system/ToolTip";
 import { useHandleExecuteCell } from "src/components/Notebook/Cell";
 
 export function CellToolbar({ cellId }: { cellId: string }) {
@@ -55,23 +55,25 @@ export function CellToolbar({ cellId }: { cellId: string }) {
     });
   }
 
-  const messageElement = (
-    <aside className={CellToolbarStyles.cellNameToolTipContainer}>
-      <h3 className={CellToolbarStyles.cellNameToolTipHeader}>Cell Name</h3>
-      <p className={CellToolbarStyles.cellNameToolTipDescription}>
-        Double click to edit
-      </p>
-    </aside>
-  );
-  const toolTipTrigger = (
-    <div className={CellToolbarStyles.cellNameContainer}>
-      <span>{getCellQuery.data?.name}</span>
-    </div>
-  );
-
   return (
     <Toolbar loop className={CellToolbarStyles.toolbar}>
-      <ToolTip messageElement={messageElement} children={toolTipTrigger} />
+      <div className={CellToolbarStyles.cellNameContainer}>
+        <InlineEdit
+          value={getCellQuery.data?.name ?? ""}
+          onSave={(name) => {
+            const cell = getCellQuery.data;
+            if (cell) {
+              updateCellMutation.mutate({
+                cellId,
+                payload: { ...cell, name },
+              });
+            }
+          }}
+          placeholder="Cell Name"
+          defaultValue="Unnamed"
+          className={CellToolbarStyles["toolbar__inlineEdit"]}
+        />
+      </div>
       <div className={CellToolbarStyles.rightSideContainer}>
         <Select
           value={initialValue?.value ?? ""}

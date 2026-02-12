@@ -1,0 +1,39 @@
+.viewMode {
+  cursor: pointer;
+  display: inline-block;
+  width: fit-content;
+  border-radius: var(--border-radius-md);
+  padding: var(--space-2xs) var(--space-xs);
+  margin: calc(-1 * var(--space-2xs)) calc(-1 * var(--space-xs));
+  transition: background-color 0.15s;
+}
+
+.viewMode:hover {
+  background-color: var(--color-grey-100);
+}
+
+.container {
+  display: inline-flex;
+  width: fit-content;
+}
+
+.inputWrapper {
+  display: inline-block;
+}
+
+.actions {
+  flex-shrink: 0;
+}
+
+.iconButtonBordered {
+  border: 1px solid var(--color-grey-300);
+  background-color: var(--color-grey-200);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-2xs);
+}
+
+.inlineEdit__input {
+  width: auto;
+  field-sizing: content;
+  min-width: 10ch;
+}

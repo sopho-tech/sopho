@@ -1,8 +1,9 @@
+import classNames from "classnames";
 import { InputHTMLAttributes, Ref, useState } from "react";
-import styles from "./Input.module.css";
 import { Icon } from "src/components/design-system/Icon";
 import { IconButton } from "src/components/design-system/IconButton";
-import { IconType } from "src/components/design-system/datatypes";
+import { IconSize, IconType } from "src/components/design-system/datatypes";
+import styles from "./Input.module.css";
 
 export type InputProps = {
   value: string | number;
@@ -14,6 +15,7 @@ export type InputProps = {
   ref?: Ref<HTMLInputElement>;
   leadingIcon?: IconType;
   laggingElement?: React.ReactNode;
+  clearButtonSize?: IconSize;
 } & Omit<
   InputHTMLAttributes<HTMLInputElement>,
   | "value"
@@ -35,6 +37,7 @@ export function Input({
   ref,
   leadingIcon,
   laggingElement,
+  clearButtonSize,
   ...otherProps
 }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
@@ -89,7 +92,14 @@ export function Input({
         }}
         placeholder={placeholder}
         disabled={disabled}
-        className={`${styles.input} ${leadingIcon ? styles.inputWithLeadingIcon : ""} ${laggingElement ? styles.inputWithLaggingElement : ""} ${className || ""}`}
+        className={classNames(
+          styles.input,
+          {
+            [styles.inputWithLeadingIcon]: leadingIcon,
+            [styles.inputWithLaggingElement]: laggingElement,
+          },
+          className
+        )}
         {...restProps}
       />
       {laggingElement && !hasValue && (
@@ -104,7 +114,7 @@ export function Input({
             type="close"
             backgroundColor="transparent"
             iconColor="grey"
-            iconSize="sm"
+            iconSize={clearButtonSize ?? "sm"}
             onClick={handleClear}
             tabIndex={-1}
           />
