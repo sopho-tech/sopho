@@ -35,6 +35,7 @@ export const API_ENDPOINTS = {
     CREATE: "/api/v1/canvas",
     GET_ALL: "/api/v1/canvas",
     GET_BY_ID: "/api/v1/canvas/:id",
+    UPDATE: "/api/v1/canvas/:id",
     DELETE: "/api/v1/canvas/:id",
   },
   DASHBOARD: {

@@ -14,10 +14,6 @@
   border-radius: var(--border-radius-lg);
 }
 
-.cellNameContainer:hover {
-  background-color: var(--color-grey-100);
-}
-
 .cellNameToolTipContainer {
   font-size: var(--font-size-xs);
   line-height: var(--line-height-tightest);

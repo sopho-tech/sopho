@@ -222,6 +222,33 @@ button {
   --letter-spacing-normal: 0;
   --letter-spacing-wide: 0.05em;
 
+  /* Heading Typography (shared for Heading component and InlineEdit input) */
+  --heading-1-font-size: clamp(var(--font-size-4xl), 5vw, var(--font-size-4xl));
+  --heading-1-line-height: var(--line-height-tight);
+  --heading-1-font-weight: var(--font-weight-bold);
+  --heading-1-letter-spacing: var(--letter-spacing-tight);
+  --heading-2-font-size: clamp(var(--font-size-2xl), 4vw, var(--font-size-3xl));
+  --heading-2-line-height: var(--line-height-snug);
+  --heading-2-font-weight: var(--font-weight-semibold);
+  --heading-2-letter-spacing: var(--letter-spacing-snug);
+  --heading-3-font-size: clamp(var(--font-size-xl), 3vw, var(--font-size-2xl));
+  --heading-3-line-height: var(--line-height-comfortable);
+  --heading-3-font-weight: var(--font-weight-semibold);
+  --heading-3-letter-spacing: var(--letter-spacing-normal);
+  --heading-4-font-size: clamp(var(--font-size-lg), 2.5vw, var(--font-size-2xl));
+  --heading-4-line-height: var(--line-height-cozy);
+  --heading-4-font-weight: var(--font-weight-medium);
+  --heading-4-letter-spacing: var(--letter-spacing-normal);
+  --heading-5-font-size: clamp(var(--font-size-base), 2vw, var(--font-size-xl));
+  --heading-5-line-height: var(--line-height-normal);
+  --heading-5-font-weight: var(--font-weight-medium);
+  --heading-5-letter-spacing: var(--letter-spacing-normal);
+  --heading-6-font-size: clamp(var(--font-size-sm), 1.5vw, var(--font-size-base));
+  --heading-6-line-height: var(--line-height-normal);
+  --heading-6-font-weight: var(--font-weight-medium);
+  --heading-6-letter-spacing: var(--letter-spacing-wide);
+  --heading-6-text-transform: uppercase;
+
   /* Spacing System */
   --space-2xs: 0.25rem;
   /* 4px */
@@ -365,46 +392,46 @@ body {
 }
 
 h1 {
-  font-size: clamp(var(--font-size-4xl), 5vw, var(--font-size-4xl));
-  line-height: var(--line-height-tight);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: var(--letter-spacing-tight);
+  font-size: var(--heading-1-font-size);
+  line-height: var(--heading-1-line-height);
+  font-weight: var(--heading-1-font-weight);
+  letter-spacing: var(--heading-1-letter-spacing);
 }
 
 h2 {
-  font-size: clamp(var(--font-size-2xl), 4vw, var(--font-size-3xl));
-  line-height: var(--line-height-snug);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-snug);
+  font-size: var(--heading-2-font-size);
+  line-height: var(--heading-2-line-height);
+  font-weight: var(--heading-2-font-weight);
+  letter-spacing: var(--heading-2-letter-spacing);
 }
 
 h3 {
-  font-size: clamp(var(--font-size-xl), 3vw, var(--font-size-2xl));
-  line-height: var(--line-height-comfortable);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-normal);
+  font-size: var(--heading-3-font-size);
+  line-height: var(--heading-3-line-height);
+  font-weight: var(--heading-3-font-weight);
+  letter-spacing: var(--heading-3-letter-spacing);
 }
 
 h4 {
-  font-size: clamp(var(--font-size-lg), 2.5vw, var(--font-size-2xl));
-  line-height: var(--line-height-cozy);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--letter-spacing-normal);
+  font-size: var(--heading-4-font-size);
+  line-height: var(--heading-4-line-height);
+  font-weight: var(--heading-4-font-weight);
+  letter-spacing: var(--heading-4-letter-spacing);
 }
 
 h5 {
-  font-size: clamp(var(--font-size-base), 2vw, var(--font-size-xl));
-  line-height: var(--line-height-normal);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--letter-spacing-normal);
+  font-size: var(--heading-5-font-size);
+  line-height: var(--heading-5-line-height);
+  font-weight: var(--heading-5-font-weight);
+  letter-spacing: var(--heading-5-letter-spacing);
 }
 
 h6 {
-  font-size: clamp(var(--font-size-sm), 1.5vw, var(--font-size-base));
-  line-height: var(--line-height-normal);
-  font-weight: var(--font-weight-medium);
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-wide);
+  font-size: var(--heading-6-font-size);
+  line-height: var(--heading-6-line-height);
+  font-weight: var(--heading-6-font-weight);
+  letter-spacing: var(--heading-6-letter-spacing);
+  text-transform: var(--heading-6-text-transform);
 }
 
 a {

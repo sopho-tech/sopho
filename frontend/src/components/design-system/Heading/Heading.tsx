@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { getCSSVariable } from "src/utils/css_util";
+import styles from "./Heading.module.css";
 
 export type FontSize =
   | "xs"
@@ -106,5 +107,14 @@ export function Heading({
     return Object.keys(styles).length > 0 ? styles : undefined;
   }, [weight, size, textAlign, textColor]);
 
-  return <Component style={style}>{children}</Component>;
+  const headingClass =
+    size === undefined && weight === undefined
+      ? styles[`heading${accessbilityLevel}`]
+      : undefined;
+
+  return (
+    <Component className={headingClass} style={style}>
+      {children}
+    </Component>
+  );
 }

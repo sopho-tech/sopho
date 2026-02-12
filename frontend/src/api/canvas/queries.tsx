@@ -58,6 +58,23 @@ const canvasApi = {
     };
   },
 
+  updateCanvas: async ({
+    canvasId,
+    payload,
+  }: {
+    canvasId: string;
+    payload: Partial<CanvasDto>;
+  }): Promise<CanvasDto> => {
+    const response = await ApiService.put({
+      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CANVAS.UPDATE.replace(":id", canvasId)}`,
+      data: payload,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return response as CanvasDto;
+  },
+
   createCanvas: async (payload: Omit<CanvasDto, "id">): Promise<CanvasDto> => {
     const response = await ApiService.post({
       url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CANVAS.CREATE}`,
@@ -101,7 +118,28 @@ export const useAllCanvases = (page?: number, pageSize?: number) => {
   });
 };
 
-// Mutation hooks
+export const useUpdateCanvas = (callbacks?: {
+  onSuccess?: (data: CanvasDto) => void;
+  onError?: (error: Error) => void;
+}) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: canvasApi.updateCanvas,
+    onSuccess: (data) => {
+      queryClient.setQueryData(canvasKeys.detail(data.id!), data);
+      queryClient.invalidateQueries({
+        queryKey: canvasKeys.lists(),
+      });
+      callbacks?.onSuccess?.(data);
+    },
+    onError: (error) => {
+      console.error("Failed to update canvas:", error);
+      callbacks?.onError?.(error);
+    },
+  });
+};
+
 export const useCreateCanvas = (callbacks?: {
   onSuccess?: (data: CanvasDto) => void;
   onError?: (error: Error) => void;

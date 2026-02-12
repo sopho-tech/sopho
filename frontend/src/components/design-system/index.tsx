@@ -12,6 +12,7 @@ export {
   State as IconButtonLinkState,
 } from "src/components/design-system/IconButtonLink";
 export { Icon } from "src/components/design-system/Icon";
+export { InlineEdit } from "src/components/design-system/InlineEdit";
 export { Heading } from "src/components/design-system/Heading";
 export { Form } from "src/components/design-system/Form";
 export { Select } from "src/components/design-system/Select";

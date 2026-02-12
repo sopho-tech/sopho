@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
-import { useCanvas } from "src/api/canvas/queries";
+import { useCanvas, useUpdateCanvas } from "src/api/canvas/queries";
 import { useNotebooksByCanvasId } from "src/api/notebook/queries";
-import { Flex, Heading, Text } from "src/components/design-system";
+import { Flex, InlineEdit } from "src/components/design-system";
 import { Notebook } from "src/components/Notebook";
 import { useStore } from "src/store";
 import { Dashboard } from "src/components/Dashboard";
@@ -17,6 +17,7 @@ export function Canvas() {
   let params = useParams();
   const query = useCanvas(params.id!);
   const notebooksQuery = useNotebooksByCanvasId(params.id!);
+  const updateCanvas = useUpdateCanvas();
   const [viewType, setViewType] = useState<ViewType>(ViewType.NOTEBOOK);
   const setActiveNotebookId = useStore(
     (state) => state.canvas.setActiveNotebookId
@@ -54,7 +55,18 @@ export function Canvas() {
     >
       <Flex direction="column" gap="sm">
         <Flex direction="row" justifyContent="space-between">
-          <Heading accessbilityLevel={1}>{query.data.name}</Heading>
+          <InlineEdit
+            value={query.data.name ?? ""}
+            onSave={(name) =>
+              updateCanvas.mutate({
+                canvasId: params.id!,
+                payload: { ...query.data, name: name },
+              })
+            }
+            headingLevel={1}
+            clearButtonSize="md"
+            defaultValue="Default Canvas Title"
+          />
           <CanvasButtons
             viewType={viewType.toLowerCase()}
             onViewTypeChange={(v: string) =>
@@ -62,9 +74,18 @@ export function Canvas() {
             }
           />
         </Flex>
-        <Text as="p" color="subtle">
-          {query.data.description}
-        </Text>
+        <InlineEdit
+          value={query.data.description ?? ""}
+          onSave={(description) =>
+            updateCanvas.mutate({
+              canvasId: params.id!,
+              payload: { ...query.data, description },
+            })
+          }
+          placeholder="Add a description"
+          defaultValue="Default description"
+          textColor="subtle"
+        />
       </Flex>
       {renderView()}
     </Flex>

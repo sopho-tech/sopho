@@ -1,9 +1,11 @@
+use crate::canvas::dto;
+use crate::common::time_utils;
 use crate::entity::canvas;
 use sea_orm::sea_query::{Expr, Func};
 use sea_orm::{
     ActiveModelTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait, PaginatorTrait,
 };
-use sea_orm::{Order, QueryFilter, QueryOrder};
+use sea_orm::{Order, QueryFilter, QueryOrder, Set};
 use uuid::Uuid;
 
 pub async fn get_canvas(db: &DatabaseConnection, id: Uuid) -> Result<canvas::Model, DbErr> {
@@ -49,6 +51,20 @@ pub async fn save_canvas_connection(
 pub async fn delete_canvas_transaction(txn: &DatabaseTransaction, id: Uuid) -> Result<(), DbErr> {
     canvas::Entity::delete_by_id(id).exec(txn).await?;
     Ok(())
+}
+
+pub async fn update_canvas(
+    db: &DatabaseConnection,
+    id: Uuid,
+    payload: dto::CreateCanvasDto,
+) -> Result<canvas::Model, DbErr> {
+    let canvas = get_canvas(db, id).await?;
+    let mut canvas_active: canvas::ActiveModel = canvas.into();
+    canvas_active.name = Set(payload.name);
+    canvas_active.description = Set(payload.description);
+    canvas_active.updated_at = Set(time_utils::now_utc_into());
+    let result = canvas_active.update(db).await?;
+    Ok(result.into())
 }
 
 pub async fn search_canvases_by_name(

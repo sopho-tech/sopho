@@ -1,16 +1,18 @@
 import styles from "src/components/design-system/Text/Text.module.css";
 
+export type TextColor =
+  | "default"
+  | "white"
+  | "subtle"
+  | "disabled"
+  | "error"
+  | "success"
+  | "warning"
+  | "black";
+
 type TextProps = {
   as?: "span" | "div" | "label" | "p";
-  color?:
-    | "default"
-    | "white"
-    | "subtle"
-    | "disabled"
-    | "error"
-    | "success"
-    | "warning"
-    | "black";
+  color?: TextColor;
   fontSize?:
     | "xs"
     | "sm"
