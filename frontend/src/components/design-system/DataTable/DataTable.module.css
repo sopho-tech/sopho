@@ -4,7 +4,6 @@
   flex-direction: column;
   gap: var(--space-sm);
   flex: 1;
-  /* justify-content: space-between; */
 }
 
 .tableContainer {
@@ -16,14 +15,13 @@
   gap: var(--space-sm);
   border-radius: var(--border-radius-lg);
   border: var(--border-dark-thin);
-  width: fit-content;
-  max-width: 100%;
 }
 
 .table {
   border-collapse: collapse;
   box-shadow: var(--shadow);
-  table-layout: fixed;
+  table-layout: auto;
+  width: 100%;
 }
 
 .tableHeaderCell,
@@ -41,7 +39,7 @@
   position: sticky;
   top: 0px;
   border-left: var(--border-dark-thin);
-  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
   user-select: none;
   background-color: var(--color-grey-100);
   box-shadow: 0 var(--border-width-thin) 0 0 var(--color-grey-300);
@@ -52,7 +50,7 @@
 }
 
 .tableDataCell {
-  padding: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
   border-bottom: var(--border-dark-thin);
   border-left: var(--border-dark-thin);
   font-size: var(--font-size-sm);
