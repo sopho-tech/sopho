@@ -33,7 +33,7 @@ export function BarChart({
   const showXTicks = xAxisTickShow !== "HIDE";
   const showYTicks = yAxisTickShow !== "HIDE";
   return (
-    <ChartContainer aspect={1.618}>
+    <ChartContainer>
       <RechartsBarChart responsive data={data} margin={CHART_MARGINS}>
         <ChartCartesianGrid />
         <Bar

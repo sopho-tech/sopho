@@ -2,7 +2,6 @@ import { Flex } from "src/components/design-system/Flex/Flex";
 import { Heading } from "../design-system";
 import { useCurrentUser, useDeleteSession } from "src/api/auth_api";
 import { Form } from "src/components/design-system/Form/Form";
-import { FormFieldType } from "src/components/design-system/Form/types";
 import { Button } from "src/components/design-system/Button/Button";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -20,32 +19,12 @@ export function Profile() {
     },
   });
 
-  const fields = [
-    {
-      key: "id",
-      name: "User ID",
-      type: FormFieldType.INPUT,
-      defaultValue: user?.id || "",
-    },
-    {
-      key: "username",
-      name: "Username",
-      type: FormFieldType.INPUT,
-      defaultValue: user?.username || "",
-    },
-    {
-      key: "email",
-      name: "Email",
-      type: FormFieldType.INPUT,
-      defaultValue: user?.email || "",
-    },
-    {
-      key: "full_name",
-      name: "Full Name",
-      type: FormFieldType.INPUT,
-      defaultValue: user?.full_name || "",
-    },
-  ];
+  const defaultValues = {
+    id: user?.id || "",
+    username: user?.username || "",
+    email: user?.email || "",
+    full_name: user?.full_name || "",
+  };
 
   return (
     <Flex
@@ -60,16 +39,14 @@ export function Profile() {
       direction="column"
     >
       <Heading accessbilityLevel={1}>Profile</Heading>
-      <Form
-        fields={fields}
-        readonly={true}
-        showSubmitButton={false}
-        showCancelButton={false}
-        onSubmitCallback={() => {}}
-        onCancelCallback={() => {}}
-        fieldsContainerStyleClass={styles.fieldsContainer}
-        fieldStyleClass={styles.fieldContainer}
-      />
+      <Form defaultValues={defaultValues} onSubmit={() => {}} readonly>
+        <Form.Fields className={styles.fieldsContainer}>
+          <Form.Input name="id" label="User ID" className={styles.fieldContainer} />
+          <Form.Input name="username" label="Username" className={styles.fieldContainer} />
+          <Form.Input name="email" label="Email" className={styles.fieldContainer} />
+          <Form.Input name="full_name" label="Full Name" className={styles.fieldContainer} />
+        </Form.Fields>
+      </Form>
       <Button
         label="Sign Out"
         backgroundColor="accent"

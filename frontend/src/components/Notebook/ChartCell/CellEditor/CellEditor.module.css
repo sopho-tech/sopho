@@ -20,7 +20,7 @@
 }
 
 .formLabel {
-  width: 100px;
+  width: 120px;
 }
 
 .accordionTriggerHeading {
@@ -33,4 +33,17 @@
 .infoTooltipMessage {
   line-height: var(--line-height-relaxed);
   width: 200px;
+}
+
+.inputContainer {
+  display: flex;
+  flex-direction: row;
+}
+
+.textInputContainer {
+  width: 140px;
+}
+
+.actionsButtonContainer {
+  padding: var(--space-sm);
 }

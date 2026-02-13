@@ -43,8 +43,10 @@ export type { DropdownMenuItem } from "src/components/design-system/DropdownMenu
 export { Toolbar } from "src/components/design-system/Toolbar";
 export { Accordion } from "src/components/design-system/Accordion";
 export type {
-  AccordionItemConfig,
-  AccordionProps,
+  AccordionRootProps,
+  AccordionItemProps,
+  AccordionTriggerProps,
+  AccordionContentProps,
 } from "src/components/design-system/Accordion";
 export { Pagination } from "src/components/design-system/Pagination";
 export type { PaginationProps } from "src/components/design-system/Pagination";

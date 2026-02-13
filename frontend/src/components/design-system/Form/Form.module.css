@@ -41,7 +41,6 @@
 
 .formLabel {
   font-size: var(--font-size-sm);
-  font-weight: var(--label-font-weight);
   color: var(--label-color);
 }
 

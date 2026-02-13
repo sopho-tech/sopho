@@ -75,6 +75,25 @@ const cellApi = {
     return response as ExecuteCellResponseDto;
   },
 
+  executeCellPreview: async ({
+    cellId,
+    content,
+    cellType,
+  }: {
+    cellId: string;
+    content: string;
+    cellType: string;
+  }): Promise<ExecuteCellResponseDto> => {
+    const response = await ApiService.post({
+      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CELL.EXECUTE_PREVIEW.replace(":id", cellId)}`,
+      data: { content, cell_type: cellType },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return response as ExecuteCellResponseDto;
+  },
+
   reorderCell: async ({
     cellId,
     movementType,
@@ -92,6 +111,8 @@ const cellApi = {
     return response as CellDto;
   },
 };
+
+export const getCell = (cellId: string) => cellApi.getCell(cellId);
 
 export const useCell = (cellId: string) => {
   return useQuery({
@@ -174,6 +195,16 @@ export const useExecuteCell = () => {
     onSuccess: () => {},
     onError: (error) => {
       console.error("Failed to execute cell:", error);
+    },
+  });
+};
+
+export const useExecuteCellPreview = () => {
+  return useMutation({
+    mutationFn: cellApi.executeCellPreview,
+    onSuccess: () => {},
+    onError: (error) => {
+      console.error("Failed to execute cell preview:", error);
     },
   });
 };

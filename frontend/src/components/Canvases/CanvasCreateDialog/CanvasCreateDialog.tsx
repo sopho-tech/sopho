@@ -5,17 +5,15 @@ import { CanvasDto } from "src/components/Canvases/dto";
 import { useNavigate } from "react-router";
 import { useCreateCanvas } from "src/api/canvas/queries";
 import { Form } from "src/components/design-system/Form/Form";
-import {
-  FormField,
-  FormFieldType,
-} from "src/components/design-system/Form/types";
 import { SophoDialog } from "src/components/SophoDialog";
 import styles from "src/components/Canvases/CanvasCreateDialog/CanvasCreateDialog.module.css";
 
 export function CanvasCreateDialog() {
   const navigate = useNavigate();
   const canvasPageState = useStore((state) => state.canvas.canvasPageState);
-  const setCanvasPageState = useStore((state) => state.canvas.setCanvasPageState);
+  const setCanvasPageState = useStore(
+    (state) => state.canvas.setCanvasPageState
+  );
 
   const handleDialogClose = () => {
     setCanvasPageState(CanvasesPageState.LIST);
@@ -57,30 +55,34 @@ export function CanvasCreateDialog() {
   const shouldOpenDialog =
     canvasPageState === CanvasesPageState.CREATE_CANVAS_DIALOG;
 
-  const formFields: FormField[] = [
-    {
-      key: "name",
-      name: "Name",
-      required: true,
-      errorMessage: "Please fill name",
-      type: FormFieldType.INPUT,
-    },
-    {
-      key: "description",
-      name: "Description",
-      required: false,
-      errorMessage: "Please enter description",
-      type: FormFieldType.INPUT,
-    },
-  ];
   const dialogContent = (
     <Form
-      fields={formFields}
-      onSubmitCallback={onSubmitCallback}
-      onCancelCallback={handleDialogClose}
-      fieldStyleClass={styles.formFieldContainer}
-      labelStyleClass={styles.formLabelContainer}
-    />
+      defaultValues={{ name: "", description: "" }}
+      onSubmit={onSubmitCallback}
+    >
+      <Form.ErrorBanner />
+      <Form.Fields>
+        <Form.Input
+          name="name"
+          label="Name"
+          required
+          errorMessage="Please fill name"
+          className={styles.formFieldContainer}
+          labelClassName={styles.formLabelContainer}
+        />
+        <Form.Input
+          name="description"
+          label="Description"
+          errorMessage="Please enter description"
+          className={styles.formFieldContainer}
+          labelClassName={styles.formLabelContainer}
+        />
+      </Form.Fields>
+      <Form.Actions>
+        <Form.Cancel onClick={handleDialogClose} />
+        <Form.Submit />
+      </Form.Actions>
+    </Form>
   );
   return (
     <SophoDialog

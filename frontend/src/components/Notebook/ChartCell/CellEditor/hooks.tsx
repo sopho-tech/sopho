@@ -5,7 +5,6 @@ import type { ChartContent } from "src/components/Notebook/Cell/dto";
 import { useNotebook } from "src/api/notebook/queries";
 import { CellOutputState, CellType } from "src/components/Notebook/Cell/dto";
 import { ChartType } from "src/components/Chart";
-import type { ExecuteCellResponseDto } from "src/components/Notebook/Cell/dto";
 import { Icon, Flex, Text } from "src/components/design-system";
 import { AggregateFunction } from "src/components/Notebook/dto";
 import { getIconForDataType } from "src/utils/column_utils";
@@ -17,9 +16,6 @@ export function useSourceCellExecution(
   const handleExecuteCell = useHandleExecuteCell();
   const [sourceCellId, setSourceCellId] = useState<string | null>(
     chartContent?.cell_id || null
-  );
-  const sourceCellOutput = useStore((state) =>
-    sourceCellId ? state.cell.outputs[sourceCellId] : null
   );
   const setOutputState = useStore((state) => state.cell.setOutputState);
 
@@ -57,16 +53,16 @@ export function useSourceCellExecution(
   return {
     sourceCellId,
     setSourceCellId,
-    sourceCellOutput,
     executeSourceCell,
   };
 }
 
-export function useFormOptions(
-  sourceCellOutput: ExecuteCellResponseDto | null | undefined
-) {
+export function useFormOptions(sourceCellId: string | null) {
   const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);
   const notebookQuery = useNotebook(activeNotebookId);
+  const sourceCellOutput = useStore((state) =>
+    sourceCellId ? state.cell.outputs[sourceCellId] : null
+  );
 
   const cellOptions = useMemo(
     () =>

@@ -1,97 +1,63 @@
 import { useAppForm } from "src/components/design-system/Form/hooks";
-import { FormField } from "src/components/design-system/Form/types";
 import { Button } from "src/components/design-system/Button";
-import { useState } from "react";
+import { createContext, useContext } from "react";
 import FormStyles from "src/components/design-system/Form/Form.module.css";
 import { SubscribeButton } from "src/components/design-system/Form/SubscribeButton";
-import { FormFieldRenderer } from "./FormFieldRenderer";
-import {
-  validateFields,
-  findAccordionsWithInvalidFields,
-} from "./utils/validation";
-import { deriveDefaultValues, convertValuesToFormData } from "./utils/values";
+import { TextField } from "./TextField";
+import { SelectField } from "./SelectField";
+import { PasswordField } from "./PasswordField";
+import { convertValuesToFormData } from "./utils/values";
 import { BannerSlim } from "../BannerSlim";
 import { revalidateLogic, useStore } from "@tanstack/react-form";
 import { getErrorSummary } from "./utils/errorSummary";
+import { SelectOption } from "src/components/design-system";
+import { IconType } from "src/components/design-system/datatypes";
 
-type FormProps = {
-  fields: FormField[];
-  onSubmitCallback: (formData: FormData) => void;
-  onCancelCallback: () => void;
-  onChange?: (formData: FormData, fieldName: string, value: string) => void;
-  submitButtonText?: string;
-  showCancelButton?: boolean;
-  showSubmitButton?: boolean;
-  showErrorBanner?: boolean;
-  additionalButtons?: React.ReactNode[];
-  fieldsContainerStyleClass?: string;
-  fieldStyleClass?: string;
-  rootStyleClass?: string;
-  formButtonRowStyleClass?: string;
-  labelStyleClass?: string;
-  submitOnEnter?: boolean;
-  readonly?: boolean;
+type FormContextType = {
+  form: ReturnType<typeof useAppForm>;
+  readonly: boolean;
+  formFieldMeta: any;
 };
 
-export function Form({
-  fields,
-  onSubmitCallback,
-  onCancelCallback,
-  onChange,
-  submitButtonText = "Submit",
-  showCancelButton = true,
-  showSubmitButton = true,
-  showErrorBanner = true,
-  additionalButtons,
-  fieldsContainerStyleClass,
-  fieldStyleClass,
-  rootStyleClass,
-  formButtonRowStyleClass,
-  labelStyleClass,
-  submitOnEnter = false,
-  readonly = false,
-}: FormProps) {
-  const defaultValues = deriveDefaultValues(fields);
-  const [accordionState, setAccordionState] = useState<Map<string, boolean>>(
-    new Map()
-  );
+const FormCompoundContext = createContext<FormContextType | null>(null);
 
+export const useFormCompoundContext = () => {
+  const context = useContext(FormCompoundContext);
+  if (!context) {
+    throw "Form compound components must be used within a Form parent component";
+  }
+  return context;
+};
+
+type FormRootProps = {
+  children: React.ReactNode;
+  defaultValues?: Record<string, any>;
+  onSubmit: (formData: FormData) => void;
+  onChange?: (formData: FormData, fieldName: string, value: string) => void;
+  className?: string;
+  readonly?: boolean;
+  submitOnEnter?: boolean;
+};
+
+const FormRoot = ({
+  children,
+  defaultValues = {},
+  onSubmit,
+  onChange,
+  className,
+  readonly = false,
+  submitOnEnter = false,
+}: FormRootProps) => {
   const form = useAppForm({
-    defaultValues: defaultValues,
+    defaultValues,
     onSubmit: ({ value }: { value: unknown }) => {
       const formData = convertValuesToFormData(value as Record<string, any>);
-      onSubmitCallback(formData);
+      onSubmit(formData);
     },
     validationLogic: revalidateLogic({
       mode: "submit",
       modeAfterSubmission: "change",
     }),
-    validators: {
-      onDynamic({ value }) {
-        const { errorMap, invalidFields } = validateFields(
-          fields,
-          value as Record<string, any>
-        );
-
-        if (invalidFields.length > 0) {
-          const shouldBeOpenAccordions = findAccordionsWithInvalidFields(
-            invalidFields,
-            fields
-          );
-          const newAccordionState = new Map(accordionState);
-          shouldBeOpenAccordions.forEach((key) => {
-            newAccordionState.set(key, true);
-          });
-          setAccordionState(newAccordionState);
-
-          return {
-            form: "form validation",
-            fields: errorMap,
-          };
-        }
-        return undefined;
-      },
-    },
     ...(onChange && {
       listeners: {
         onChange: ({ formApi, fieldApi }) => {
@@ -117,51 +83,278 @@ export function Form({
     }
   };
 
+  const contextValue: FormContextType = {
+    form,
+    readonly,
+    formFieldMeta,
+  };
+
   return (
-    <div className={`${FormStyles.formRoot} ${rootStyleClass || ""}`}>
-      {showErrorBanner && (
-        <BannerSlim
-          type="error"
-          message={getErrorSummary(formFieldMeta, fields)}
-        />
-      )}
-      <form.AppForm>
-        <div
-          className={`${FormStyles.formElements} ${fieldsContainerStyleClass || ""}`}
-          onKeyDown={handleKeyDown}
-        >
-          {fields.map((field) => (
-            <FormFieldRenderer
-              key={field.key}
-              field={field}
-              form={form}
-              accordionState={accordionState}
-              setAccordionState={setAccordionState}
-              fieldStyleClass={fieldStyleClass}
-              labelStyleClass={labelStyleClass}
-              readonly={readonly}
-            />
-          ))}
-        </div>
-        {!readonly &&
-          (showCancelButton || showSubmitButton || additionalButtons) && (
-            <div
-              className={`${FormStyles.formButtonRow} ${formButtonRowStyleClass || ""}`}
-            >
-              {showCancelButton && (
-                <Button
-                  label="Cancel"
-                  onClick={onCancelCallback}
-                  backgroundColor="white"
-                  size="sm"
-                  shape="rectangle"
-                />
-              )}
-              {showSubmitButton && <SubscribeButton label={submitButtonText} />}
-              {additionalButtons}
-            </div>
-          )}
-      </form.AppForm>
+    <FormCompoundContext value={contextValue}>
+      <div
+        className={`${FormStyles.formRoot} ${className || ""}`}
+        onKeyDown={submitOnEnter ? handleKeyDown : undefined}
+      >
+        <form.AppForm>{children}</form.AppForm>
+      </div>
+    </FormCompoundContext>
+  );
+};
+
+FormRoot.displayName = "Form";
+
+const FormErrorBanner = () => {
+  const { formFieldMeta } = useFormCompoundContext();
+  return <BannerSlim type="error" message={getErrorSummary(formFieldMeta)} />;
+};
+
+FormErrorBanner.displayName = "Form.ErrorBanner";
+
+type FormFieldsProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+const FormFields = ({ children, className }: FormFieldsProps) => {
+  return (
+    <div className={`${FormStyles.formElements} ${className || ""}`}>
+      {children}
     </div>
   );
-}
+};
+
+FormFields.displayName = "Form.Fields";
+
+type FormInputProps = {
+  name: string;
+  label?: string;
+  placeholder?: string;
+  required?: boolean;
+  errorMessage?: string;
+  showLabel?: boolean;
+  icon?: IconType;
+  className?: string;
+  labelClassName?: string;
+  inputContainerClassName?: string;
+};
+
+const FormInput = ({
+  name,
+  label,
+  placeholder,
+  required = false,
+  errorMessage = "Required",
+  showLabel = true,
+  icon,
+  className,
+  labelClassName,
+  inputContainerClassName,
+}: FormInputProps) => {
+  const { form, readonly } = useFormCompoundContext();
+
+  return (
+    <form.AppField
+      name={name as any}
+      validators={
+        required
+          ? {
+              onSubmit: ({ value }: { value: any }) =>
+                value === "" || value == null ? errorMessage : undefined,
+            }
+          : undefined
+      }
+    >
+      {() => (
+        // <div className={FormStyles.formFieldContainer}>
+        <TextField
+          label={label}
+          placeholder={placeholder}
+          showLabel={showLabel}
+          icon={icon}
+          readonly={readonly}
+          containerStyleClass={className}
+          labelStyleClass={labelClassName}
+          inputContainerClassName={inputContainerClassName}
+        />
+        // </div>
+      )}
+    </form.AppField>
+  );
+};
+
+FormInput.displayName = "Form.Input";
+
+type FormSelectProps = {
+  name: string;
+  label?: string;
+  groupName?: string;
+  placeholder?: string;
+  options: SelectOption[];
+  required?: boolean;
+  errorMessage?: string;
+  showLabel?: boolean;
+  infoIconToolTipMessage?: React.ReactNode;
+  className?: string;
+  labelClassName?: string;
+  labelIconContainerStyleClass?: string;
+};
+
+const FormSelect = ({
+  name,
+  label,
+  groupName,
+  placeholder = "Select an option",
+  options,
+  required = false,
+  errorMessage = "Required",
+  showLabel = true,
+  infoIconToolTipMessage,
+  className,
+  labelClassName,
+  labelIconContainerStyleClass,
+}: FormSelectProps) => {
+  const { form, readonly } = useFormCompoundContext();
+
+  return (
+    <form.AppField
+      name={name as any}
+      validators={
+        required
+          ? {
+              onSubmit: ({ value }: { value: any }) =>
+                value === "" || value == null ? errorMessage : undefined,
+            }
+          : undefined
+      }
+    >
+      {() => (
+        <div className={`${FormStyles.formFieldContainer} ${className || ""}`}>
+          <SelectField
+            label={label}
+            groupName={groupName || label || "Options"}
+            placeholderText={placeholder}
+            options={options}
+            infoIconToolTipMessage={infoIconToolTipMessage}
+            showLabel={showLabel}
+            readonly={readonly}
+            labelStyleClass={labelClassName}
+            labelIconContainerStyleClass={labelIconContainerStyleClass}
+          />
+        </div>
+      )}
+    </form.AppField>
+  );
+};
+
+FormSelect.displayName = "Form.Select";
+
+type FormPasswordProps = {
+  name: string;
+  label?: string;
+  placeholder?: string;
+  required?: boolean;
+  errorMessage?: string;
+  showLabel?: boolean;
+  icon?: IconType;
+  className?: string;
+  labelClassName?: string;
+};
+
+const FormPassword = ({
+  name,
+  label,
+  placeholder,
+  required = false,
+  errorMessage = "Required",
+  showLabel = true,
+  icon,
+  className,
+  labelClassName,
+}: FormPasswordProps) => {
+  const { form, readonly } = useFormCompoundContext();
+
+  return (
+    <form.AppField
+      name={name as any}
+      validators={
+        required
+          ? {
+              onSubmit: ({ value }: { value: any }) =>
+                value === "" || value == null ? errorMessage : undefined,
+            }
+          : undefined
+      }
+    >
+      {() => (
+        <div className={`${FormStyles.formFieldContainer} ${className || ""}`}>
+          <PasswordField
+            label={label}
+            placeholder={placeholder}
+            showLabel={showLabel}
+            icon={icon}
+            readonly={readonly}
+            containerStyleClass={className}
+            labelStyleClass={labelClassName}
+          />
+        </div>
+      )}
+    </form.AppField>
+  );
+};
+
+FormPassword.displayName = "Form.Password";
+
+type FormActionsProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+const FormActions = ({ children, className }: FormActionsProps) => {
+  return (
+    <div className={`${FormStyles.formButtonRow} ${className || ""}`}>
+      {children}
+    </div>
+  );
+};
+
+FormActions.displayName = "Form.Actions";
+
+type FormSubmitProps = {
+  label?: string;
+};
+
+const FormSubmit = ({ label = "Submit" }: FormSubmitProps) => {
+  return <SubscribeButton label={label} />;
+};
+
+FormSubmit.displayName = "Form.Submit";
+
+type FormCancelProps = {
+  onClick: () => void;
+  label?: string;
+};
+
+const FormCancel = ({ onClick, label = "Cancel" }: FormCancelProps) => {
+  return (
+    <Button
+      label={label}
+      onClick={onClick}
+      backgroundColor="white"
+      size="sm"
+      shape="rectangle"
+    />
+  );
+};
+
+FormCancel.displayName = "Form.Cancel";
+
+export const Form = Object.assign(FormRoot, {
+  ErrorBanner: FormErrorBanner,
+  Fields: FormFields,
+  Input: FormInput,
+  Select: FormSelect,
+  Password: FormPassword,
+  Actions: FormActions,
+  Submit: FormSubmit,
+  Cancel: FormCancel,
+});

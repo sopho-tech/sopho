@@ -8,8 +8,12 @@ import { Button } from "src/components/design-system/Button/Button";
 import { Flex } from "src/components/design-system/Flex/Flex";
 
 export function Connections() {
-  const connectionDetailsPageState = useStore((state) => state.connection.connectionDetailsPageState);
-  const setConnectionDetailsPageState = useStore((state) => state.connection.setConnectionDetailsPageState);
+  const connectionDetailsPageState = useStore(
+    (state) => state.connection.connectionDetailsPageState
+  );
+  const setConnectionDetailsPageState = useStore(
+    (state) => state.connection.setConnectionDetailsPageState
+  );
 
   return (
     <Flex direction="column" flex="grow" gap="md" overflow="hidden">

@@ -12,6 +12,7 @@ export type InputProps = {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  containerClassName?: string;
   ref?: Ref<HTMLInputElement>;
   leadingIcon?: IconType;
   laggingElement?: React.ReactNode;
@@ -34,6 +35,7 @@ export function Input({
   placeholder,
   disabled,
   className,
+  containerClassName,
   ref,
   leadingIcon,
   laggingElement,
@@ -71,7 +73,7 @@ export function Input({
   };
 
   return (
-    <div className={styles.container}>
+    <div className={classNames([styles.container, containerClassName])}>
       {leadingIcon && (
         <div className={styles.leadingIcon}>
           <Icon type={leadingIcon} color="grey" size="sm" />

@@ -3,96 +3,133 @@ import {
   CellDto,
   getChartContent,
   serializeChartContent,
-  useHandleExecuteCell,
 } from "src/components/Notebook/Cell";
 import CellEditorStyle from "src/components/Notebook/ChartCell/CellEditor/CellEditor.module.css";
-import { Button } from "src/components/design-system/Button";
 import {
   useSourceCellExecution,
   useFormOptions,
 } from "src/components/Notebook/ChartCell/CellEditor/hooks";
 import { Form } from "src/components/design-system";
-import { useCallback, useState, useEffect } from "react";
+import { ChartContent, getChartType } from "../../Cell/dto";
+import {
+  getDefaultValuesForChart,
+  extractChartFormData,
+  InfoTooltip,
+  formLabel,
+} from "./utils";
+import { BarChartAccordion } from "./BarChartAccordion";
+import { LineChartAccordion } from "./LineChartAccordion";
+import { PieChartFields } from "./PieChartFields";
+import { ChartRunButton } from "./ChartRunButton";
 import { ChartType } from "src/components/Chart";
-import { getChartType } from "../../Cell/dto";
-import { getFormFieldsByChartType, extractChartFormData } from "./utils";
+import { useState, useEffect } from "react";
 
+/**
+ * Component for editing a chart cell.
+ *
+ * The `initialChartContent` refers to the chart content of the cell from the backend, always in sync with it.
+ * This differs from the chart content stored in the state store. The latter represents unsaved content being actively edited.
+ * The latter is used for rendering the chart.
+ *
+ * @param cellId - ID of the chart cell to edit
+ */
 export function CellEditor({ cellId }: { cellId: string }) {
   const cellQuery = useCell(cellId);
-  const updateCellMutation = useUpdateCell();
-  const chartContent = cellQuery.data ? getChartContent(cellQuery.data) : null;
-  const { setSourceCellId, sourceCellOutput } = useSourceCellExecution(
+  const [initialChartContent, setInitialChartContent] =
+    useState<ChartContent | null>(null);
+  const { setSourceCellId, sourceCellId } = useSourceCellExecution(
     cellId,
-    chartContent
+    initialChartContent
   );
-  const handleExecuteCell = useHandleExecuteCell();
-  const formOptions = useFormOptions(sourceCellOutput);
-  const initialChartType = getChartType(chartContent);
-  const [chartType, setChartType] = useState<ChartType | null>(
-    initialChartType
+  const updateCellMutation = useUpdateCell();
+  const formOptions = useFormOptions(sourceCellId);
+  const [chartType, setChartType] = useState<ChartType | null>(null);
+  const [accordionValues, setAccordionValues] = useState<string[]>([]);
+  const defaultValues = getDefaultValuesForChart(
+    chartType,
+    initialChartContent
   );
 
   useEffect(() => {
-    if (initialChartType !== null) {
-      setChartType(initialChartType);
+    const newInitialChartContent = cellQuery.data
+      ? getChartContent(cellQuery.data)
+      : null;
+    setInitialChartContent(newInitialChartContent);
+    const newChartType = getChartType(newInitialChartContent);
+    setChartType(newChartType);
+  }, [cellQuery.data]);
+
+  const handleSubmit = (formData: FormData) => {
+    if (!cellQuery.data) throw Error("Cell query data is empty");
+    const content = extractChartFormData(chartType, formData);
+    const cellDto: CellDto = {
+      ...cellQuery.data,
+      content: serializeChartContent(content),
+    };
+    updateCellMutation.mutate({ cellId, payload: cellDto });
+  };
+
+  const handleChange = (_: FormData, fieldName: string, value: string) => {
+    if (fieldName === "cell_id") {
+      setSourceCellId(value);
+    } else if (fieldName === "chart_type") {
+      setChartType(ChartType[value as keyof typeof ChartType] ?? null);
     }
-  }, [initialChartType]);
-
-  const handleSubmit = useCallback(
-    (formData: FormData) => {
-      if (!cellQuery.data) throw Error("Cell query data is empty");
-
-      const chartContent = extractChartFormData(chartType, formData);
-      const cellDto: CellDto = {
-        ...cellQuery.data,
-        content: serializeChartContent(chartContent),
-      };
-      updateCellMutation.mutate({ cellId, payload: cellDto });
-    },
-    [cellQuery.data, chartType, cellId, updateCellMutation]
-  );
-
-  const handleChange = useCallback(
-    (_: FormData, fieldName: string, value: string) => {
-      if (fieldName === "cell_id") {
-        setSourceCellId(value);
-      } else if (fieldName === "chart_type") {
-        setChartType(ChartType[value as keyof typeof ChartType] ?? null);
-      }
-    },
-    [setSourceCellId]
-  );
-
-  const getFormFields = useCallback(
-    () => getFormFieldsByChartType(chartType, chartContent, formOptions),
-    [chartType, chartContent, formOptions]
-  );
-
-  const runButton = (
-    <Button
-      key="run"
-      label="Run"
-      onClick={() => handleExecuteCell(cellId, true)}
-      backgroundColor="transparent"
-      size="sm"
-      shape="rectangle"
-      emphasis="secondary"
-    />
-  );
+  };
 
   return (
     <Form
-      fields={getFormFields()}
-      onSubmitCallback={handleSubmit}
-      onCancelCallback={() => {}}
-      showCancelButton={false}
-      submitButtonText="Save"
-      rootStyleClass={CellEditorStyle.chartControlContainer}
-      fieldsContainerStyleClass={CellEditorStyle.formElements}
-      fieldStyleClass={CellEditorStyle.formField}
-      labelStyleClass={CellEditorStyle.formLabel}
-      additionalButtons={[runButton]}
+      defaultValues={defaultValues}
+      onSubmit={handleSubmit}
       onChange={handleChange}
-    />
+      className={CellEditorStyle.chartControlContainer}
+    >
+      <Form.ErrorBanner />
+      <Form.Fields className={CellEditorStyle.formElements}>
+        <Form.Select
+          name="cell_id"
+          label="Source Cell"
+          options={formOptions.cellOptions}
+          required
+          errorMessage="Please select the source cell"
+          infoIconToolTipMessage={
+            <InfoTooltip message="Select the source SQL Cell whose query you want to visualize" />
+          }
+          {...formLabel(CellEditorStyle.formLabel)}
+        />
+        <Form.Select
+          name="chart_type"
+          label="Chart Type"
+          options={formOptions.chartOptions}
+          required
+          errorMessage="Please select the type of chart"
+          infoIconToolTipMessage={
+            <InfoTooltip message="Select the type of chart you want to visualize data as" />
+          }
+          {...formLabel(CellEditorStyle.formLabel)}
+        />
+        {chartType === ChartType.BAR && (
+          <BarChartAccordion
+            formOptions={formOptions}
+            accordionValues={accordionValues}
+            onAccordionChange={setAccordionValues}
+          />
+        )}
+        {chartType === ChartType.LINE && (
+          <LineChartAccordion
+            formOptions={formOptions}
+            accordionValues={accordionValues}
+            onAccordionChange={setAccordionValues}
+          />
+        )}
+        {chartType === ChartType.PIE && (
+          <PieChartFields formOptions={formOptions} />
+        )}
+      </Form.Fields>
+      <Form.Actions className={CellEditorStyle.actionsButtonContainer}>
+        <Form.Submit label="Save" />
+        <ChartRunButton cellId={cellId} chartType={chartType} />
+      </Form.Actions>
+    </Form>
   );
 }
