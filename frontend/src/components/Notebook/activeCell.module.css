@@ -1,4 +1,4 @@
 .activeCell.activeCell {
-  border: var(--border-width-medium) var(--border-style-solid)
+  outline: var(--border-width-medium) var(--border-style-solid)
     var(--color-primary-300);
 }
