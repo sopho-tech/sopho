@@ -79,12 +79,7 @@ export function DataTable<T>({
           isResizingColumn ? styles.isResizingColumn : ""
         }`}
       >
-        <table
-          className={styles.table}
-          style={{
-            width: table.getCenterTotalSize(),
-          }}
-        >
+        <table className={styles.table}>
           <TableHeader
             headerGroups={table.getHeaderGroups()}
             columnConfigMap={columnConfigMap}
