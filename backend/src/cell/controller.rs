@@ -14,6 +14,7 @@ pub fn routes(app_state: AppState) -> Router {
         .route("/{id}", put(update_cell))
         .route("/{id}", delete(delete_cell))
         .route("/{id}/execute", post(execute_cell))
+        .route("/{id}/execute-preview", post(execute_cell_preview))
         .route("/{id}/reorder", patch(reorder_cell))
         .with_state(app_state)
 }
@@ -45,6 +46,14 @@ async fn execute_cell(
     axum::extract::Path(id): axum::extract::Path<Uuid>,
 ) -> impl IntoResponse {
     service::execute_cell(app_state, id).await
+}
+
+async fn execute_cell_preview(
+    State(app_state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
+    axum::extract::Json(payload): axum::extract::Json<dto::ExecuteCellPreviewDto>,
+) -> impl IntoResponse {
+    service::execute_cell_preview(app_state, id, payload).await
 }
 
 async fn delete_cell(

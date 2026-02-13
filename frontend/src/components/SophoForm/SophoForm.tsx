@@ -61,22 +61,18 @@ function renderCollapsibleSection(
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void
 ): React.ReactNode {
-  const items = [
-    {
-      value: collapsibleFormElement.key,
-      trigger: collapsibleFormElement.name,
-      content: collapsibleFormElement.collapsibleConfig?.formElements.map(
-        (formElement) =>
-          renderFormElement(formElement, formFieldStyleClass, onFormChange)
-      ),
-    },
-  ];
   return (
-    <Accordion
-      items={items}
-      value={[]}
-      onValueChange={() => {}}
-    />
+    <Accordion value={[]} onValueChange={() => {}}>
+      <Accordion.Item value={collapsibleFormElement.key}>
+        <Accordion.Trigger>{collapsibleFormElement.name}</Accordion.Trigger>
+        <Accordion.Content>
+          {collapsibleFormElement.collapsibleConfig?.formElements.map(
+            (formElement) =>
+              renderFormElement(formElement, formFieldStyleClass, onFormChange)
+          )}
+        </Accordion.Content>
+      </Accordion.Item>
+    </Accordion>
   );
 }
 

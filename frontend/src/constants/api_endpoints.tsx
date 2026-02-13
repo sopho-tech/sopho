@@ -29,6 +29,7 @@ export const API_ENDPOINTS = {
     UPDATE: "/api/v1/cell/:id",
     DELETE: "/api/v1/cell/:id",
     EXECUTE: "/api/v1/cell/:id/execute",
+    EXECUTE_PREVIEW: "/api/v1/cell/:id/execute-preview",
     REORDER: "/api/v1/cell/:id/reorder",
   },
   CANVAS: {

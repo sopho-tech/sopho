@@ -2,8 +2,6 @@ import { CellOutputState } from "src/components/Notebook/Cell";
 import { useStore } from "src/store";
 import styles from "src/components/Notebook/ChartCell/CellOutput/CellOutput.module.css";
 import { BarChart, ChartType, LineChart, PieChart } from "src/components/Chart";
-import { useCell } from "src/api/cell/queries";
-import { getChartContent } from "src/components/Notebook/Cell";
 import cellStyles from "src/css/cell.module.css";
 import {
   BarChartContent,
@@ -19,9 +17,10 @@ interface ChartCellOutputProps {
 export function CellOutput({ cellId }: ChartCellOutputProps) {
   const output = useStore((state) => state.cell.outputs[cellId]);
   const outputState = useStore((state) => state.cell.outputStates[cellId]);
-  const cellQuery = useCell(cellId);
-  const chartContent = cellQuery.data ? getChartContent(cellQuery.data) : null;
+  const chartContent = useStore((state) => state.cell.chartContents[cellId]);
   const chartType = getChartType(chartContent);
+
+  console.log(output, chartContent);
 
   function render() {
     if (

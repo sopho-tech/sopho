@@ -4,5 +4,6 @@ export {
   useUpdateCell,
   useDeleteCell,
   useExecuteCell,
+  useExecuteCellPreview,
   useReorderCell,
 } from "src/api/cell/queries";

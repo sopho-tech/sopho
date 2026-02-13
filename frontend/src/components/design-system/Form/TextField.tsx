@@ -11,6 +11,7 @@ type TextFieldProps = {
   readonly?: boolean;
   containerStyleClass?: string;
   labelStyleClass?: string;
+  inputContainerClassName?: string;
 };
 
 export function TextField({
@@ -21,6 +22,7 @@ export function TextField({
   readonly = false,
   containerStyleClass,
   labelStyleClass,
+  inputContainerClassName,
 }: TextFieldProps) {
   const field = useFieldContext<string>();
   const fieldName = field.name;
@@ -36,6 +38,7 @@ export function TextField({
         id={fieldName}
         name={fieldName}
         disabled={readonly}
+        containerClassName={inputContainerClassName}
       />
       <FieldError errors={field.state.meta.errors} />
     </label>

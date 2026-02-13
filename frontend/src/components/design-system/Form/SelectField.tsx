@@ -17,6 +17,7 @@ type SelectFieldProps = {
   showLabel?: boolean;
   readonly?: boolean;
   labelStyleClass?: string;
+  labelIconContainerStyleClass?: string;
 };
 
 export function SelectField({
@@ -29,6 +30,7 @@ export function SelectField({
   showLabel = true,
   readonly = false,
   labelStyleClass,
+  labelIconContainerStyleClass,
 }: SelectFieldProps) {
   const field = useFieldContext<string>();
 
@@ -47,10 +49,10 @@ export function SelectField({
     <Fragment>
       {((showLabel && label) || infoIconToolTipMessage) && (
         <div
-          className={`${FormStyles.formLabelIconContainer} ${InfoIconTooltipStyles.hoverContainer}`}
+          className={`${FormStyles.formLabelIconContainer} ${InfoIconTooltipStyles.hoverContainer} ${labelIconContainerStyleClass}`}
         >
           {showLabel && label && (
-            <span className={labelStyleClass || FormStyles.formLabel}>
+            <span className={`${FormStyles.formLabel} ${labelStyleClass}`}>
               {label}
             </span>
           )}

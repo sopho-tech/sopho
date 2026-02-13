@@ -126,8 +126,12 @@ const steps: SophoMultiStepFormStep[] = [
 export function ConnectionNew() {
   const createMutation = useCreateConnection();
   const [completedSteps, setCompletedSteps] = useState(0);
-  const connectionDetailsPageState = useStore((state) => state.connection.connectionDetailsPageState);
-  const setConnectionDetailsPageState = useStore((state) => state.connection.setConnectionDetailsPageState);
+  const connectionDetailsPageState = useStore(
+    (state) => state.connection.connectionDetailsPageState
+  );
+  const setConnectionDetailsPageState = useStore(
+    (state) => state.connection.setConnectionDetailsPageState
+  );
   const shouldOpenDialog =
     connectionDetailsPageState == ConnectionDetailsPageStateEnum.NEW;
   const totalSteps = steps.length;

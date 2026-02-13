@@ -1,5 +1,4 @@
 import { FormField } from "./types";
-import type { AccordionItemConfig } from "src/components/design-system/Accordion/Accordion";
 import { Accordion } from "src/components/design-system/Accordion";
 import { FormFieldRenderer } from "./FormFieldRenderer";
 
@@ -26,38 +25,36 @@ export function CollapsibleField({
     return null;
   }
 
-  const items: AccordionItemConfig[] = [
-    {
-      value: field.key,
-      trigger: field.name,
-      content: field.collapsibleConfig.fields.map((childField) => (
-        <FormFieldRenderer
-          key={childField.key}
-          field={childField}
-          form={form}
-          accordionState={accordionState}
-          setAccordionState={setAccordionState}
-          fieldStyleClass={fieldStyleClass}
-          labelStyleClass={labelStyleClass}
-          readonly={readonly}
-        />
-      )),
-    },
-  ];
-
   const accordionValues = Array.from(accordionState.entries())
     .filter(([_, isOpen]) => isOpen)
     .map(([key]) => key);
 
   return (
     <Accordion
-      items={items}
       value={accordionValues}
       onValueChange={(newValues) => {
         const newState = new Map(accordionState);
         newState.set(field.key, newValues.includes(field.key));
         setAccordionState(newState);
       }}
-    />
+    >
+      <Accordion.Item value={field.key}>
+        <Accordion.Trigger>{field.name}</Accordion.Trigger>
+        <Accordion.Content>
+          {field.collapsibleConfig.fields.map((childField) => (
+            <FormFieldRenderer
+              key={childField.key}
+              field={childField}
+              form={form}
+              accordionState={accordionState}
+              setAccordionState={setAccordionState}
+              fieldStyleClass={fieldStyleClass}
+              labelStyleClass={labelStyleClass}
+              readonly={readonly}
+            />
+          ))}
+        </Accordion.Content>
+      </Accordion.Item>
+    </Accordion>
   );
 }

@@ -87,6 +87,13 @@ impl CellContent {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct ExecuteCellPreviewDto {
+    pub content: String,
+    #[serde(deserialize_with = "CellType::deserialize_from_str")]
+    pub cell_type: CellType,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ReorderCellDto {
     #[serde(deserialize_with = "CellDisplayOrderMovement::deserialize_from_str")]
     #[serde(serialize_with = "CellDisplayOrderMovement::serialize_to_str")]

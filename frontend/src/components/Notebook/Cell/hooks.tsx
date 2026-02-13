@@ -1,4 +1,4 @@
-import { useExecuteCell } from "src/api/cell";
+import { useExecuteCell, useExecuteCellPreview } from "src/api/cell";
 import { useStore } from "src/store";
 import {
   ExecutionState,
@@ -36,5 +36,39 @@ export function useHandleExecuteCell() {
         }
       },
     });
+  };
+}
+
+export function useHandleExecuteCellPreview() {
+  const setOutput = useStore((state) => state.cell.setOutput);
+  const setExecutionState = useStore((state) => state.cell.setExecutionState);
+  const setOutputState = useStore((state) => state.cell.setOutputState);
+  const executeCellPreviewMutation = useExecuteCellPreview();
+
+  return (
+    cellId: string,
+    content: string,
+    cellType: string,
+    onSuccessCallback?: () => void,
+    onErrorCallback?: () => void
+  ) => {
+    setExecutionState(cellId, ExecutionState.RUNNING);
+    executeCellPreviewMutation.mutate(
+      { cellId, content, cellType },
+      {
+        onSuccess: (data) => {
+          setOutput(cellId, data);
+          setExecutionState(cellId, ExecutionState.COMPLETED);
+          if (data != null) {
+            setOutputState(cellId, CellOutputState.PRESENT);
+          }
+          onSuccessCallback?.();
+        },
+        onError: () => {
+          setExecutionState(cellId, ExecutionState.FAILED);
+          onErrorCallback?.();
+        },
+      }
+    );
   };
 }
