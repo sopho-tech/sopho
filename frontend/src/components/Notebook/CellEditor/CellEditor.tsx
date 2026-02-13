@@ -11,6 +11,7 @@ import {
   rectangularSelection,
   crosshairCursor,
   highlightActiveLineGutter,
+  highlightActiveLine,
 } from "@codemirror/view";
 import { EditorState, Prec } from "@codemirror/state";
 import {
@@ -18,47 +19,33 @@ import {
   foldGutter,
   foldKeymap,
   indentOnInput,
-  syntaxHighlighting,
-  HighlightStyle,
 } from "@codemirror/language";
 import { sql, PostgreSQL } from "@codemirror/lang-sql";
-import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
-import { tags } from "@lezer/highlight";
+import {
+  autocompletion,
+  closeBrackets,
+  closeBracketsKeymap,
+  completionKeymap,
+} from "@codemirror/autocomplete";
 import { useCell, useUpdateCell, cellKeys } from "src/api/cell/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import { CellDto } from "src/components/Notebook/Cell/dto";
 import CellEditorStyles from "src/components/Notebook/CellEditor/CellEditor.module.css";
-import "src/components/Notebook/CellEditor/CellEditor.global.css";
-import { getCSSVariable } from "src/utils/css_util";
 import { NOTEBOOK_CELL_KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
 import { KeyBinding } from "@codemirror/view";
-
-const myHighlightStyle = HighlightStyle.define([
-  { tag: tags.keyword, color: getCSSVariable("--color-primary-600") },
-  {
-    tag: tags.comment,
-    color: getCSSVariable("--color-grey"),
-    fontStyle: "italic",
-  },
-  { tag: tags.string, color: getCSSVariable("--color-red-dark-2") },
-  { tag: tags.number, color: getCSSVariable("--color-foreground") },
-  { tag: tags.operator, color: getCSSVariable("--color-foreground") },
-  { tag: tags.punctuation, color: getCSSVariable("--color-foreground") },
-  { tag: tags.variableName, color: getCSSVariable("--color-foreground") },
-  { tag: tags.typeName, color: getCSSVariable("--color-primary-600") },
-]);
+import { lintKeymap } from "@codemirror/lint";
+import { theme } from "./theme";
 
 export function CellEditor({ cellId }: { cellId: string }) {
   const query = useCell(cellId);
   const queryClient = useQueryClient();
   const editorRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<EditorView | null>(null);
   const updateCellMutation = useUpdateCell();
 
   useEffect(() => {
     let debouncedUpdate: ReturnType<typeof debounce> | undefined;
 
-    if (editorRef.current && !viewRef.current && query.data) {
+    if (editorRef.current && query.data) {
       const customKeymap: KeyBinding[] = NOTEBOOK_CELL_KEYBOARD_SHORTCUTS.map(
         (shortcut) => {
           const modifiers = shortcut.modifiers || [];
@@ -101,6 +88,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
       let state = EditorState.create({
         doc: query.data.content || "",
         extensions: [
+          theme,
           lineNumbers(),
           highlightSpecialChars(),
           history(),
@@ -109,42 +97,41 @@ export function CellEditor({ cellId }: { cellId: string }) {
           dropCursor(),
           indentOnInput(),
           bracketMatching(),
+          closeBrackets(),
           rectangularSelection(),
           crosshairCursor(),
+          highlightActiveLine(),
           highlightActiveLineGutter(),
-          syntaxHighlighting(myHighlightStyle, { fallback: true }),
           autocompletion(),
           sql({
             dialect: PostgreSQL,
           }),
           Prec.highest(keymap.of(customKeymap)),
           keymap.of([
+            ...closeBracketsKeymap,
             ...defaultKeymap,
             ...historyKeymap,
             ...foldKeymap,
             ...completionKeymap,
+            ...lintKeymap,
           ]),
           EditorState.tabSize.of(2),
-          EditorState.allowMultipleSelections.of(true),
+          EditorState.allowMultipleSelections.of(false),
           EditorView.updateListener.of((update) => {
             if (!update.docChanged) return;
             debouncedUpdate?.(update.state.doc.toJSON().join("\n"));
           }),
+          EditorView.lineWrapping,
         ],
       });
-      const view = new EditorView({
+      new EditorView({
         parent: editorRef.current,
         state: state,
       });
-      viewRef.current = view;
     }
 
     return () => {
       debouncedUpdate?.cancel();
-      if (viewRef.current) {
-        viewRef.current.destroy();
-        viewRef.current = null;
-      }
     };
   }, [cellId, query.isPending]);
 
