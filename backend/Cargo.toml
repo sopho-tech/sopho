@@ -27,7 +27,7 @@ reqwest = "0.12.15"
 anyhow = "1.0.97"
 getrandom = "0.3.2"
 base64 = "0.22.1"
-time = "0.3.41"
+time = "0.3.47"
 sqlx = { version = "0.8", features = [ "runtime-tokio" ] }
 thiserror = "=2.0.12"
 rust_decimal = { version = "1.36", features = ["serde-with-str"] }
