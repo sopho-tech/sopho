@@ -14,7 +14,7 @@ export function useHandleExecuteCell() {
           onSuccessCallback();
         }
       },
-      onError: (error) => {
+      onError: () => {
         if (onErrorCallback) {
           onErrorCallback();
         }

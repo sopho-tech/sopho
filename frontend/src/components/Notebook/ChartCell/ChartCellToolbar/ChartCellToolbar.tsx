@@ -1,9 +1,8 @@
 import { useCallback } from "react";
 import ToolbarStyles from "src/css/toolbar.module.css";
 import * as Toolbar from "@radix-ui/react-toolbar";
-import { IconButton } from "src/components/design-system/IconButton/IconButton";
 import { InlineEdit } from "src/components/design-system/InlineEdit";
-import { useCell, useExecuteCell, useUpdateCell } from "src/api/cell";
+import { useCell, useUpdateCell } from "src/api/cell";
 import styles from "./ChartCellToolbar.module.css";
 
 export function ChartCellToolbar({ cellId }: { cellId: string }) {
