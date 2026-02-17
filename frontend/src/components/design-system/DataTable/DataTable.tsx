@@ -35,9 +35,6 @@ export function DataTable<T>({
   emptyMessage = "No data",
   emptySearchMessage = "No results match your search",
 }: DataTableProps<T>) {
-  if (data === undefined || data === null || data.length === 0) {
-    return <Text color="subtle">{emptyMessage}</Text>;
-  }
   const { table, columnConfigMap, globalFilter } = useDataTable({
     tableType,
     columns,
@@ -54,6 +51,10 @@ export function DataTable<T>({
   const isResizingColumn = Boolean(
     table.getState().columnSizingInfo?.isResizingColumn
   );
+
+  if (data === undefined || data === null || data.length === 0) {
+    return <Text color="subtle">{emptyMessage}</Text>;
+  }
 
   if (isLoading) {
     return <>{loadingComponent}</>;
