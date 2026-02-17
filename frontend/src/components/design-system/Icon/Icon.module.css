@@ -7,11 +7,11 @@
   color: var(--color-primary-500);
 }
 
-.accent:hover {
+.interactive.accent:hover {
   color: var(--color-primary-600);
 }
 
-.accent:active {
+.interactive.accent:active {
   color: var(--color-primary-400);
 }
 
@@ -19,11 +19,11 @@
   color: var(--color-background);
 }
 
-.white:hover {
+.interactive.white:hover {
   color: var(--color-grey-200);
 }
 
-.white:active {
+.interactive.white:active {
   color: var(--color-grey-100);
 }
 
@@ -31,12 +31,24 @@
   color: var(--color-grey-500);
 }
 
-.grey:hover {
+.interactive.grey:hover {
   color: var(--color-grey-600);
 }
 
-.grey:active {
+.interactive.grey:active {
   color: var(--color-grey-400);
+}
+
+.lightgrey {
+  color: var(--color-grey-300);
+}
+
+.interactive.lightgrey:hover {
+  color: var(--color-grey-400);
+}
+
+.interactive.lightgrey:active {
+  color: var(--color-grey-200);
 }
 
 .green {
@@ -44,11 +56,11 @@
   stroke-width: 0;
 }
 
-.green:hover {
+.interactive.green:hover {
   fill: var(--color-green-600);
 }
 
-.green:active {
+.interactive.green:active {
   color: var(--color-green-400);
 }
 
@@ -56,24 +68,24 @@
   color: var(--color-grey-800);
 }
 
-.black:hover {
+.interactive.black:hover {
   color: var(--color-text);
 }
 
-.black:active {
+.interactive.black:active {
   color: var(--color-grey-900);
 }
 
 .red {
-  color: var(--color-red);
+  color: var(--color-red-500);
 }
 
-.red:hover {
-  color: var(--color-red-dark-1);
+.interactive.red:hover {
+  color: var(--color-red-600);
 }
 
-.red:active {
-  color: var(--color-red-light-1);
+.interactive.red:active {
+  color: var(--color-red-400);
 }
 
 .filled {

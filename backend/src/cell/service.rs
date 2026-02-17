@@ -5,6 +5,7 @@ use crate::cell::dto;
 use crate::cell::dto::CellContent;
 use crate::cell::repository;
 use crate::common::database_utils;
+use crate::common::error_codes::codes;
 use crate::common::errors::SophoError;
 use crate::common::time_utils;
 use crate::common::AppState;
@@ -448,9 +449,19 @@ async fn execute_query_and_format_results(
     let result = sqlx::query(query).fetch_all(&mut database_connection).await;
     let rows = match result {
         Ok(rows) => rows,
-        Err(e) => {
+        Err(sqlx::Error::Database(e)) => {
             return (
                 StatusCode::BAD_REQUEST,
+                axum::Json(serde_json::json!({
+                    "status": StatusCode::BAD_REQUEST.as_u16(),
+                    "code": codes::SYNTAX_ERROR.as_str(),
+                    "message": e.to_string()
+                })),
+            );
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
                 axum::Json(serde_json::json!({ "error": e.to_string() })),
             );
         }
@@ -734,7 +745,11 @@ async fn execute_sql_cell(
         None => {
             return (
                 StatusCode::PRECONDITION_FAILED,
-                axum::Json(serde_json::json!({ "error": "Cell has no connection assigned" })),
+                axum::Json(serde_json::json!({
+                    "status": StatusCode::PRECONDITION_FAILED.as_u16(),
+                    "code": codes::MISSING_PREREQUISITES.as_str(),
+                    "message": "Choose a connection"
+                })),
             );
         }
     };

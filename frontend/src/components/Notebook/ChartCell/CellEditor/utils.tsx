@@ -29,42 +29,53 @@ export const VISIBILITY_OPTIONS = [
   { value: "HIDE", label: "Hide" },
 ];
 
+function getBarLineDefaults(chartType: ChartType, c: Record<string, unknown> | null) {
+  return {
+    cell_id: c?.cell_id,
+    chart_type: c?.chart_type ?? chartType,
+    x_axis: c?.x_axis ?? "",
+    x_axis_title: c?.x_axis_title ?? "",
+    y_axis: c?.y_axis ?? "",
+    y_axis_aggregate_function: c?.y_axis_aggregate_function,
+    y_axis_sort_order: c?.y_axis_sort_order ?? "NONE",
+    y_axis_title: c?.y_axis_title ?? "",
+    orientation: c?.orientation ?? "VERTICAL",
+    x_axis_tick_show: c?.x_axis_tick_show ?? "SHOW",
+    y_axis_tick_show: c?.y_axis_tick_show ?? "SHOW",
+    axis_minor_tick_show: c?.axis_minor_tick_show ?? "SHOW",
+    ...(chartType === ChartType.LINE && { show_dots: c?.show_dots ?? "SHOW" }),
+  };
+}
+
+function getPieDefaults(c: Record<string, unknown> | null) {
+  return {
+    cell_id: c?.cell_id,
+    chart_type: c?.chart_type ?? ChartType.PIE,
+    category: c?.category ?? "",
+    value: c?.value ?? "",
+    aggregate_function: c?.aggregate_function,
+  };
+}
+
 export function getDefaultValuesForChart(
   chartType: ChartType | null,
   chartContent: ChartContent | null
 ): Record<string, unknown> {
-  if (!chartContent) return {};
-
-  const c = chartContent as Record<string, unknown>;
-  const common = { cell_id: c.cell_id, chart_type: c.chart_type };
+  const c = chartContent as Record<string, unknown> | null;
 
   if (chartType === ChartType.BAR || chartType === ChartType.LINE) {
-    return {
-      ...common,
-      x_axis: c.x_axis,
-      x_axis_title: c.x_axis_title ?? "",
-      y_axis: c.y_axis,
-      y_axis_aggregate_function: c.y_axis_aggregate_function,
-      y_axis_sort_order: c.y_axis_sort_order ?? "NONE",
-      y_axis_title: c.y_axis_title ?? "",
-      orientation: c.orientation ?? "VERTICAL",
-      x_axis_tick_show: c.x_axis_tick_show ?? "SHOW",
-      y_axis_tick_show: c.y_axis_tick_show ?? "SHOW",
-      axis_minor_tick_show: c.axis_minor_tick_show ?? "SHOW",
-      ...(chartType === ChartType.LINE && { show_dots: c.show_dots ?? "SHOW" }),
-    };
+    return getBarLineDefaults(chartType, c);
   }
 
   if (chartType === ChartType.PIE) {
-    return {
-      ...common,
-      category: c.category,
-      value: c.value,
-      aggregate_function: c.aggregate_function,
-    };
+    return getPieDefaults(c);
   }
 
-  return common;
+  if (c) {
+    return { cell_id: c.cell_id, chart_type: c.chart_type };
+  }
+
+  return {};
 }
 
 export function extractBarChartFormData(formData: FormData): BarChartContent {
@@ -119,7 +130,7 @@ export function extractPieChartFormData(formData: FormData): PieChartContent {
 }
 
 export function extractChartFormData(
-  chartType: ChartType | null,
+  chartType: ChartType,
   formData: FormData
 ): BarChartContent | LineChartContent | PieChartContent {
   switch (chartType) {

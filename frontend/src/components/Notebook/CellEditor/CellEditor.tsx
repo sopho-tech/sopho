@@ -36,16 +36,28 @@ import { KeyBinding } from "@codemirror/view";
 import { lintKeymap } from "@codemirror/lint";
 import { theme } from "./theme";
 
+/**
+ * Component for editing a SQL cell.
+ *
+ * Two refs are required for the working of this SQL cell which uses codemirror.
+ * The `editorRef` is required to hold the reference to the container inside which the codemirror will be rendered.
+ * The second ref `viewRef` is used to store the codemirror's EditorView.
+ * This is done so that it won't be rendered each time there is a change in the dependencies.
+ * If `viewRef` is not used, multiple views will become visible in a single SQL cell editor component with some time.
+ *
+ * @param cellId - ID of the SQL cell to edit
+ */
 export function CellEditor({ cellId }: { cellId: string }) {
   const query = useCell(cellId);
   const queryClient = useQueryClient();
+  const viewRef = useRef<EditorView | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const updateCellMutation = useUpdateCell();
 
   useEffect(() => {
     let debouncedUpdate: ReturnType<typeof debounce> | undefined;
 
-    if (editorRef.current && query.data) {
+    if (editorRef.current && query.data && !viewRef.current) {
       const customKeymap: KeyBinding[] = NOTEBOOK_CELL_KEYBOARD_SHORTCUTS.map(
         (shortcut) => {
           const modifiers = shortcut.modifiers || [];
@@ -124,13 +136,18 @@ export function CellEditor({ cellId }: { cellId: string }) {
           EditorView.lineWrapping,
         ],
       });
-      new EditorView({
+      const view = new EditorView({
         parent: editorRef.current,
         state: state,
       });
+      viewRef.current = view;
     }
 
     return () => {
+      if (viewRef.current) {
+        viewRef.current.destroy();
+        viewRef.current = null;
+      }
       debouncedUpdate?.cancel();
     };
   }, [cellId, query.isPending]);

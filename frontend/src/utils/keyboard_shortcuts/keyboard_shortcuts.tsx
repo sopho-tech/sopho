@@ -14,27 +14,27 @@ export const KEYBOARD_SHORTCUTS = {
     description: "Execute the notebook cell to generate results",
     preventDefault: true,
   },
+  CLEAR_NOTEBOOK_CELL: {
+    key: "Enter",
+    modifiers: ["meta", "shift"],
+    description: "Clears the notebook cell results",
+    preventDefault: true,
+  },
   OPEN_COMMAND_MENU: {
     key: "k",
     modifiers: ["meta"],
     description: "Open the command menu",
     preventDefault: true,
   },
-  ADD_MARKDOWN_CELL: {
-    key: "m",
-    modifiers: ["meta"],
-    description: "Add markdown cell",
-    preventDefault: true,
-  },
   ADD_SQL_CELL: {
-    key: "G",
-    modifiers: ["meta"],
+    key: "l",
+    modifiers: ["meta", "shift"],
     description: "Add SQL cell",
     preventDefault: true,
   },
   ADD_CHART_CELL: {
-    key: "c",
-    modifiers: ["meta"],
+    key: "p",
+    modifiers: ["meta", "shift"],
     description: "Add chart cell",
     preventDefault: true,
   },
@@ -72,6 +72,7 @@ export const KEYBOARD_SHORTCUTS = {
 
 export const NOTEBOOK_CELL_KEYBOARD_SHORTCUTS = [
   KEYBOARD_SHORTCUTS.EXECUTE_NOTEBOOK_CELL,
+  KEYBOARD_SHORTCUTS.CLEAR_NOTEBOOK_CELL,
 ];
 
 export function matchesAnyShortcut(
@@ -119,8 +120,17 @@ export function getShortcutDisplayString(shortcut: KeyboardShortcut): string {
     }
   });
 
-  const keyDisplay = shortcut.key === " " ? "Space" : shortcut.key;
-  return [...modifierSymbols, keyDisplay].join(isMac ? "" : "+");
+  const arrowKeySymbols: Record<string, string> = {
+    ArrowUp: "↑",
+    ArrowDown: "↓",
+    ArrowLeft: "←",
+    ArrowRight: "→",
+  };
+  const keyDisplay =
+    shortcut.key === " "
+      ? "Space"
+      : (arrowKeySymbols[shortcut.key] ?? shortcut.key);
+  return [...modifierSymbols, keyDisplay].join(isMac ? " " : "+");
 }
 
 export function handleKeyboardShortcut(

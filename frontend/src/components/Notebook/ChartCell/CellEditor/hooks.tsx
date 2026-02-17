@@ -3,50 +3,38 @@ import { useHandleExecuteCell } from "src/components/Notebook/Cell";
 import { useStore } from "src/store";
 import type { ChartContent } from "src/components/Notebook/Cell/dto";
 import { useNotebook } from "src/api/notebook/queries";
-import { CellOutputState, CellType } from "src/components/Notebook/Cell/dto";
+import { useCellExecutionResult } from "src/api/cell";
+import { CellType } from "src/components/Notebook/Cell/dto";
 import { ChartType } from "src/components/Chart";
 import { Icon, Flex, Text } from "src/components/design-system";
 import { AggregateFunction } from "src/components/Notebook/dto";
 import { getIconForDataType } from "src/utils/column_utils";
 
 export function useSourceCellExecution(
-  cellId: string,
+  _cellId: string,
   chartContent: ChartContent | null
 ) {
   const handleExecuteCell = useHandleExecuteCell();
   const [sourceCellId, setSourceCellId] = useState<string | null>(
     chartContent?.cell_id || null
   );
-  const setOutputState = useStore((state) => state.cell.setOutputState);
 
-  const onSuccessCallback = () => {
-    setOutputState(cellId, CellOutputState.PRESENT);
-  };
-  const onErrorCallback = () => {
-    setOutputState(cellId, CellOutputState.ERROR);
-  };
   const executeSourceCell = () => {
     if (sourceCellId) {
-      setOutputState(cellId, CellOutputState.EXECUTING);
-      handleExecuteCell(
-        sourceCellId,
-        false,
-        onSuccessCallback,
-        onErrorCallback
-      );
+      handleExecuteCell(sourceCellId);
     }
   };
 
   useEffect(() => {
     if (chartContent?.cell_id) {
-      handleExecuteCell(chartContent?.cell_id, false);
+      handleExecuteCell(chartContent?.cell_id);
       setSourceCellId(chartContent?.cell_id);
     }
   }, [chartContent?.cell_id]);
 
   useEffect(() => {
     if (sourceCellId) {
-      handleExecuteCell(sourceCellId, false);
+      handleExecuteCell(sourceCellId);
     }
   }, [sourceCellId]);
 
@@ -60,9 +48,11 @@ export function useSourceCellExecution(
 export function useFormOptions(sourceCellId: string | null) {
   const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);
   const notebookQuery = useNotebook(activeNotebookId);
-  const sourceCellOutput = useStore((state) =>
-    sourceCellId ? state.cell.outputs[sourceCellId] : null
-  );
+  const { data: sourceCellOutput } = useCellExecutionResult(sourceCellId ?? "");
+  const columns =
+    sourceCellOutput?.status === "success"
+      ? sourceCellOutput.data.columns
+      : null;
 
   const cellOptions = useMemo(
     () =>
@@ -95,8 +85,8 @@ export function useFormOptions(sourceCellId: string | null) {
 
   const xAxisColumnOptions = useMemo(
     () =>
-      sourceCellOutput?.columns && sourceCellOutput.columns.length > 0
-        ? sourceCellOutput.columns.map((column) => ({
+      columns && columns.length > 0
+        ? columns.map((column) => ({
             value: column.column_name,
             label: (
               <Flex direction="row" gap="2xs" alignItems="center">
@@ -112,13 +102,13 @@ export function useFormOptions(sourceCellId: string | null) {
             textValue: column.column_name,
           }))
         : [],
-    [sourceCellOutput?.columns]
+    [columns]
   );
 
   const yAxisColumnOptions = useMemo(
     () =>
-      sourceCellOutput?.columns && sourceCellOutput.columns.length > 0
-        ? sourceCellOutput.columns.map((column) => ({
+      columns && columns.length > 0
+        ? columns.map((column) => ({
             value: column.column_name,
             label: (
               <Flex direction="row" gap="2xs" alignItems="center">
@@ -134,7 +124,7 @@ export function useFormOptions(sourceCellId: string | null) {
             textValue: column.column_name,
           }))
         : [],
-    [sourceCellOutput?.columns]
+    [columns]
   );
 
   return {

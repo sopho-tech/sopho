@@ -101,17 +101,17 @@
 }
 
 .formMessage {
-  color: var(--color-red-dark-2);
+  color: var(--color-red-700);
   font-size: var(--font-size-sm);
 }
 
 .formError {
-  color: var(--color-red-dark-2);
+  color: var(--color-red-700);
   font-size: var(--font-size-base);
   padding: 0.5rem;
   background-color: var(--error-background);
   border-radius: var(--border-radius-lg);
-  border: 1px solid var(--color-red-dark-2);
+  border: 1px solid var(--color-red-700);
 }
 
 .formButtonRow {

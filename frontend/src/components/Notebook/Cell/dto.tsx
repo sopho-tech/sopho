@@ -1,10 +1,8 @@
+import { ApiErrorBody } from "src/api/dto";
 import { ChartType } from "src/components/Chart";
 import { ColumnDataType } from "src/constants/database_types";
 
 export enum CellType {
-  TEXT = "TEXT",
-  CODE = "CODE",
-  MARKDOWN = "MARKDOWN",
   SQL = "SQL",
   CHART = "CHART",
 }
@@ -96,6 +94,10 @@ export type ExecuteCellResponseDto = {
   columns: Array<{ column_name: string; data_type: ColumnDataType }> | null;
   data: Record<string, unknown>[] | null;
 };
+
+export type CellExecutionResultDto =
+  | { status: "success"; data: ExecuteCellResponseDto }
+  | { status: "error"; error: ApiErrorBody };
 
 export function getChartContent(cell: CellDto): ChartContent | null {
   if (cell.cell_type !== CellType.CHART || !cell.content) {

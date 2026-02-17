@@ -4,11 +4,17 @@ import { IconButton } from "src/components/design-system/IconButton/IconButton";
 import { InlineEdit } from "src/components/design-system/InlineEdit";
 import { useConnections } from "src/api/connection";
 import { Select } from "src/components/design-system/Select";
-import { useUpdateCell, useCell } from "src/api/cell";
+import { useUpdateCell, useCell, useClearCellOutput } from "src/api/cell";
 import { useCallback, useEffect, useState } from "react";
 import { useHandleExecuteCell } from "src/components/Notebook/Cell";
+import { Flex, Kbd } from "src/components/design-system";
+import {
+  KEYBOARD_SHORTCUTS,
+  getShortcutDisplayString,
+} from "src/utils/keyboard_shortcuts";
 
 export function CellToolbar({ cellId }: { cellId: string }) {
+  const clearCellOutput = useClearCellOutput();
   const query = useConnections();
   const updateCellMutation = useUpdateCell();
   const getCellQuery = useCell(cellId);
@@ -71,9 +77,13 @@ export function CellToolbar({ cellId }: { cellId: string }) {
     [cellId, getCellQuery.data, updateCellMutation]
   );
 
-  const handleExecuteClick = useCallback(() => {
+  const handleExecute = useCallback(() => {
     handleExecuteCell(cellId);
   }, [cellId, handleExecuteCell]);
+
+  const handleClearOutput = useCallback(() => {
+    clearCellOutput(cellId);
+  }, [cellId, clearCellOutput]);
 
   const handleSelectChange = useCallback(
     (v: string) => handleValueChange(v || null),
@@ -91,7 +101,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
           className={CellToolbarStyles["toolbar__inlineEdit"]}
         />
       </div>
-      <div className={CellToolbarStyles.rightSideContainer}>
+      <Flex direction="row" alignItems="center" gap="md">
         <Select
           value={initialValue?.value ?? ""}
           onValueChange={handleSelectChange}
@@ -114,14 +124,46 @@ export function CellToolbar({ cellId }: { cellId: string }) {
           </Select.Content>
         </Select>
         <Toolbar.Button asChild>
-          <IconButton
-            type="play"
-            backgroundColor="transparent"
-            iconColor="green"
-            onClick={handleExecuteClick}
-          />
+          <Flex gap="2xs">
+            <IconButton
+              type="clear"
+              backgroundColor="transparent"
+              iconColor="red"
+              onClick={handleClearOutput}
+              tooltip={{
+                content: (
+                  <Flex direction="row" alignItems="center" gap="md">
+                    <span>Clear cell output</span>
+                    <Kbd>
+                      {getShortcutDisplayString(
+                        KEYBOARD_SHORTCUTS.CLEAR_NOTEBOOK_CELL
+                      )}
+                    </Kbd>
+                  </Flex>
+                ),
+              }}
+            />
+            <IconButton
+              type="play"
+              backgroundColor="transparent"
+              iconColor="green"
+              onClick={handleExecute}
+              tooltip={{
+                content: (
+                  <Flex direction="row" alignItems="center" gap="md">
+                    <span>Execute cell</span>
+                    <Kbd>
+                      {getShortcutDisplayString(
+                        KEYBOARD_SHORTCUTS.EXECUTE_NOTEBOOK_CELL
+                      )}
+                    </Kbd>
+                  </Flex>
+                ),
+              }}
+            />
+          </Flex>
         </Toolbar.Button>
-      </div>
+      </Flex>
     </Toolbar>
   );
 }

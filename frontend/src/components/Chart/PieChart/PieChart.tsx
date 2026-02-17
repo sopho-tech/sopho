@@ -52,20 +52,20 @@ export const PieChart = ({ category, value, data }: PieChartProps) => {
   const renderLabelContent = useCallback(
     (props: { viewBox?: unknown }) => {
       const vb = (props.viewBox ?? {}) as
-                | { cx?: number; cy?: number }
-                | { x?: number; y?: number; width?: number; height?: number };
-              const x =
-                "cx" in vb && vb.cx != null
-                  ? vb.cx
-                  : "x" in vb && vb.width != null
-                    ? (vb.x ?? 0) + vb.width / 2
-                    : 0;
-              const y =
-                "cy" in vb && vb.cy != null
-                  ? vb.cy
-                  : "y" in vb && vb.height != null
-                    ? (vb.y ?? 0) + vb.height / 2
-                    : 0;
+        | { cx?: number; cy?: number }
+        | { x?: number; y?: number; width?: number; height?: number };
+      const x =
+        "cx" in vb && vb.cx != null
+          ? vb.cx
+          : "x" in vb && vb.width != null
+            ? (vb.x ?? 0) + vb.width / 2
+            : 0;
+      const y =
+        "cy" in vb && vb.cy != null
+          ? vb.cy
+          : "y" in vb && vb.height != null
+            ? (vb.y ?? 0) + vb.height / 2
+            : 0;
       return (
         <text
           x={x}
@@ -99,11 +99,7 @@ export const PieChart = ({ category, value, data }: PieChartProps) => {
           nameKey={category}
           paddingAngle={1}
         >
-          <Label
-            position="center"
-            fill="#666"
-            content={renderLabelContent}
-          />
+          <Label position="center" fill="#666" content={renderLabelContent} />
         </Pie>
         <ChartLegend position="right" />
         <ChartTooltip />

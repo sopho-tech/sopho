@@ -1,7 +1,7 @@
-import { useCell, useExecuteCell } from "src/api/cell";
+import { useCell, useExecuteCell, useCellExecutionResult } from "src/api/cell";
 import { BarChart, ChartType, LineChart, PieChart } from "../Chart";
 import { getChartContent } from "../Notebook/Cell";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import {
   ExecuteCellResponseDto,
   BarChartContent,
@@ -9,7 +9,13 @@ import {
   PieChartContent,
   getChartType,
 } from "../Notebook/Cell/dto";
-import { Flex, Heading, Icon, IconButton } from "src/components/design-system";
+import {
+  BannerSlim,
+  Flex,
+  Heading,
+  Icon,
+  IconButton,
+} from "src/components/design-system";
 import { useStore, DashboardMode } from "src/store";
 import styles from "src/components/Dashboard/Dashboard.module.css";
 
@@ -76,22 +82,17 @@ function ChartRenderer({
 function DashboardChartWithQuery({ cellId }: DashboardChartProps) {
   const cellQuery = useCell(cellId);
   const executeCellMutation = useExecuteCell();
+  const { data: output } = useCellExecutionResult(cellId);
   const chartContent =
     cellQuery && cellQuery.data ? getChartContent(cellQuery.data) : null;
-  const [output, setOutput] = useState<ExecuteCellResponseDto | null>(null);
   const mode = useStore((state) => state.dashboard.mode);
   const getLayout = useStore((state) => state.dashboard.getLayout);
   const setLayout = useStore((state) => state.dashboard.setLayout);
   const isEditing = mode === DashboardMode.EDITING;
 
   useEffect(() => {
-    executeCellMutation.mutate(cellId, {
-      onSuccess: (data) => {
-        setOutput(data);
-      },
-      onError: () => {},
-    });
-  }, [cellId, executeCellMutation]);
+    executeCellMutation.mutate(cellId);
+  }, [cellId, executeCellMutation.mutate]);
 
   const isLoading =
     cellQuery == null ||
@@ -107,13 +108,8 @@ function DashboardChartWithQuery({ cellId }: DashboardChartProps) {
   }, [cellId, getLayout, setLayout]);
 
   const handleRefresh = useCallback(() => {
-    executeCellMutation.mutate(cellId, {
-      onSuccess: (data) => {
-        setOutput(data);
-      },
-      onError: () => {},
-    });
-  }, [cellId, executeCellMutation]);
+    executeCellMutation.mutate(cellId);
+  }, [cellId, executeCellMutation.mutate]);
 
   return (
     <Flex
@@ -162,8 +158,23 @@ function DashboardChartWithQuery({ cellId }: DashboardChartProps) {
         </Flex>
       </Flex>
 
-      {!isLoading && (
-        <ChartRenderer chartContent={chartContent} output={output} />
+      {output && output.status === "error" && (
+        <Flex
+          alignItems="center"
+          justifyContent="center"
+          paddingX="lg"
+          paddingY="lg"
+          height="100%"
+        >
+          <BannerSlim
+            type="error"
+            message={`Check errors in ${cellQuery.data?.name}: ${output.error.message}.`}
+          />
+        </Flex>
+      )}
+
+      {!isLoading && output?.status === "success" && output.data && (
+        <ChartRenderer chartContent={chartContent} output={output.data} />
       )}
     </Flex>
   );

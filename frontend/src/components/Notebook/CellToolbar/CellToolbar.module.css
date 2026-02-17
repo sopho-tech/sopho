@@ -6,13 +6,6 @@
   padding: 0 var(--space-2xs) 0 var(--space-2xs);
 }
 
-.rightSideContainer {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-2xs);
-}
-
 .cellNameContainer {
   padding: 0 var(--space-xs) 0 var(--space-xs);
   color: var(--color-grey-700);

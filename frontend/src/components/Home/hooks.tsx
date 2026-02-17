@@ -5,6 +5,7 @@ import { CanvasesPageState } from "src/components/Canvases/dto";
 import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { useAllCanvases } from "src/api/canvas/queries";
+import { useConnections } from "src/api/connection";
 
 export function useHomeNavigation() {
   const navigate = useNavigate();
@@ -37,3 +38,19 @@ export function useRecentlyUpdatedCanvases(
 ) {
   return useAllCanvases(page, pageSize);
 }
+
+export const useIsConnectionsEmptyState = (): boolean | undefined => {
+  const connectionsQuery = useConnections();
+  return connectionsQuery.data?.length === 0;
+};
+
+export const useIsCanvasesEmptyState = (): boolean | undefined => {
+  const canvasesQuery = useAllCanvases();
+  return canvasesQuery.data?.totalItems === 0;
+};
+
+export const useIsEmptyState = (): boolean | undefined => {
+  const isConnectionsEmptyState = useIsConnectionsEmptyState();
+  const isCanvasesEmptyState = useIsCanvasesEmptyState();
+  return isConnectionsEmptyState || isCanvasesEmptyState;
+};

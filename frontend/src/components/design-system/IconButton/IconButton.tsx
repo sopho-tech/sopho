@@ -13,7 +13,8 @@ type IconButtonProps = {
   iconColor: IconColor;
   iconSize?: IconSize;
   tooltip?: {
-    text: string;
+    text?: string;
+    content?: React.ReactNode;
     direction?: "top" | "right" | "bottom" | "left";
   };
   onClick: () => void;
@@ -45,7 +46,7 @@ export function IconButton({
   if (tooltip) {
     return (
       <ToolTip
-        messageElement={tooltip.text}
+        messageElement={tooltip.content ?? tooltip.text}
         tooltipSide={tooltip.direction || "top"}
       >
         {button}

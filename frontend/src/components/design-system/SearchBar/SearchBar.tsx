@@ -2,6 +2,10 @@ import { Fragment, useState } from "react";
 import { Input } from "src/components/design-system/Input/Input";
 import { Kbd } from "src/components/design-system/Kbd";
 import { CommandMenu } from "src/components/design-system/CommandMenu/CommandMenu";
+import {
+  KEYBOARD_SHORTCUTS,
+  getShortcutDisplayString,
+} from "src/utils/keyboard_shortcuts";
 import styles from "./SearchBar.module.css";
 
 export function SearchBar() {
@@ -26,7 +30,7 @@ export function SearchBar() {
         type="text"
         placeholder="Search"
         leadingIcon="search"
-        laggingElement={<Kbd>⌘ K</Kbd>}
+        laggingElement={<Kbd>{getShortcutDisplayString(KEYBOARD_SHORTCUTS.OPEN_COMMAND_MENU)}</Kbd>}
         className={styles.container}
       />
       <CommandMenu

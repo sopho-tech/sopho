@@ -64,26 +64,26 @@ export function Dashboard() {
 
   const handleOnDrop = useCallback(
     (droppedLayout: Layout[], itemLayout: Layout, e: DragEvent) => {
-    if (!e.dataTransfer) {
-      return;
-    }
-    const cellId = e.dataTransfer.getData("text/plain");
-    const latestLayout = useStore.getState().dashboard.layout;
-    const existingIds = new Set(latestLayout.map((item) => item.i));
-    const newLayout = droppedLayout.map((item) => {
-      const isNewItem = !existingIds.has(cellId);
-      const matchesPosition =
-        item.x === itemLayout.x &&
-        item.y === itemLayout.y &&
-        item.w === itemLayout.w &&
-        item.h === itemLayout.h;
-      if (isNewItem && matchesPosition) {
-        return { ...item, i: cellId };
+      if (!e.dataTransfer) {
+        return;
       }
-      return item;
-    });
-    setLayout(newLayout);
-  },
+      const cellId = e.dataTransfer.getData("text/plain");
+      const latestLayout = useStore.getState().dashboard.layout;
+      const existingIds = new Set(latestLayout.map((item) => item.i));
+      const newLayout = droppedLayout.map((item) => {
+        const isNewItem = !existingIds.has(cellId);
+        const matchesPosition =
+          item.x === itemLayout.x &&
+          item.y === itemLayout.y &&
+          item.w === itemLayout.w &&
+          item.h === itemLayout.h;
+        if (isNewItem && matchesPosition) {
+          return { ...item, i: cellId };
+        }
+        return item;
+      });
+      setLayout(newLayout);
+    },
     [setLayout]
   );
 

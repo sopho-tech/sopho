@@ -51,6 +51,7 @@ import {
   BarChart,
   Table,
   LayoutDashboard,
+  Plug,
 } from "lucide-react";
 
 const iconMap: Record<IconType, LucideIcon> = {
@@ -66,6 +67,7 @@ const iconMap: Record<IconType, LucideIcon> = {
   visibility_off: EyeOff,
   edit: Pencil,
   delete: Trash2,
+  clear: CircleX,
   play: Play,
   remove: Minus,
   arrow_up: ArrowUp,
@@ -99,12 +101,14 @@ const iconMap: Record<IconType, LucideIcon> = {
   bar_chart: BarChart,
   table: Table,
   layout_dashboard: LayoutDashboard,
+  plug: Plug,
 };
 
 const sizeMap: Record<IconSize, number> = {
   sm: 14,
   md: 20,
   lg: 24,
+  "2xl": 450,
 };
 
 type IconProps = {
@@ -112,6 +116,7 @@ type IconProps = {
   color: IconColor;
   strokeWidth?: number;
   size?: IconSize;
+  interactive?: boolean;
 };
 
 export function Icon({
@@ -119,6 +124,7 @@ export function Icon({
   color,
   strokeWidth = 2.25,
   size = "md",
+  interactive = true,
 }: IconProps) {
   const className = styles[color];
   const IconComponent = iconMap[type];
@@ -126,7 +132,7 @@ export function Icon({
   return (
     <IconComponent
       size={iconSize}
-      className={`${styles.icon} ${className}`}
+      className={`${styles.icon} ${className}${interactive ? ` ${styles.interactive}` : ""}`}
       strokeWidth={strokeWidth}
     />
   );

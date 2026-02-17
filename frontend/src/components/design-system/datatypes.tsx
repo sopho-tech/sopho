@@ -18,6 +18,7 @@ export type IconColor =
   | "warning"
   | "green"
   | "grey"
+  | "lightgrey"
   | "red"
   | "transparent";
 
@@ -34,6 +35,7 @@ export type IconType =
   | "visibility_off"
   | "edit"
   | "delete"
+  | "clear"
   | "play"
   | "remove"
   | "arrow_up"
@@ -67,9 +69,10 @@ export type IconType =
   | "layers"
   | "bar_chart"
   | "table"
-  | "layout_dashboard";
+  | "layout_dashboard"
+  | "plug";
 
-export type IconSize = "sm" | "md" | "lg";
+export type IconSize = "sm" | "md" | "lg" | "2xl";
 
 export type FlexValue = "grow" | "shrink" | "none" | NumberString;
 

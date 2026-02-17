@@ -4,6 +4,10 @@ import { Toolbar } from "src/components/design-system/Toolbar";
 import { DropdownMenu } from "src/components/design-system/DropdownMenu";
 import { Kbd } from "src/components/design-system/Kbd";
 import { CellType } from "src/components/Notebook/Cell";
+import {
+  KEYBOARD_SHORTCUTS,
+  getShortcutDisplayString,
+} from "src/utils/keyboard_shortcuts";
 import { useCreateCell, useDeleteCell, useReorderCell } from "src/api/cell";
 import { Icon } from "src/components/design-system/Icon";
 import { useStore } from "src/store";
@@ -44,21 +48,18 @@ export function NotebookToolbar() {
     }
   }, [deleteCellMutation]);
 
-  const handleReorderCell = useCallback((
-    movementType: "UP" | "DOWN" | "TOP" | "BOTTOM"
-  ) => {
-    const activeCellId = useStore.getState().notebook.activeCellId;
-    if (activeCellId) {
-      reorderCellMutation.mutate({ cellId: activeCellId, movementType });
-    }
-  }, [reorderCellMutation]);
+  const handleReorderCell = useCallback(
+    (movementType: "UP" | "DOWN" | "TOP" | "BOTTOM") => {
+      const activeCellId = useStore.getState().notebook.activeCellId;
+      if (activeCellId) {
+        reorderCellMutation.mutate({ cellId: activeCellId, movementType });
+      }
+    },
+    [reorderCellMutation]
+  );
 
   const sxTransform = useMemo(() => ({ transform: "translateX(50%)" }), []);
 
-  const handleCreateMarkdown = useCallback(
-    () => handleCreateNewCell(CellType.MARKDOWN),
-    [handleCreateNewCell]
-  );
   const handleCreateSql = useCallback(
     () => handleCreateNewCell(CellType.SQL),
     [handleCreateNewCell]
@@ -85,13 +86,7 @@ export function NotebookToolbar() {
   );
 
   return (
-    <Flex
-      position="fixed"
-      bottom={10}
-      right="50%"
-      sx={sxTransform}
-      zIndex="10"
-    >
+    <Flex position="fixed" bottom={10} right="50%" sx={sxTransform} zIndex="10">
       <Toolbar className={styles.toolbar} aria-label="Notebook actions">
         <DropdownMenu>
           <DropdownMenu.Trigger>
@@ -100,20 +95,17 @@ export function NotebookToolbar() {
             </Toolbar.Button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>
-            <DropdownMenu.Item
-              onClick={handleCreateMarkdown}
-            >
-              Markdown Cell <Kbd>⌘ M</Kbd>
+            <DropdownMenu.Item onClick={handleCreateSql}>
+              SQL Cell{" "}
+              <Kbd>
+                {getShortcutDisplayString(KEYBOARD_SHORTCUTS.ADD_SQL_CELL)}
+              </Kbd>
             </DropdownMenu.Item>
-            <DropdownMenu.Item
-              onClick={handleCreateSql}
-            >
-              SQL Cell <Kbd>⌘ Q</Kbd>
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              onClick={handleCreateChart}
-            >
-              Chart Cell <Kbd>⌘ C</Kbd>
+            <DropdownMenu.Item onClick={handleCreateChart}>
+              Chart Cell{" "}
+              <Kbd>
+                {getShortcutDisplayString(KEYBOARD_SHORTCUTS.ADD_CHART_CELL)}
+              </Kbd>
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu>
@@ -135,10 +127,16 @@ export function NotebookToolbar() {
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>
             <DropdownMenu.Item onClick={handleReorderUp}>
-              Move Cell Up <Kbd>⌘ M</Kbd>
+              Move Cell Up{" "}
+              <Kbd>
+                {getShortcutDisplayString(KEYBOARD_SHORTCUTS.MOVE_CELL_UP)}
+              </Kbd>
             </DropdownMenu.Item>
             <DropdownMenu.Item onClick={handleReorderTop}>
-              Move Cell Top <Kbd>⇧ ⌘ M</Kbd>
+              Move Cell Top{" "}
+              <Kbd>
+                {getShortcutDisplayString(KEYBOARD_SHORTCUTS.MOVE_CELL_TOP)}
+              </Kbd>
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu>
@@ -153,10 +151,16 @@ export function NotebookToolbar() {
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>
             <DropdownMenu.Item onClick={handleReorderDown}>
-              Move Cell Down <Kbd>⌘ T</Kbd>
+              Move Cell Down{" "}
+              <Kbd>
+                {getShortcutDisplayString(KEYBOARD_SHORTCUTS.MOVE_CELL_DOWN)}
+              </Kbd>
             </DropdownMenu.Item>
             <DropdownMenu.Item onClick={handleReorderBottom}>
-              Move Cell Bottom <Kbd>⇧ ⌘ T</Kbd>
+              Move Cell Bottom{" "}
+              <Kbd>
+                {getShortcutDisplayString(KEYBOARD_SHORTCUTS.MOVE_CELL_BOTTOM)}
+              </Kbd>
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu>

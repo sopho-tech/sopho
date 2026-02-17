@@ -77,7 +77,7 @@
 }
 
 .formMessage {
-  color: var(--color-red-dark-2);
+  color: var(--color-red-700);
   font-size: var(--font-size-xs);
 }
 

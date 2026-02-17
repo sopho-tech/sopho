@@ -67,7 +67,7 @@ function getTextColor(color: TextColor | undefined): string | undefined {
     white: getCSSVariable("--color-background"),
     subtle: getCSSVariable("--color-grey-500"),
     disabled: getCSSVariable("--color-grey-500"),
-    error: getCSSVariable("--color-red"),
+    error: getCSSVariable("--color-red-500"),
     success: getCSSVariable("--color-green-500"),
     warning: getCSSVariable("--color-grey-700"),
     black: getCSSVariable("--color-grey-800"),
