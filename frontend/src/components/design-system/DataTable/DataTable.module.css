@@ -111,6 +111,12 @@
   border-bottom: none;
 }
 
+.emptyStateCell {
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--color-grey-500);
+}
+
 .tableBody tc:last-child td {
   border-right: none;
 }

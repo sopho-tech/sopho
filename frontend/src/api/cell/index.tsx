@@ -5,5 +5,7 @@ export {
   useDeleteCell,
   useExecuteCell,
   useExecuteCellPreview,
+  useCellExecutionResult,
+  useClearCellOutput,
   useReorderCell,
 } from "src/api/cell/queries";

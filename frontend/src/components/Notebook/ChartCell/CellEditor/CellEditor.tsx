@@ -10,7 +10,7 @@ import {
   useFormOptions,
 } from "src/components/Notebook/ChartCell/CellEditor/hooks";
 import { Form } from "src/components/design-system";
-import { ChartContent, getChartType } from "../../Cell/dto";
+import { getChartType } from "../../Cell/dto";
 import {
   getDefaultValuesForChart,
   extractChartFormData,
@@ -22,7 +22,7 @@ import { LineChartAccordion } from "./LineChartAccordion";
 import { PieChartFields } from "./PieChartFields";
 import { ChartRunButton } from "./ChartRunButton";
 import { ChartType } from "src/components/Chart";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState } from "react";
 
 /**
  * Component for editing a chart cell.
@@ -35,33 +35,28 @@ import { useCallback, useState, useEffect } from "react";
  */
 export function CellEditor({ cellId }: { cellId: string }) {
   const cellQuery = useCell(cellId);
-  const [initialChartContent, setInitialChartContent] =
-    useState<ChartContent | null>(null);
+  const initialChartContent = cellQuery.data
+    ? getChartContent(cellQuery.data)
+    : null;
   const { setSourceCellId, sourceCellId } = useSourceCellExecution(
     cellId,
     initialChartContent
   );
   const updateCellMutation = useUpdateCell();
   const formOptions = useFormOptions(sourceCellId);
-  const [chartType, setChartType] = useState<ChartType | null>(null);
+  const chartTypeFromContent = getChartType(initialChartContent);
+  const [chartTypeOverride, setChartTypeOverride] = useState<ChartType | null>(null);
+  const chartType = chartTypeOverride ?? chartTypeFromContent;
   const [accordionValues, setAccordionValues] = useState<string[]>([]);
   const defaultValues = getDefaultValuesForChart(
     chartType,
     initialChartContent
   );
 
-  useEffect(() => {
-    const newInitialChartContent = cellQuery.data
-      ? getChartContent(cellQuery.data)
-      : null;
-    setInitialChartContent(newInitialChartContent);
-    const newChartType = getChartType(newInitialChartContent);
-    setChartType(newChartType);
-  }, [cellQuery.data]);
-
   const handleSubmit = useCallback(
     (formData: FormData) => {
       if (!cellQuery.data) throw Error("Cell query data is empty");
+      if (!chartType) throw Error("Cell chart type is empty");
       const content = extractChartFormData(chartType, formData);
       const cellDto: CellDto = {
         ...cellQuery.data,
@@ -77,7 +72,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
       if (fieldName === "cell_id") {
         setSourceCellId(value);
       } else if (fieldName === "chart_type") {
-        setChartType(ChartType[value as keyof typeof ChartType] ?? null);
+        setChartTypeOverride(ChartType[value as keyof typeof ChartType] ?? null);
       }
     },
     [setSourceCellId]

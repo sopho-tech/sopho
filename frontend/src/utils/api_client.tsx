@@ -1,3 +1,18 @@
+import { ApiError, ApiErrorBody } from "src/api/dto";
+
+async function handleErrorResponse(response: Response): Promise<never> {
+  let body: ApiErrorBody = {};
+  const contentType = response.headers.get("content-type");
+  if (contentType?.includes("application/json")) {
+    try {
+      body = (await response.json()) as ApiErrorBody;
+    } catch {
+      body = {};
+    }
+  }
+  throw new ApiError(response.status, body, body.message ?? body.message);
+}
+
 export const ApiService = {
   post: async <T = unknown,>({
     url,
@@ -19,7 +34,7 @@ export const ApiService = {
       credentials: credentials ? "include" : undefined,
     });
     if (!response.ok) {
-      throw response;
+      await handleErrorResponse(response);
     }
     if (onlyBody) {
       return response.json() as Promise<T>;
@@ -43,7 +58,7 @@ export const ApiService = {
       credentials: credentials ? "include" : undefined,
     });
     if (!response.ok) {
-      throw response;
+      await handleErrorResponse(response);
     }
     if (onlyBody) {
       return response.json() as Promise<T>;
@@ -70,7 +85,7 @@ export const ApiService = {
       credentials: credentials ? "include" : undefined,
     });
     if (!response.ok) {
-      throw response;
+      await handleErrorResponse(response);
     }
     if (onlyBody) {
       return response.json() as Promise<T>;
@@ -97,7 +112,7 @@ export const ApiService = {
       credentials: credentials ? "include" : undefined,
     });
     if (!response.ok) {
-      throw response;
+      await handleErrorResponse(response);
     }
     if (onlyBody) {
       return response.json() as Promise<T>;

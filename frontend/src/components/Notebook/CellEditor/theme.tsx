@@ -25,7 +25,7 @@ const typeColor = getCSSVariable("--color-grey-700");
 const operatorColor = getCSSVariable("--color-grey-600");
 const commentColor = getCSSVariable("--color-grey-500");
 const stringColor = getCSSVariable("--color-green-600");
-const invalidColor = getCSSVariable("--color-red");
+const invalidColor = getCSSVariable("--color-red-500");
 
 const editorTheme = EditorView.theme(
   {

@@ -1,7 +1,11 @@
-import { CellOutputState } from "src/components/Notebook/Cell";
-import { useStore } from "src/store";
-import { DataTable, ColumnConfig, Box } from "src/components/design-system";
-import CellOutputStles from "src/components/Notebook/CellOutput/CellOutput.module.css";
+import { useCellExecutionResult } from "src/api/cell";
+import {
+  DataTable,
+  ColumnConfig,
+  Flex,
+  BannerSlim,
+} from "src/components/design-system";
+import CellOutputStyles from "src/components/Notebook/CellOutput/CellOutput.module.css";
 import CellStyles from "src/css/cell.module.css";
 import { TableType } from "src/components/design-system/DataTable";
 
@@ -10,39 +14,52 @@ interface CellOutputProps {
 }
 
 export function CellOutput({ cellId }: CellOutputProps) {
-  const output = useStore((state) => state.cell.outputs[cellId]);
-  const outputState = useStore((state) => state.cell.outputStates[cellId]);
+  const { data: result } = useCellExecutionResult(cellId);
+
+  if (!result) return null;
+
+  if (result.status === "error") {
+    return (
+      <Flex
+        alignItems="center"
+        justifyContent="center"
+        paddingX="lg"
+        paddingY="lg"
+      >
+        <BannerSlim type="error" message={result.error.message} />
+      </Flex>
+    );
+  }
+
+  const { data } = result;
+  if (!data) return null;
 
   const columns: ColumnConfig<Record<string, unknown>>[] =
-    output?.columns?.map((column) => ({
-      key: column.column_name,
-      header: column.column_name,
+    data.columns?.map((col) => ({
+      key: col.column_name,
+      header: col.column_name,
       type: "accessor" as const,
-      accessor: column.column_name,
-      cell: (props) => props.getValue() as React.ReactNode,
-      dataType: column.data_type,
+      accessor: col.column_name,
+      dataType: col.data_type,
     })) ?? [];
 
-  const data = output?.data ?? [];
-
-  if (
-    outputState === CellOutputState.ABSENT ||
-    outputState === undefined ||
-    output === undefined
-  )
-    return null;
-
   return (
-    <Box paddingX="lg" paddingY="lg">
+    <Flex
+      alignItems="center"
+      justifyContent="center"
+      paddingX="lg"
+      paddingY="lg"
+    >
       <DataTable
         tableType={TableType.CLIENT_SIDE_PAGINATED}
         columns={columns}
-        data={data}
-        overallContainerStyle={`${CellStyles.outputContainerSql} ${CellOutputStles.outputContainer}`}
-        tableContainerStyle={`${CellOutputStles.tableContainer}`}
-        tableHeaderCellStyle={CellOutputStles.tableHeaderCell}
-        tableDataCellStyle={CellOutputStles.tableDataCell}
+        data={data.data ?? []}
+        emptyMessage="No rows match the query"
+        overallContainerStyle={`${CellStyles.outputContainerSql} ${CellOutputStyles.outputContainer}`}
+        tableContainerStyle={CellOutputStyles.tableContainer}
+        tableHeaderCellStyle={CellOutputStyles.tableHeaderCell}
+        tableDataCellStyle={CellOutputStyles.tableDataCell}
       />
-    </Box>
+    </Flex>
   );
 }

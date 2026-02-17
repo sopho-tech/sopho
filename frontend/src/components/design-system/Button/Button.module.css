@@ -59,15 +59,15 @@
 }
 
 .red {
-  background-color: var(--color-red);
+  background-color: var(--color-red-500);
 }
 
 .red:hover {
-  background-color: var(--color-red-dark-1);
+  background-color: var(--color-red-600);
 }
 
 .red:active {
-  background-color: var(--color-red-dark-2);
+  background-color: var(--color-red-700);
 }
 
 .lightgrey {

@@ -30,7 +30,13 @@ export function ChartRunButton({
     const serialized = serializeChartContent(content);
     handleExecuteCellPreview(cellId, serialized, CellType.CHART);
     setChartContent(cellId, content);
-  }, [cellId, chartType, form.state.values, handleExecuteCellPreview, setChartContent]);
+  }, [
+    cellId,
+    chartType,
+    form.state.values,
+    handleExecuteCellPreview,
+    setChartContent,
+  ]);
 
   return (
     <Button

@@ -36,8 +36,11 @@ export function InlineEdit({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
 
+  const effectiveValue = (val: string) =>
+    (val?.trim() ?? "") !== "" ? val : (defaultValue ?? "");
+
   const handleAccept = () => {
-    onSave(editValue);
+    onSave(effectiveValue(editValue));
     setIsEditing(false);
   };
 
@@ -78,11 +81,6 @@ export function InlineEdit({
                 : undefined,
               styles["inlineEdit__input"],
             ])}
-            style={
-              {
-                // width: "500px",
-              }
-            }
           />
         </div>
         <Flex direction="row" gap="xs" className={styles.actions}>
@@ -109,8 +107,7 @@ export function InlineEdit({
     );
   }
 
-  const displayValue =
-    (value?.trim() ?? "") !== "" ? value : (defaultValue ?? "");
+  const displayValue = effectiveValue(value);
 
   return (
     <div

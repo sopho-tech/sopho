@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
@@ -5,6 +6,7 @@ import {
   CellDto,
   CreateCellDto,
   ExecuteCellResponseDto,
+  CellExecutionResultDto,
 } from "src/components/Notebook/Cell/dto";
 import { notebookKeys } from "src/api/notebook/queries";
 import { dashboardKeys } from "src/api/dashboard/queries";
@@ -15,12 +17,16 @@ export const cellKeys = {
   list: (filters: string) => [...cellKeys.lists(), { filters }] as const,
   details: () => [...cellKeys.all, "detail"] as const,
   detail: (id: string) => [...cellKeys.details(), id] as const,
+  execution: (cellId: string) =>
+    [...cellKeys.all, "execution", cellId] as const,
 };
 
 const cellApi = {
   getCell: async (cellId: string): Promise<CellDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.CELL.GET_BY_ID?.replace(":id", cellId) || `/cells/${cellId}`,
+      url:
+        API_ENDPOINTS.CELL.GET_BY_ID?.replace(":id", cellId) ||
+        `/cells/${cellId}`,
       onlyBody: true,
     });
     return response as CellDto;
@@ -170,6 +176,9 @@ export const useDeleteCell = (notebookId?: string, canvasId?: string) => {
       queryClient.removeQueries({
         queryKey: cellKeys.detail(cellId),
       });
+      queryClient.removeQueries({
+        queryKey: cellKeys.execution(cellId),
+      });
 
       if (notebookId) {
         queryClient.invalidateQueries({
@@ -190,23 +199,62 @@ export const useDeleteCell = (notebookId?: string, canvasId?: string) => {
 };
 
 export const useExecuteCell = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: cellApi.executeCell,
-    onSuccess: () => {},
-    onError: (error) => {
-      console.error("Failed to execute cell:", error);
+    onSuccess: (data, cellId) => {
+      queryClient.setQueryData(cellKeys.execution(cellId), {
+        status: "success",
+        data: data,
+      } satisfies CellExecutionResultDto);
+    },
+    onError: (error, cellId) => {
+      queryClient.setQueryData(cellKeys.execution(cellId), {
+        status: "error",
+        error: error,
+      } satisfies CellExecutionResultDto);
     },
   });
 };
 
 export const useExecuteCellPreview = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: cellApi.executeCellPreview,
-    onSuccess: () => {},
-    onError: (error) => {
-      console.error("Failed to execute cell preview:", error);
+    onSuccess: (data, { cellId }) => {
+      queryClient.setQueryData(cellKeys.execution(cellId), {
+        status: "success",
+        data: data,
+      } satisfies CellExecutionResultDto);
+    },
+    onError: (error, { cellId }) => {
+      queryClient.setQueryData(cellKeys.execution(cellId), {
+        status: "error",
+        error: error,
+      } satisfies CellExecutionResultDto);
     },
   });
+};
+
+export const useCellExecutionResult = (cellId: string) => {
+  return useQuery<CellExecutionResultDto>({
+    queryKey: cellKeys.execution(cellId),
+    queryFn: () =>
+      Promise.reject(new Error("Execution results are cache-only")),
+    enabled: false,
+  });
+};
+
+export const useClearCellOutput = () => {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (cellId: string) => {
+      queryClient.setQueryData(cellKeys.execution(cellId), null);
+    },
+    [queryClient]
+  );
 };
 
 export const useReorderCell = (canvasId?: string) => {

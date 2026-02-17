@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { CellOutputState } from "src/components/Notebook/Cell";
+import { useCell, useCellExecutionResult } from "src/api/cell";
 import { useStore } from "src/store";
 import styles from "src/components/Notebook/ChartCell/CellOutput/CellOutput.module.css";
 import { BarChart, ChartType, LineChart, PieChart } from "src/components/Chart";
@@ -10,41 +10,95 @@ import {
   LineChartContent,
   PieChartContent,
 } from "../../Cell/dto";
+import {
+  BannerSlim,
+  Flex,
+  Heading,
+  Icon,
+  Text,
+} from "src/components/design-system";
 
 interface ChartCellOutputProps {
   cellId: string;
 }
 
 export function CellOutput({ cellId }: ChartCellOutputProps) {
-  const output = useStore((state) => state.cell.outputs[cellId]);
-  const outputState = useStore((state) => state.cell.outputStates[cellId]);
+  const { data: output } = useCellExecutionResult(cellId);
   const chartContent = useStore((state) => state.cell.chartContents[cellId]);
   const chartType = getChartType(chartContent);
+  const cellQuery = useCell(chartContent?.cell_id ?? "");
 
+  const executionData = output?.status === "success" ? output.data : null;
   const pieDimensions = useMemo(
-    () => output?.columns?.map((column) => column.column_name) ?? [],
-    [output?.columns]
+    () =>
+      executionData?.columns?.map(
+        (col: { column_name: string }) => col.column_name
+      ) ?? [],
+    [executionData?.columns]
   );
 
   function render() {
-    if (
-      outputState === undefined ||
-      outputState === CellOutputState.ABSENT ||
-      output === null ||
-      output === undefined ||
-      chartContent === null ||
-      output.data === null ||
-      output.data === undefined
-    ) {
-      return null;
+    if (output && output.status === "error") {
+      const message = `Check errors in ${cellQuery.data?.name}: ${output.error.message}. `;
+      return (
+        <Flex
+          alignItems="center"
+          justifyContent="center"
+          paddingX="lg"
+          paddingY="lg"
+          height="100%"
+        >
+          <BannerSlim type="error" message={message} />
+        </Flex>
+      );
     }
+
+    if (
+      output == null ||
+      chartContent == null ||
+      output.status !== "success" ||
+      executionData == null
+    ) {
+      return (
+        <Flex
+          as="section"
+          direction="column"
+          gap="md"
+          alignItems="center"
+          alignSelf="center"
+          paddingY="lg"
+          paddingX="lg"
+        >
+          <Icon
+            type="bar_chart"
+            color="lightgrey"
+            size="2xl"
+            interactive={false}
+          />
+          <Flex
+            direction="column"
+            gap="xs"
+            alignItems="center"
+            sx={{ textAlign: "center" }}
+          >
+            <Heading accessbilityLevel={2} textColor="default">
+              No chart rendered
+            </Heading>
+            <Text as="p" color="subtle">
+              Press on the run button to render the chart
+            </Text>
+          </Flex>
+        </Flex>
+      );
+    }
+    const chartData = executionData.data ?? [];
     if (chartType === ChartType.BAR) {
       const barChartContent = chartContent as BarChartContent;
       return (
         <BarChart
           xAxis={barChartContent.x_axis}
           yAxis={barChartContent.y_axis}
-          data={output.data}
+          data={chartData}
           xAxisTitle={barChartContent.x_axis_title}
           yAxisTitle={barChartContent.y_axis_title}
           xAxisTickShow={barChartContent.x_axis_tick_show}
@@ -58,7 +112,7 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
         <LineChart
           xAxis={lineChartContent.x_axis}
           yAxis={lineChartContent.y_axis}
-          data={output.data}
+          data={chartData}
           xAxisTitle={lineChartContent.x_axis_title}
           yAxisTitle={lineChartContent.y_axis_title}
           showDots={lineChartContent.show_dots !== "HIDE"}
@@ -74,7 +128,7 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
           category={pieChartContent.category}
           value={pieChartContent.value}
           dimensions={pieDimensions}
-          data={output.data}
+          data={chartData}
         />
       );
     }

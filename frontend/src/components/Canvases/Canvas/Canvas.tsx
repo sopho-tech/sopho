@@ -69,7 +69,7 @@ export function Canvas() {
   return (
     <Flex
       direction="column"
-      paddingX="md"
+      paddingX="2xl"
       paddingY="md"
       gap="md"
       flex="grow"

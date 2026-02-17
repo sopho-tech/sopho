@@ -6,6 +6,8 @@ pub enum ErrorCode {
     AccessTokenExpired,
     RefreshTokenExpired,
     InvalidAccessToken,
+    MissingPrerequisites,
+    SyntaxError,
 }
 
 impl ErrorCode {
@@ -16,6 +18,8 @@ impl ErrorCode {
             ErrorCode::AccessTokenExpired => "ACCESS_TOKEN_EXPIRED",
             ErrorCode::RefreshTokenExpired => "REFRESH_TOKEN_EXPIRED",
             ErrorCode::InvalidAccessToken => "INVALID_ACCESS_TOKEN",
+            ErrorCode::MissingPrerequisites => "MISSING_PREREQUISITES",
+            ErrorCode::SyntaxError => "SYNTAX_ERROR",
         }
     }
 
@@ -39,4 +43,6 @@ pub mod codes {
     pub const ACCESS_TOKEN_EXPIRED: ErrorCode = ErrorCode::AccessTokenExpired;
     pub const REFRESH_TOKEN_EXPIRED: ErrorCode = ErrorCode::RefreshTokenExpired;
     pub const INVALID_ACCESS_TOKEN: ErrorCode = ErrorCode::InvalidAccessToken;
+    pub const MISSING_PREREQUISITES: ErrorCode = ErrorCode::MissingPrerequisites;
+    pub const SYNTAX_ERROR: ErrorCode = ErrorCode::SyntaxError;
 }

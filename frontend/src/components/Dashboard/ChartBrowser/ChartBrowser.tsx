@@ -60,7 +60,8 @@ export function ChartBrowser() {
         header: "Chart Type",
         type: "accessor",
         accessor: "chartType",
-        cell: (props) => (props.getValue() as string | null | undefined) || "N/A",
+        cell: (props) =>
+          (props.getValue() as string | null | undefined) || "N/A",
       },
     ],
     []
@@ -77,7 +78,7 @@ export function ChartBrowser() {
       paddingX="sm"
       paddingY="sm"
       shadow="2xs"
-      width="20%"
+      width="30%"
     >
       <DataTable
         tableType={TableType.CLIENT_SIDE_PAGINATED}
@@ -89,6 +90,7 @@ export function ChartBrowser() {
         enableColumnResizing={false}
         enableRowDragging={true}
         getRowId={getRowId}
+        emptyMessage="All cells are added on the dashboard !"
       />
     </Flex>
   );

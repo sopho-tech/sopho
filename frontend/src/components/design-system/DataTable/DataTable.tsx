@@ -11,6 +11,7 @@ import { TableBody } from "src/components/design-system/DataTable/components/Tab
 import { Input } from "src/components/design-system/Input";
 import { Flex } from "src/components/design-system/Flex";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
+import { Text } from "../Text";
 
 export function DataTable<T>({
   tableType = TableType.FULL,
@@ -31,7 +32,12 @@ export function DataTable<T>({
   enableColumnResizing = true,
   enableRowDragging = false,
   getRowId,
+  emptyMessage = "No data",
+  emptySearchMessage = "No results match your search",
 }: DataTableProps<T>) {
+  if (data === undefined || data === null || data.length === 0) {
+    return <Text color="subtle">{emptyMessage}</Text>;
+  }
   const { table, columnConfigMap, globalFilter } = useDataTable({
     tableType,
     columns,
@@ -43,6 +49,7 @@ export function DataTable<T>({
   });
 
   const rowDragging = useRowDragging(table);
+  const rows = table.getRowModel().rows;
   const [hoveredColumnId, setHoveredColumnId] = useState<string | null>(null);
   const isResizingColumn = Boolean(
     table.getState().columnSizingInfo?.isResizingColumn
@@ -64,7 +71,7 @@ export function DataTable<T>({
         <Input
           value={globalFilter}
           onChange={(e) => table.setGlobalFilter(String(e.target.value))}
-          placeholder="Search..."
+          placeholder="Search"
           leadingIcon="search"
         />
         {renderPaginationControl(
@@ -92,7 +99,11 @@ export function DataTable<T>({
             tableLastHeaderCellStyle={tableLastHeaderCellStyle}
           />
           <TableBody
-            rows={table.getRowModel().rows}
+            rows={rows}
+            emptySearchMessage={
+              rows.length === 0 ? emptySearchMessage : undefined
+            }
+            columnCount={table.getHeaderGroups()[0]?.headers.length || 1}
             columnConfigMap={columnConfigMap}
             hoveredColumnId={hoveredColumnId}
             tableDataCellStyle={tableDataCellStyle}

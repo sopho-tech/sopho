@@ -1,14 +1,15 @@
 import { Flex, Heading, Grid, GridItem } from "src/components/design-system";
 import { CanvasCard } from "./CanvasCard";
-import { useRecentlyUpdatedCanvases } from "../hooks";
+import { useIsEmptyState, useRecentlyUpdatedCanvases } from "../hooks";
 
 const GRID_GUTTER = { base: "md", md: "lg" } as const;
 const GRID_COL_SPAN = { base: 1, md: 4 } as const;
 
 export function RecentlyUpdatedCanvases() {
   const canvasesQuery = useRecentlyUpdatedCanvases(0, 9);
+  const isEmptyState = useIsEmptyState();
 
-  if (!canvasesQuery.data?.data) {
+  if (isEmptyState || !canvasesQuery.data?.data) {
     return null;
   }
 

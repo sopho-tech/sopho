@@ -12,6 +12,8 @@ type TableBodyProps<T> = {
   draggingRowId: string | null;
   onDragStart: (e: React.DragEvent<HTMLTableRowElement>, row: Row<T>) => void;
   onDragEnd: () => void;
+  emptySearchMessage?: string;
+  columnCount: number;
 };
 
 export function TableBody<T>({
@@ -23,10 +25,19 @@ export function TableBody<T>({
   draggingRowId,
   onDragStart,
   onDragEnd,
+  emptySearchMessage,
+  columnCount,
 }: TableBodyProps<T>) {
   return (
     <tbody className={styles.tableBody}>
-      {rows.map((row) => {
+      {emptySearchMessage ? (
+        <tr>
+          <td colSpan={columnCount} className={styles.emptyStateCell}>
+            {emptySearchMessage}
+          </td>
+        </tr>
+      ) : (
+        rows.map((row) => {
         const isDragging = draggingRowId === row.id;
         return (
           <TableRow
@@ -38,10 +49,11 @@ export function TableBody<T>({
             isDragging={isDragging}
             enableRowDragging={enableRowDragging}
             onDragStart={(e) => onDragStart(e, row)}
-            onDragEnd={onDragEnd}
-          />
+          onDragEnd={onDragEnd}
+        />
         );
-      })}
+      })
+      )}
     </tbody>
   );
 }

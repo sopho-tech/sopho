@@ -23,7 +23,7 @@ export function BannerSlim({ type, message }: BannerSlimProps) {
       gap="xs"
     >
       <span className={styles.iconWrapper}>
-        <Icon type="triangle_alert" color="error"></Icon>
+        <Icon type="triangle_alert" color="default"></Icon>
       </span>
       <Text color="default" fontSize="sm">
         {message}

@@ -9,7 +9,12 @@ import { useHandleExecuteCell } from "src/components/Notebook/Cell";
 import { useKeyboardShortcut } from "src/utils/keyboard_shortcuts/hooks";
 import { Flex } from "src/components/design-system/Flex/Flex";
 import { useCallback, useRef, useMemo } from "react";
-import { useCreateCell, useDeleteCell, useReorderCell } from "src/api/cell";
+import {
+  useCreateCell,
+  useDeleteCell,
+  useReorderCell,
+  useClearCellOutput,
+} from "src/api/cell";
 import { useParams } from "react-router";
 
 export function Notebook() {
@@ -26,10 +31,17 @@ export function Notebook() {
   );
   const reorderCellMutation = useReorderCell(canvasId || undefined);
 
+  const clearCellOutput = useClearCellOutput();
+
   const handleExecute = useCallback(() => {
     const activeCellId = useStore.getState().notebook.activeCellId;
     handleExecuteCell(activeCellId);
   }, [handleExecuteCell]);
+
+  const handleClearOutput = useCallback(() => {
+    const activeCellId = useStore.getState().notebook.activeCellId;
+    if (activeCellId) clearCellOutput(activeCellId);
+  }, [clearCellOutput]);
 
   const handleReorderCell = (
     movementType: "UP" | "DOWN" | "TOP" | "BOTTOM"
@@ -71,6 +83,12 @@ export function Notebook() {
   );
 
   useKeyboardShortcut(
+    handleClearOutput,
+    KEYBOARD_SHORTCUTS.CLEAR_NOTEBOOK_CELL,
+    notebookRef
+  );
+
+  useKeyboardShortcut(
     () => handleReorderCell("UP"),
     KEYBOARD_SHORTCUTS.MOVE_CELL_UP,
     notebookRef
@@ -92,11 +110,6 @@ export function Notebook() {
     () => handleReorderCell("BOTTOM"),
     KEYBOARD_SHORTCUTS.MOVE_CELL_BOTTOM,
     notebookRef
-  );
-
-  useKeyboardShortcut(
-    () => handleCreateCell(CellType.MARKDOWN),
-    KEYBOARD_SHORTCUTS.ADD_MARKDOWN_CELL
   );
 
   useKeyboardShortcut(
