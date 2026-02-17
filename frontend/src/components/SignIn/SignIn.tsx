@@ -1,10 +1,6 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { Flex, Form, Heading } from "src/components/design-system";
-import {
-  FormField,
-  FormFieldType,
-} from "src/components/design-system/Form/types";
 import styles from "src/components/SignIn/SignIn.module.css";
 import { MeshGradient } from "@paper-design/shaders-react";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -29,49 +25,30 @@ export default function SignIn() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  const fields: FormField[] = [
-    {
-      key: "email",
-      name: "Email",
-      type: FormFieldType.INPUT,
-      required: true,
-      errorMessage: "Email is required",
-      placeholder: "email",
-      showLabel: false,
-      icon: "email",
+  const meshGradientColors = useMemo(
+    () => ["#fcfcfd", "#fcfcfd", "#e8e8fc", "#c6bcfb", "#b5a9f4"],
+    []
+  );
+
+  const defaultFormValues = { email: "", password: "" };
+
+  const handleSubmit = useCallback(
+    async (formData: FormData) => {
+      const email = formData.get("email");
+      const password = formData.get("password");
+
+      if (typeof email !== "string" || typeof password !== "string") {
+        console.error("Invalid form data");
+        return;
+      }
+
+      createSessionMutation.mutate({
+        email,
+        password,
+      });
     },
-    {
-      key: "password",
-      name: "Password",
-      type: FormFieldType.INPUT_PASSWORD,
-      required: true,
-      errorMessage: "Password is required",
-      placeholder: "password",
-      showLabel: false,
-      icon: "lock",
-    },
-  ];
-
-  const handleSubmit = async (formData: FormData) => {
-    const email = formData.get("email");
-    const password = formData.get("password");
-
-    if (typeof email !== "string" || typeof password !== "string") {
-      console.error("Invalid form data");
-      return;
-    }
-
-    createSessionMutation.mutate({
-      email,
-      password,
-    });
-  };
-
-  const handleCancel = () => {
-    // Cancel action - navigate back or clear form if needed
-    // Currently, the form doesn't show a cancel button (showCancelButton={false})
-    // This handler is kept for future use if cancel functionality is needed
-  };
+    [createSessionMutation]
+  );
 
   return (
     <Flex
@@ -82,7 +59,7 @@ export default function SignIn() {
       className={styles.pageContainer}
     >
       <MeshGradient
-        colors={["#fcfcfd", "#fcfcfd", "#e8e8fc", "#c6bcfb", "#b5a9f4"]}
+        colors={meshGradientColors}
         distortion={0.8}
         swirl={0.1}
         grainMixer={0.47}
@@ -115,18 +92,35 @@ export default function SignIn() {
           Sign in with email and password
         </Heading>
         <Form
-          fields={fields}
-          onSubmitCallback={handleSubmit}
-          onCancelCallback={handleCancel}
-          submitButtonText="Sign In"
-          showCancelButton={false}
-          showErrorBanner={false}
-          fieldsContainerStyleClass={styles.fieldsContainer}
-          rootStyleClass={styles.formRootContainer}
-          formButtonRowStyleClass={styles.formButtonRowContainer}
-          fieldStyleClass={styles.fieldContainer}
+          defaultValues={defaultFormValues}
+          onSubmit={handleSubmit}
+          className={styles.formRootContainer}
           submitOnEnter={true}
-        />
+        >
+          <Form.Fields className={styles.fieldsContainer}>
+            <Form.Input
+              name="email"
+              required
+              errorMessage="Email is required"
+              placeholder="email"
+              showLabel={false}
+              icon="email"
+              className={styles.fieldContainer}
+            />
+            <Form.Password
+              name="password"
+              required
+              errorMessage="Password is required"
+              placeholder="password"
+              showLabel={false}
+              icon="lock"
+              className={styles.fieldContainer}
+            />
+          </Form.Fields>
+          <Form.Actions className={styles.formButtonRowContainer}>
+            <Form.Submit label="Sign In" />
+          </Form.Actions>
+        </Form>
       </Flex>
     </Flex>
   );

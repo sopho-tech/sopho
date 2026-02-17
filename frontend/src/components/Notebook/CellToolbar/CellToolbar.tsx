@@ -5,7 +5,7 @@ import { InlineEdit } from "src/components/design-system/InlineEdit";
 import { useConnections } from "src/api/connection";
 import { Select } from "src/components/design-system/Select";
 import { useUpdateCell, useCell } from "src/api/cell";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useHandleExecuteCell } from "src/components/Notebook/Cell";
 
 export function CellToolbar({ cellId }: { cellId: string }) {
@@ -42,33 +42,50 @@ export function CellToolbar({ cellId }: { cellId: string }) {
     setInitialValue(newInitialValue);
   }, [query.data, getCellQuery.data]);
 
-  function handleValueChange(value: string | null) {
-    const cell = getCellQuery.data;
-    if (!cell) throw new Error("Cell not found");
+  const handleValueChange = useCallback(
+    (value: string | null) => {
+      const cell = getCellQuery.data;
+      if (!cell) throw new Error("Cell not found");
 
-    updateCellMutation.mutate({
-      cellId: cellId,
-      payload: {
-        ...cell,
-        connection_id: value,
-      },
-    });
-  }
+      updateCellMutation.mutate({
+        cellId: cellId,
+        payload: {
+          ...cell,
+          connection_id: value,
+        },
+      });
+    },
+    [cellId, getCellQuery.data, updateCellMutation]
+  );
+
+  const handleSave = useCallback(
+    (name: string) => {
+      const cell = getCellQuery.data;
+      if (cell) {
+        updateCellMutation.mutate({
+          cellId,
+          payload: { ...cell, name },
+        });
+      }
+    },
+    [cellId, getCellQuery.data, updateCellMutation]
+  );
+
+  const handleExecuteClick = useCallback(() => {
+    handleExecuteCell(cellId);
+  }, [cellId, handleExecuteCell]);
+
+  const handleSelectChange = useCallback(
+    (v: string) => handleValueChange(v || null),
+    [handleValueChange]
+  );
 
   return (
     <Toolbar loop className={CellToolbarStyles.toolbar}>
       <div className={CellToolbarStyles.cellNameContainer}>
         <InlineEdit
           value={getCellQuery.data?.name ?? ""}
-          onSave={(name) => {
-            const cell = getCellQuery.data;
-            if (cell) {
-              updateCellMutation.mutate({
-                cellId,
-                payload: { ...cell, name },
-              });
-            }
-          }}
+          onSave={handleSave}
           placeholder="Cell Name"
           defaultValue="Unnamed"
           className={CellToolbarStyles["toolbar__inlineEdit"]}
@@ -77,7 +94,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
       <div className={CellToolbarStyles.rightSideContainer}>
         <Select
           value={initialValue?.value ?? ""}
-          onValueChange={(v: string) => handleValueChange(v || null)}
+          onValueChange={handleSelectChange}
         >
           <Toolbar.Button asChild>
             <Select.Trigger
@@ -101,7 +118,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
             type="play"
             backgroundColor="transparent"
             iconColor="green"
-            onClick={() => handleExecuteCell(cellId)}
+            onClick={handleExecuteClick}
           />
         </Toolbar.Button>
       </div>

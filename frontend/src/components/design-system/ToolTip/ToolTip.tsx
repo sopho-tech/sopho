@@ -2,7 +2,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 import React from "react";
 import ToolTipStyles from "src/components/design-system/ToolTip/ToolTip.module.css";
 
-type ToolTipProps = {
+export type ToolTipProps = {
   messageElement: React.ReactNode;
   children: React.ReactNode;
   open?: boolean;

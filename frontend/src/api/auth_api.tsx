@@ -22,12 +22,12 @@ export const authKeys = {
 
 export const authApi = {
   isSessionValid: async (): Promise<boolean> => {
-    const url = `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.AUTH.GET_SESSION}`;
+    const url = API_ENDPOINTS.AUTH.GET_SESSION;
     const response = await ApiService.get({ url, onlyBody: false });
-    return response.status === 200;
+    return (response as Response).status === 200;
   },
   createSession: async (payload: CreateSessionDto) => {
-    const url = `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.AUTH.CREATE_SESSION}`;
+    const url = API_ENDPOINTS.AUTH.CREATE_SESSION;
     return ApiService.post({
       url,
       data: payload,
@@ -37,7 +37,7 @@ export const authApi = {
     });
   },
   getCurrentUser: async (): Promise<UserDto> => {
-    const url = `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.AUTH.GET_PROFILE_DETAILS}`;
+    const url = API_ENDPOINTS.AUTH.GET_PROFILE_DETAILS;
     const response = (await ApiService.get<UserDto>({
       url,
       onlyBody: true,
@@ -45,7 +45,7 @@ export const authApi = {
     return response;
   },
   deleteSession: async (): Promise<void> => {
-    const url = `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.AUTH.DELETE_SESSION}`;
+    const url = API_ENDPOINTS.AUTH.DELETE_SESSION;
     const response = await fetch(url, {
       method: "DELETE",
       credentials: "include",
@@ -56,9 +56,9 @@ export const authApi = {
     }
   },
   refreshToken: async (): Promise<boolean> => {
-    const url = `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.AUTH.REFRESH_TOKEN}`;
+    const url = API_ENDPOINTS.AUTH.REFRESH_TOKEN;
     const response = await ApiService.post({ url, onlyBody: false });
-    return response.status === 200;
+    return (response as Response).status === 200;
   },
 };
 

@@ -52,13 +52,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       leadingIconName,
       trailingIconName,
       label,
-      shape: _shape,
+      shape,
       backgroundColor,
       disabled = false,
       fullWidth = false,
       size,
       type = "button",
-      emphasis: _emphasis,
+      emphasis,
       ...restProps
     },
     ref
@@ -76,6 +76,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         type={type}
         disabled={disabled}
+        data-shape={shape}
+        data-emphasis={emphasis}
         className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${fullWidthClassName}`}
         onClick={onClick}
         whileHover={disabled ? undefined : { scale: Scale.HOVER }}

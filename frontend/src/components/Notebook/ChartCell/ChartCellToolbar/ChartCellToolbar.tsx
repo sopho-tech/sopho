@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import ToolbarStyles from "src/css/toolbar.module.css";
 import * as Toolbar from "@radix-ui/react-toolbar";
 import { IconButton } from "src/components/design-system/IconButton/IconButton";
@@ -15,7 +16,7 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
   const setExecutionState = useStore((state) => state.cell.setExecutionState);
   const setOutputState = useStore((state) => state.cell.setOutputState);
 
-  function handleExecute() {
+  const handleExecute = useCallback(() => {
     setExecutionState(cellId, ExecutionState.RUNNING);
     executeCellMutation.mutate(cellId, {
       onSuccess: (data) => {
@@ -29,22 +30,33 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
         setExecutionState(cellId, ExecutionState.FAILED);
       },
     });
-  }
+  }, [
+    cellId,
+    executeCellMutation,
+    setExecutionState,
+    setOutput,
+    setOutputState,
+  ]);
+
+  const handleSave = useCallback(
+    (name: string) => {
+      const cell = getCellQuery.data;
+      if (cell) {
+        updateCellMutation.mutate({
+          cellId,
+          payload: { ...cell, name },
+        });
+      }
+    },
+    [cellId, getCellQuery.data, updateCellMutation]
+  );
 
   return (
     <Toolbar.Root className={ToolbarStyles.root} loop>
       <div className={ToolbarStyles.cellNameContainer}>
         <InlineEdit
           value={getCellQuery.data?.name ?? ""}
-          onSave={(name) => {
-            const cell = getCellQuery.data;
-            if (cell) {
-              updateCellMutation.mutate({
-                cellId,
-                payload: { ...cell, name },
-              });
-            }
-          }}
+          onSave={handleSave}
           placeholder="Cell Name"
           defaultValue="Unnamed"
           className={styles["toolbar__inlineEdit"]}
@@ -55,7 +67,7 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
           type="play"
           backgroundColor="transparent"
           iconColor="green"
-          onClick={() => handleExecute()}
+          onClick={handleExecute}
         />
       </Toolbar.Button>
     </Toolbar.Root>

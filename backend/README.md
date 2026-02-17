@@ -1,19 +1,27 @@
-# Metron Backend
+# Sopho Backend
 
 ## Development
+
 1. Install sea-orm-cli
+
 ```bash
 cargo install sea-orm-cli
 ```
+
 2. Generate migrations
+
 ```bash
 sea-orm-cli migrate generate
 ```
+
 3. Run migrations
+
 ```bash
 sea-orm-cli migrate run
 ```
+
 4. Generate Entities
+
 ```bash
 sea-orm-cli generate entity -u sqlite://./data/database.db -o src/entity
 ```

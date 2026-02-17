@@ -1714,39 +1714,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
 
 [[package]]
-name = "metron"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "argon2",
- "axum",
- "base64",
- "chrono",
- "dotenv",
- "getrandom 0.3.4",
- "http",
- "http-body-util",
- "migration",
- "password-hash",
- "reqwest",
- "rig-core",
- "rust_decimal",
- "sea-orm",
- "serde",
- "serde_json",
- "sqlx",
- "thiserror 2.0.12",
- "time",
- "tokio",
- "tower",
- "tower-cookies",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
 name = "migration"
 version = "0.1.7"
 dependencies = [
@@ -2932,6 +2899,39 @@ checksum = "17129e116933cf371d018bb80ae557e889637989d8638274fb25622827b03881"
 dependencies = [
  "libc",
  "windows-sys 0.60.2",
+]
+
+[[package]]
+name = "sopho"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "argon2",
+ "axum",
+ "base64",
+ "chrono",
+ "dotenv",
+ "getrandom 0.3.4",
+ "http",
+ "http-body-util",
+ "migration",
+ "password-hash",
+ "reqwest",
+ "rig-core",
+ "rust_decimal",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.12",
+ "time",
+ "tokio",
+ "tower",
+ "tower-cookies",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

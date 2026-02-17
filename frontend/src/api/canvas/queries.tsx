@@ -24,7 +24,7 @@ export const canvasKeys = {
 const canvasApi = {
   getCanvas: async (canvasId: string): Promise<CanvasDto> => {
     const response = await ApiService.get({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CANVAS.GET_BY_ID?.replace(":id", canvasId) || `/canvas/${canvasId}`}`,
+      url: API_ENDPOINTS.CANVAS.GET_BY_ID?.replace(":id", canvasId) || `/canvas/${canvasId}`,
       onlyBody: true,
     });
     return response as CanvasDto;
@@ -34,9 +34,7 @@ const canvasApi = {
     page?: number,
     pageSize?: number
   ): Promise<PaginatedData<CanvasDto>> => {
-    const url = new URL(
-      `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CANVAS.GET_ALL}`
-    );
+    const url = new URL(API_ENDPOINTS.CANVAS.GET_ALL, window.location.origin);
     if (page !== undefined) {
       url.searchParams.set("page", page.toString());
     }
@@ -66,7 +64,7 @@ const canvasApi = {
     payload: Partial<CanvasDto>;
   }): Promise<CanvasDto> => {
     const response = await ApiService.put({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CANVAS.UPDATE.replace(":id", canvasId)}`,
+      url: API_ENDPOINTS.CANVAS.UPDATE.replace(":id", canvasId),
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -77,7 +75,7 @@ const canvasApi = {
 
   createCanvas: async (payload: Omit<CanvasDto, "id">): Promise<CanvasDto> => {
     const response = await ApiService.post({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CANVAS.CREATE}`,
+      url: API_ENDPOINTS.CANVAS.CREATE,
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -88,7 +86,7 @@ const canvasApi = {
 
   deleteCanvas: async (canvasId: string): Promise<void> => {
     const response = await fetch(
-      `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CANVAS.DELETE?.replace(":id", canvasId) || `/canvas/${canvasId}`}`,
+      API_ENDPOINTS.CANVAS.DELETE?.replace(":id", canvasId) || `/canvas/${canvasId}`,
       {
         method: "DELETE",
         credentials: "include",

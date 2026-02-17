@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { CellOutputState } from "src/components/Notebook/Cell";
 import { useStore } from "src/store";
 import styles from "src/components/Notebook/ChartCell/CellOutput/CellOutput.module.css";
@@ -20,7 +21,10 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
   const chartContent = useStore((state) => state.cell.chartContents[cellId]);
   const chartType = getChartType(chartContent);
 
-  console.log(output, chartContent);
+  const pieDimensions = useMemo(
+    () => output?.columns?.map((column) => column.column_name) ?? [],
+    [output?.columns]
+  );
 
   function render() {
     if (
@@ -69,7 +73,7 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
         <PieChart
           category={pieChartContent.category}
           value={pieChartContent.value}
-          dimensions={output.columns?.map((column) => column.column_name) ?? []}
+          dimensions={pieDimensions}
           data={output.data}
         />
       );

@@ -14,7 +14,7 @@ export const dashboardKeys = {
 const dashboardApi = {
   getDashboard: async (dashboardId: string): Promise<DashboardDto> => {
     const response = await ApiService.get({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.DASHBOARD.GET_BY_ID?.replace(":id", dashboardId) || `/dashboard/${dashboardId}`}`,
+      url: API_ENDPOINTS.DASHBOARD.GET_BY_ID?.replace(":id", dashboardId) || `/dashboard/${dashboardId}`,
       onlyBody: true,
     });
     return response as DashboardDto;
@@ -22,7 +22,7 @@ const dashboardApi = {
 
   getDashboardByCanvasId: async (canvasId: string): Promise<DashboardDto> => {
     const response = await ApiService.get({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.DASHBOARD.GET_BY_CANVAS_ID?.replace(":canvas_id", canvasId) || `/dashboard/canvas/${canvasId}`}`,
+      url: API_ENDPOINTS.DASHBOARD.GET_BY_CANVAS_ID?.replace(":canvas_id", canvasId) || `/dashboard/canvas/${canvasId}`,
       onlyBody: true,
     });
     return response as DashboardDto;
@@ -36,7 +36,7 @@ const dashboardApi = {
     payload: Partial<DashboardDto>;
   }): Promise<DashboardDto> => {
     const response = await ApiService.put({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.DASHBOARD.UPDATE.replace(":id", dashboardId)}`,
+      url: API_ENDPOINTS.DASHBOARD.UPDATE.replace(":id", dashboardId),
       data: payload,
       headers: {
         "Content-Type": "application/json",

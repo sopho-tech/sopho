@@ -145,7 +145,7 @@ async fn get_connection_status_postgres(database_url: &str) -> ConnectionStatus 
 
     match sqlx_connection_result {
         Ok(mut conn) => {
-            let query_execution_result = sqlx::query!("SELECT 1 as result")
+            let query_execution_result = sqlx::query("SELECT 1 as result")
                 .fetch_optional(&mut conn)
                 .await;
             match query_execution_result {

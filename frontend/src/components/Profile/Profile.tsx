@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import { Flex } from "src/components/design-system/Flex/Flex";
 import { Heading } from "../design-system";
 import { useCurrentUser, useDeleteSession } from "src/api/auth_api";
@@ -19,12 +20,20 @@ export function Profile() {
     },
   });
 
-  const defaultValues = {
-    id: user?.id || "",
-    username: user?.username || "",
-    email: user?.email || "",
-    full_name: user?.full_name || "",
-  };
+  const defaultValues = useMemo(
+    () => ({
+      id: user?.id || "",
+      username: user?.username || "",
+      email: user?.email || "",
+      full_name: user?.full_name || "",
+    }),
+    [user?.id, user?.username, user?.email, user?.full_name]
+  );
+
+  const handleSubmit = useCallback(() => {}, []);
+  const handleSignOut = useCallback(() => {
+    deleteSessionMutation.mutate();
+  }, [deleteSessionMutation]);
 
   return (
     <Flex
@@ -39,7 +48,7 @@ export function Profile() {
       direction="column"
     >
       <Heading accessbilityLevel={1}>Profile</Heading>
-      <Form defaultValues={defaultValues} onSubmit={() => {}} readonly>
+      <Form defaultValues={defaultValues} onSubmit={handleSubmit} readonly>
         <Form.Fields className={styles.fieldsContainer}>
           <Form.Input name="id" label="User ID" className={styles.fieldContainer} />
           <Form.Input name="username" label="Username" className={styles.fieldContainer} />
@@ -53,9 +62,7 @@ export function Profile() {
         size="md"
         shape="rectangle"
         leadingIconName="logout"
-        onClick={() => {
-          deleteSessionMutation.mutate();
-        }}
+        onClick={handleSignOut}
         disabled={deleteSessionMutation.isPending}
       />
     </Flex>

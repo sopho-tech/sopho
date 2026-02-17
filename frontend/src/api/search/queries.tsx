@@ -30,9 +30,7 @@ const searchApi = {
     query: string,
     filters: EntityType[]
   ): Promise<SearchResultItemDto[]> => {
-    const url = new URL(
-      `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.SEARCH.SEARCH}`
-    );
+    const url = new URL(API_ENDPOINTS.SEARCH.SEARCH, window.location.origin);
     if (query) {
       url.searchParams.set("query", query);
     }

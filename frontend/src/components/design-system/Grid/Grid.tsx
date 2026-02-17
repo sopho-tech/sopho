@@ -61,25 +61,23 @@ export function Grid({
   let dataResponsive: string | undefined;
 
   if (isResponsiveGutter(gutter)) {
-    // Set CSS custom properties for each breakpoint
     const defaultGutter = gutter.base ?? "sm";
-    style["--grid-gutter-default" as any] = `var(--space-${defaultGutter})`;
+    (style as Record<string, string>)["--grid-gutter-default"] = `var(--space-${defaultGutter})`;
 
-    // Set breakpoint-specific values
     if (gutter.sm !== undefined) {
-      style["--grid-gutter-sm" as any] = `var(--space-${gutter.sm})`;
+      (style as Record<string, string>)["--grid-gutter-sm"] = `var(--space-${gutter.sm})`;
     }
     if (gutter.md !== undefined) {
-      style["--grid-gutter-md" as any] = `var(--space-${gutter.md})`;
+      (style as Record<string, string>)["--grid-gutter-md"] = `var(--space-${gutter.md})`;
     }
     if (gutter.lg !== undefined) {
-      style["--grid-gutter-lg" as any] = `var(--space-${gutter.lg})`;
+      (style as Record<string, string>)["--grid-gutter-lg"] = `var(--space-${gutter.lg})`;
     }
     if (gutter.xl !== undefined) {
-      style["--grid-gutter-xl" as any] = `var(--space-${gutter.xl})`;
+      (style as Record<string, string>)["--grid-gutter-xl"] = `var(--space-${gutter.xl})`;
     }
     if (gutter["2xl"] !== undefined) {
-      style["--grid-gutter-2xl" as any] = `var(--space-${gutter["2xl"]})`;
+      (style as Record<string, string>)["--grid-gutter-2xl"] = `var(--space-${gutter["2xl"]})`;
     }
     dataResponsive = "true";
   } else {

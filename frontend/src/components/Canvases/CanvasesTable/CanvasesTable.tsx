@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import { Flex } from "src/components/design-system";
 import { SophoTable, TableType } from "src/components/SophoTable/SophoTable";
 import { useAllCanvases } from "src/api/canvas/queries";
@@ -39,22 +40,22 @@ export function CanvasesTable({
     onDeleteClick,
   });
 
-  const handleRowClick = (row: CanvasDto) => {
-    if (row.id) {
-      navigate(APP_ROUTES.CANVAS.replace(":id", row.id));
-    }
-  };
+  const handleRowClick = useCallback(
+    (row: CanvasDto) => {
+      if (row.id) {
+        navigate(APP_ROUTES.CANVAS.replace(":id", row.id));
+      }
+    },
+    [navigate]
+  );
 
-  return (
-    <Flex direction="column" flex="grow" marginTop="lg" overflow="hidden">
-      <SophoTable
-        tableType={TableType.PAGINATED}
-        columns={columns}
-        data={canvases?.data ?? []}
-        isLoading={isLoading}
-        isError={isError}
-        onRowClick={handleRowClick}
-        paginationConfig={{
+  const tableData = useMemo(
+    () => canvases?.data ?? [],
+    [canvases?.data]
+  );
+
+  const paginationConfig = useMemo(
+    () => ({
           pagination,
           totalItems: canvases?.totalItems ?? 0,
           totalPages: canvases?.totalPages ?? 0,
@@ -64,7 +65,27 @@ export function CanvasesTable({
           onChangePageSize: handleChangePageSize,
           onPageClick: handlePageClick,
           paginationContainerClassName: styles.paginationContainer,
-        }}
+        }),
+    [
+      pagination,
+      canvases?.totalItems,
+      canvases?.totalPages,
+      handlePaginationChange,
+      handleChangePageSize,
+      handlePageClick,
+    ]
+  );
+
+  return (
+    <Flex direction="column" flex="grow" marginTop="lg" overflow="hidden">
+      <SophoTable
+        tableType={TableType.PAGINATED}
+        columns={columns}
+        data={tableData}
+        isLoading={isLoading}
+        isError={isError}
+        onRowClick={handleRowClick}
+        paginationConfig={paginationConfig}
       />
     </Flex>
   );

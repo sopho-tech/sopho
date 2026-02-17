@@ -85,7 +85,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
         }
       }, 300);
 
-      let state = EditorState.create({
+      const state = EditorState.create({
         doc: query.data.content || "",
         extensions: [
           theme,

@@ -13,13 +13,13 @@ export function CellOutput({ cellId }: CellOutputProps) {
   const output = useStore((state) => state.cell.outputs[cellId]);
   const outputState = useStore((state) => state.cell.outputStates[cellId]);
 
-  const columns: ColumnConfig<Record<string, any>>[] =
+  const columns: ColumnConfig<Record<string, unknown>>[] =
     output?.columns?.map((column) => ({
       key: column.column_name,
       header: column.column_name,
       type: "accessor" as const,
       accessor: column.column_name,
-      cell: (props: any) => props.getValue(),
+      cell: (props) => props.getValue() as React.ReactNode,
       dataType: column.data_type,
     })) ?? [];
 

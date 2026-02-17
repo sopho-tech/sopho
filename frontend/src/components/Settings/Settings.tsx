@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import "src/css/index.css";
 import { Connections } from "src/components/Connection/ConnectionsPage";
 import { SophoTabs, type TabItem } from "src/components/SophoNavigationMenu";
@@ -5,7 +6,7 @@ import { Flex } from "src/components/design-system/Flex/Flex";
 import { Heading } from "src/components/design-system";
 
 export function Settings() {
-  const tabItems: TabItem[] = [
+  const tabItems = useMemo<TabItem[]>(() => [
     {
       id: "connections",
       label: "Connections",
@@ -26,7 +27,7 @@ export function Settings() {
       label: "Alerts & Reports",
       content: <div>Alerts & Reports content goes here</div>,
     },
-  ];
+  ], []);
 
   return (
     <Flex

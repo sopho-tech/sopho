@@ -20,7 +20,7 @@ export const cellKeys = {
 const cellApi = {
   getCell: async (cellId: string): Promise<CellDto> => {
     const response = await ApiService.get({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CELL.GET_BY_ID?.replace(":id", cellId) || `/cells/${cellId}`}`,
+      url: API_ENDPOINTS.CELL.GET_BY_ID?.replace(":id", cellId) || `/cells/${cellId}`,
       onlyBody: true,
     });
     return response as CellDto;
@@ -34,7 +34,7 @@ const cellApi = {
     payload: CellDto;
   }): Promise<CellDto> => {
     const response = await ApiService.put({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CELL.UPDATE.replace(":id", cellId)}`,
+      url: API_ENDPOINTS.CELL.UPDATE.replace(":id", cellId),
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -45,7 +45,7 @@ const cellApi = {
 
   createCell: async (payload: CreateCellDto): Promise<CellDto> => {
     const response = await ApiService.post({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CELL.CREATE}`,
+      url: API_ENDPOINTS.CELL.CREATE,
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -56,7 +56,7 @@ const cellApi = {
 
   deleteCell: async (cellId: string): Promise<void> => {
     const response = await fetch(
-      `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CELL.DELETE?.replace(":id", cellId) || `/cells/${cellId}`}`,
+      API_ENDPOINTS.CELL.DELETE?.replace(":id", cellId) || `/cells/${cellId}`,
       {
         method: "DELETE",
         credentials: "include",
@@ -70,7 +70,7 @@ const cellApi = {
 
   executeCell: async (cellId: string): Promise<ExecuteCellResponseDto> => {
     const response = await ApiService.post({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CELL.EXECUTE.replace(":id", cellId)}`,
+      url: API_ENDPOINTS.CELL.EXECUTE.replace(":id", cellId),
     });
     return response as ExecuteCellResponseDto;
   },
@@ -85,7 +85,7 @@ const cellApi = {
     cellType: string;
   }): Promise<ExecuteCellResponseDto> => {
     const response = await ApiService.post({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CELL.EXECUTE_PREVIEW.replace(":id", cellId)}`,
+      url: API_ENDPOINTS.CELL.EXECUTE_PREVIEW.replace(":id", cellId),
       data: { content, cell_type: cellType },
       headers: {
         "Content-Type": "application/json",
@@ -102,7 +102,7 @@ const cellApi = {
     movementType: "UP" | "DOWN" | "TOP" | "BOTTOM";
   }): Promise<CellDto> => {
     const response = await ApiService.patch({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CELL.REORDER.replace(":id", cellId)}`,
+      url: API_ENDPOINTS.CELL.REORDER.replace(":id", cellId),
       data: { movement_type: movementType },
       headers: {
         "Content-Type": "application/json",

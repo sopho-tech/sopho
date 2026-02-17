@@ -25,7 +25,10 @@ export default tseslint.config(
         "warn",
         { allowConstantExport: true },
       ],
-      ...reactPerf.configs.recommended.rules,
+      "react-perf/jsx-no-new-object-as-prop": "warn",
+      "react-perf/jsx-no-new-array-as-prop": "warn",
+      "react-perf/jsx-no-new-function-as-prop": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
     },
   },
 );

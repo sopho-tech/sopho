@@ -22,7 +22,7 @@ import { LineChartAccordion } from "./LineChartAccordion";
 import { PieChartFields } from "./PieChartFields";
 import { ChartRunButton } from "./ChartRunButton";
 import { ChartType } from "src/components/Chart";
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 
 /**
  * Component for editing a chart cell.
@@ -59,23 +59,29 @@ export function CellEditor({ cellId }: { cellId: string }) {
     setChartType(newChartType);
   }, [cellQuery.data]);
 
-  const handleSubmit = (formData: FormData) => {
-    if (!cellQuery.data) throw Error("Cell query data is empty");
-    const content = extractChartFormData(chartType, formData);
-    const cellDto: CellDto = {
-      ...cellQuery.data,
-      content: serializeChartContent(content),
-    };
-    updateCellMutation.mutate({ cellId, payload: cellDto });
-  };
+  const handleSubmit = useCallback(
+    (formData: FormData) => {
+      if (!cellQuery.data) throw Error("Cell query data is empty");
+      const content = extractChartFormData(chartType, formData);
+      const cellDto: CellDto = {
+        ...cellQuery.data,
+        content: serializeChartContent(content),
+      };
+      updateCellMutation.mutate({ cellId, payload: cellDto });
+    },
+    [cellId, cellQuery.data, chartType, updateCellMutation]
+  );
 
-  const handleChange = (_: FormData, fieldName: string, value: string) => {
-    if (fieldName === "cell_id") {
-      setSourceCellId(value);
-    } else if (fieldName === "chart_type") {
-      setChartType(ChartType[value as keyof typeof ChartType] ?? null);
-    }
-  };
+  const handleChange = useCallback(
+    (_: FormData, fieldName: string, value: string) => {
+      if (fieldName === "cell_id") {
+        setSourceCellId(value);
+      } else if (fieldName === "chart_type") {
+        setChartType(ChartType[value as keyof typeof ChartType] ?? null);
+      }
+    },
+    [setSourceCellId]
+  );
 
   return (
     <Form

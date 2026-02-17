@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import styles from "src/components/Notebook/Cell/Cell.module.css";
 import activeCellStyles from "src/components/Notebook/activeCell.module.css";
 import { CellEditor } from "src/components/Notebook/CellEditor/CellEditor";
@@ -13,9 +14,9 @@ export function Cell({ cell_id }: { cell_id: string }) {
     activeCellStyles.activeCell
   );
   const setActiveCellId = useStore((state) => state.notebook.setActiveCellId);
-  const handleActivate = () => {
+  const handleActivate = useCallback(() => {
     setActiveCellId(cell_id);
-  };
+  }, [cell_id, setActiveCellId]);
 
   return (
     <div

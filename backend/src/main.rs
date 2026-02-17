@@ -29,7 +29,7 @@ use http_body_util::BodyExt;
 use std::env;
 use std::path::PathBuf;
 use tower_cookies::CookieManagerLayer;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -126,8 +126,9 @@ async fn main() {
         .layer(TraceLayer::new_for_http())
         .layer(CookieManagerLayer::new());
 
+    let cors;
     if app_state.config.environment == "development" {
-        let cors = CorsLayer::new()
+        cors = CorsLayer::new()
             .allow_methods([
                 Method::GET,
                 Method::POST,
@@ -135,15 +136,24 @@ async fn main() {
                 Method::PATCH,
                 Method::DELETE,
             ])
-            .allow_origin(HeaderValue::from_str("http://localhost:3000").unwrap())
+            .allow_origin(HeaderValue::from_str("http://localhost").unwrap())
             .allow_credentials(true)
             .allow_headers([header::CONTENT_TYPE]);
-        app = app.layer(cors);
+    } else {
+        cors = CorsLayer::new()
+            .allow_methods([
+                Method::GET,
+                Method::POST,
+                Method::PUT,
+                Method::PATCH,
+                Method::DELETE,
+            ])
+            .allow_credentials(true)
+            .allow_headers([header::CONTENT_TYPE]);
     }
+    app = app.layer(cors);
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:8000")
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
 }

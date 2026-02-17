@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://admin:password@db:5432/sopho
+      - FRONTEND_DIR=/app/frontend/dist/
+      - ENVIRONMENT=production
+      - COOKIE_SECURE=false
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=password
+      - ADMIN_EMAIL=admin@admin.com
+      - ADMIN_FULL_NAME=admin admin
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

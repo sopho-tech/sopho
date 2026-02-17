@@ -16,7 +16,7 @@ import { IconType } from "src/components/design-system/datatypes";
 type FormContextType = {
   form: ReturnType<typeof useAppForm>;
   readonly: boolean;
-  formFieldMeta: any;
+  formFieldMeta: unknown;
 };
 
 const FormCompoundContext = createContext<FormContextType | null>(null);
@@ -31,7 +31,7 @@ export const useFormCompoundContext = () => {
 
 type FormRootProps = {
   children: React.ReactNode;
-  defaultValues?: Record<string, any>;
+  defaultValues?: Record<string, unknown>;
   onSubmit: (formData: FormData) => void;
   onChange?: (formData: FormData, fieldName: string, value: string) => void;
   className?: string;
@@ -51,7 +51,7 @@ const FormRoot = ({
   const form = useAppForm({
     defaultValues,
     onSubmit: ({ value }: { value: unknown }) => {
-      const formData = convertValuesToFormData(value as Record<string, any>);
+      const formData = convertValuesToFormData(value as Record<string, unknown>);
       onSubmit(formData);
     },
     validationLogic: revalidateLogic({
@@ -65,7 +65,7 @@ const FormRoot = ({
           const fieldValue = fieldApi.state.value;
           const currentValues = (formApi.state.values || {}) as Record<
             string,
-            any
+            unknown
           >;
           const formData = convertValuesToFormData(currentValues);
           onChange(formData, fieldName, String(fieldValue || ""));

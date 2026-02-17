@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useStore } from "src/store";
 import { ConnectionsTable } from "src/components/Connection/ConnectionsTable/ConnectionsTable";
 import { ConnectionDetail } from "src/components/Connection/ConnectionDetail/ConnectionDetail";
@@ -15,6 +16,10 @@ export function Connections() {
     (state) => state.connection.setConnectionDetailsPageState
   );
 
+  const handleNewClick = useCallback(() => {
+    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW);
+  }, [setConnectionDetailsPageState]);
+
   return (
     <Flex direction="column" flex="grow" gap="md" overflow="hidden">
       <Flex
@@ -28,9 +33,7 @@ export function Connections() {
           backgroundColor="accent"
           shape="rectangle"
           size="md"
-          onClick={() =>
-            setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW)
-          }
+          onClick={handleNewClick}
         />
       </Flex>
       {connectionDetailsPageState === ConnectionDetailsPageStateEnum.NEW && (

@@ -20,7 +20,7 @@ import styles from "src/components/design-system/DataTable/DataTable.module.css"
 
 export function getAlignmentClass(
   dataType: ColumnDataType | undefined,
-  cellValue: any
+  cellValue: unknown
 ): string {
   if (!dataType) {
     return styles.cellAlignLeft;
@@ -97,96 +97,81 @@ export function getFontClass(dataType: ColumnDataType | undefined): string {
   return "";
 }
 
-export function createReactTable<T>(
+export function useCreateReactTable<T>(
   tableType: TableType,
-  reactTableColumns: ColumnDef<T, any>[],
+  reactTableColumns: ColumnDef<T, unknown>[],
   data: T[],
   paginationConfig: PaginationConfig | undefined,
   setSorting: OnChangeFn<SortingState>,
   sorting: SortingState,
-  globalFilter: any,
-  setGlobalFilter: any,
+  globalFilter: string,
+  setGlobalFilter: OnChangeFn<string>,
   pagination: PaginationState | undefined,
-  setPagination: any | undefined,
+  setPagination: OnChangeFn<PaginationState> | undefined,
   enableColumnResizing: boolean = true,
   getRowId?: (row: T) => string
 ) {
-  switch (tableType) {
-    case TableType.FULL: {
-      return useReactTable({
-        columns: reactTableColumns,
-        data: data ?? [],
-        getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        onSortingChange: setSorting,
-        globalFilterFn: "auto",
-        state: {
-          globalFilter,
-          sorting,
-        },
-        onGlobalFilterChange: setGlobalFilter,
-        isMultiSortEvent: () => true,
-        columnResizeMode: "onChange",
-        columnResizeDirection: "ltr",
-        enableColumnResizing: enableColumnResizing,
-        // defaultColumn: {
-        //   minSize: 200,
-        // },
-        ...(getRowId && { getRowId }),
-      });
-    }
-    case TableType.SERVER_SIDE_PAGINATED: {
-      if (!paginationConfig) {
-        throw Error("Pagination config is required for paginated table");
-      }
-      return useReactTable({
-        columns: reactTableColumns,
-        data: data ?? [],
-        getCoreRowModel: getCoreRowModel(),
-        rowCount: paginationConfig.totalItems,
-        pageCount: paginationConfig.totalPages,
-        state: {
-          pagination: paginationConfig.pagination,
-        },
-        onPaginationChange: paginationConfig.onPaginationChange,
-        manualPagination: true,
-        ...(getRowId && { getRowId }),
-      });
-    }
-    case TableType.CLIENT_SIDE_PAGINATED: {
-      if (!pagination) {
-        throw Error(
-          "Pagination state is required for client-side paginated table"
-        );
-      }
-      return useReactTable({
-        columns: reactTableColumns,
-        data: data ?? [],
-        getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        onSortingChange: setSorting,
-        onPaginationChange: setPagination,
-        globalFilterFn: "auto",
-        state: {
-          pagination: pagination,
-          globalFilter,
-          sorting,
-        },
-        onGlobalFilterChange: setGlobalFilter,
-        isMultiSortEvent: () => true,
-        columnResizeMode: "onChange",
-        columnResizeDirection: "ltr",
-        enableColumnResizing: enableColumnResizing,
-        defaultColumn: {
-          minSize: 200,
-        },
-        ...(getRowId && { getRowId }),
-      });
-    }
-  }
+  const baseConfig = {
+    columns: reactTableColumns,
+    data: data ?? [],
+    getCoreRowModel: getCoreRowModel(),
+    ...(getRowId && { getRowId }),
+  };
+
+  const fullConfig =
+    tableType === TableType.FULL
+      ? {
+          ...baseConfig,
+          getSortedRowModel: getSortedRowModel(),
+          getFilteredRowModel: getFilteredRowModel(),
+          onSortingChange: setSorting,
+          globalFilterFn: "auto" as const,
+          state: { globalFilter, sorting },
+          onGlobalFilterChange: setGlobalFilter,
+          isMultiSortEvent: () => true,
+          columnResizeMode: "onChange" as const,
+          columnResizeDirection: "ltr" as const,
+          enableColumnResizing,
+        }
+      : tableType === TableType.SERVER_SIDE_PAGINATED
+        ? (() => {
+            if (!paginationConfig) {
+              throw Error("Pagination config is required for paginated table");
+            }
+            return {
+              ...baseConfig,
+              rowCount: paginationConfig.totalItems,
+              pageCount: paginationConfig.totalPages,
+              state: { pagination: paginationConfig.pagination },
+              onPaginationChange: paginationConfig.onPaginationChange,
+              manualPagination: true,
+            };
+          })()
+        : (() => {
+            if (!pagination || !setPagination) {
+              throw Error(
+                "Pagination state is required for client-side paginated table"
+              );
+            }
+            return {
+              ...baseConfig,
+              getSortedRowModel: getSortedRowModel(),
+              getFilteredRowModel: getFilteredRowModel(),
+              getPaginationRowModel: getPaginationRowModel(),
+              onSortingChange: setSorting,
+              onPaginationChange: setPagination,
+              globalFilterFn: "auto" as const,
+              state: { pagination, globalFilter, sorting },
+              onGlobalFilterChange: setGlobalFilter,
+              isMultiSortEvent: () => true,
+              columnResizeMode: "onChange" as const,
+              columnResizeDirection: "ltr" as const,
+              enableColumnResizing,
+              defaultColumn: { minSize: 200 },
+            };
+          })();
+
+  return useReactTable(fullConfig);
 }
 
 export function renderPaginationControl<T>(

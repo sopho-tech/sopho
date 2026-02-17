@@ -3,9 +3,17 @@ import {
   IconButton,
   SegmentedControl,
 } from "src/components/design-system";
+import { IconType } from "src/components/design-system/datatypes";
 import { useStore, DashboardMode } from "src/store";
 import { useParams } from "react-router";
 import { useDashboardReset } from "src/components/Dashboard/hooks";
+
+const SEGMENTED_OPTIONS: { value: string; leadingIcon: IconType; tooltip: string }[] = [
+  { value: "notebook", leadingIcon: "book", tooltip: "notebook" },
+  { value: "dashboard", leadingIcon: "calendar", tooltip: "dashboard" },
+];
+
+const noop = () => {};
 
 type CanvasButtonsProps = {
   viewType: string;
@@ -31,13 +39,13 @@ export function CanvasButtons({
       <Flex direction="row" gap="xs">
         <IconButton
           type="star"
-          onClick={() => {}}
+          onClick={noop}
           backgroundColor="default"
           iconColor="grey"
         ></IconButton>
         <IconButton
           type="link"
-          onClick={() => {}}
+          onClick={noop}
           backgroundColor="default"
           iconColor="grey"
         ></IconButton>
@@ -59,18 +67,7 @@ export function CanvasButtons({
         )}
       </Flex>
       <SegmentedControl
-        options={[
-          {
-            value: "notebook",
-            leadingIcon: "book",
-            tooltip: "notebook",
-          },
-          {
-            value: "dashboard",
-            leadingIcon: "calendar",
-            tooltip: "dashboard",
-          },
-        ]}
+        options={SEGMENTED_OPTIONS}
         value={viewType}
         onValueChange={onViewTypeChange}
         size="md"

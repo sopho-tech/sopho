@@ -30,22 +30,22 @@ export function MotionBox({
   const layoutStyles = getSharedLayoutStyles(layoutProps);
 
   const backgroundColorClassName = styles[backgroundColor];
-  const mergedClassName = mergeBoxClassName(
-    backgroundColorClassName,
-    htmlProps.className
-  );
-
   const {
-    className: _,
+    className,
     style: htmlStyle,
     ...htmlPropsWithoutClassNameAndStyle
   } = htmlProps;
+
+  const mergedClassName = mergeBoxClassName(
+    backgroundColorClassName,
+    className
+  );
 
   const mergedStyle = mergeBoxStyles(display, layoutStyles, sx, htmlStyle);
 
   return (
     <motion.div
-      ref={ref as any}
+      ref={ref as React.Ref<HTMLDivElement>}
       className={mergedClassName}
       style={mergedStyle}
       {...htmlPropsWithoutClassNameAndStyle}

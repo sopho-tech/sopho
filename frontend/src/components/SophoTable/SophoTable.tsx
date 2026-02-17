@@ -6,6 +6,7 @@ import {
   useReactTable,
   PaginationState,
   OnChangeFn,
+  CellContext,
 } from "@tanstack/react-table";
 import styles from "src/components/SophoTable/SophoTable.module.css";
 import { Pagination } from "src/components/design-system/Pagination";
@@ -20,7 +21,7 @@ export type ColumnConfig<T> = {
   header: string;
   size?: number;
   type: "accessor" | "display";
-  cell?: (props: any) => React.ReactNode;
+  cell?: (props: CellContext<T, unknown>) => React.ReactNode;
   accessor?: keyof T;
 };
 
@@ -54,38 +55,34 @@ type SophoTableProps<T> = {
   onRowClick?: (row: T) => void;
 };
 
-function createReactTable<T>(
+function useCreateReactTable<T>(
   tableType: TableType,
-  reactTableColumns: ColumnDef<T, any>[],
+  reactTableColumns: ColumnDef<T, unknown>[],
   data: T[],
   paginationConfig: PaginationConfig | undefined
 ) {
-  switch (tableType) {
-    case TableType.FULL: {
-      return useReactTable({
-        columns: reactTableColumns,
-        data: data ?? [],
-        getCoreRowModel: getCoreRowModel(),
-      });
-    }
-    case TableType.PAGINATED: {
+  const paginationState = (() => {
+    if (tableType === TableType.PAGINATED) {
       if (!paginationConfig) {
         throw Error("Pagination config is required for paginated table");
       }
-      return useReactTable({
-        columns: reactTableColumns,
-        data: data ?? [],
-        getCoreRowModel: getCoreRowModel(),
+      return {
         rowCount: paginationConfig.totalItems,
         pageCount: paginationConfig.totalPages,
-        state: {
-          pagination: paginationConfig.pagination,
-        },
+        state: { pagination: paginationConfig.pagination },
         onPaginationChange: paginationConfig.onPaginationChange,
-        manualPagination: true,
-      });
+        manualPagination: true as const,
+      };
     }
-  }
+    return {};
+  })();
+
+  return useReactTable({
+    columns: reactTableColumns,
+    data: data ?? [],
+    getCoreRowModel: getCoreRowModel(),
+    ...paginationState,
+  });
 }
 
 export function SophoTable<T>({
@@ -107,13 +104,16 @@ export function SophoTable<T>({
 }: SophoTableProps<T>) {
   const columnHelper = createColumnHelper<T>();
 
-  const reactTableColumns: ColumnDef<T, any>[] = columns.map((col) => {
+  const reactTableColumns: ColumnDef<T, unknown>[] = columns.map((col) => {
     if (col.type === "accessor") {
-      return columnHelper.accessor(col.accessor as any, {
-        header: col.header,
-        cell: col.cell || ((props) => props.getValue()),
-        size: col.size,
-      });
+        return columnHelper.accessor(
+          col.accessor as Parameters<typeof columnHelper.accessor>[0],
+          {
+            header: col.header,
+            cell: col.cell || ((props: CellContext<T, unknown>) => props.getValue()),
+            size: col.size,
+          }
+        );
     } else {
       return columnHelper.display({
         id: col.key,
@@ -124,7 +124,7 @@ export function SophoTable<T>({
     }
   });
 
-  const table = createReactTable(
+  const table = useCreateReactTable(
     tableType,
     reactTableColumns,
     data,

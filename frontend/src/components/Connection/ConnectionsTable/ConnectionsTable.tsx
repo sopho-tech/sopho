@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import ConnectionsStyles from "src/components/Connection/ConnectionsPage/ConnectionsPage.module.css";
 import { StatusBadge } from "src/components/StatusBadge/StatusBadge";
 import { ActionButtons } from "src/components/ActionButtons";
@@ -19,23 +20,32 @@ export function ConnectionsTable() {
   const setConnectionDetailsPageState = useStore((state) => state.connection.setConnectionDetailsPageState);
   const deleteMutation = useDeleteConnection();
 
-  const handleViewConnection = async (id: string) => {
-    setConnectionId(id);
-    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.DETAIL);
-  };
+  const handleViewConnection = useCallback(
+    (id: string) => {
+      setConnectionId(id);
+      setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.DETAIL);
+    },
+    [setConnectionId, setConnectionDetailsPageState]
+  );
 
-  const handleEditConnection = (id: string) => {
-    setConnectionId(id);
-    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.EDIT);
-  };
+  const handleEditConnection = useCallback(
+    (id: string) => {
+      setConnectionId(id);
+      setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.EDIT);
+    },
+    [setConnectionId, setConnectionDetailsPageState]
+  );
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this connection?")) {
-      deleteMutation.mutate(id);
-    }
-  };
+  const handleDelete = useCallback(
+    (id: string) => {
+      if (confirm("Are you sure you want to delete this connection?")) {
+        deleteMutation.mutate(id);
+      }
+    },
+    [deleteMutation]
+  );
 
-  const columns: ColumnConfig<ConnectionDto>[] = [
+  const columns: ColumnConfig<ConnectionDto>[] = useMemo(() => [
     {
       key: "name",
       header: "Name",
@@ -85,7 +95,7 @@ export function ConnectionsTable() {
       header: "Created On",
       type: "accessor",
       accessor: "created_at",
-      cell: (props) => formatTimestamp(props.getValue()),
+      cell: (props) => formatTimestamp(props.getValue() as string | null),
       size: 210,
     },
     {
@@ -102,15 +112,20 @@ export function ConnectionsTable() {
       ),
       size: 100,
     },
-  ];
+  ], [handleViewConnection, handleEditConnection, handleDelete]);
 
   const { data: connectionsData, isLoading, isError } = useConnections();
+
+  const tableData = useMemo(
+    () => connectionsData ?? [],
+    [connectionsData]
+  );
 
   return (
     <div className={ConnectionsStyles.connectionsTable}>
       <SophoTable
         columns={columns}
-        data={connectionsData ?? []}
+        data={tableData}
         isLoading={isLoading}
         isError={isError}
       />

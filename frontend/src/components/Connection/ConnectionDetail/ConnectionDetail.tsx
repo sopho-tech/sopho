@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 import { useStore } from "src/store";
 import { StatusBadge } from "src/components/StatusBadge/StatusBadge";
@@ -18,21 +19,23 @@ export function ConnectionDetail() {
 
   const { data: connectionDetails } = useConnection(connectionId);
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    }
-  };
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
+      }
+    },
+    [setConnectionDetailsPageState]
+  );
 
-  const handleDialogClose = () => {
+  const handleDialogClose = useCallback(() => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-  };
+  }, [setConnectionDetailsPageState]);
 
-  const dialogContent = (
-    <Fragment>
-      {connectionDetails && (
-        <SophoFormDetails
-          items={[
+  const formItems = useMemo(
+    () =>
+      connectionDetails
+        ? [
             { label: "Name", value: connectionDetails.name },
             { label: "Source Type", value: connectionDetails.source_type },
             { label: "Host", value: connectionDetails.host },
@@ -58,7 +61,16 @@ export function ConnectionDetail() {
                 />
               ),
             },
-          ]}
+          ]
+        : [],
+    [connectionDetails]
+  );
+
+  const dialogContent = (
+    <Fragment>
+      {connectionDetails && (
+        <SophoFormDetails
+          items={formItems}
         />
       )}
     </Fragment>

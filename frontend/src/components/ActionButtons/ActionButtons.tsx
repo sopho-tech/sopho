@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import styles from "src/components/ActionButtons/ActionButtons.module.css";
 import { DropdownMenu, Icon } from "src/components/design-system";
 import type { DropdownMenuItem } from "src/components/design-system";
@@ -15,26 +16,23 @@ export function ActionButtons({
   onEditClick,
   onDeleteClick,
 }: ActionButtonsProps) {
-  const items: DropdownMenuItem[] = [
-    {
-      icon: "visibility",
-      label: "View",
-      onClick: () => onViewClick(connectionId),
-    },
-    {
-      icon: "edit",
-      label: "Edit",
-      onClick: () => onEditClick(connectionId),
-    },
-    {
-      icon: "delete",
-      label: "Delete",
-      onClick: () => onDeleteClick(connectionId),
-    },
-  ];
+  const handleViewClick = useCallback(() => onViewClick(connectionId), [connectionId, onViewClick]);
+  const handleEditClick = useCallback(() => onEditClick(connectionId), [connectionId, onEditClick]);
+  const handleDeleteClick = useCallback(() => onDeleteClick(connectionId), [connectionId, onDeleteClick]);
+
+  const handleStopPropagation = useCallback((e: React.MouseEvent) => e.stopPropagation(), []);
+
+  const items: DropdownMenuItem[] = useMemo(
+    () => [
+      { icon: "visibility", label: "View", onClick: handleViewClick },
+      { icon: "edit", label: "Edit", onClick: handleEditClick },
+      { icon: "delete", label: "Delete", onClick: handleDeleteClick },
+    ],
+    [handleViewClick, handleEditClick, handleDeleteClick]
+  );
 
   return (
-    <div onClick={(e) => e.stopPropagation()}>
+    <div onClick={handleStopPropagation}>
       <DropdownMenu>
         <DropdownMenu.Trigger>
           <button className={styles.trigger}>

@@ -1,6 +1,8 @@
 import React from "react";
 import styles from "src/components/design-system/Kbd/Kbd.module.css";
 
+export type KbdSize = "sm" | "md" | "lg";
+
 export type KbdProps = React.HTMLAttributes<HTMLElement> & {
   children: React.ReactNode;
 };

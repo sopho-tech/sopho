@@ -1,7 +1,7 @@
 import { useCell, useExecuteCell } from "src/api/cell";
 import { BarChart, ChartType, LineChart, PieChart } from "../Chart";
 import { getChartContent } from "../Notebook/Cell";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ExecuteCellResponseDto,
   BarChartContent,
@@ -16,13 +16,6 @@ import styles from "src/components/Dashboard/Dashboard.module.css";
 type DashboardChartProps = {
   cellId: string;
 };
-
-function describeCellQuery(cellId: string) {
-  if (cellId.startsWith("_")) {
-    return null;
-  }
-  return useCell(cellId);
-}
 
 function ChartRenderer({
   chartContent,
@@ -40,7 +33,7 @@ function ChartRenderer({
       <BarChart
         xAxis={barContent.x_axis}
         yAxis={barContent.y_axis}
-        data={output.data as Object[]}
+        data={output.data as object[]}
         xAxisTitle={barContent.x_axis_title}
         yAxisTitle={barContent.y_axis_title}
         xAxisTickShow={barContent.x_axis_tick_show}
@@ -55,7 +48,7 @@ function ChartRenderer({
       <LineChart
         xAxis={lineContent.x_axis}
         yAxis={lineContent.y_axis}
-        data={output.data as Object[]}
+        data={output.data as object[]}
         xAxisTitle={lineContent.x_axis_title}
         yAxisTitle={lineContent.y_axis_title}
         showDots={lineContent.show_dots !== "HIDE"}
@@ -72,7 +65,7 @@ function ChartRenderer({
         category={pieContent.category}
         value={pieContent.value}
         dimensions={dimensions}
-        data={output.data as Object[]}
+        data={output.data as object[]}
       />
     );
   }
@@ -80,8 +73,8 @@ function ChartRenderer({
   return null;
 }
 
-export function DashboardChart({ cellId }: DashboardChartProps) {
-  const cellQuery = describeCellQuery(cellId);
+function DashboardChartWithQuery({ cellId }: DashboardChartProps) {
+  const cellQuery = useCell(cellId);
   const executeCellMutation = useExecuteCell();
   const chartContent =
     cellQuery && cellQuery.data ? getChartContent(cellQuery.data) : null;
@@ -92,16 +85,13 @@ export function DashboardChart({ cellId }: DashboardChartProps) {
   const isEditing = mode === DashboardMode.EDITING;
 
   useEffect(() => {
-    if (cellId.startsWith("_")) {
-      return;
-    }
     executeCellMutation.mutate(cellId, {
       onSuccess: (data) => {
         setOutput(data);
       },
       onError: () => {},
     });
-  }, []);
+  }, [cellId, executeCellMutation]);
 
   const isLoading =
     cellQuery == null ||
@@ -110,23 +100,20 @@ export function DashboardChart({ cellId }: DashboardChartProps) {
     chartContent == null ||
     output == null;
 
-  const handleRemove = () => {
+  const handleRemove = useCallback(() => {
     const currentLayout = getLayout();
     const filteredLayout = currentLayout.filter((item) => item.i !== cellId);
     setLayout(filteredLayout);
-  };
+  }, [cellId, getLayout, setLayout]);
 
-  const handleRefresh = () => {
-    if (cellId.startsWith("_")) {
-      return;
-    }
+  const handleRefresh = useCallback(() => {
     executeCellMutation.mutate(cellId, {
       onSuccess: (data) => {
         setOutput(data);
       },
       onError: () => {},
     });
-  };
+  }, [cellId, executeCellMutation]);
 
   return (
     <Flex
@@ -180,4 +167,11 @@ export function DashboardChart({ cellId }: DashboardChartProps) {
       )}
     </Flex>
   );
+}
+
+export function DashboardChart({ cellId }: DashboardChartProps) {
+  if (cellId.startsWith("_")) {
+    return null;
+  }
+  return <DashboardChartWithQuery cellId={cellId} />;
 }
