@@ -11,6 +11,18 @@
   Open source analytics platform
 </h3>
 
+<p align="center">
+  <a href="https://github.com/sopho-tech/sopho/pkgs/container/sopho%2Fsopho">
+    <img src="https://img.shields.io/badge/Docker-ghcr.io%2Fsopho--tech%2Fsopho%2Fsopho-blue?logo=docker&logoColor=white" alt="Docker Image" />
+  </a>
+  <a href="https://github.com/sopho-tech/sopho/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/sopho-tech/sopho" alt="License" />
+  </a>
+  <a href="https://github.com/sopho-tech/sopho/stargazers">
+    <img src="https://img.shields.io/github/stars/sopho-tech/sopho" alt="Stars" />
+  </a>
+</p>
+
 ## Description
 
 Single platform for analytics, business intelligence, dashboards, notebooks, visualizations, and collaboration.
