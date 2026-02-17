@@ -57,7 +57,9 @@ export const createCellSlice: StateCreator<CellSlice> = (set, get) => ({
       })),
     clearOutput: (cellId) =>
       set((state) => {
-        const { [cellId]: _, ...rest } = state.cell.outputs;
+        const rest = Object.fromEntries(
+          Object.entries(state.cell.outputs).filter(([k]) => k !== cellId)
+        );
         return { cell: { ...state.cell, outputs: rest } };
       }),
     clearAll: () =>

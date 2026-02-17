@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import HorizontalProgressBarStyles from "src/components/HorizontalProgressBar/HorizontalProgressBar.module.css";
 
 export interface ProgressStep {
@@ -18,6 +19,19 @@ export function HorizontalProgressBar({
   currentStepId,
   onStepClick,
 }: HorizontalProgressBarProps) {
+  const handleStepClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const stepId = (e.currentTarget as HTMLDivElement).dataset.stepId;
+      if (stepId) onStepClick?.(stepId);
+    },
+    [onStepClick]
+  );
+
+  const stepStyle = useMemo(
+    () => ({ cursor: onStepClick ? "pointer" : "default" }),
+    [onStepClick]
+  );
+
   return (
     <div className={HorizontalProgressBarStyles.progressContainer}>
       <div className={HorizontalProgressBarStyles.progressBar}>
@@ -34,8 +48,9 @@ export function HorizontalProgressBar({
                 isActive ? HorizontalProgressBarStyles.active : ""
               } ${isCompleted ? HorizontalProgressBarStyles.completed : ""}`}
               data-step={index + 1}
-              onClick={() => onStepClick?.(step.id)}
-              style={{ cursor: onStepClick ? "pointer" : "default" }}
+              data-step-id={step.id}
+              onClick={handleStepClick}
+              style={stepStyle}
             >
               <div className={HorizontalProgressBarStyles.stepIndicator}>
                 <span className={HorizontalProgressBarStyles.stepNumber}>

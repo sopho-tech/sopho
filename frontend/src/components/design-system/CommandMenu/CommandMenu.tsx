@@ -132,10 +132,11 @@ export const CommandMenu = ({
     }
   };
 
-  const handleCreateCanvas = (_value: string) => {
+  const handleCreateCanvas = (value: string) => {
     handleOpenChange(false);
     setCanvasPageState(CanvasesPageState.CREATE_CANVAS_DIALOG);
     navigate(APP_ROUTES.CANVASES);
+    return value;
   };
 
   const renderContent = () => {

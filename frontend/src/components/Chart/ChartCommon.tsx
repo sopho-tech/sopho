@@ -24,12 +24,14 @@ export type ChartContainerProps = {
   aspect?: number;
 };
 
+const INITIAL_DIMENSION = { width: 1, height: 1 };
+
 export function ChartContainer({ children, aspect }: ChartContainerProps) {
   return (
     <ResponsiveContainer
       width="100%"
       {...(aspect != null && { aspect })}
-      initialDimension={{ width: 1, height: 1 }}
+      initialDimension={INITIAL_DIMENSION}
       debounce={300}
       className={styles.container}
     >
@@ -121,7 +123,10 @@ export const renderToolTipContent = (
         <div key={`item-${index}`} className={styles.tooltipItem}>
           <div
             className={styles.chartIcon}
-            style={{ backgroundColor: entry.color ?? entry.payload.fill }}
+            style={
+              // eslint-disable-next-line react-perf/jsx-no-new-object-as-prop
+              { backgroundColor: entry.color ?? entry.payload.fill }
+            }
           />
           <span></span>
           <span className={`${styles.chartText} ${styles.chartLabel}`}>
@@ -154,7 +159,10 @@ export const renderLegend = (props: LegendContentProps) => {
         <div key={`legend-${index}`} className={styles.legendItem}>
           <div
             className={styles.chartIcon}
-            style={{ backgroundColor: entry.color }}
+            style={
+              // eslint-disable-next-line react-perf/jsx-no-new-object-as-prop
+              { backgroundColor: entry.color }
+            }
           />
           <span className={`${styles.chartText} ${styles.chartLabel}`}>
             {entry.value}
@@ -222,12 +230,14 @@ export type ChartLegendProps = {
   position: ChartLegendPosition;
 };
 
+const LEGEND_WRAPPER_STYLE = { alignContent: "start" as const };
+
 export function ChartLegend({ position }: ChartLegendProps) {
   return (
     <Legend
       {...CHART_LEGEND_PROPS}
       {...LEGEND_POSITION_PROPS[position]}
-      wrapperStyle={{ alignContent: "start" }}
+      wrapperStyle={LEGEND_WRAPPER_STYLE}
     />
   );
 }

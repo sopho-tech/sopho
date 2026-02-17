@@ -1,7 +1,10 @@
 [package]
-name = "metron"
+name = "sopho"
 version = "0.1.0"
 edition = "2021"
+authors = ["Athul T R <athultr1997@gmail.com>"]
+description = "Open-source analytics platform"
+license = "AGPL-3.0"
 
 [workspace]
 members = [".", "migration"]

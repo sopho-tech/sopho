@@ -5,10 +5,11 @@ import { SelectField } from "./SelectField";
 import { CollapsibleField } from "./CollapsibleField";
 import { FieldError } from "./FieldError";
 import FormStyles from "./Form.module.css";
+import { AppFormReturnType } from "./hooks";
 
 type FormFieldRendererProps = {
   field: FormField;
-  form: any;
+  form: AppFormReturnType;
   accordionState: Map<string, boolean>;
   setAccordionState: React.Dispatch<React.SetStateAction<Map<string, boolean>>>;
   fieldStyleClass?: string;
@@ -48,7 +49,7 @@ export function FormFieldRenderer({
     case FormFieldType.INPUT_PASSWORD: {
       return (
         <form.AppField key={field.key} name={field.key}>
-          {(fieldState: any) => (
+          {() => (
             <div className={`${FormStyles.formField} ${fieldStyleClass || ""}`}>
               <PasswordField
                 label={String(field.name)}
@@ -67,8 +68,8 @@ export function FormFieldRenderer({
     }
     case FormFieldType.SELECT: {
       return (
-        <form.AppField key={field.key} name={field.key} className>
-          {(fieldState: any) => (
+        <form.AppField key={field.key} name={field.key}>
+          {(fieldState: { state: { meta: { errors: unknown[] } } }) => (
             <div className={`${FormStyles.formField} ${fieldStyleClass || ""}`}>
               <SelectField
                 label={String(field.name)}
@@ -82,7 +83,7 @@ export function FormFieldRenderer({
                 readonly={readonly}
                 labelStyleClass={labelStyleClass}
               />
-              <FieldError errors={fieldState.state.meta.errors} />
+              <FieldError errors={(fieldState.state.meta.errors || []) as string[]} />
             </div>
           )}
         </form.AppField>

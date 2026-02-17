@@ -7,12 +7,12 @@ import type {
 
 export type ChartCellSlice = {
   chartCell: {
-    forms: Record<string, any>;
+    forms: Record<string, unknown>;
     outputs: Record<string, ExecuteCellResponseDto>;
     executionStates: Record<string, ExecutionState>;
     outputStates: Record<string, CellOutputState>;
-    setForm: (cellId: string, form: any) => void;
-    getForm: (cellId: string) => any;
+    setForm: (cellId: string, form: unknown) => void;
+    getForm: (cellId: string) => unknown;
     setExecutionState: (cellId: string, executionState: ExecutionState) => void;
     getExecutionState: (cellId: string) => ExecutionState | undefined;
     setOutputState: (cellId: string, outputState: CellOutputState) => void;
@@ -30,7 +30,7 @@ export const createChartCellSlice: StateCreator<ChartCellSlice> = (set, get) => 
     outputs: {},
     executionStates: {},
     outputStates: {},
-    setForm: (cellId: string, form: any) =>
+    setForm: (cellId: string, form: unknown) =>
       set((state) => ({
         chartCell: {
           ...state.chartCell,
@@ -67,7 +67,9 @@ export const createChartCellSlice: StateCreator<ChartCellSlice> = (set, get) => 
       })),
     clearOutput: (cellId) =>
       set((state) => {
-        const { [cellId]: _, ...rest } = state.chartCell.outputs;
+        const rest = Object.fromEntries(
+          Object.entries(state.chartCell.outputs).filter(([k]) => k !== cellId)
+        );
         return { chartCell: { ...state.chartCell, outputs: rest } };
       }),
     clearAll: () =>

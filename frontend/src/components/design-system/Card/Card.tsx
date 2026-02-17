@@ -22,14 +22,6 @@ type CardContextType = {
 
 const CardContext = createContext<CardContextType | null>(null);
 
-const useCardContext = () => {
-  const context = useContext(CardContext);
-  if (!context) {
-    throw "Card compound components must be used within Card parent component";
-  }
-  return context;
-};
-
 const CardRoot = ({ children, className, variant, onClick }: CardRootProps) => {
   const contextValue = {
     variant: variant,

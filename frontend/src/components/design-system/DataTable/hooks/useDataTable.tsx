@@ -5,13 +5,14 @@ import {
   Table,
   PaginationState,
   SortingState,
+  OnChangeFn,
 } from "@tanstack/react-table";
 import {
   TableType,
   ColumnConfig,
   PaginationConfig,
 } from "src/components/design-system/DataTable/types";
-import { createReactTable } from "src/components/design-system/DataTable/utils";
+import { useCreateReactTable } from "src/components/design-system/DataTable/utils";
 import { Icon } from "src/components/design-system/Icon/Icon";
 import { Flex } from "src/components/design-system/Flex";
 import { Text } from "src/components/design-system/Text";
@@ -20,8 +21,8 @@ import { getIconForDataType } from "src/utils/column_utils";
 type UseDataTableReturn<T> = {
   table: Table<T>;
   columnConfigMap: Map<string, ColumnConfig<T>>;
-  globalFilter: any;
-  setGlobalFilter: (value: any) => void;
+  globalFilter: string;
+  setGlobalFilter: (value: string) => void;
   sorting: SortingState;
   setSorting: (
     value: SortingState | ((prev: SortingState) => SortingState)
@@ -48,7 +49,7 @@ export function useDataTable<T>({
   getRowId?: (row: T) => string;
 }): UseDataTableReturn<T> {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = useState<any>([]);
+  const [globalFilter, setGlobalFilter] = useState<string>("");
   const [pagination, setPagination] = useState<PaginationState | undefined>(
     () => {
       if (tableType === TableType.CLIENT_SIDE_PAGINATED) {
@@ -88,7 +89,7 @@ export function useDataTable<T>({
     return map;
   }, [columnsWithDrag]);
 
-  const reactTableColumns: ColumnDef<T, any>[] = useMemo(() => {
+  const reactTableColumns: ColumnDef<T, unknown>[] = useMemo(() => {
     return columnsWithDrag.map((col) => {
       const headerContent = col.dataType
         ? () => {
@@ -107,30 +108,42 @@ export function useDataTable<T>({
           }
         : col.header;
 
-      const columnDef: Partial<ColumnDef<T, any>> = {
+      const columnDef: Partial<ColumnDef<T, unknown>> = {
         size: col.size,
         minSize: col.minSize,
         maxSize: col.maxSize,
       };
 
-      if (col.type === "accessor") {
-        return columnHelper.accessor(col.accessor as any, {
-          ...columnDef,
-          header: headerContent,
-          cell: col.cell || ((props) => props.getValue()),
-        });
+      if (col.type === "accessor" && col.accessor) {
+        return columnHelper.accessor(
+          col.accessor as Parameters<typeof columnHelper.accessor>[0],
+          {
+            id: col.key,
+            ...columnDef,
+            header: headerContent,
+            cell: col.cell || ((props: { getValue: () => unknown }) => props.getValue()),
+          }
+        );
       } else {
         return columnHelper.display({
           id: col.key,
           ...columnDef,
           header: headerContent,
-          cell: col.cell,
+          cell: col.cell as ColumnDef<T, unknown>["cell"],
         });
       }
     });
   }, [columnsWithDrag, columnHelper]);
 
-  const table = createReactTable(
+  const onPaginationChange: OnChangeFn<PaginationState> = (updaterOrValue) => {
+    setPagination(
+      typeof updaterOrValue === "function"
+        ? updaterOrValue(pagination ?? { pageIndex: 0, pageSize: 10 })
+        : updaterOrValue
+    );
+  };
+
+  const table = useCreateReactTable(
     tableType,
     reactTableColumns,
     data,
@@ -140,7 +153,7 @@ export function useDataTable<T>({
     globalFilter,
     setGlobalFilter,
     pagination,
-    setPagination,
+    onPaginationChange,
     enableColumnResizing ?? true,
     getRowId
   );

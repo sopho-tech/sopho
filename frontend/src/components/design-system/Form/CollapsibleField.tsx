@@ -1,10 +1,12 @@
+import { useCallback } from "react";
 import { FormField } from "./types";
+import type { AppFormReturnType } from "./hooks";
 import { Accordion } from "src/components/design-system/Accordion";
 import { FormFieldRenderer } from "./FormFieldRenderer";
 
 type CollapsibleFieldProps = {
   field: FormField;
-  form: any;
+  form: AppFormReturnType;
   accordionState: Map<string, boolean>;
   setAccordionState: React.Dispatch<React.SetStateAction<Map<string, boolean>>>;
   fieldStyleClass?: string;
@@ -21,22 +23,27 @@ export function CollapsibleField({
   labelStyleClass,
   readonly = false,
 }: CollapsibleFieldProps) {
+  const handleValueChange = useCallback(
+    (newValues: string[]) => {
+      const newState = new Map(accordionState);
+      newState.set(field.key, newValues.includes(field.key));
+      setAccordionState(newState);
+    },
+    [accordionState, field.key, setAccordionState]
+  );
+
   if (!field.collapsibleConfig) {
     return null;
   }
 
   const accordionValues = Array.from(accordionState.entries())
-    .filter(([_, isOpen]) => isOpen)
+    .filter(([, isOpen]) => isOpen)
     .map(([key]) => key);
 
   return (
     <Accordion
       value={accordionValues}
-      onValueChange={(newValues) => {
-        const newState = new Map(accordionState);
-        newState.set(field.key, newValues.includes(field.key));
-        setAccordionState(newState);
-      }}
+      onValueChange={handleValueChange}
     >
       <Accordion.Item value={field.key}>
         <Accordion.Trigger>{field.name}</Accordion.Trigger>

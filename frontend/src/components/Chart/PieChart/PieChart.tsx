@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { PieChart as RechartsPieChart, Pie, Label } from "recharts";
 import {
   getPrimaryColorShades,
@@ -11,7 +11,7 @@ export type PieChartProps = {
   category: string;
   value: string;
   dimensions: string[];
-  data: Object[];
+  data: object[];
   sortOrder?: string;
 };
 
@@ -21,7 +21,7 @@ function getDecimalPlaces(val: unknown): number {
   return dot === -1 ? 0 : str.length - dot - 1;
 }
 
-function calculateTotal(data: Object[], valueKey: string): number {
+function calculateTotal(data: object[], valueKey: string): number {
   let maxDecimals = 0;
   const sum = data.reduce<number>((acc, item) => {
     const raw = (item as Record<string, unknown>)[valueKey];
@@ -48,6 +48,44 @@ export const PieChart = ({ category, value, data }: PieChartProps) => {
     () => calculateTotal(data, value),
     [data, value]
   );
+
+  const renderLabelContent = useCallback(
+    (props: { viewBox?: unknown }) => {
+      const vb = (props.viewBox ?? {}) as
+                | { cx?: number; cy?: number }
+                | { x?: number; y?: number; width?: number; height?: number };
+              const x =
+                "cx" in vb && vb.cx != null
+                  ? vb.cx
+                  : "x" in vb && vb.width != null
+                    ? (vb.x ?? 0) + vb.width / 2
+                    : 0;
+              const y =
+                "cy" in vb && vb.cy != null
+                  ? vb.cy
+                  : "y" in vb && vb.height != null
+                    ? (vb.y ?? 0) + vb.height / 2
+                    : 0;
+      return (
+        <text
+          x={x}
+          y={y}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="var(--color-grey-900)"
+        >
+          <tspan x={x} dy="-0.7em" fill="var(--color-grey-500)">
+            Total
+          </tspan>
+          <tspan x={x} dy="1.5em">
+            {totalCategoryValue}
+          </tspan>
+        </text>
+      );
+    },
+    [totalCategoryValue]
+  );
+
   return (
     <ChartContainer>
       <RechartsPieChart>
@@ -64,39 +102,7 @@ export const PieChart = ({ category, value, data }: PieChartProps) => {
           <Label
             position="center"
             fill="#666"
-            content={(props) => {
-              const vb = (props.viewBox ?? {}) as
-                | { cx?: number; cy?: number }
-                | { x?: number; y?: number; width?: number; height?: number };
-              const x =
-                "cx" in vb && vb.cx != null
-                  ? vb.cx
-                  : "x" in vb && vb.width != null
-                    ? (vb.x ?? 0) + vb.width / 2
-                    : 0;
-              const y =
-                "cy" in vb && vb.cy != null
-                  ? vb.cy
-                  : "y" in vb && vb.height != null
-                    ? (vb.y ?? 0) + vb.height / 2
-                    : 0;
-              return (
-                <text
-                  x={x}
-                  y={y}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fill="var(--color-grey-900)"
-                >
-                  <tspan x={x} dy="-0.7em" fill="var(--color-grey-500)">
-                    Total
-                  </tspan>
-                  <tspan x={x} dy="1.5em">
-                    {totalCategoryValue}
-                  </tspan>
-                </text>
-              );
-            }}
+            content={renderLabelContent}
           />
         </Pie>
         <ChartLegend position="right" />

@@ -7,12 +7,13 @@ type BannerSlimProps = {
   message: string | undefined;
 };
 
-export function BannerSlim({ type: _type, message }: BannerSlimProps) {
+export function BannerSlim({ type, message }: BannerSlimProps) {
   if (!message) {
     return null;
   }
   return (
     <Flex
+      data-type={type}
       backgroundColor="error"
       borderRadius="lg"
       paddingX="xs"

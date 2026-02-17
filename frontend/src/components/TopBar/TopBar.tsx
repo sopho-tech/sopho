@@ -1,20 +1,23 @@
 import { Flex } from "src/components/design-system/Flex/Flex";
 import { Children, isValidElement } from "react";
 
+const FLEX_BORDER_STYLE = { borderBottom: "var(--border-divider)" };
+const FLEX_MAX_WIDTH_STYLE = { maxWidth: "50%" };
+
 type TopBarSectionProps = {
   children?: React.ReactNode;
 };
 
-function TopBarLeft({ children: _children }: TopBarSectionProps) {
-  return null;
+function TopBarLeft({ children }: TopBarSectionProps) {
+  return <>{children}</>;
 }
 
-function TopBarCenter({ children: _children }: TopBarSectionProps) {
-  return null;
+function TopBarCenter({ children }: TopBarSectionProps) {
+  return <>{children}</>;
 }
 
-function TopBarRight({ children: _children }: TopBarSectionProps) {
-  return null;
+function TopBarRight({ children }: TopBarSectionProps) {
+  return <>{children}</>;
 }
 
 type TopBarProps = {
@@ -47,12 +50,12 @@ function TopBarRoot({ children, className }: TopBarProps) {
       alignItems="center"
       paddingX="lg"
       paddingY="xs"
-      sx={{ borderBottom: "var(--border-divider)" }}
+      sx={FLEX_BORDER_STYLE}
       backgroundColor="white"
       className={className}
     >
       <Flex>{leftContent}</Flex>
-      <Flex justifyContent="center" sx={{ maxWidth: "50%" }}>
+      <Flex justifyContent="center" sx={FLEX_MAX_WIDTH_STYLE}>
         {centerContent}
       </Flex>
       <Flex>{rightContent}</Flex>

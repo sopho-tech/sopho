@@ -18,7 +18,7 @@ export type CollapsibleConfig = {
 
 export type FieldValidator = {
   trigger: ValidationTrigger;
-  validatorFunction: (value: any) => string | undefined;
+  validatorFunction: (value: unknown) => string | undefined;
 };
 
 export type FormField = {

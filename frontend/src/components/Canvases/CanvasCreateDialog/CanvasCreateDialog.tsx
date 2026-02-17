@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useStore } from "src/store";
 import { CanvasesPageState } from "src/components/Canvases/dto";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -8,6 +9,8 @@ import { Form } from "src/components/design-system/Form/Form";
 import { SophoDialog } from "src/components/SophoDialog";
 import styles from "src/components/Canvases/CanvasCreateDialog/CanvasCreateDialog.module.css";
 
+const DEFAULT_FORM_VALUES = { name: "", description: "" };
+
 export function CanvasCreateDialog() {
   const navigate = useNavigate();
   const canvasPageState = useStore((state) => state.canvas.canvasPageState);
@@ -15,51 +18,63 @@ export function CanvasCreateDialog() {
     (state) => state.canvas.setCanvasPageState
   );
 
-  const handleDialogClose = () => {
+  const handleDialogClose = useCallback(() => {
     setCanvasPageState(CanvasesPageState.LIST);
-  };
+  }, [setCanvasPageState]);
 
-  const handleOnOpenChange = (open: boolean) => {
-    if (!open) {
-      setCanvasPageState(CanvasesPageState.LIST);
-    }
-  };
+  const handleOnOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        setCanvasPageState(CanvasesPageState.LIST);
+      }
+    },
+    [setCanvasPageState]
+  );
 
-  const mutation = useCreateCanvas({
-    onSuccess: (data) => {
+  const handleSuccess = useCallback(
+    (data: CanvasDto) => {
       setCanvasPageState(CanvasesPageState.LIST);
-      if (data && data.id) {
+      if (data.id) {
         const canvasPath = `${APP_ROUTES.CANVASES}/${data.id}`;
         navigate(canvasPath);
       } else {
         throw Error("unexpected state");
       }
     },
-    onError: (error) => {
-      console.error("Error creating canvas:", error);
-    },
+    [setCanvasPageState, navigate]
+  );
+
+  const handleError = useCallback((error: Error) => {
+    console.error("Error creating canvas:", error);
+  }, []);
+
+  const mutation = useCreateCanvas({
+    onSuccess: handleSuccess,
+    onError: handleError,
   });
 
-  const onSubmitCallback = (formData: FormData) => {
-    const canvas: CanvasDto = {
-      id: null,
-      name: formData.get("name") as string,
-      description: formData.get("description") as string,
-      status: null,
-      created_at: null,
-      updated_at: null,
-    };
-    mutation.mutate(canvas);
-  };
+  const onSubmitCallback = useCallback(
+    (formData: FormData) => {
+      const canvas: Omit<CanvasDto, "id"> = {
+        name: formData.get("name") as string,
+        description: formData.get("description") as string,
+        status: null,
+        created_at: null,
+        updated_at: null,
+        sql_cell_count: 0,
+        chart_cell_count: 0,
+        dashboard_charts_count: 0,
+      };
+      mutation.mutate(canvas);
+    },
+    [mutation]
+  );
 
   const shouldOpenDialog =
     canvasPageState === CanvasesPageState.CREATE_CANVAS_DIALOG;
 
   const dialogContent = (
-    <Form
-      defaultValues={{ name: "", description: "" }}
-      onSubmit={onSubmitCallback}
-    >
+    <Form defaultValues={DEFAULT_FORM_VALUES} onSubmit={onSubmitCallback}>
       <Form.ErrorBanner />
       <Form.Fields>
         <Form.Input

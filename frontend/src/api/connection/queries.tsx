@@ -19,7 +19,7 @@ export const connectionKeys = {
 const connectionApi = {
   getConnection: async (connectionId: string): Promise<ConnectionDto> => {
     const response = await ApiService.get({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CONNECTION.GET_BY_ID?.replace(":id", connectionId) || `/api/v1/connection/${connectionId}`}`,
+      url: API_ENDPOINTS.CONNECTION.GET_BY_ID?.replace(":id", connectionId) || `/api/v1/connection/${connectionId}`,
       onlyBody: true,
     });
     return response as ConnectionDto;
@@ -27,7 +27,7 @@ const connectionApi = {
 
   getAllConnections: async (): Promise<ConnectionDto[]> => {
     const response = await ApiService.get({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CONNECTION.GET_ALL}`,
+      url: API_ENDPOINTS.CONNECTION.GET_ALL,
       onlyBody: true,
     });
     return response as ConnectionDto[];
@@ -41,7 +41,7 @@ const connectionApi = {
     payload: Partial<ConnectionDto>;
   }): Promise<ConnectionDto> => {
     const response = await ApiService.put({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CONNECTION.UPDATE.replace(":id", connectionId)}`,
+      url: API_ENDPOINTS.CONNECTION.UPDATE.replace(":id", connectionId),
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -54,7 +54,7 @@ const connectionApi = {
     payload: CreateConnectionDto
   ): Promise<ConnectionDto> => {
     const response = await ApiService.post({
-      url: `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CONNECTION.CREATE}`,
+      url: API_ENDPOINTS.CONNECTION.CREATE,
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -65,7 +65,7 @@ const connectionApi = {
 
   deleteConnection: async (connectionId: string): Promise<void> => {
     const response = await fetch(
-      `${import.meta.env.VITE_API_HOSTNAME}${API_ENDPOINTS.CONNECTION.DELETE?.replace(":id", connectionId) || `/api/v1/connection/${connectionId}`}`,
+      API_ENDPOINTS.CONNECTION.DELETE?.replace(":id", connectionId) || `/api/v1/connection/${connectionId}`,
       {
         method: "DELETE",
         credentials: "include",

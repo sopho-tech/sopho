@@ -32,14 +32,14 @@ export function createCanvasesTableColumns({
       header: "Created On",
       type: "accessor",
       accessor: "created_at",
-      cell: (props) => formatTimestamp(props.getValue()),
+      cell: (props) => formatTimestamp(props.getValue() as string | null),
     },
     {
       key: "updated_at",
       header: "Last Modified",
       type: "accessor",
       accessor: "updated_at",
-      cell: (props) => formatTimestamp(props.getValue()),
+      cell: (props) => formatTimestamp(props.getValue() as string | null),
     },
     {
       key: "actions",
@@ -47,7 +47,7 @@ export function createCanvasesTableColumns({
       type: "display",
       cell: (props) => (
         <ActionButtons
-          connectionId={props.row.original.id}
+          connectionId={props.row.original.id ?? ""}
           onViewClick={onViewClick}
           onEditClick={onEditClick}
           onDeleteClick={onDeleteClick}

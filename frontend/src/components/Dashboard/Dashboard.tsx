@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useParams } from "react-router";
 import RGL, { WidthProvider, Layout } from "react-grid-layout";
 import { useDashboardByCanvasId } from "src/api/dashboard/queries";
@@ -37,37 +37,33 @@ export function Dashboard() {
     }
   }, [dashboardQuery.data, setLayout]);
 
-  const handleLayoutChange = (newLayout: Layout[]) => {
-    if (isEditing) {
-      setLayout(newLayout);
-    }
-  };
+  const handleLayoutChange = useCallback(
+    (newLayout: Layout[]) => {
+      if (isEditing) {
+        setLayout(newLayout);
+      }
+    },
+    [isEditing, setLayout]
+  );
 
-  const handleDrag = () => {
-    const gridItems = document.querySelectorAll(".react-grid-item");
-    // gridItems.forEach((item) => {
-    //   const divs = item.querySelectorAll("div");
-    // });
-  };
+  const handleDrag = useCallback(() => {}, []);
 
-  const handleDragStart = () => {
+  const handleDragStart = useCallback(() => {
     document.body.style.userSelect = "none";
-  };
+  }, []);
 
-  const handleDragStop = () => {
+  const handleDragStop = useCallback(() => {
     document.body.style.userSelect = "";
     handleDrag();
-  };
+  }, [handleDrag]);
 
-  const handleOnDropDragOver = () => {
-    return { w: DEFAULT_CHART_WIDTH, h: DEFAULT_CHART_HEIGHT };
-  };
+  const handleOnDropDragOver = useCallback(
+    () => ({ w: DEFAULT_CHART_WIDTH, h: DEFAULT_CHART_HEIGHT }),
+    []
+  );
 
-  const handleOnDrop = (
-    droppedLayout: Layout[],
-    itemLayout: Layout,
-    e: DragEvent
-  ) => {
+  const handleOnDrop = useCallback(
+    (droppedLayout: Layout[], itemLayout: Layout, e: DragEvent) => {
     if (!e.dataTransfer) {
       return;
     }
@@ -87,7 +83,12 @@ export function Dashboard() {
       return item;
     });
     setLayout(newLayout);
-  };
+  },
+    [setLayout]
+  );
+
+  const margin = useMemo<[number, number]>(() => [10, 10], []);
+  const containerPadding = useMemo<[number, number]>(() => [10, 10], []);
 
   return (
     <Flex gap="2xs" flex="grow">
@@ -96,8 +97,8 @@ export function Dashboard() {
         layout={layout}
         cols={12}
         rowHeight={100}
-        margin={[10, 10]}
-        containerPadding={[10, 10]}
+        margin={margin}
+        containerPadding={containerPadding}
         onLayoutChange={handleLayoutChange}
         onDragStart={handleDragStart}
         onDrag={handleDrag}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { useCanvas, useUpdateCanvas } from "src/api/canvas/queries";
 import { useNotebooksByCanvasId } from "src/api/notebook/queries";
@@ -14,7 +14,7 @@ enum ViewType {
 }
 
 export function Canvas() {
-  let params = useParams();
+  const params = useParams();
   const query = useCanvas(params.id!);
   const notebooksQuery = useNotebooksByCanvasId(params.id!);
   const updateCanvas = useUpdateCanvas();
@@ -32,6 +32,28 @@ export function Canvas() {
         : "";
     setActiveNotebookId(firstNotebookId);
   }, [notebooksQuery.data, setActiveNotebookId]);
+
+  const handleNameSave = useCallback(
+    (name: string) =>
+      updateCanvas.mutate({
+        canvasId: params.id!,
+        payload: { ...query.data!, name },
+      }),
+    [params.id, query.data, updateCanvas]
+  );
+
+  const handleDescriptionSave = useCallback(
+    (description: string) =>
+      updateCanvas.mutate({
+        canvasId: params.id!,
+        payload: { ...query.data!, description },
+      }),
+    [params.id, query.data, updateCanvas]
+  );
+
+  const handleViewTypeChange = useCallback((v: string) => {
+    setViewType(ViewType[v.toUpperCase() as keyof typeof ViewType]);
+  }, []);
 
   if (!query.data) {
     return <span>No data available</span>;
@@ -57,31 +79,19 @@ export function Canvas() {
         <Flex direction="row" justifyContent="space-between">
           <InlineEdit
             value={query.data.name ?? ""}
-            onSave={(name) =>
-              updateCanvas.mutate({
-                canvasId: params.id!,
-                payload: { ...query.data, name: name },
-              })
-            }
+            onSave={handleNameSave}
             headingLevel={1}
             clearButtonSize="md"
             defaultValue="Default Canvas Title"
           />
           <CanvasButtons
             viewType={viewType.toLowerCase()}
-            onViewTypeChange={(v: string) =>
-              setViewType(ViewType[v.toUpperCase() as keyof typeof ViewType])
-            }
+            onViewTypeChange={handleViewTypeChange}
           />
         </Flex>
         <InlineEdit
           value={query.data.description ?? ""}
-          onSave={(description) =>
-            updateCanvas.mutate({
-              canvasId: params.id!,
-              payload: { ...query.data, description },
-            })
-          }
+          onSave={handleDescriptionSave}
           placeholder="Add a description"
           defaultValue="Default description"
           textColor="subtle"

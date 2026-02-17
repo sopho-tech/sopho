@@ -13,7 +13,7 @@ import {
 export type BarChartProps = {
   xAxis: string;
   yAxis: string;
-  data: Object[];
+  data: object[];
   xAxisTitle?: string;
   yAxisTitle?: string;
   showDots?: boolean;

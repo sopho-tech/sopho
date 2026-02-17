@@ -6,7 +6,7 @@ import { SubscribeButton } from "./SubscribeButton";
 export const { fieldContext, formContext, useFieldContext } =
   createFormHookContexts();
 
-export const { useAppForm, withForm } = createFormHook({
+const formHook = createFormHook({
   fieldContext,
   formContext,
   fieldComponents: {
@@ -18,3 +18,6 @@ export const { useAppForm, withForm } = createFormHook({
     SubscribeButton,
   },
 });
+
+export const { useAppForm, withForm } = formHook;
+export type AppFormReturnType = ReturnType<typeof useAppForm>;

@@ -33,22 +33,23 @@ export function Box({
   const layoutStyles = getSharedLayoutStyles(layoutProps);
 
   const backgroundColorClassName = styles[backgroundColor];
-  const mergedClassName = mergeBoxClassName(
-    backgroundColorClassName,
-    htmlProps.className
-  );
-
   const {
-    className: _,
+    className,
     style: htmlStyle,
     ...htmlPropsWithoutClassNameAndStyle
   } = htmlProps;
+
+  const mergedClassName = mergeBoxClassName(
+    backgroundColorClassName,
+    className
+  );
 
   const mergedStyle = mergeBoxStyles(display, layoutStyles, sx, htmlStyle);
 
   return (
     <Component
-      ref={ref as any}
+      // @ts-expect-error - polymorphic Component expects intersection of all element refs
+      ref={ref}
       className={mergedClassName}
       style={mergedStyle}
       {...htmlPropsWithoutClassNameAndStyle}

@@ -1,5 +1,5 @@
 export const ApiService = {
-  post: async <T = any,>({
+  post: async <T = unknown,>({
     url,
     data,
     headers,
@@ -7,7 +7,7 @@ export const ApiService = {
     onlyBody = true,
   }: {
     url: string;
-    data?: any;
+    data?: unknown;
     headers?: Record<string, string>;
     credentials?: boolean;
     onlyBody?: boolean;
@@ -26,7 +26,7 @@ export const ApiService = {
     }
     return response;
   },
-  get: async <T = any,>({
+  get: async <T = unknown,>({
     url,
     headers,
     credentials = true,
@@ -50,7 +50,7 @@ export const ApiService = {
     }
     return response;
   },
-  put: async <T = any,>({
+  put: async <T = unknown,>({
     url,
     data,
     headers,
@@ -58,7 +58,7 @@ export const ApiService = {
     onlyBody = true,
   }: {
     url: string;
-    data?: any;
+    data?: unknown;
     headers?: Record<string, string>;
     credentials?: boolean;
     onlyBody?: boolean;
@@ -77,7 +77,7 @@ export const ApiService = {
     }
     return response;
   },
-  patch: async <T = any,>({
+  patch: async <T = unknown,>({
     url,
     data,
     headers,
@@ -85,7 +85,7 @@ export const ApiService = {
     onlyBody = true,
   }: {
     url: string;
-    data?: any;
+    data?: unknown;
     headers?: Record<string, string>;
     credentials?: boolean;
     onlyBody?: boolean;

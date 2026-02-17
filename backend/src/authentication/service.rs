@@ -265,7 +265,6 @@ fn add_session_cookie(
 ) {
     let cookie = Cookie::build((name, value.to_string()))
         .same_site(SameSite::Strict)
-        .domain(app_state.config.cookie_domain.to_string())
         .expires(expiration)
         .path("/")
         .secure(app_state.config.cookie_secure)
@@ -487,7 +486,6 @@ pub async fn refresh_token(cookies: Cookies, app_state: AppState) -> impl IntoRe
 fn invalidate_session_cookie(cookies: &Cookies, name: CookieName, app_state: &AppState) {
     let cookie = Cookie::build((name.to_string(), ""))
         .same_site(SameSite::Strict)
-        .domain(app_state.config.cookie_domain.to_string())
         .max_age(time_utils::zero_duration_seconds())
         .path("/")
         .secure(app_state.config.cookie_secure)

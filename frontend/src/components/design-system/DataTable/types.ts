@@ -1,4 +1,4 @@
-import { PaginationState, OnChangeFn } from "@tanstack/react-table";
+import { PaginationState, OnChangeFn, CellContext } from "@tanstack/react-table";
 import { ColumnDataType } from "src/constants/database_types";
 
 export enum TableType {
@@ -14,7 +14,7 @@ export type ColumnConfig<T> = {
   minSize?: number;
   maxSize?: number;
   type: "accessor" | "display";
-  cell?: (props: any) => React.ReactNode;
+  cell?: (props: CellContext<T, unknown>) => React.ReactNode;
   accessor?: keyof T;
   dataType?: ColumnDataType;
 };

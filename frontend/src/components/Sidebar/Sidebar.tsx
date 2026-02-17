@@ -8,6 +8,11 @@ import {
 } from "src/components/design-system";
 import logo from "src/assets/images/logo.svg";
 
+const HOME_TOOLTIP = { text: "Home", direction: "right" } as const;
+const NOTEBOOKS_TOOLTIP = { text: "Notebooks", direction: "right" } as const;
+const SETTINGS_TOOLTIP = { text: "Settings", direction: "right" } as const;
+const PROFILE_TOOLTIP = { text: "Profile", direction: "right" } as const;
+
 export function Sidebar() {
   const location = useLocation();
 
@@ -37,7 +42,7 @@ export function Sidebar() {
                 <IconButtonLink
                   type="home"
                   state={getState(APP_ROUTES.INDEX)}
-                  tooltip={{ text: "Home", direction: "right" }}
+                  tooltip={HOME_TOOLTIP}
                 />
               </NavLink>
             </NavigationMenu.Link>
@@ -48,7 +53,7 @@ export function Sidebar() {
                 <IconButtonLink
                   type="layers"
                   state={getState(APP_ROUTES.CANVASES)}
-                  tooltip={{ text: "Notebooks", direction: "right" }}
+                  tooltip={NOTEBOOKS_TOOLTIP}
                 />
               </NavLink>
             </NavigationMenu.Link>
@@ -59,7 +64,7 @@ export function Sidebar() {
                 <IconButtonLink
                   type="settings"
                   state={getState(APP_ROUTES.SETTINGS)}
-                  tooltip={{ text: "Settings", direction: "right" }}
+                  tooltip={SETTINGS_TOOLTIP}
                 />
               </NavLink>
             </NavigationMenu.Link>
@@ -70,7 +75,7 @@ export function Sidebar() {
                 <IconButtonLink
                   type="user"
                   state={getState(APP_ROUTES.PROFILE)}
-                  tooltip={{ text: "Profile", direction: "right" }}
+                  tooltip={PROFILE_TOOLTIP}
                 />
               </NavLink>
             </NavigationMenu.Link>

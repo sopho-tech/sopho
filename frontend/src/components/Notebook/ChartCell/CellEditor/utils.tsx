@@ -32,10 +32,10 @@ export const VISIBILITY_OPTIONS = [
 export function getDefaultValuesForChart(
   chartType: ChartType | null,
   chartContent: ChartContent | null
-): Record<string, any> {
+): Record<string, unknown> {
   if (!chartContent) return {};
 
-  const c = chartContent as Record<string, any>;
+  const c = chartContent as Record<string, unknown>;
   const common = { cell_id: c.cell_id, chart_type: c.chart_type };
 
   if (chartType === ChartType.BAR || chartType === ChartType.LINE) {

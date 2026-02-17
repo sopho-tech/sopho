@@ -11,7 +11,7 @@ import {
   TableType,
   ColumnConfig,
 } from "src/components/design-system/DataTable";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 type ChartCellRow = {
   id: string;
@@ -44,6 +44,8 @@ export function ChartBrowser() {
       });
   }, [layout, cellsQuery.data]);
 
+  const getRowId = useCallback((row: ChartCellRow) => row.id, []);
+
   const columns: ColumnConfig<ChartCellRow>[] = useMemo(
     () => [
       {
@@ -51,14 +53,14 @@ export function ChartBrowser() {
         header: "Cell Name",
         type: "accessor",
         accessor: "name",
-        cell: (props) => props.getValue() || "Unnamed",
+        cell: (props) => (props.getValue() as string | null) || "Unnamed",
       },
       {
         key: "chartType",
         header: "Chart Type",
         type: "accessor",
         accessor: "chartType",
-        cell: (props) => props.getValue() || "N/A",
+        cell: (props) => (props.getValue() as string | null | undefined) || "N/A",
       },
     ],
     []
@@ -86,7 +88,7 @@ export function ChartBrowser() {
         showRowsPerPage={false}
         enableColumnResizing={false}
         enableRowDragging={true}
-        getRowId={(row) => row.id}
+        getRowId={getRowId}
       />
     </Flex>
   );

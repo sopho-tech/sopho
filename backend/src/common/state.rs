@@ -11,11 +11,7 @@ pub struct Configurations {
     pub database_url: Cow<'static, str>,
     pub port: u16,
     pub frontend_dir: Cow<'static, str>,
-    pub google_client_id: Cow<'static, str>,
-    pub google_client_secret: Cow<'static, str>,
-    pub google_redirect_uri: Cow<'static, str>,
     pub environment: Cow<'static, str>,
-    pub cookie_domain: Cow<'static, str>,
     pub cookie_secure: bool,
     pub admin_username: Cow<'static, str>,
     pub admin_password: Cow<'static, str>,
@@ -36,34 +32,10 @@ impl Configurations {
                 Ok(port) => port.parse()?,
                 _ => 8000,
             },
-            frontend_dir: {
-                let manifest_dir = env!("CARGO_MANIFEST_DIR");
-                let backend_dir = std::path::Path::new(manifest_dir);
-                let project_root = backend_dir.parent().ok_or_else(|| {
-                    anyhow::anyhow!("Could not determine project root from CARGO_MANIFEST_DIR")
-                })?;
-                let frontend_dist = project_root.join("frontend").join("dist");
-                frontend_dist.to_string_lossy().into_owned().into()
-            },
-            google_client_id: match dotenv::var("GOOGLE_CLIENT_ID") {
-                Ok(google_client_id) => google_client_id.into(),
-                Err(err) => bail!("missing GOOGLE_CLIENT_ID: {err}"),
-            },
-            google_client_secret: match dotenv::var("GOOGLE_CLIENT_SECRET") {
-                Ok(google_client_secret) => google_client_secret.into(),
-                Err(err) => bail!("missing GOOGLE_CLIENT_SECRET: {err}"),
-            },
-            google_redirect_uri: match dotenv::var("GOOGLE_REDIRECT_URI") {
-                Ok(google_redirect_uri) => google_redirect_uri.into(),
-                Err(err) => bail!("missing GOOGLE_REDIRECT_URI: {err}"),
-            },
+            frontend_dir: Cow::Borrowed("/app/frontend/dist/"),
             environment: match dotenv::var("ENVIRONMENT") {
                 Ok(environment) => environment.into(),
                 Err(err) => bail!("missing ENVIRONMENT: {err}"),
-            },
-            cookie_domain: match dotenv::var("COOKIE_DOMAIN") {
-                Ok(cookie_domain) => cookie_domain.into(),
-                Err(err) => bail!("missing COOKIE_DOMAIN: {err}"),
             },
             cookie_secure: match dotenv::var("COOKIE_SECURE") {
                 Ok(cookie_secure) => cookie_secure.parse()?,

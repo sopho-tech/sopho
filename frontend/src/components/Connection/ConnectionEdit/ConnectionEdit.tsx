@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useStore } from "src/store";
 import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 import {
@@ -66,12 +67,9 @@ export function ConnectionEdit() {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
   }
 
-  if (isLoading) return <div>Loading connection details...</div>;
-  if (queryError)
-    return <div>Error loading connection: {queryError.message}</div>;
-  if (!connection) return <div>No connection data found.</div>;
-
-  const formElements: SophoFormElement[] = [
+  const formElements = useMemo<SophoFormElement[]>(() => {
+    if (!connection) return [];
+    return [
     {
       key: "source_type",
       name: "Source Type",
@@ -162,7 +160,13 @@ export function ConnectionEdit() {
       input_type: InputType.TEXT,
       defaultValue: connection.description,
     },
-  ];
+    ];
+  }, [connection]);
+
+  if (isLoading) return <div>Loading connection details...</div>;
+  if (queryError)
+    return <div>Error loading connection: {queryError.message}</div>;
+  if (!connection) return <div>No connection data found.</div>;
 
   const dialogContent = (
     <SophoForm

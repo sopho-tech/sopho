@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import { useParams } from "react-router";
 import { Toolbar } from "src/components/design-system/Toolbar";
 import { DropdownMenu } from "src/components/design-system/DropdownMenu";
@@ -20,16 +21,19 @@ export function NotebookToolbar() {
   );
   const reorderCellMutation = useReorderCell(canvasId || undefined);
 
-  const handleCreateNewCell = (cellType: CellType) => {
-    createCellMutation.mutate({
-      notebook_id: activeNotebookId,
-      name: null,
-      content: null,
-      cell_type: cellType,
-    });
-  };
+  const handleCreateNewCell = useCallback(
+    (cellType: CellType) => {
+      createCellMutation.mutate({
+        notebook_id: activeNotebookId,
+        name: null,
+        content: null,
+        cell_type: cellType,
+      });
+    },
+    [activeNotebookId, createCellMutation]
+  );
 
-  const handleDeleteActiveCell = () => {
+  const handleDeleteActiveCell = useCallback(() => {
     const activeCellId = useStore.getState().notebook.activeCellId;
     if (activeCellId) {
       deleteCellMutation.mutate(activeCellId, {
@@ -38,23 +42,54 @@ export function NotebookToolbar() {
         },
       });
     }
-  };
+  }, [deleteCellMutation]);
 
-  const handleReorderCell = (
+  const handleReorderCell = useCallback((
     movementType: "UP" | "DOWN" | "TOP" | "BOTTOM"
   ) => {
     const activeCellId = useStore.getState().notebook.activeCellId;
     if (activeCellId) {
       reorderCellMutation.mutate({ cellId: activeCellId, movementType });
     }
-  };
+  }, [reorderCellMutation]);
+
+  const sxTransform = useMemo(() => ({ transform: "translateX(50%)" }), []);
+
+  const handleCreateMarkdown = useCallback(
+    () => handleCreateNewCell(CellType.MARKDOWN),
+    [handleCreateNewCell]
+  );
+  const handleCreateSql = useCallback(
+    () => handleCreateNewCell(CellType.SQL),
+    [handleCreateNewCell]
+  );
+  const handleCreateChart = useCallback(
+    () => handleCreateNewCell(CellType.CHART),
+    [handleCreateNewCell]
+  );
+  const handleReorderUp = useCallback(
+    () => handleReorderCell("UP"),
+    [handleReorderCell]
+  );
+  const handleReorderTop = useCallback(
+    () => handleReorderCell("TOP"),
+    [handleReorderCell]
+  );
+  const handleReorderDown = useCallback(
+    () => handleReorderCell("DOWN"),
+    [handleReorderCell]
+  );
+  const handleReorderBottom = useCallback(
+    () => handleReorderCell("BOTTOM"),
+    [handleReorderCell]
+  );
 
   return (
     <Flex
       position="fixed"
       bottom={10}
       right="50%"
-      sx={{ transform: "translateX(50%)" }}
+      sx={sxTransform}
       zIndex="10"
     >
       <Toolbar className={styles.toolbar} aria-label="Notebook actions">
@@ -66,17 +101,17 @@ export function NotebookToolbar() {
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>
             <DropdownMenu.Item
-              onClick={() => handleCreateNewCell(CellType.MARKDOWN)}
+              onClick={handleCreateMarkdown}
             >
               Markdown Cell <Kbd>⌘ M</Kbd>
             </DropdownMenu.Item>
             <DropdownMenu.Item
-              onClick={() => handleCreateNewCell(CellType.SQL)}
+              onClick={handleCreateSql}
             >
               SQL Cell <Kbd>⌘ Q</Kbd>
             </DropdownMenu.Item>
             <DropdownMenu.Item
-              onClick={() => handleCreateNewCell(CellType.CHART)}
+              onClick={handleCreateChart}
             >
               Chart Cell <Kbd>⌘ C</Kbd>
             </DropdownMenu.Item>
@@ -99,10 +134,10 @@ export function NotebookToolbar() {
             </Toolbar.Button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>
-            <DropdownMenu.Item onClick={() => handleReorderCell("UP")}>
+            <DropdownMenu.Item onClick={handleReorderUp}>
               Move Cell Up <Kbd>⌘ M</Kbd>
             </DropdownMenu.Item>
-            <DropdownMenu.Item onClick={() => handleReorderCell("TOP")}>
+            <DropdownMenu.Item onClick={handleReorderTop}>
               Move Cell Top <Kbd>⇧ ⌘ M</Kbd>
             </DropdownMenu.Item>
           </DropdownMenu.Content>
@@ -117,10 +152,10 @@ export function NotebookToolbar() {
             </Toolbar.Button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>
-            <DropdownMenu.Item onClick={() => handleReorderCell("DOWN")}>
+            <DropdownMenu.Item onClick={handleReorderDown}>
               Move Cell Down <Kbd>⌘ T</Kbd>
             </DropdownMenu.Item>
-            <DropdownMenu.Item onClick={() => handleReorderCell("BOTTOM")}>
+            <DropdownMenu.Item onClick={handleReorderBottom}>
               Move Cell Bottom <Kbd>⇧ ⌘ T</Kbd>
             </DropdownMenu.Item>
           </DropdownMenu.Content>

@@ -65,25 +65,23 @@ export function GridItem({
   let dataResponsive: string | undefined;
 
   if (isResponsiveColSpan(colSpan)) {
-    // Set CSS custom properties for each breakpoint
     const defaultSpan = colSpan.base ?? 12;
-    style["--grid-col-span-default" as any] = defaultSpan;
+    (style as Record<string, number>)["--grid-col-span-default"] = defaultSpan;
 
-    // Set breakpoint-specific values
     if (colSpan.sm !== undefined) {
-      style["--grid-col-span-sm" as any] = colSpan.sm;
+      (style as Record<string, number>)["--grid-col-span-sm"] = colSpan.sm;
     }
     if (colSpan.md !== undefined) {
-      style["--grid-col-span-md" as any] = colSpan.md;
+      (style as Record<string, number>)["--grid-col-span-md"] = colSpan.md;
     }
     if (colSpan.lg !== undefined) {
-      style["--grid-col-span-lg" as any] = colSpan.lg;
+      (style as Record<string, number>)["--grid-col-span-lg"] = colSpan.lg;
     }
     if (colSpan.xl !== undefined) {
-      style["--grid-col-span-xl" as any] = colSpan.xl;
+      (style as Record<string, number>)["--grid-col-span-xl"] = colSpan.xl;
     }
     if (colSpan["2xl"] !== undefined) {
-      style["--grid-col-span-2xl" as any] = colSpan["2xl"];
+      (style as Record<string, number>)["--grid-col-span-2xl"] = colSpan["2xl"];
     }
     dataResponsive = "true";
   } else {

@@ -11,9 +11,11 @@ export enum ButtonStyle {
   BackButton = "back",
 }
 
+const noop = () => {};
+
 export function NewAssetButton({
   buttonText,
-  onClick = () => {},
+  onClick = noop,
   isLoading = false,
   type = ButtonType.Button,
   style = ButtonStyle.AccentButton,
