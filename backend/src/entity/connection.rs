@@ -12,7 +12,7 @@ pub struct Model {
     pub username: String,
     pub password: String,
     pub host: String,
-    pub port: i32,
+    pub port: String,
     pub database: String,
     pub schema: Option<String>,
     pub source_type: String,

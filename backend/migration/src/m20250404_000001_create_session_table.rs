@@ -15,8 +15,8 @@ impl MigrationTrait for Migration {
                     .table(Session::Table)
                     .col(pk_uuid(Session::Id))
                     .col(uuid(Session::UserId))
-                    .col(string(Session::RefreshToken))
-                    .col(string(Session::AccessToken))
+                    .col(string(Session::RefreshTokenHash))
+                    .col(string(Session::AccessTokenHash))
                     .col(timestamp_with_time_zone(Session::RefreshTokenExpiresAt))
                     .col(timestamp_with_time_zone(Session::AccessTokenExpiresAt))
                     .col(string(Session::Status))
@@ -37,8 +37,8 @@ pub enum Session {
     Table,
     Id,
     UserId,
-    RefreshToken,
-    AccessToken,
+    RefreshTokenHash,
+    AccessTokenHash,
     RefreshTokenExpiresAt,
     AccessTokenExpiresAt,
     Status,

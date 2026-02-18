@@ -6,6 +6,7 @@ use crate::authentication::repository;
 use crate::authentication::repository::{get_user, get_user_by_email};
 use crate::common::error_codes::codes;
 use crate::common::time_utils;
+use crate::common::token_utils;
 use crate::common::AppState;
 use crate::entity;
 use argon2::{
@@ -54,7 +55,7 @@ pub async fn validate_access_token(
 ) -> Result<entity::session::Model, AccessTokenValidationError> {
     let session = repository::get_active_session_by_access_token(
         &app_state.database_connection,
-        access_token.to_string(),
+        token_utils::hash_token(access_token),
     )
     .await
     .map_err(|_| AccessTokenValidationError::Invalid)?;
@@ -89,7 +90,7 @@ async fn extract_and_validate_session(
 
     let session = match repository::get_active_session_by_access_token(
         &app_state.database_connection,
-        access_token,
+        token_utils::hash_token(&access_token),
     )
     .await
     {
@@ -141,8 +142,8 @@ pub async fn get_session(cookies: Cookies, app_state: AppState) -> impl IntoResp
     let session_dto = dto::SessionDto {
         id: session.id,
         user_id: session.user_id,
-        refresh_token: session.refresh_token,
-        access_token: session.access_token,
+        refresh_token: String::new(),
+        access_token: String::new(),
         refresh_token_expires_at: session.refresh_token_expires_at.with_timezone(&Utc),
         access_token_expires_at: session.access_token_expires_at.with_timezone(&Utc),
         status: session.status,
@@ -300,14 +301,15 @@ fn set_session_cookies(cookies: &Cookies, session_dto: &dto::SessionDto, app_sta
 }
 
 async fn create_new_session(app_state: &AppState, user_id: Uuid) -> Result<dto::SessionDto, DbErr> {
-    // Create a new session in the database
+    let refresh_token = generate_refresh_token();
+    let access_token = generate_access_token();
     let session = repository::create_session(
         &app_state.database_connection,
         entity::session::Model {
             id: Uuid::new_v4(),
             user_id,
-            refresh_token: generate_refresh_token(),
-            access_token: generate_access_token(),
+            refresh_token_hash: token_utils::hash_token(&refresh_token),
+            access_token_hash: token_utils::hash_token(&access_token),
             refresh_token_expires_at: time_utils::now_plus_days_into(REFRESH_TOKEN_EXPIRY_DAYS),
             access_token_expires_at: time_utils::now_plus_hours_into(ACCESS_TOKEN_EXPIRY_HOURS),
             status: SessionStatus::Active.as_str().to_string(),
@@ -317,12 +319,11 @@ async fn create_new_session(app_state: &AppState, user_id: Uuid) -> Result<dto::
     )
     .await?;
 
-    // Return session data to client
     Ok(dto::SessionDto {
         id: session.id,
         user_id: session.user_id,
-        refresh_token: session.refresh_token,
-        access_token: session.access_token,
+        refresh_token,
+        access_token,
         refresh_token_expires_at: session.refresh_token_expires_at.with_timezone(&Utc),
         access_token_expires_at: session.access_token_expires_at.with_timezone(&Utc),
         status: session.status,
@@ -379,7 +380,7 @@ pub async fn signout(cookies: Cookies, app_state: AppState) -> impl IntoResponse
     // Get the session by access token
     let session = match repository::get_active_session_by_access_token(
         &app_state.database_connection,
-        access_token,
+        token_utils::hash_token(&access_token),
     )
     .await
     {
@@ -435,7 +436,7 @@ pub async fn refresh_token(cookies: Cookies, app_state: AppState) -> impl IntoRe
 
     let old_session = match repository::get_active_session_by_refresh_token(
         &app_state.database_connection,
-        refresh_token,
+        token_utils::hash_token(&refresh_token),
     )
     .await
     {

@@ -2,8 +2,25 @@ use crate::connection::constants::ConnectionStatus;
 use crate::connection::constants::SourceType;
 use crate::entity;
 use chrono::{DateTime, FixedOffset};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use uuid::Uuid;
+
+fn deserialize_port<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum PortInput {
+        Number(i64),
+        String(String),
+    }
+    match PortInput::deserialize(deserializer)? {
+        PortInput::Number(n) => Ok(n.to_string()),
+        PortInput::String(s) => Ok(s),
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateConnectionDto {
     pub name: String,
@@ -28,7 +45,8 @@ pub struct ConnectionDto {
     pub source_type: SourceType,
     pub database: String,
     pub host: String,
-    pub port: i32,
+    #[serde(deserialize_with = "deserialize_port")]
+    pub port: String,
     pub schema: Option<String>,
     pub username: String,
     pub password: String,

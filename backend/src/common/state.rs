@@ -1,3 +1,6 @@
+use crate::common::cryptography_utils::{
+    generate_and_store_encryption_key, get_encryption_key_from_path,
+};
 use crate::db;
 use anyhow;
 use anyhow::bail;
@@ -5,6 +8,7 @@ use reqwest;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use std::borrow::Cow;
+use tracing::warn;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Configurations {
@@ -13,6 +17,7 @@ pub struct Configurations {
     pub frontend_dir: Cow<'static, str>,
     pub environment: Cow<'static, str>,
     pub cookie_secure: bool,
+    pub encryption_key: Cow<'static, str>,
     pub admin_username: Cow<'static, str>,
     pub admin_password: Cow<'static, str>,
     pub admin_email: Cow<'static, str>,
@@ -40,6 +45,21 @@ impl Configurations {
             cookie_secure: match dotenv::var("COOKIE_SECURE") {
                 Ok(cookie_secure) => cookie_secure.parse()?,
                 Err(err) => bail!("missing COOKIE_SECURE: {err}"),
+            },
+            encryption_key: match dotenv::var("ENCRYPTION_KEY") {
+                Ok(v) => v.into(),
+                Err(_) => {
+                    if let Some(key) = get_encryption_key_from_path()? {
+                        key.into()
+                    } else {
+                        let (encryption_key, full_path) = generate_and_store_encryption_key()?;
+                        warn!(
+                            "Since ENCRYPTION_KEY is not provided, one is generated and stored at {}. This is not recommended for production use.",
+                            full_path
+                        );
+                        encryption_key.into()
+                    }
+                }
             },
             admin_username: match dotenv::var("ADMIN_USERNAME") {
                 Ok(v) => v.into(),
