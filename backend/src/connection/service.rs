@@ -3,6 +3,7 @@ use crate::common::time_utils;
 use crate::common::AppState;
 use crate::connection::constants::ConnectionStatus;
 use crate::connection::constants::SourceType;
+use crate::connection::cryptography_utils;
 use crate::connection::dto;
 use crate::connection::repository;
 use crate::entity;
@@ -19,7 +20,7 @@ pub async fn does_connection_exist(app_state: &AppState, id: Uuid) -> bool {
 }
 
 pub async fn get_connection(app_state: AppState, id: Uuid) -> impl IntoResponse {
-    let connection = execute_get_connection(app_state, id).await;
+    let connection = execute_get_connection(&app_state, id).await;
     match connection {
         Ok(connection) => {
             let response_dto = dto::ConnectionDto::from(connection);
@@ -39,19 +40,27 @@ pub async fn get_connection(app_state: AppState, id: Uuid) -> impl IntoResponse 
 }
 
 pub async fn execute_get_connection(
-    app_state: AppState,
+    app_state: &AppState,
     id: Uuid,
 ) -> Result<entity::connection::Model, sea_orm::DbErr> {
-    return repository::get_connection(&app_state.database_connection, id).await;
+    let mut connection = repository::get_connection(&app_state.database_connection, id).await?;
+    cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key);
+    Ok(connection)
 }
 
 pub async fn get_all_connections(app_state: AppState) -> impl IntoResponse {
     let connections = repository::get_all_connections(&app_state.database_connection).await;
     match connections {
-        Ok(connections) => {
+        Ok(mut connections) => {
+            for connection in connections.iter_mut() {
+                cryptography_utils::decrypt_connection(
+                    connection,
+                    &app_state.config.encryption_key,
+                );
+            }
             let response_dto_list: Vec<dto::ConnectionDto> = connections
-                .iter()
-                .map(|connection| dto::ConnectionDto::from(connection.clone()))
+                .into_iter()
+                .map(|connection| dto::ConnectionDto::from(connection))
                 .collect();
             (
                 StatusCode::OK,
@@ -77,7 +86,7 @@ pub async fn create_connection(
         database: payload.database,
         host: payload.host,
         password: payload.password,
-        port: payload.port,
+        port: payload.port.to_string(),
         schema: payload.schema,
         username: payload.username,
         source_type: payload.source_type.to_string(),
@@ -90,8 +99,24 @@ pub async fn create_connection(
         get_connection_status(&connection_entity.source_type, &database_url).await;
     connection_entity.status = connection_status.to_string();
 
+    if cryptography_utils::encrypt_connection(
+        &mut connection_entity,
+        &app_state.config.encryption_key,
+    )
+    .is_err()
+    {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": "Failed to encrypt connection" })),
+        );
+    }
+
     match repository::save_connection(&app_state.database_connection, connection_entity).await {
-        Ok(connection) => {
+        Ok(mut connection) => {
+            cryptography_utils::decrypt_connection(
+                &mut connection,
+                &app_state.config.encryption_key,
+            );
             let response_dto = dto::ConnectionDto::from(connection);
             info!("Connection created: {:?}", response_dto);
             (
@@ -109,18 +134,30 @@ pub async fn create_connection(
 pub async fn update_connection(
     app_state: AppState,
     id: Uuid,
-    payload: dto::ConnectionDto,
+    mut payload: dto::ConnectionDto,
 ) -> impl IntoResponse {
-    let mut payload = payload;
     let database_url = format!(
         "postgres://{}:{}@{}:{}/{}",
         payload.username, payload.password, payload.host, payload.port, payload.database
     );
-    payload.status = get_connection_status(&payload.source_type.to_string(), &database_url).await;
+    let status = get_connection_status(&payload.source_type.to_string(), &database_url).await;
+    payload.status = status;
+    if cryptography_utils::encrypt_connection_dto(&mut payload, &app_state.config.encryption_key)
+        .is_err()
+    {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": "Failed to encrypt connection" })),
+        );
+    }
     let connection =
         repository::update_connection(&app_state.database_connection, id, payload).await;
     match connection {
-        Ok(connection) => {
+        Ok(mut connection) => {
+            cryptography_utils::decrypt_connection(
+                &mut connection,
+                &app_state.config.encryption_key,
+            );
             let response_dto = dto::ConnectionDto::from(connection);
             info!("Connection updated: {:?}", response_dto);
             (StatusCode::OK, axum::Json(serde_json::json!(response_dto)))

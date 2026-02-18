@@ -14,11 +14,16 @@ import {
 } from "src/api/connection/queries";
 import { SophoTable, ColumnConfig } from "src/components/SophoTable/SophoTable";
 import { formatTimestamp } from "src/utils/timestamp_utils";
+import { ConnectionsEmptyState } from "src/components/Home/components/EmptyState";
 
 export function ConnectionsTable() {
   const setConnectionId = useStore((state) => state.connection.setConnectionId);
-  const setConnectionDetailsPageState = useStore((state) => state.connection.setConnectionDetailsPageState);
+  const setConnectionDetailsPageState = useStore(
+    (state) => state.connection.setConnectionDetailsPageState
+  );
   const deleteMutation = useDeleteConnection();
+  const { data: connectionsData, isLoading, isError } = useConnections();
+  const tableData = useMemo(() => connectionsData ?? [], [connectionsData]);
 
   const handleViewConnection = useCallback(
     (id: string) => {
@@ -45,90 +50,97 @@ export function ConnectionsTable() {
     [deleteMutation]
   );
 
-  const columns: ColumnConfig<ConnectionDto>[] = useMemo(() => [
-    {
-      key: "name",
-      header: "Name",
-      type: "accessor",
-      accessor: "name",
-      size: 150,
-    },
-    {
-      key: "source_type",
-      header: "Source Type",
-      type: "accessor",
-      accessor: "source_type",
-      size: 150,
-    },
-    {
-      key: "status",
-      header: "Status",
-      type: "accessor",
-      accessor: "status",
-      cell: (props) => {
-        const statusValue = props.getValue();
-        let statusEnumEntry: StatusType;
+  const handleCreateConnection = useCallback(() => {
+    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW);
+  }, [setConnectionDetailsPageState]);
 
-        if (statusValue === StatusType.Active) {
-          statusEnumEntry = StatusType.Active;
-        } else if (statusValue === StatusType.Inactive) {
-          statusEnumEntry = StatusType.Inactive;
-        } else if (statusValue === StatusType.Failed) {
-          statusEnumEntry = StatusType.Failed;
-        } else {
-          throw new Error(`Invalid status value: ${statusValue}`);
-        }
-
-        return <StatusBadge status={statusEnumEntry} text={statusValue} />;
+  const columns: ColumnConfig<ConnectionDto>[] = useMemo(
+    () => [
+      {
+        key: "name",
+        header: "Name",
+        type: "accessor",
+        accessor: "name",
+        size: 150,
       },
-      size: 150,
-    },
-    {
-      key: "description",
-      header: "Description",
-      type: "accessor",
-      accessor: "description",
-      size: 300,
-    },
-    {
-      key: "created_at",
-      header: "Created On",
-      type: "accessor",
-      accessor: "created_at",
-      cell: (props) => formatTimestamp(props.getValue() as string | null),
-      size: 210,
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      type: "display",
-      cell: (props) => (
-        <ActionButtons
-          connectionId={props.row.original.id}
-          onViewClick={handleViewConnection}
-          onEditClick={handleEditConnection}
-          onDeleteClick={handleDelete}
+      {
+        key: "source_type",
+        header: "Source Type",
+        type: "accessor",
+        accessor: "source_type",
+        size: 150,
+      },
+      {
+        key: "status",
+        header: "Status",
+        type: "accessor",
+        accessor: "status",
+        cell: (props) => {
+          const statusValue = props.getValue();
+          let statusEnumEntry: StatusType;
+
+          if (statusValue === StatusType.Active) {
+            statusEnumEntry = StatusType.Active;
+          } else if (statusValue === StatusType.Inactive) {
+            statusEnumEntry = StatusType.Inactive;
+          } else if (statusValue === StatusType.Failed) {
+            statusEnumEntry = StatusType.Failed;
+          } else {
+            throw new Error(`Invalid status value: ${statusValue}`);
+          }
+
+          return <StatusBadge status={statusEnumEntry} text={statusValue} />;
+        },
+        size: 150,
+      },
+      {
+        key: "description",
+        header: "Description",
+        type: "accessor",
+        accessor: "description",
+        size: 300,
+      },
+      {
+        key: "created_at",
+        header: "Created On",
+        type: "accessor",
+        accessor: "created_at",
+        cell: (props) => formatTimestamp(props.getValue() as string | null),
+        size: 210,
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        type: "display",
+        cell: (props) => (
+          <ActionButtons
+            connectionId={props.row.original.id}
+            onViewClick={handleViewConnection}
+            onEditClick={handleEditConnection}
+            onDeleteClick={handleDelete}
+          />
+        ),
+        size: 100,
+      },
+    ],
+    [handleViewConnection, handleEditConnection, handleDelete]
+  );
+
+  const render = () => {
+    if (tableData && tableData.length > 0) {
+      return (
+        <SophoTable
+          columns={columns}
+          data={tableData}
+          isLoading={isLoading}
+          isError={isError}
         />
-      ),
-      size: 100,
-    },
-  ], [handleViewConnection, handleEditConnection, handleDelete]);
+      );
+    }
+    return (
+      <ConnectionsEmptyState onCreateConnection={handleCreateConnection} />
+    );
+  };
 
-  const { data: connectionsData, isLoading, isError } = useConnections();
-
-  const tableData = useMemo(
-    () => connectionsData ?? [],
-    [connectionsData]
-  );
-
-  return (
-    <div className={ConnectionsStyles.connectionsTable}>
-      <SophoTable
-        columns={columns}
-        data={tableData}
-        isLoading={isLoading}
-        isError={isError}
-      />
-    </div>
-  );
+  return <div className={ConnectionsStyles.connectionsTable}>{render()}</div>;
 }

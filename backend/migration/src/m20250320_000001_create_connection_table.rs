@@ -18,7 +18,7 @@ impl MigrationTrait for Migration {
                     .col(string(Connection::Username))
                     .col(string(Connection::Password))
                     .col(string(Connection::Host))
-                    .col(unsigned(Connection::Port))
+                    .col(string(Connection::Port))
                     .col(string(Connection::Database))
                     .col(string_null(Connection::Schema))
                     .col(string(Connection::SourceType))

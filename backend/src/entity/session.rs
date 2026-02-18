@@ -8,8 +8,8 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub user_id: Uuid,
-    pub refresh_token: String,
-    pub access_token: String,
+    pub refresh_token_hash: String,
+    pub access_token_hash: String,
     pub refresh_token_expires_at: DateTimeWithTimeZone,
     pub access_token_expires_at: DateTimeWithTimeZone,
     pub status: String,

@@ -420,7 +420,7 @@ async fn get_database_connection(
     app_state: AppState,
     connection_id: Uuid,
 ) -> Result<PgConnection, (http::StatusCode, axum::Json<JsonValue>)> {
-    let connection = connection_service::execute_get_connection(app_state, connection_id).await;
+    let connection = connection_service::execute_get_connection(&app_state, connection_id).await;
     let connection = match connection {
         Ok(connection) => connection,
         Err(e) => {

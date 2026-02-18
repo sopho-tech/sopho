@@ -61,7 +61,9 @@ export function Canvas() {
 
   const renderView = () => {
     if (viewType == ViewType.DASHBOARD) {
-      return <Dashboard />;
+      return (
+        <Dashboard onSwitchToNotebook={() => setViewType(ViewType.NOTEBOOK)} />
+      );
     }
     return <Notebook />;
   };

@@ -16,6 +16,7 @@ import {
   useClearCellOutput,
 } from "src/api/cell";
 import { useParams } from "react-router";
+import { EmptyState } from "../EmptyState";
 
 export function Notebook() {
   const params = useParams();
@@ -156,11 +157,26 @@ export function Notebook() {
     return <span>No data available</span>;
   }
 
+  const render = () => {
+    if (query.data?.cells && query.data?.cells.length > 0) {
+      return cellComponents;
+    }
+    return (
+      <EmptyState
+        icon="table"
+        heading="No cells yet"
+        description="Add a SQL cell to write queries, visualize data and build dashboards"
+        buttonLabel="New SQL Cell"
+        onButtonClick={() => handleCreateCell(CellType.SQL)}
+      />
+    );
+  };
+
   return (
     <Flex ref={notebookRef} direction="column" gap="md" flex="grow">
       <NotebookToolbar />
       <Flex direction="column" gap="md">
-        {cellComponents}
+        {render()}
       </Flex>
       <Flex height={"100px"} />
     </Flex>

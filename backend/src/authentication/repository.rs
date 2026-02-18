@@ -37,10 +37,10 @@ pub async fn get_user_by_email(
 
 pub async fn get_active_session_by_access_token(
     db: &DatabaseConnection,
-    access_token: String,
+    access_token_hash: String,
 ) -> Result<entity::session::Model, DbErr> {
     let session = entity::session::Entity::find()
-        .filter(entity::session::Column::AccessToken.eq(access_token))
+        .filter(entity::session::Column::AccessTokenHash.eq(access_token_hash))
         .filter(entity::session::Column::Status.eq(SessionStatus::Active.as_str()))
         .one(db)
         .await?;
@@ -52,10 +52,10 @@ pub async fn get_active_session_by_access_token(
 
 pub async fn get_active_session_by_refresh_token(
     db: &DatabaseConnection,
-    refresh_token: String,
+    refresh_token_hash: String,
 ) -> Result<entity::session::Model, DbErr> {
     let session = entity::session::Entity::find()
-        .filter(entity::session::Column::RefreshToken.eq(refresh_token))
+        .filter(entity::session::Column::RefreshTokenHash.eq(refresh_token_hash))
         .filter(entity::session::Column::Status.eq(SessionStatus::Active.as_str()))
         .one(db)
         .await?;

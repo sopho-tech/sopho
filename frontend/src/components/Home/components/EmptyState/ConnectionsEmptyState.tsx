@@ -1,4 +1,4 @@
-import { EmptyState } from "./EmptyState";
+import { EmptyState } from "src/components/EmptyState";
 
 type ConnectionsEmptyStateProps = {
   onCreateConnection: () => void;

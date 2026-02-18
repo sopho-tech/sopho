@@ -58,7 +58,10 @@ export function NotebookToolbar() {
     [reorderCellMutation]
   );
 
-  const sxTransform = useMemo(() => ({ transform: "translateX(50%)" }), []);
+  const sxTransform = useMemo(
+    () => ({ transform: "translateX(calc(-50% + 25px))" }),
+    []
+  );
 
   const handleCreateSql = useCallback(
     () => handleCreateNewCell(CellType.SQL),
@@ -86,7 +89,7 @@ export function NotebookToolbar() {
   );
 
   return (
-    <Flex position="fixed" bottom={10} right="50%" sx={sxTransform} zIndex="10">
+    <Flex position="fixed" bottom={10} left="50%" sx={sxTransform} zIndex="10">
       <Toolbar className={styles.toolbar} aria-label="Notebook actions">
         <DropdownMenu>
           <DropdownMenu.Trigger>
