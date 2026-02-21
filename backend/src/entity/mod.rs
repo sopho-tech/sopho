@@ -5,6 +5,7 @@ pub mod prelude;
 pub mod canvas;
 pub mod cell;
 pub mod chart;
+pub mod configuration;
 pub mod connection;
 pub mod dashboard;
 pub mod notebook;

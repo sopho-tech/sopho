@@ -92,73 +92,9 @@ pub async fn create_canvas(
     app_state: AppState,
     payload: dto::CreateCanvasDto,
 ) -> impl IntoResponse {
-    let txn = match app_state.database_connection.begin().await {
-        Ok(txn) => txn,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
-
-    let canvas_id = Uuid::new_v4();
-    let now = time_utils::now_utc_into();
-
-    let canvas_entity = entity::canvas::Model {
-        id: canvas_id,
-        name: payload.name.clone(),
-        description: payload.description.clone(),
-        status: CanvasStatus::Active.to_string(),
-        created_at: now,
-        updated_at: now,
-    };
-
-    let canvas = match repository::save_canvas_transaction(&txn, canvas_entity).await {
-        Ok(canvas) => canvas,
-        Err(e) => {
-            let _ = txn.rollback().await;
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
-
-    if let Err(e) = notebook_service::create_notebook_transaction(
-        &txn,
-        canvas_id,
-        payload.name.clone(),
-        payload.description.clone(),
-    )
-    .await
-    {
-        let _ = txn.rollback().await;
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        );
-    }
-
-    if let Err(e) = dashboard_service::create_dashboard_transaction(
-        &txn,
-        canvas_id,
-        payload.name.clone(),
-        payload.description.clone().unwrap_or_default(),
-        None,
-    )
-    .await
-    {
-        let _ = txn.rollback().await;
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        );
-    }
-
-    match txn.commit().await {
-        Ok(_) => {
-            let response_dto = dto::CanvasDto::from(canvas);
+    match execute_create_canvas(&app_state, payload).await {
+        Ok(result) => {
+            let response_dto = dto::CanvasDto::from(result.canvas);
             (
                 StatusCode::CREATED,
                 axum::Json(serde_json::json!(response_dto)),
@@ -169,6 +105,45 @@ pub async fn create_canvas(
             axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
     }
+}
+
+pub async fn execute_create_canvas(
+    app_state: &AppState,
+    payload: dto::CreateCanvasDto,
+) -> Result<dto::CreateCanvasResult, sea_orm::DbErr> {
+    let txn = app_state.database_connection.begin().await?;
+    let canvas_id = Uuid::new_v4();
+    let now = time_utils::now_utc_into();
+    let canvas_entity = entity::canvas::Model {
+        id: canvas_id,
+        name: payload.name.clone(),
+        description: payload.description.clone(),
+        status: CanvasStatus::Active.to_string(),
+        created_at: now,
+        updated_at: now,
+    };
+    let canvas = repository::save_canvas_transaction(&txn, canvas_entity).await?;
+    let notebook = notebook_service::create_notebook_transaction(
+        &txn,
+        canvas_id,
+        payload.name.clone(),
+        payload.description.clone(),
+    )
+    .await?;
+    let dashboard = dashboard_service::create_dashboard_transaction(
+        &txn,
+        canvas_id,
+        payload.name.clone(),
+        payload.description.clone().unwrap_or_default(),
+        None,
+    )
+    .await?;
+    txn.commit().await?;
+    Ok(dto::CreateCanvasResult {
+        canvas,
+        notebook,
+        dashboard,
+    })
 }
 
 pub async fn get_last_modified_canvases(

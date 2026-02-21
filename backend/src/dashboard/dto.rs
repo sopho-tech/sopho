@@ -21,6 +21,24 @@ pub struct Layout {
 }
 
 impl Layout {
+    pub fn new(
+        cell_id: Uuid,
+        notebook_id: Uuid,
+        x_position: u16,
+        y_position: u16,
+        x_size: u16,
+        y_size: u16,
+    ) -> Self {
+        Self {
+            cell_id,
+            notebook_id,
+            x_position,
+            y_position,
+            x_size,
+            y_size,
+        }
+    }
+
     pub fn cell_id(&self) -> Uuid {
         self.cell_id
     }

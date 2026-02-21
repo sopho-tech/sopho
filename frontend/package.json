@@ -23,6 +23,7 @@
     "@radix-ui/react-navigation-menu": "^1.2.14",
     "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-select": "^2.2.5",
+    "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-toolbar": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-oauth/google": "^0.12.1",

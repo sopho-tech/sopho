@@ -5,12 +5,7 @@ import { CanvasesTable } from "src/components/Canvases/CanvasesTable";
 import { TopBar } from "src/components/TopBar";
 
 export function Canvases() {
-  const {
-    handleViewCanvas,
-    handleEditCanvas,
-    handleDeleteCanvas,
-    handleOpenCreateDialog,
-  } = useCanvasActions();
+  const { handleOpenCreateDialog } = useCanvasActions();
 
   return (
     <Flex direction="column" flex="grow" gap="lg" overflow="scrollY">
@@ -30,13 +25,9 @@ export function Canvases() {
           />
         </TopBar.Right>
       </TopBar>
-      <Flex paddingX="lg" direction="column" gap="lg">
+      <Flex paddingX="2xl" direction="column" gap="lg">
         <Heading accessbilityLevel={1}>Canvases</Heading>
-        <CanvasesTable
-          onViewClick={handleViewCanvas}
-          onEditClick={handleEditCanvas}
-          onDeleteClick={handleDeleteCanvas}
-        />
+        <CanvasesTable />
       </Flex>
       <CanvasCreateDialog />
     </Flex>

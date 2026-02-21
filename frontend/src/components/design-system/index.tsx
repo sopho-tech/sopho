@@ -56,3 +56,5 @@ export { SearchBar } from "src/components/design-system/SearchBar";
 export { CommandMenu } from "src/components/design-system/CommandMenu";
 export { Badge } from "src/components/design-system/Badge";
 export { Card } from "src/components/design-system/Card";
+export { Separator } from "src/components/design-system/Separator";
+export type { SeparatorProps } from "src/components/design-system/Separator";

@@ -20,6 +20,15 @@ pub async fn save_cell(db: &DatabaseConnection, cell: cell::Model) -> Result<cel
     Ok(cell_active_model.into())
 }
 
+pub async fn save_cell_transaction(
+    txn: &DatabaseTransaction,
+    cell: cell::Model,
+) -> Result<cell::Model, DbErr> {
+    let cell_active_model: cell::ActiveModel = cell.into();
+    let cell_active_model = cell_active_model.insert(txn).await?;
+    Ok(cell_active_model.into())
+}
+
 pub async fn get_cell(db: &DatabaseConnection, id: Uuid) -> Result<cell::Model, DbErr> {
     let cell = cell::Entity::find_by_id(id).one(db).await?;
     match cell {

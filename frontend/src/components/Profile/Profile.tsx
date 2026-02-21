@@ -21,13 +21,16 @@ export function Profile() {
   });
 
   const defaultValues = useMemo(
-    () => ({
-      id: user?.id || "",
-      username: user?.username || "",
-      email: user?.email || "",
-      full_name: user?.full_name || "",
-    }),
-    [user?.id, user?.username, user?.email, user?.full_name]
+    () =>
+      user
+        ? {
+            id: user.id,
+            username: user.username,
+            email: user.email || "",
+            full_name: user.full_name || "",
+          }
+        : null,
+    [user]
   );
 
   const handleSubmit = useCallback(() => {}, []);
@@ -39,7 +42,7 @@ export function Profile() {
     <Flex
       flex="grow"
       gap="xl"
-      paddingX="xs"
+      paddingX="2xl"
       paddingY="xs"
       marginTop="xs"
       marginBottom="xs"
@@ -48,14 +51,28 @@ export function Profile() {
       direction="column"
     >
       <Heading accessbilityLevel={1}>Profile</Heading>
-      <Form defaultValues={defaultValues} onSubmit={handleSubmit} readonly>
-        <Form.Fields className={styles.fieldsContainer}>
-          <Form.Input name="id" label="User ID" className={styles.fieldContainer} />
-          <Form.Input name="username" label="Username" className={styles.fieldContainer} />
-          <Form.Input name="email" label="Email" className={styles.fieldContainer} />
-          <Form.Input name="full_name" label="Full Name" className={styles.fieldContainer} />
-        </Form.Fields>
-      </Form>
+      {defaultValues && (
+        <Form defaultValues={defaultValues} onSubmit={handleSubmit} readonly>
+          <Form.Fields className={styles.fieldsContainer}>
+            <Form.Field name="id" className={styles.fieldContainer}>
+              <Form.Label>User ID</Form.Label>
+              <Form.Input />
+            </Form.Field>
+            <Form.Field name="username" className={styles.fieldContainer}>
+              <Form.Label>Username</Form.Label>
+              <Form.Input />
+            </Form.Field>
+            <Form.Field name="email" className={styles.fieldContainer}>
+              <Form.Label>Email</Form.Label>
+              <Form.Input />
+            </Form.Field>
+            <Form.Field name="full_name" className={styles.fieldContainer}>
+              <Form.Label>Full Name</Form.Label>
+              <Form.Input />
+            </Form.Field>
+          </Form.Fields>
+        </Form>
+      )}
       <Button
         label="Sign Out"
         backgroundColor="accent"

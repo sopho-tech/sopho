@@ -123,6 +123,14 @@ pub async fn get_dashboard_by_canvas_id_transaction(
     repository::get_dashboard_by_canvas_id_transaction(txn, canvas_id).await
 }
 
+pub async fn execute_update_dashboard(
+    app_state: &AppState,
+    dashboard_id: Uuid,
+    payload: dto::DashboardDto,
+) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
+    repository::update_dashboard(&app_state.database_connection, dashboard_id, payload).await
+}
+
 pub async fn delete_dashboard_transaction(
     txn: &DatabaseTransaction,
     id: Uuid,
@@ -135,8 +143,7 @@ pub async fn update_dashboard(
     dashboard_id: Uuid,
     payload: dto::DashboardDto,
 ) -> impl IntoResponse {
-    let dashboard =
-        repository::update_dashboard(&app_state.database_connection, dashboard_id, payload).await;
+    let dashboard = execute_update_dashboard(&app_state, dashboard_id, payload).await;
     match dashboard {
         Ok(dashboard) => {
             let response_dto = dto::DashboardDto::from(dashboard);

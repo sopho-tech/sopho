@@ -8,7 +8,11 @@ import { useStore, DashboardMode } from "src/store";
 import { useParams } from "react-router";
 import { useDashboardReset } from "src/components/Dashboard/hooks";
 
-const SEGMENTED_OPTIONS: { value: string; leadingIcon: IconType; tooltip: string }[] = [
+const SEGMENTED_OPTIONS: {
+  value: string;
+  leadingIcon: IconType;
+  tooltip: string;
+}[] = [
   { value: "notebook", leadingIcon: "book", tooltip: "notebook" },
   { value: "dashboard", leadingIcon: "calendar", tooltip: "dashboard" },
 ];
@@ -37,18 +41,6 @@ export function CanvasButtons({
   return (
     <Flex direction="row" gap="md">
       <Flex direction="row" gap="xs">
-        <IconButton
-          type="star"
-          onClick={noop}
-          backgroundColor="default"
-          iconColor="grey"
-        ></IconButton>
-        <IconButton
-          type="link"
-          onClick={noop}
-          backgroundColor="default"
-          iconColor="grey"
-        ></IconButton>
         {isDashboardView && (
           <IconButton
             type={isEditing ? "save" : "edit"}

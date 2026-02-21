@@ -58,7 +58,7 @@
 .content {
   background-color: var(--color-background);
   border-radius: var(--border-radius-lg);
-  padding: var(--space-md);
+  padding-top: var(--space-md);
   flex: 1;
   overflow: hidden;
   display: flex;

@@ -1,9 +1,3 @@
-export const CONNECTOR_DISPLAY_TO_BACKEND_VALUE_MAP: Record<string, string> = {
-  PostgreSQL: "POSTGRESQL",
-  MySQL: "MYSQL",
-  Supabase: "POSTGRESQL",
-};
-
 export enum ConnectionDetailsPageStateEnum {
   NEW = "NEW",
   LIST = "LIST",

@@ -2,6 +2,7 @@ import { FormField, FormFieldType } from "./types";
 import { TextField } from "./TextField";
 import { PasswordField } from "./PasswordField";
 import { SelectField } from "./SelectField";
+import { FormLabel } from "./FormLabel";
 import { CollapsibleField } from "./CollapsibleField";
 import { FieldError } from "./FieldError";
 import FormStyles from "./Form.module.css";
@@ -31,15 +32,19 @@ export function FormFieldRenderer({
       return (
         <form.AppField key={field.key} name={field.key}>
           {() => (
-            <div className={`${FormStyles.formFieldContainer}`}>
+            <div className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}>
+              {field.showLabel !== false && (
+                <FormLabel
+                  infoIconToolTipMessage={field.infoIconToolTipMessage}
+                  labelIconContainerStyleClass={labelStyleClass}
+                >
+                  {String(field.name)}
+                </FormLabel>
+              )}
               <TextField
-                label={String(field.name)}
                 placeholder={field.placeholder}
-                showLabel={field.showLabel}
                 icon={field.icon}
                 readonly={readonly}
-                containerStyleClass={fieldStyleClass}
-                labelStyleClass={labelStyleClass}
               />
             </div>
           )}
@@ -50,17 +55,20 @@ export function FormFieldRenderer({
       return (
         <form.AppField key={field.key} name={field.key}>
           {() => (
-            <div className={`${FormStyles.formField} ${fieldStyleClass || ""}`}>
+            <div className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}>
+              {field.showLabel !== false && (
+                <FormLabel
+                  infoIconToolTipMessage={field.infoIconToolTipMessage}
+                  labelIconContainerStyleClass={labelStyleClass}
+                >
+                  {String(field.name)}
+                </FormLabel>
+              )}
               <PasswordField
-                label={String(field.name)}
                 placeholder={field.placeholder}
-                showLabel={field.showLabel}
                 icon={field.icon}
                 readonly={readonly}
-                containerStyleClass={fieldStyleClass}
-                labelStyleClass={labelStyleClass}
               />
-              {/* <FieldError errors={fieldState.state.meta.errors} /> */}
             </div>
           )}
         </form.AppField>
@@ -71,17 +79,21 @@ export function FormFieldRenderer({
         <form.AppField key={field.key} name={field.key}>
           {(fieldState: { state: { meta: { errors: unknown[] } } }) => (
             <div className={`${FormStyles.formField} ${fieldStyleClass || ""}`}>
+              {field.showLabel !== false && (
+                <FormLabel
+                  infoIconToolTipMessage={field.infoIconToolTipMessage}
+                  labelIconContainerStyleClass={labelStyleClass}
+                >
+                  {String(field.name)}
+                </FormLabel>
+              )}
               <SelectField
-                label={String(field.name)}
                 groupName={
                   typeof field.name === "string" ? field.name : "Options"
                 }
                 placeholderText={field.placeholder || "Select an option"}
                 options={field.options || []}
-                infoIconToolTipMessage={field.infoIconToolTipMessage}
-                showLabel={field.showLabel}
                 readonly={readonly}
-                labelStyleClass={labelStyleClass}
               />
               <FieldError errors={(fieldState.state.meta.errors || []) as string[]} />
             </div>

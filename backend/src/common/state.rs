@@ -31,7 +31,13 @@ impl Configurations {
         Ok(Self {
             database_url: match dotenv::var("DATABASE_URL") {
                 Ok(url) => url.into(),
-                Err(err) => bail!("missing DATABASE_URL: {err}"),
+                Err(_) => {
+                    let database_url = Cow::Owned(db::get_sqlite_database_file_path());
+                    warn!(
+                        "Using SQLite as the database. This is not recommended for production use."
+                    );
+                    database_url
+                }
             },
             port: match dotenv::var("PORT") {
                 Ok(port) => port.parse()?,

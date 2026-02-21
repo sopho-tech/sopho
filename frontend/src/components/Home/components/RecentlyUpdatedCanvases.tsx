@@ -23,7 +23,7 @@ export function RecentlyUpdatedCanvases() {
       >
         Recently Modified
       </Heading>
-      <Grid as="div" gutter={GRID_GUTTER}>
+      <Grid as="div" columnGutter={GRID_GUTTER} rowGutter={GRID_GUTTER}>
         {canvasesQuery.data.data.map((canvas) => (
           <GridItem as="div" colSpan={GRID_COL_SPAN} key={canvas.id}>
             <CanvasCard canvas={canvas} />

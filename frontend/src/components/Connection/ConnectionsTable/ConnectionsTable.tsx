@@ -15,8 +15,11 @@ import {
 import { SophoTable, ColumnConfig } from "src/components/SophoTable/SophoTable";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 import { ConnectionsEmptyState } from "src/components/Home/components/EmptyState";
+import { useNavigate, generatePath } from "react-router";
+import { APP_ROUTES } from "src/constants/app_routes";
 
 export function ConnectionsTable() {
+  const navigate = useNavigate();
   const setConnectionId = useStore((state) => state.connection.setConnectionId);
   const setConnectionDetailsPageState = useStore(
     (state) => state.connection.setConnectionDetailsPageState
@@ -35,10 +38,9 @@ export function ConnectionsTable() {
 
   const handleEditConnection = useCallback(
     (id: string) => {
-      setConnectionId(id);
-      setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.EDIT);
+      navigate(generatePath(APP_ROUTES.CONNECTION_EDIT, { id }));
     },
-    [setConnectionId, setConnectionDetailsPageState]
+    [navigate]
   );
 
   const handleDelete = useCallback(

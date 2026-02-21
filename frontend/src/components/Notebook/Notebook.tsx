@@ -175,7 +175,7 @@ export function Notebook() {
   return (
     <Flex ref={notebookRef} direction="column" gap="md" flex="grow">
       <NotebookToolbar />
-      <Flex direction="column" gap="md">
+      <Flex direction="column" gap="2xl">
         {render()}
       </Flex>
       <Flex height={"100px"} />

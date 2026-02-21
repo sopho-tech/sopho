@@ -9,6 +9,7 @@
 .input {
   font-size: var(--font-size-sm);
   padding: var(--space-2xs);
+  padding-left: var(--space-xs);
   padding-right: calc(var(--space-2xs) + 28px + var(--space-2xs));
   border-radius: var(--border-radius-lg);
   border: var(--border-dark-medium);
@@ -38,6 +39,10 @@
 
 .input[type="number"] {
   -moz-appearance: textfield;
+}
+
+.input::placeholder {
+  color: var(--color-grey-400);
 }
 
 .input:focus {

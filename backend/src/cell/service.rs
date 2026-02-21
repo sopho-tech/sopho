@@ -1,29 +1,29 @@
 use crate::cell::constants::CellDisplayOrderMovement;
 use crate::cell::constants::CellStatus;
 use crate::cell::constants::CellType;
+use crate::cell::constants::SortOrder;
 use crate::cell::dto;
 use crate::cell::dto::CellContent;
 use crate::cell::repository;
-use crate::common::database_utils;
 use crate::common::error_codes::codes;
+use crate::common::errors::CreateCellError;
+use crate::common::errors::ExecuteQueryError;
 use crate::common::errors::SophoError;
 use crate::common::time_utils;
 use crate::common::AppState;
+use crate::connection::constants::SourceType;
 use crate::connection::service as connection_service;
 use crate::dashboard::service as dashboard_service;
+use crate::database::constants::DatabaseConnection;
+use crate::database::{postgres, sqlite};
 use crate::entity;
 use crate::notebook::does_notebook_exist;
 use crate::notebook::service as notebook_service;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
-use rust_decimal::Decimal;
 use sea_orm::TransactionTrait;
-use sqlx::postgres::PgConnection;
 use sqlx::types::JsonValue;
-use sqlx::Column;
-use sqlx::Connection;
-use sqlx::Row;
+use tracing::info;
 use uuid::Uuid;
 
 pub async fn does_cell_exist(app_state: &AppState, id: Uuid) -> bool {
@@ -134,38 +134,29 @@ async fn get_number_of_cells_in_notebook_by_type(
     }
 }
 
-pub async fn create_cell(app_state: AppState, payload: dto::CreateCellDto) -> impl IntoResponse {
-    let display_order;
-    let number_of_cells = get_number_of_cells_in_notebook(&app_state, payload.notebook_id).await;
-    match number_of_cells {
-        Ok(number_of_cells) => {
-            display_order = number_of_cells + 1;
-        }
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
+pub async fn execute_create_cell(
+    app_state: &AppState,
+    payload: dto::CreateCellDto,
+) -> Result<entity::cell::Model, CreateCellError> {
+    if !does_notebook_exist(app_state, payload.notebook_id).await {
+        return Err(CreateCellError::NotebookNotFound);
     }
 
-    if !does_notebook_exist(&app_state, payload.notebook_id).await {
-        return (
-            StatusCode::BAD_REQUEST,
-            axum::Json(serde_json::json!({ "error": "Notebook not found" })),
-        );
-    }
-
-    let cell_name =
-        generate_cell_name(&app_state, payload.notebook_id, payload.cell_type.clone()).await;
-    let cell_name = match cell_name {
-        Ok(cell_name) => cell_name,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
+    let display_order = match payload.display_order {
+        Some(order) => order,
+        None => {
+            let number_of_cells = get_number_of_cells_in_notebook(app_state, payload.notebook_id)
+                .await
+                .map_err(CreateCellError::Sopho)?;
+            number_of_cells + 1
         }
+    };
+
+    let cell_name = match payload.name {
+        Some(name) => name,
+        None => generate_cell_name(app_state, payload.notebook_id, payload.cell_type.clone())
+            .await
+            .map_err(CreateCellError::Sopho)?,
     };
 
     let cell_entity = entity::cell::Model {
@@ -176,12 +167,20 @@ pub async fn create_cell(app_state: AppState, payload: dto::CreateCellDto) -> im
         status: CellStatus::Active.to_string(),
         notebook_id: payload.notebook_id,
         connection_id: payload.connection_id,
-        display_order: display_order,
+        display_order,
         created_at: time_utils::now_utc_into(),
         updated_at: time_utils::now_utc_into(),
     };
 
-    match repository::save_cell(&app_state.database_connection, cell_entity).await {
+    let cell = repository::save_cell(&app_state.database_connection, cell_entity)
+        .await
+        .map_err(CreateCellError::Repository)?;
+
+    Ok(cell)
+}
+
+pub async fn create_cell(app_state: AppState, payload: dto::CreateCellDto) -> impl IntoResponse {
+    match execute_create_cell(&app_state, payload).await {
         Ok(cell) => {
             let response_dto = dto::CellDto::from(cell);
             (
@@ -189,6 +188,10 @@ pub async fn create_cell(app_state: AppState, payload: dto::CreateCellDto) -> im
                 axum::Json(serde_json::json!(response_dto)),
             )
         }
+        Err(CreateCellError::NotebookNotFound) => (
+            StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({ "error": "Notebook not found" })),
+        ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": e.to_string() })),
@@ -419,7 +422,7 @@ pub async fn execute_cell(app_state: AppState, id: Uuid) -> impl IntoResponse {
 async fn get_database_connection(
     app_state: AppState,
     connection_id: Uuid,
-) -> Result<PgConnection, (http::StatusCode, axum::Json<JsonValue>)> {
+) -> Result<DatabaseConnection, (http::StatusCode, axum::Json<JsonValue>)> {
     let connection = connection_service::execute_get_connection(&app_state, connection_id).await;
     let connection = match connection {
         Ok(connection) => connection,
@@ -431,8 +434,12 @@ async fn get_database_connection(
         }
     };
 
-    let database_url = database_utils::get_database_url(&connection);
-    let database_connection = PgConnection::connect(&database_url).await;
+    let database_connection = match SourceType::from_str(&connection.source_type).unwrap() {
+        SourceType::Postgresql => postgres::get_database_connection(&connection).await,
+        SourceType::Sqlite => sqlite::get_database_connection(&connection).await,
+        _ => panic!("Not implemented"),
+    };
+
     match database_connection {
         Ok(database_connection) => Ok(database_connection),
         Err(e) => Err((
@@ -443,126 +450,40 @@ async fn get_database_connection(
 }
 
 async fn execute_query_and_format_results(
-    mut database_connection: PgConnection,
+    mut database_connection: DatabaseConnection,
     query: &str,
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let result = sqlx::query(query).fetch_all(&mut database_connection).await;
-    let rows = match result {
-        Ok(rows) => rows,
-        Err(sqlx::Error::Database(e)) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                axum::Json(serde_json::json!({
-                    "status": StatusCode::BAD_REQUEST.as_u16(),
-                    "code": codes::SYNTAX_ERROR.as_str(),
-                    "message": e.to_string()
-                })),
-            );
-        }
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
+    let result = match &mut database_connection {
+        DatabaseConnection::Postgres(conn) => postgres::execute_query(conn, query).await,
+        DatabaseConnection::Sqlite(conn) => sqlite::execute_query(conn, query).await,
     };
-
-    let mut columns: Vec<serde_json::Value> = Vec::new();
-    if let Some(first_row) = rows.get(0) {
-        columns = first_row
-            .columns()
-            .iter()
-            .map(|col| {
-                serde_json::json!({
-                    "column_name": col.name().to_string(),
-                    "data_type": col.type_info().to_string()
-                })
-            })
-            .collect();
+    match result {
+        Ok(result) => (
+            StatusCode::OK,
+            axum::Json(serde_json::json!({
+                "columns": result.columns,
+                "data": result.data,
+            })),
+        ),
+        Err(ExecuteQueryError::Database(sqlx::Error::Database(e))) => (
+            StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({
+                "status": StatusCode::BAD_REQUEST.as_u16(),
+                "code": codes::SYNTAX_ERROR.as_str(),
+                "message": e.to_string()
+            })),
+        ),
+        Err(ExecuteQueryError::Database(e)) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        ),
+        Err(ExecuteQueryError::UnhandledDataType(type_name)) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({
+                "error": format!("data type '{}' not handled", type_name)
+            })),
+        ),
     }
-
-    let mut json_rows: Vec<serde_json::Value> = Vec::new();
-    for row in rows {
-        let mut map = serde_json::Map::new();
-        for (i, col) in row.columns().iter().enumerate() {
-            let value: Result<serde_json::Value, sqlx::Error> = match col
-                .type_info()
-                .to_string()
-                .as_str()
-            {
-                "BOOL" => {
-                    let value = row.try_get::<bool, _>(i);
-                    value.map(serde_json::Value::Bool)
-                }
-                "UUID" => row.try_get::<Uuid, _>(i).map(|v| serde_json::json!(v)),
-                "TEXT" => {
-                    let value = row.try_get::<String, _>(i);
-                    value.map(serde_json::Value::String)
-                }
-                "JSONB" => row
-                    .try_get::<sqlx::types::Json<serde_json::Value>, _>(i)
-                    .map(|j| {
-                        serde_json::Value::String(serde_json::to_string(&j.0).unwrap_or_default())
-                    }),
-                "VARCHAR" => {
-                    let value = row.try_get::<String, _>(i);
-                    value.map(serde_json::Value::String)
-                }
-                "DATE" => row.try_get::<NaiveDate, _>(i).map(|v| serde_json::json!(v)),
-                "TIMESTAMP" => row
-                    .try_get::<NaiveDateTime, _>(i)
-                    .map(|v| serde_json::json!(v)),
-                "TIMESTAMPTZ" => row
-                    .try_get::<DateTime<FixedOffset>, _>(i)
-                    .map(|v| serde_json::json!(v)),
-                "INT4" => row.try_get::<i32, _>(i).map(|v| serde_json::json!(v)),
-                "INT8" => row.try_get::<i64, _>(i).map(|v| serde_json::json!(v)),
-                "NUMERIC" => row.try_get::<Decimal, _>(i).map(|v| {
-                    let f: f64 = v.try_into().unwrap_or(0.0);
-                    serde_json::Number::from_f64(f)
-                        .map(serde_json::Value::Number)
-                        .unwrap_or(serde_json::Value::Null)
-                }),
-                _ => {
-                    return (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        axum::Json(serde_json::json!({
-                            "error": format!("data type '{}' not handled", col.type_info().to_string())
-                        })),
-                    );
-                }
-            };
-            match value {
-                Ok(value) => {
-                    map.insert(col.name().to_string(), value);
-                }
-                Err(err) => {
-                    if let sqlx::Error::ColumnDecode {
-                        index: _index,
-                        source: _source,
-                    } = &err
-                    {
-                        map.insert(col.name().to_string(), serde_json::Value::Null);
-                    } else {
-                        return (
-                            StatusCode::INTERNAL_SERVER_ERROR,
-                            axum::Json(serde_json::json!({ "error": err.to_string() })),
-                        );
-                    }
-                }
-            }
-        }
-        json_rows.push(serde_json::Value::Object(map));
-    }
-    (
-        StatusCode::OK,
-        axum::Json(serde_json::json!(
-            {
-                "columns": columns,
-                "data": json_rows,
-            }
-        )),
-    )
 }
 
 fn build_aggregated_query(
@@ -570,9 +491,16 @@ fn build_aggregated_query(
     x_axis: &str,
     y_axis: &str,
     aggregate_fn: &str,
+    y_axis_sort_order: &str,
 ) -> String {
+    if y_axis_sort_order != SortOrder::None.as_str() {
+        return format!(
+            "SELECT \"{}\", {}(\"{}\") AS \"{}\" FROM ({}) AS subquery GROUP BY \"{}\" ORDER BY \"{}\" {}",
+            x_axis, aggregate_fn, y_axis, y_axis, source_query, x_axis, y_axis, y_axis_sort_order
+        );
+    }
     format!(
-        "SELECT {}, {}({}) AS {} FROM ({}) AS subquery GROUP BY {}",
+        "SELECT \"{}\", {}(\"{}\") AS \"{}\" FROM ({}) AS subquery GROUP BY \"{}\"",
         x_axis, aggregate_fn, y_axis, y_axis, source_query, x_axis
     )
 }
@@ -835,7 +763,19 @@ fn build_chart_aggregated_query(
                     return Err((
                         StatusCode::PRECONDITION_FAILED,
                         axum::Json(serde_json::json!({
-                            "error": "ChartCell has no aggregate function specified"
+                            "message": "ChartCell has no aggregate function specified"
+                        })),
+                    ));
+                }
+            };
+
+            let y_axis_sort_order = match &axis_content.y_axis_sort_order {
+                Some(y_axis_sort_order) => y_axis_sort_order.as_str(),
+                None => {
+                    return Err((
+                        StatusCode::PRECONDITION_FAILED,
+                        axum::Json(serde_json::json!({
+                            "message": "ChartCell has no y-axis sort order specified"
                         })),
                     ));
                 }
@@ -846,6 +786,7 @@ fn build_chart_aggregated_query(
                 &axis_content.x_axis,
                 &axis_content.y_axis,
                 aggregate_fn,
+                y_axis_sort_order,
             ))
         }
         dto::ChartContent::Pie(pie_content) => {
@@ -885,6 +826,7 @@ async fn execute_chart_with_content(
         Ok(query) => query,
         Err(err) => return err,
     };
+    info!("aggregated_query: {}", aggregated_query);
     execute_sql_with_query(app_state, connection_id, &aggregated_query).await
 }
 

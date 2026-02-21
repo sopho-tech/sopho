@@ -47,13 +47,13 @@ const errorHandler = (
 ) => {
   const status = error instanceof Response ? error.status : undefined;
   if (error instanceof ApiError) {
-    if (status === 401) {
-      if (query) {
-        refreshAndRetry(query);
-      } else if (mutation) {
-        refreshAndRetry(undefined, mutation, variables);
-      }
+  if (status === 401) {
+    if (query) {
+      refreshAndRetry(query);
+    } else if (mutation) {
+      refreshAndRetry(undefined, mutation, variables);
     }
+  }
   }
 };
 

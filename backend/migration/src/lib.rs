@@ -1,6 +1,7 @@
 pub use sea_orm_migration::prelude::*;
 
 mod db;
+mod m20250221_000001_create_configuration_table;
 mod m20250315_000001_create_dashboard_table;
 mod m20250320_000001_create_connection_table;
 mod m20250320_000002_create_chart_table;
@@ -16,6 +17,7 @@ pub struct Migrator;
 impl MigratorTrait for Migrator {
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
         vec![
+            Box::new(m20250221_000001_create_configuration_table::Migration),
             Box::new(m20250315_000001_create_dashboard_table::Migration),
             Box::new(m20250320_000001_create_connection_table::Migration),
             Box::new(m20250320_000002_create_chart_table::Migration),

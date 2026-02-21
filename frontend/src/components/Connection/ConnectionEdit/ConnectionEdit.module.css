@@ -1,0 +1,28 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2xl) 0;
+}
+
+.formFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: unset;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: var(--space-2xs);
+}
+
+.formLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-grey-500);
+}
+
+.basicFormFields {
+  width: 100%;
+}

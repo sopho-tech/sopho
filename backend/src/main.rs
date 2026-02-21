@@ -2,9 +2,12 @@ mod authentication;
 mod canvas;
 mod cell;
 mod common;
+mod configuration;
 mod connection;
 mod dashboard;
+mod database;
 mod db;
+mod demo;
 mod entity;
 mod middlewares;
 mod monitor;
@@ -29,20 +32,13 @@ use http_body_util::BodyExt;
 use std::env;
 use std::path::PathBuf;
 use tower_cookies::CookieManagerLayer;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
-    let app_state = AppState::from_env().await.unwrap();
-
-    db::run_migrations(&app_state.database_connection)
-        .await
-        .unwrap();
-
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
@@ -52,7 +48,15 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    dotenv().ok();
+    let app_state = AppState::from_env().await.unwrap();
+
+    db::run_migrations(&app_state.database_connection)
+        .await
+        .unwrap();
+
     authentication::service::seed_admin_user(&app_state).await;
+    demo::service::seed_demo_data(&app_state).await;
 
     let frontend_dir = PathBuf::from(app_state.config.frontend_dir.as_ref());
     let index_path = frontend_dir.join("index.html");

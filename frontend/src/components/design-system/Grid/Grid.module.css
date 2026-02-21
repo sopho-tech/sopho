@@ -1,107 +1,69 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-auto-rows: minmax(100px, auto);
+  /* grid-auto-rows: minmax(100px, auto); */
   column-gap: var(--grid-column-gap, var(--space-sm));
   row-gap: var(--grid-row-gap, var(--space-sm));
 }
 
-.grid[data-gutter="sm"] {
-  --grid-column-gap: var(--space-sm);
-  --grid-row-gap: var(--space-sm);
-}
+/* Column gutter – simple string values */
+.grid[data-column-gutter="sm"] { --grid-column-gap: var(--space-sm); }
+.grid[data-column-gutter="md"] { --grid-column-gap: var(--space-md); }
+.grid[data-column-gutter="lg"] { --grid-column-gap: var(--space-lg); }
+.grid[data-column-gutter="xl"] { --grid-column-gap: var(--space-xl); }
+.grid[data-column-gutter="2xl"] { --grid-column-gap: var(--space-2xl); }
 
-.grid[data-gutter="md"] {
-  --grid-column-gap: var(--space-md);
-  --grid-row-gap: var(--space-md);
-}
+/* Row gutter – simple string values */
+.grid[data-row-gutter="sm"] { --grid-row-gap: var(--space-sm); }
+.grid[data-row-gutter="md"] { --grid-row-gap: var(--space-md); }
+.grid[data-row-gutter="lg"] { --grid-row-gap: var(--space-lg); }
+.grid[data-row-gutter="xl"] { --grid-row-gap: var(--space-xl); }
+.grid[data-row-gutter="2xl"] { --grid-row-gap: var(--space-2xl); }
 
-.grid[data-gutter="lg"] {
-  --grid-column-gap: var(--space-lg);
-  --grid-row-gap: var(--space-lg);
-}
-
-.grid[data-gutter="xl"] {
-  --grid-column-gap: var(--space-xl);
-  --grid-row-gap: var(--space-xl);
-}
-
-.grid[data-gutter="2xl"] {
-  --grid-column-gap: var(--space-2xl);
-  --grid-row-gap: var(--space-2xl);
-}
-
-/* Responsive gutter using CSS custom properties */
-/* Only applies when data-responsive="true" (i.e., when gutter is a responsive object) */
-.grid[data-responsive="true"] {
-  --grid-column-gap: var(--grid-gutter-default, var(--space-sm));
-  --grid-row-gap: var(--grid-gutter-default, var(--space-sm));
+/* Responsive column gutter */
+.grid[data-col-responsive="true"] {
+  --grid-column-gap: var(--grid-col-gutter-default, var(--space-sm));
 }
 
 @media (width >= 40rem) {
-  .grid[data-responsive="true"] {
+  .grid[data-col-responsive="true"] {
     --grid-column-gap: var(
-      --grid-gutter-sm,
-      var(--grid-gutter-default, var(--space-sm))
-    );
-    --grid-row-gap: var(
-      --grid-gutter-sm,
-      var(--grid-gutter-default, var(--space-sm))
+      --grid-col-gutter-sm,
+      var(--grid-col-gutter-default, var(--space-sm))
     );
   }
 }
 
 @media (width >= 48rem) {
-  .grid[data-responsive="true"] {
+  .grid[data-col-responsive="true"] {
     --grid-column-gap: var(
-      --grid-gutter-md,
-      var(--grid-gutter-sm, var(--grid-gutter-default, var(--space-sm)))
-    );
-    --grid-row-gap: var(
-      --grid-gutter-md,
-      var(--grid-gutter-sm, var(--grid-gutter-default, var(--space-sm)))
+      --grid-col-gutter-md,
+      var(--grid-col-gutter-sm, var(--grid-col-gutter-default, var(--space-sm)))
     );
   }
 }
 
 @media (width >= 64rem) {
-  .grid[data-responsive="true"] {
+  .grid[data-col-responsive="true"] {
     --grid-column-gap: var(
-      --grid-gutter-lg,
+      --grid-col-gutter-lg,
       var(
-        --grid-gutter-md,
-        var(--grid-gutter-sm, var(--grid-gutter-default, var(--space-sm)))
-      )
-    );
-    --grid-row-gap: var(
-      --grid-gutter-lg,
-      var(
-        --grid-gutter-md,
-        var(--grid-gutter-sm, var(--grid-gutter-default, var(--space-sm)))
+        --grid-col-gutter-md,
+        var(--grid-col-gutter-sm, var(--grid-col-gutter-default, var(--space-sm)))
       )
     );
   }
 }
 
 @media (width >= 80rem) {
-  .grid[data-responsive="true"] {
+  .grid[data-col-responsive="true"] {
     --grid-column-gap: var(
-      --grid-gutter-xl,
+      --grid-col-gutter-xl,
       var(
-        --grid-gutter-lg,
+        --grid-col-gutter-lg,
         var(
-          --grid-gutter-md,
-          var(--grid-gutter-sm, var(--grid-gutter-default, var(--space-sm)))
-        )
-      )
-    );
-    --grid-row-gap: var(
-      --grid-gutter-xl,
-      var(
-        --grid-gutter-lg,
-        var(
-          --grid-gutter-md,
-          var(--grid-gutter-sm, var(--grid-gutter-default, var(--space-sm)))
+          --grid-col-gutter-md,
+          var(--grid-col-gutter-sm, var(--grid-col-gutter-default, var(--space-sm)))
         )
       )
     );
@@ -109,29 +71,84 @@
 }
 
 @media (width >= 96rem) {
-  .grid[data-responsive="true"] {
+  .grid[data-col-responsive="true"] {
     --grid-column-gap: var(
-      --grid-gutter-2xl,
+      --grid-col-gutter-2xl,
       var(
-        --grid-gutter-xl,
+        --grid-col-gutter-xl,
         var(
-          --grid-gutter-lg,
+          --grid-col-gutter-lg,
           var(
-            --grid-gutter-md,
-            var(--grid-gutter-sm, var(--grid-gutter-default, var(--space-sm)))
+            --grid-col-gutter-md,
+            var(--grid-col-gutter-sm, var(--grid-col-gutter-default, var(--space-sm)))
           )
         )
       )
     );
+  }
+}
+
+/* Responsive row gutter */
+.grid[data-row-responsive="true"] {
+  --grid-row-gap: var(--grid-row-gutter-default, var(--space-sm));
+}
+
+@media (width >= 40rem) {
+  .grid[data-row-responsive="true"] {
     --grid-row-gap: var(
-      --grid-gutter-2xl,
+      --grid-row-gutter-sm,
+      var(--grid-row-gutter-default, var(--space-sm))
+    );
+  }
+}
+
+@media (width >= 48rem) {
+  .grid[data-row-responsive="true"] {
+    --grid-row-gap: var(
+      --grid-row-gutter-md,
+      var(--grid-row-gutter-sm, var(--grid-row-gutter-default, var(--space-sm)))
+    );
+  }
+}
+
+@media (width >= 64rem) {
+  .grid[data-row-responsive="true"] {
+    --grid-row-gap: var(
+      --grid-row-gutter-lg,
       var(
-        --grid-gutter-xl,
+        --grid-row-gutter-md,
+        var(--grid-row-gutter-sm, var(--grid-row-gutter-default, var(--space-sm)))
+      )
+    );
+  }
+}
+
+@media (width >= 80rem) {
+  .grid[data-row-responsive="true"] {
+    --grid-row-gap: var(
+      --grid-row-gutter-xl,
+      var(
+        --grid-row-gutter-lg,
         var(
-          --grid-gutter-lg,
+          --grid-row-gutter-md,
+          var(--grid-row-gutter-sm, var(--grid-row-gutter-default, var(--space-sm)))
+        )
+      )
+    );
+  }
+}
+
+@media (width >= 96rem) {
+  .grid[data-row-responsive="true"] {
+    --grid-row-gap: var(
+      --grid-row-gutter-2xl,
+      var(
+        --grid-row-gutter-xl,
+        var(
+          --grid-row-gutter-lg,
           var(
-            --grid-gutter-md,
-            var(--grid-gutter-sm, var(--grid-gutter-default, var(--space-sm)))
+            --grid-row-gutter-md,
+            var(--grid-row-gutter-sm, var(--grid-row-gutter-default, var(--space-sm)))
           )
         )
       )

@@ -15,7 +15,6 @@ import {
   getDefaultValuesForChart,
   extractChartFormData,
   InfoTooltip,
-  formLabel,
 } from "./utils";
 import { BarChartAccordion } from "./BarChartAccordion";
 import { LineChartAccordion } from "./LineChartAccordion";
@@ -87,28 +86,36 @@ export function CellEditor({ cellId }: { cellId: string }) {
     >
       <Form.ErrorBanner />
       <Form.Fields className={CellEditorStyle.formElements}>
-        <Form.Select
+        <Form.Field
           name="cell_id"
-          label="Source Cell"
-          options={formOptions.cellOptions}
           required
           errorMessage="Please select the source cell"
-          infoIconToolTipMessage={
-            <InfoTooltip message="Select the source SQL Cell whose query you want to visualize" />
-          }
-          {...formLabel(CellEditorStyle.formLabel)}
-        />
-        <Form.Select
+        >
+          <Form.Label
+            infoIconToolTipMessage={
+              <InfoTooltip message="Select the source SQL Cell whose query you want to visualize" />
+            }
+            labelIconContainerStyleClass={CellEditorStyle.formLabel}
+          >
+            Source Cell
+          </Form.Label>
+          <Form.Select options={formOptions.cellOptions} groupName="Source" />
+        </Form.Field>
+        <Form.Field
           name="chart_type"
-          label="Chart Type"
-          options={formOptions.chartOptions}
           required
           errorMessage="Please select the type of chart"
-          infoIconToolTipMessage={
-            <InfoTooltip message="Select the type of chart you want to visualize data as" />
-          }
-          {...formLabel(CellEditorStyle.formLabel)}
-        />
+        >
+          <Form.Label
+            infoIconToolTipMessage={
+              <InfoTooltip message="Select the type of chart you want to visualize data as" />
+            }
+            labelIconContainerStyleClass={CellEditorStyle.formLabel}
+          >
+            Chart Type
+          </Form.Label>
+          <Form.Select options={formOptions.chartOptions} groupName="Type" />
+        </Form.Field>
         {chartType === ChartType.BAR && (
           <BarChartAccordion
             formOptions={formOptions}

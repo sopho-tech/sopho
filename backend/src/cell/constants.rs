@@ -211,6 +211,14 @@ pub enum SortOrder {
 }
 
 impl SortOrder {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SortOrder::None => "NONE",
+            SortOrder::Asc => "ASC",
+            SortOrder::Desc => "DESC",
+        }
+    }
+
     pub fn to_string(&self) -> String {
         match self {
             SortOrder::None => "NONE".to_string(),
