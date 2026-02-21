@@ -14,7 +14,7 @@ export function useRowDragging<T>(table: Table<T>) {
 
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setDragImage(dragPreviewContainer, 0, 0);
-    e.dataTransfer.setData("text/plain", row.id);
+    e.dataTransfer.setData("application/x-sopho-cell-id", row.id);
 
     dragPreviewRef.current = dragPreviewContainer;
 

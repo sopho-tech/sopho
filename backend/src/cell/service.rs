@@ -713,6 +713,7 @@ fn get_source_cell_id(chart_content: &dto::ChartContent) -> Uuid {
             axis_content.cell_id
         }
         dto::ChartContent::Pie(pie_content) => pie_content.cell_id,
+        dto::ChartContent::Metric(metric_content) => metric_content.cell_id,
     }
 }
 
@@ -809,6 +810,7 @@ fn build_chart_aggregated_query(
                 aggregate_fn,
             ))
         }
+        dto::ChartContent::Metric(_) => Ok(source_query.to_string()),
     }
 }
 
@@ -826,7 +828,6 @@ async fn execute_chart_with_content(
         Ok(query) => query,
         Err(err) => return err,
     };
-    info!("aggregated_query: {}", aggregated_query);
     execute_sql_with_query(app_state, connection_id, &aggregated_query).await
 }
 

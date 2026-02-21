@@ -70,7 +70,19 @@ export type LineChartContent = {
   y_axis_title?: string;
 };
 
-export type ChartContent = BarChartContent | PieChartContent | LineChartContent;
+export type MetricChartContent = {
+  cell_id: string;
+  chart_type?: string;
+  decimal_precision?: number;
+  suffix?: string;
+  format?: "PERCENTAGE" | "CURRENCY" | "DEFAULT";
+};
+
+export type ChartContent =
+  | BarChartContent
+  | PieChartContent
+  | LineChartContent
+  | MetricChartContent;
 
 export type CellDto = {
   id: string;

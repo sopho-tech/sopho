@@ -1,11 +1,18 @@
 import { useCell, useExecuteCell, useCellExecutionResult } from "src/api/cell";
-import { BarChart, ChartType, LineChart, PieChart } from "../Chart";
+import {
+  BarChart,
+  ChartType,
+  LineChart,
+  MetricChart,
+  PieChart,
+} from "../Chart";
 import { getChartContent } from "../Notebook/Cell";
 import { useCallback, useEffect } from "react";
 import {
   ExecuteCellResponseDto,
   BarChartContent,
   LineChartContent,
+  MetricChartContent,
   PieChartContent,
   getChartType,
 } from "../Notebook/Cell/dto";
@@ -16,6 +23,7 @@ import {
   Icon,
   IconButton,
 } from "src/components/design-system";
+import { validateMetricChartData } from "src/components/Chart/MetricChart/utils";
 import { useStore, DashboardMode } from "src/store";
 import styles from "src/components/Dashboard/Dashboard.module.css";
 
@@ -27,7 +35,11 @@ function ChartRenderer({
   chartContent,
   output,
 }: {
-  chartContent: BarChartContent | PieChartContent | LineChartContent;
+  chartContent:
+    | BarChartContent
+    | PieChartContent
+    | LineChartContent
+    | MetricChartContent;
   output: ExecuteCellResponseDto;
 }) {
   const chartType = getChartType(chartContent);
@@ -72,6 +84,33 @@ function ChartRenderer({
         value={pieContent.value}
         dimensions={dimensions}
         data={output.data as object[]}
+      />
+    );
+  }
+
+  if (chartType === ChartType.METRIC) {
+    const metricChartContent = chartContent as MetricChartContent;
+    const chartData = (output.data ?? []) as object[];
+    const metricError = validateMetricChartData(chartData);
+    if (metricError) {
+      return (
+        <Flex
+          alignItems="center"
+          justifyContent="center"
+          paddingX="lg"
+          paddingY="lg"
+          height="100%"
+        >
+          <BannerSlim type="error" message={metricError} />
+        </Flex>
+      );
+    }
+    return (
+      <MetricChart
+        data={chartData}
+        precision={metricChartContent.decimal_precision}
+        suffix={metricChartContent.suffix}
+        format={metricChartContent.format}
       />
     );
   }
