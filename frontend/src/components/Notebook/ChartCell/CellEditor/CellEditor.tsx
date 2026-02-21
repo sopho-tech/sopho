@@ -19,6 +19,7 @@ import {
 import { BarChartAccordion } from "./BarChartAccordion";
 import { LineChartAccordion } from "./LineChartAccordion";
 import { PieChartFields } from "./PieChartFields";
+import { MetricChartFields } from "./MetricChartFields";
 import { ChartRunButton } from "./ChartRunButton";
 import { ChartType } from "src/components/Chart";
 import { useCallback, useState } from "react";
@@ -133,6 +134,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
         {chartType === ChartType.PIE && (
           <PieChartFields formOptions={formOptions} />
         )}
+        {chartType === ChartType.METRIC && <MetricChartFields />}
       </Form.Fields>
       <Form.Actions className={CellEditorStyle.actionsButtonContainer}>
         <Form.Submit label="Save" />

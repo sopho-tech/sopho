@@ -4,6 +4,7 @@ import type {
   BarChartContent,
   LineChartContent,
   PieChartContent,
+  MetricChartContent,
   ChartContent,
 } from "../../Cell/dto";
 
@@ -25,6 +26,12 @@ export const ORIENTATION_OPTIONS = [
 export const VISIBILITY_OPTIONS = [
   { value: "SHOW", label: "Show" },
   { value: "HIDE", label: "Hide" },
+];
+
+export const METRIC_FORMAT_OPTIONS = [
+  { value: "DEFAULT", label: "Default" },
+  { value: "PERCENTAGE", label: "Percentage" },
+  { value: "CURRENCY", label: "Currency" },
 ];
 
 function getBarLineDefaults(chartType: ChartType, c: Record<string, unknown> | null) {
@@ -55,6 +62,16 @@ function getPieDefaults(c: Record<string, unknown> | null) {
   };
 }
 
+function getMetricDefaults(c: Record<string, unknown> | null) {
+  return {
+    cell_id: c?.cell_id,
+    chart_type: c?.chart_type ?? ChartType.METRIC,
+    decimal_precision: c?.decimal_precision ?? 2,
+    suffix: c?.suffix ?? "",
+    format: c?.format ?? "DEFAULT",
+  };
+}
+
 export function getDefaultValuesForChart(
   chartType: ChartType | null,
   chartContent: ChartContent | null
@@ -67,6 +84,10 @@ export function getDefaultValuesForChart(
 
   if (chartType === ChartType.PIE) {
     return getPieDefaults(c);
+  }
+
+  if (chartType === ChartType.METRIC) {
+    return getMetricDefaults(c);
   }
 
   if (c) {
@@ -127,10 +148,29 @@ export function extractPieChartFormData(formData: FormData): PieChartContent {
   };
 }
 
+export function extractMetricChartFormData(formData: FormData): MetricChartContent {
+  const decimalPrecision = formData.get("decimal_precision");
+  const suffix = formData.get("suffix") as string;
+  const format = formData.get("format") as string;
+  return {
+    chart_type: formData.get("chart_type") as string,
+    cell_id: formData.get("cell_id") as string,
+    decimal_precision:
+      decimalPrecision !== null && decimalPrecision !== ""
+        ? Number(decimalPrecision)
+        : undefined,
+    suffix: suffix?.trim() || undefined,
+    format:
+      format === "PERCENTAGE" || format === "CURRENCY" || format === "DEFAULT"
+        ? format
+        : undefined,
+  };
+}
+
 export function extractChartFormData(
   chartType: ChartType,
   formData: FormData
-): BarChartContent | LineChartContent | PieChartContent {
+): BarChartContent | LineChartContent | PieChartContent | MetricChartContent {
   switch (chartType) {
     case ChartType.BAR:
       return extractBarChartFormData(formData);
@@ -138,6 +178,8 @@ export function extractChartFormData(
       return extractLineChartFormData(formData);
     case ChartType.PIE:
       return extractPieChartFormData(formData);
+    case ChartType.METRIC:
+      return extractMetricChartFormData(formData);
     default:
       throw Error("Chart type is not supported");
   }

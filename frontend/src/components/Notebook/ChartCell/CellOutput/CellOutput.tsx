@@ -2,12 +2,19 @@ import { useMemo } from "react";
 import { useCell, useCellExecutionResult } from "src/api/cell";
 import { useStore } from "src/store";
 import styles from "src/components/Notebook/ChartCell/CellOutput/CellOutput.module.css";
-import { BarChart, ChartType, LineChart, PieChart } from "src/components/Chart";
+import {
+  BarChart,
+  ChartType,
+  LineChart,
+  MetricChart,
+  PieChart,
+} from "src/components/Chart";
 import cellStyles from "src/css/cell.module.css";
 import {
   BarChartContent,
   getChartType,
   LineChartContent,
+  MetricChartContent,
   PieChartContent,
 } from "../../Cell/dto";
 import {
@@ -17,6 +24,7 @@ import {
   Icon,
   Text,
 } from "src/components/design-system";
+import { validateMetricChartData } from "src/components/Chart/MetricChart/utils";
 
 interface ChartCellOutputProps {
   cellId: string;
@@ -129,6 +137,32 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
           value={pieChartContent.value}
           dimensions={pieDimensions}
           data={chartData}
+        />
+      );
+    }
+    if (chartType === ChartType.METRIC) {
+      const metricChartContent = chartContent as MetricChartContent;
+      const metricError = validateMetricChartData(chartData);
+      if (metricError) {
+        const message = metricError;
+        return (
+          <Flex
+            alignItems="center"
+            justifyContent="center"
+            paddingX="lg"
+            paddingY="lg"
+            height="100%"
+          >
+            <BannerSlim type="error" message={message} />
+          </Flex>
+        );
+      }
+      return (
+        <MetricChart
+          data={chartData}
+          precision={metricChartContent.decimal_precision}
+          suffix={metricChartContent.suffix}
+          format={metricChartContent.format}
         />
       );
     }

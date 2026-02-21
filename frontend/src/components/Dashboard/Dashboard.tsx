@@ -67,7 +67,7 @@ export function Dashboard() {
       if (!e.dataTransfer) {
         return;
       }
-      const cellId = e.dataTransfer.getData("text/plain");
+      const cellId = e.dataTransfer.getData("application/x-sopho-cell-id");
       const latestLayout = useStore.getState().dashboard.layout;
       const existingIds = new Set(latestLayout.map((item) => item.i));
       const newLayout = droppedLayout.map((item) => {

@@ -437,10 +437,72 @@ impl std::fmt::Display for AxisMinorTickShow {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum MetricFormat {
+    Default,
+    Percentage,
+    Currency,
+}
+
+impl MetricFormat {
+    pub fn to_string(&self) -> String {
+        match self {
+            MetricFormat::Default => "DEFAULT".to_string(),
+            MetricFormat::Percentage => "PERCENTAGE".to_string(),
+            MetricFormat::Currency => "CURRENCY".to_string(),
+        }
+    }
+
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s {
+            "DEFAULT" => Ok(MetricFormat::Default),
+            "PERCENTAGE" => Ok(MetricFormat::Percentage),
+            "CURRENCY" => Ok(MetricFormat::Currency),
+            _ => Err(format!("Invalid metric format: {}", s)),
+        }
+    }
+
+    pub fn deserialize_option_from_str<'de, D>(deserializer: D) -> Result<Option<Self>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s: Option<String> = Option::deserialize(deserializer)?;
+        match s {
+            Some(s) => Self::from_str(&s)
+                .map(Some)
+                .map_err(serde::de::Error::custom),
+            None => Ok(None),
+        }
+    }
+
+    pub fn serialize_option_to_str<S>(
+        value: &Option<Self>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match value {
+            Some(v) => {
+                let s = v.to_string();
+                serializer.serialize_some(&s)
+            }
+            None => serializer.serialize_none(),
+        }
+    }
+}
+
+impl std::fmt::Display for MetricFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum ChartType {
     Bar,
     Line,
     Pie,
+    Metric,
 }
 
 impl ChartType {
@@ -449,6 +511,7 @@ impl ChartType {
             ChartType::Bar => "BAR".to_string(),
             ChartType::Line => "LINE".to_string(),
             ChartType::Pie => "PIE".to_string(),
+            ChartType::Metric => "METRIC".to_string(),
         }
     }
 
@@ -457,6 +520,7 @@ impl ChartType {
             "BAR" => Ok(ChartType::Bar),
             "LINE" => Ok(ChartType::Line),
             "PIE" => Ok(ChartType::Pie),
+            "METRIC" => Ok(ChartType::Metric),
             _ => Err(format!("Invalid chart type: {}", s)),
         }
     }
