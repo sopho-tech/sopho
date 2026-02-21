@@ -6,12 +6,13 @@ import { SubscribeButton } from "src/components/design-system/Form/SubscribeButt
 import { TextField } from "./TextField";
 import { SelectField } from "./SelectField";
 import { PasswordField } from "./PasswordField";
+import { FormLabel } from "./FormLabel";
 import { convertValuesToFormData } from "./utils/values";
 import { BannerSlim } from "../BannerSlim";
 import { revalidateLogic, useStore } from "@tanstack/react-form";
 import { getErrorSummary } from "./utils/errorSummary";
 import { SelectOption } from "src/components/design-system";
-import { IconType } from "src/components/design-system/datatypes";
+import { ButtonSize, IconType } from "src/components/design-system/datatypes";
 
 type FormContextType = {
   form: ReturnType<typeof useAppForm>;
@@ -51,7 +52,9 @@ const FormRoot = ({
   const form = useAppForm({
     defaultValues,
     onSubmit: ({ value }: { value: unknown }) => {
-      const formData = convertValuesToFormData(value as Record<string, unknown>);
+      const formData = convertValuesToFormData(
+        value as Record<string, unknown>
+      );
       onSubmit(formData);
     },
     validationLogic: revalidateLogic({
@@ -126,94 +129,74 @@ const FormFields = ({ children, className }: FormFieldsProps) => {
 FormFields.displayName = "Form.Fields";
 
 type FormInputProps = {
-  name: string;
-  label?: string;
   placeholder?: string;
-  required?: boolean;
-  errorMessage?: string;
-  showLabel?: boolean;
   icon?: IconType;
   className?: string;
-  labelClassName?: string;
   inputContainerClassName?: string;
 };
 
 const FormInput = ({
-  name,
-  label,
   placeholder,
-  required = false,
-  errorMessage = "Required",
-  showLabel = true,
   icon,
   className,
-  labelClassName,
   inputContainerClassName,
 }: FormInputProps) => {
-  const { form, readonly } = useFormCompoundContext();
+  const { readonly } = useFormCompoundContext();
 
   return (
-    <form.AppField
-      name={name as any}
-      validators={
-        required
-          ? {
-              onSubmit: ({ value }: { value: any }) =>
-                value === "" || value == null ? errorMessage : undefined,
-            }
-          : undefined
-      }
-    >
-      {() => (
-        // <div className={FormStyles.formFieldContainer}>
-        <TextField
-          label={label}
-          placeholder={placeholder}
-          showLabel={showLabel}
-          icon={icon}
-          readonly={readonly}
-          containerStyleClass={className}
-          labelStyleClass={labelClassName}
-          inputContainerClassName={inputContainerClassName}
-        />
-        // </div>
-      )}
-    </form.AppField>
+    <div className={`${FormStyles.formFieldContainer} ${className || ""}`}>
+      <TextField
+        placeholder={placeholder}
+        icon={icon}
+        readonly={readonly}
+        containerClassName={inputContainerClassName}
+      />
+    </div>
   );
 };
 
 FormInput.displayName = "Form.Input";
 
-type FormSelectProps = {
-  name: string;
-  label?: string;
-  groupName?: string;
-  placeholder?: string;
-  options: SelectOption[];
-  required?: boolean;
-  errorMessage?: string;
-  showLabel?: boolean;
+type FormLabelProps = {
+  children?: React.ReactNode;
   infoIconToolTipMessage?: React.ReactNode;
   className?: string;
-  labelClassName?: string;
   labelIconContainerStyleClass?: string;
 };
 
-const FormSelect = ({
-  name,
-  label,
-  groupName,
-  placeholder = "Select an option",
-  options,
-  required = false,
-  errorMessage = "Required",
-  showLabel = true,
+const FormLabelComponent = ({
+  children,
   infoIconToolTipMessage,
   className,
-  labelClassName,
   labelIconContainerStyleClass,
-}: FormSelectProps) => {
-  const { form, readonly } = useFormCompoundContext();
+}: FormLabelProps) => (
+  <FormLabel
+    infoIconToolTipMessage={infoIconToolTipMessage}
+    className={className}
+    labelIconContainerStyleClass={labelIconContainerStyleClass}
+  >
+    {children}
+  </FormLabel>
+);
+
+FormLabelComponent.displayName = "Form.Label";
+
+type FormFieldProps = {
+  name: string;
+  required?: boolean;
+  errorMessage?: string;
+  className?: string;
+  children: React.ReactNode;
+};
+
+const FormField = ({
+  name,
+  required = false,
+  errorMessage = "Required",
+  className,
+  children,
+}: FormFieldProps) => {
+  const { form } = useFormCompoundContext();
 
   return (
     <form.AppField
@@ -229,76 +212,64 @@ const FormSelect = ({
     >
       {() => (
         <div className={`${FormStyles.formFieldContainer} ${className || ""}`}>
-          <SelectField
-            label={label}
-            groupName={groupName || label || "Options"}
-            placeholderText={placeholder}
-            options={options}
-            infoIconToolTipMessage={infoIconToolTipMessage}
-            showLabel={showLabel}
-            readonly={readonly}
-            labelStyleClass={labelClassName}
-            labelIconContainerStyleClass={labelIconContainerStyleClass}
-          />
+          {children}
         </div>
       )}
     </form.AppField>
+  );
+};
+
+FormField.displayName = "Form.Field";
+
+type FormSelectProps = {
+  groupName?: string;
+  placeholder?: string;
+  options: SelectOption[];
+};
+
+const FormSelect = ({
+  groupName = "Options",
+  placeholder = "Select an option",
+  options,
+}: FormSelectProps) => {
+  const { readonly } = useFormCompoundContext();
+
+  return (
+    <SelectField
+      groupName={groupName}
+      placeholderText={placeholder}
+      options={options}
+      readonly={readonly}
+    />
   );
 };
 
 FormSelect.displayName = "Form.Select";
 
 type FormPasswordProps = {
-  name: string;
-  label?: string;
   placeholder?: string;
-  required?: boolean;
-  errorMessage?: string;
-  showLabel?: boolean;
   icon?: IconType;
   className?: string;
-  labelClassName?: string;
+  inputContainerClassName?: string;
 };
 
 const FormPassword = ({
-  name,
-  label,
   placeholder,
-  required = false,
-  errorMessage = "Required",
-  showLabel = true,
   icon,
   className,
-  labelClassName,
+  inputContainerClassName,
 }: FormPasswordProps) => {
-  const { form, readonly } = useFormCompoundContext();
+  const { readonly } = useFormCompoundContext();
 
   return (
-    <form.AppField
-      name={name as any}
-      validators={
-        required
-          ? {
-              onSubmit: ({ value }: { value: any }) =>
-                value === "" || value == null ? errorMessage : undefined,
-            }
-          : undefined
-      }
-    >
-      {() => (
-        <div className={`${FormStyles.formFieldContainer} ${className || ""}`}>
-          <PasswordField
-            label={label}
-            placeholder={placeholder}
-            showLabel={showLabel}
-            icon={icon}
-            readonly={readonly}
-            containerStyleClass={className}
-            labelStyleClass={labelClassName}
-          />
-        </div>
-      )}
-    </form.AppField>
+    <div className={`${FormStyles.formFieldContainer} ${className || ""}`}>
+      <PasswordField
+        placeholder={placeholder}
+        icon={icon}
+        readonly={readonly}
+        containerClassName={inputContainerClassName}
+      />
+    </div>
   );
 };
 
@@ -321,10 +292,11 @@ FormActions.displayName = "Form.Actions";
 
 type FormSubmitProps = {
   label?: string;
+  size?: ButtonSize;
 };
 
-const FormSubmit = ({ label = "Submit" }: FormSubmitProps) => {
-  return <SubscribeButton label={label} />;
+const FormSubmit = ({ label = "Submit", size = "sm" }: FormSubmitProps) => {
+  return <SubscribeButton label={label} size={size} />;
 };
 
 FormSubmit.displayName = "Form.Submit";
@@ -352,6 +324,8 @@ export const Form = Object.assign(FormRoot, {
   ErrorBanner: FormErrorBanner,
   Fields: FormFields,
   Input: FormInput,
+  Label: FormLabelComponent,
+  Field: FormField,
   Select: FormSelect,
   Password: FormPassword,
   Actions: FormActions,

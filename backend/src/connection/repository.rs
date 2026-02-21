@@ -35,11 +35,11 @@ pub async fn update_connection(
     connection_entity.description = Set(payload.description);
     connection_entity.status = Set(payload.status.to_string());
     connection_entity.database = Set(payload.database);
-    connection_entity.host = Set(payload.host);
-    connection_entity.password = Set(payload.password);
-    connection_entity.port = Set(payload.port);
+    connection_entity.host = Set(Some(payload.host));
+    connection_entity.password = Set(Some(payload.password));
+    connection_entity.port = Set(Some(payload.port));
     connection_entity.schema = Set(payload.schema);
-    connection_entity.username = Set(payload.username);
+    connection_entity.username = Set(Some(payload.username));
     connection_entity.source_type = Set(payload.source_type.to_string());
     connection_entity.updated_at = Set(time_utils::now_utc_into());
     connection_entity.created_at = Set(payload.created_at);

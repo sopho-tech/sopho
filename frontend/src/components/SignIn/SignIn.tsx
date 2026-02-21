@@ -98,24 +98,22 @@ export default function SignIn() {
           submitOnEnter={true}
         >
           <Form.Fields className={styles.fieldsContainer}>
-            <Form.Input
+            <Form.Field
               name="email"
               required
               errorMessage="Email is required"
-              placeholder="email"
-              showLabel={false}
-              icon="email"
               className={styles.fieldContainer}
-            />
-            <Form.Password
+            >
+              <Form.Input placeholder="email" icon="email" />
+            </Form.Field>
+            <Form.Field
               name="password"
               required
               errorMessage="Password is required"
-              placeholder="password"
-              showLabel={false}
-              icon="lock"
               className={styles.fieldContainer}
-            />
+            >
+              <Form.Password placeholder="password" icon="lock" />
+            </Form.Field>
           </Form.Fields>
           <Form.Actions className={styles.formButtonRowContainer}>
             <Form.Submit label="Sign In" />

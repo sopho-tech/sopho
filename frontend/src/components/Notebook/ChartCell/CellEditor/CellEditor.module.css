@@ -19,10 +19,6 @@
   width: 100%;
 }
 
-.formLabel {
-  width: 120px;
-}
-
 .accordionTriggerHeading {
   display: flex;
   flex-direction: row;
@@ -46,4 +42,8 @@
 
 .actionsButtonContainer {
   padding: var(--space-sm);
+}
+
+.formLabel {
+  min-width: 120px;
 }

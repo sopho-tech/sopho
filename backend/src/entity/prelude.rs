@@ -3,6 +3,7 @@
 pub use super::canvas::Entity as Canvas;
 pub use super::cell::Entity as Cell;
 pub use super::chart::Entity as Chart;
+pub use super::configuration::Entity as Configuration;
 pub use super::connection::Entity as Connection;
 pub use super::dashboard::Entity as Dashboard;
 pub use super::notebook::Entity as Notebook;

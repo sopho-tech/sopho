@@ -1,12 +1,11 @@
-use axum::Router;
-use axum::extract::State;   
+use crate::common::AppState;
+use crate::connection::dto;
+use crate::connection::service;
+use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::{get, post, put};
-use crate::connection::dto;
-use crate::common::AppState;
-use crate::connection::service;
+use axum::Router;
 use uuid::Uuid;
-
 
 pub fn routes(app_state: AppState) -> Router {
     Router::new()
@@ -28,12 +27,10 @@ async fn create_connection(
     State(app_state): State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<dto::CreateConnectionDto>,
 ) -> impl IntoResponse {
-    service::create_connection(app_state, payload).await
+    service::create_connection(&app_state, payload).await
 }
 
-async fn get_all_connections(
-    State(app_state): State<AppState>,
-) -> impl IntoResponse {
+async fn get_all_connections(State(app_state): State<AppState>) -> impl IntoResponse {
     service::get_all_connections(app_state).await
 }
 

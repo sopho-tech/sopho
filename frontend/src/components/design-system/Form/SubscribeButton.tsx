@@ -1,7 +1,14 @@
 import { useFormContext } from "src/components/design-system/Form/form-context";
 import { Button } from "src/components/design-system/Button";
+import { ButtonSize } from "../datatypes";
 
-export function SubscribeButton({ label }: { label: string }) {
+export function SubscribeButton({
+  label,
+  size,
+}: {
+  label: string;
+  size: ButtonSize;
+}) {
   const form = useFormContext();
   return (
     <form.Subscribe selector={(state) => state.isSubmitting}>
@@ -12,7 +19,7 @@ export function SubscribeButton({ label }: { label: string }) {
             form.handleSubmit();
           }}
           backgroundColor="accent"
-          size="sm"
+          size={size}
           shape="rectangle"
           type="submit"
           disabled={isSubmitting}

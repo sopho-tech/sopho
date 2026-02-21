@@ -1,152 +1,34 @@
-import { useStore } from "src/store";
 import {
-  ConnectionDetailsPageStateEnum,
-  StatusType,
-} from "src/components/Connection/dto";
-import {
-  SophoMultiStepForm,
-  SophoMultiStepFormLayout,
-  SophoMultiStepFormStep,
-} from "src/components/SophoMultiStepForm";
-import { InputType, SophoFormElementType } from "src/components/SophoForm";
+  Button,
+  Flex,
+  Form,
+  Grid,
+  GridItem,
+  Heading,
+  Separator,
+} from "src/components/design-system";
 import { SourceTypeEnum } from "src/constants/database_types";
-import { SophoDialog } from "src/components/SophoDialog";
-import { SophoProgress } from "src/components/SophoProgress";
-import ConnectionNewStyles from "src/components/Connection/ConnectionNew/ConnectionNew.module.css";
+import styles from "./ConnectionNew.module.css";
 import { useState } from "react";
-import {
-  useCreateConnection,
-  CreateConnectionDto,
-} from "src/api/connection/queries";
-
-const sourceTypeOptions = Object.values(SourceTypeEnum).map((type) => ({
-  value: type,
-  label: type.charAt(0) + type.slice(1).toLowerCase(),
-}));
-
-const steps: SophoMultiStepFormStep[] = [
-  {
-    formElements: [
-      {
-        key: "source_type",
-        name: "Source Type",
-        required: true,
-        error_message: "Source is not selected",
-        type: SophoFormElementType.SELECT,
-        options: sourceTypeOptions,
-      },
-    ],
-    backButtonText: "Back",
-    nextButtonText: "Next",
-    showBackButton: true,
-    showNextButton: true,
-  },
-  {
-    formElements: [
-      {
-        key: "name",
-        name: "Connector Name",
-        required: true,
-        error_message: "Enter the connector name",
-        placeholder: "e.g., my connector",
-        type: SophoFormElementType.INPUT,
-        input_type: InputType.TEXT,
-      },
-      {
-        key: "username",
-        name: "Username",
-        required: true,
-        error_message: "Enter the username",
-        placeholder: "e.g., admin",
-        type: SophoFormElementType.INPUT,
-        input_type: InputType.TEXT,
-      },
-      {
-        key: "password",
-        name: "Password",
-        required: true,
-        error_message: "Enter the username",
-        placeholder: "e.g., toughpassword@123",
-        type: SophoFormElementType.INPUT,
-        input_type: InputType.PASSWORD,
-      },
-      {
-        key: "host",
-        name: "Host",
-        required: true,
-        error_message: "Enter the database host name",
-        placeholder: "e.g., localhost or db.example.com",
-        type: SophoFormElementType.INPUT,
-        input_type: InputType.TEXT,
-      },
-      {
-        key: "port",
-        name: "Port",
-        required: true,
-        error_message: "Enter the database port number",
-        placeholder: "e.g., 5432",
-        type: SophoFormElementType.INPUT,
-        input_type: InputType.NUMBER,
-      },
-      {
-        key: "database",
-        name: "Database",
-        required: true,
-        error_message: "Enter the database name",
-        placeholder: "my_database",
-        type: SophoFormElementType.INPUT,
-        input_type: InputType.TEXT,
-      },
-      {
-        key: "schema",
-        name: "Schema (optional)",
-        required: false,
-        error_message: "Enter the schema",
-        placeholder: "public",
-        type: SophoFormElementType.INPUT,
-        input_type: InputType.TEXT,
-      },
-      {
-        key: "description",
-        name: "Description (optional)",
-        required: false,
-        error_message: "Enter a description",
-        placeholder: "A brief description of the connection",
-        type: SophoFormElementType.INPUT,
-        input_type: InputType.TEXT,
-      },
-    ],
-    backButtonText: "Back",
-    nextButtonText: "Submit",
-    showBackButton: true,
-    showNextButton: true,
-  },
-];
+import { CreateConnectionDto, useCreateConnection } from "src/api/connection";
+import { ConnectionDetailsPageStateEnum, StatusType } from "../dto";
+import { useStore } from "src/store";
+import { useNavigate } from "react-router";
+import { APP_ROUTES } from "src/constants/app_routes";
 
 export function ConnectionNew() {
+  const [sourceType, setSourceType] = useState<string | null>(null);
   const createMutation = useCreateConnection();
-  const [completedSteps, setCompletedSteps] = useState(0);
-  const connectionDetailsPageState = useStore(
-    (state) => state.connection.connectionDetailsPageState
-  );
   const setConnectionDetailsPageState = useStore(
     (state) => state.connection.setConnectionDetailsPageState
   );
-  const shouldOpenDialog =
-    connectionDetailsPageState == ConnectionDetailsPageStateEnum.NEW;
-  const totalSteps = steps.length;
+  const navigate = useNavigate();
+  const sourceTypeOptions = Object.values(SourceTypeEnum).map((type) => ({
+    value: type,
+    label: type.charAt(0) + type.slice(1).toLowerCase(),
+  }));
 
-  function handleOnOpenChange(open: boolean) {
-    if (!open) {
-      setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    }
-  }
-
-  function handleDialogClose() {
-    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-  }
-
-  function handleSubmitCallback(formData: FormData) {
+  const onSubmitHandler = (formData: FormData) => {
     const payload: CreateConnectionDto = {
       name: formData.get("name") as string,
       source_type: formData.get("source_type") as string,
@@ -161,34 +43,219 @@ export function ConnectionNew() {
     };
     createMutation.mutate(payload);
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-  }
+    navigate(APP_ROUTES.SETTINGS);
+  };
 
-  function handleProgressChange(newStepNumber: number) {
-    setCompletedSteps(newStepNumber - 1);
-  }
+  const onChangeHandler = (_: FormData, fieldName: string, value: string) => {
+    if (fieldName === "source_type") {
+      setSourceType(value);
+    }
+  };
 
-  const dialogContent = (
-    <SophoMultiStepForm
-      steps={steps}
-      type={SophoMultiStepFormLayout.VERTICAL}
-      formElementsStyleClass={ConnectionNewStyles.formElements}
-      onSubmitCallback={handleSubmitCallback}
-      onProgressChange={handleProgressChange}
-    />
-  );
+  const handleBack = () => {
+    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
+    navigate(APP_ROUTES.SETTINGS);
+  };
+
   return (
-    <div>
-      <SophoDialog
-        shouldOpenDialog={shouldOpenDialog}
-        handleOnOpenChange={handleOnOpenChange}
-        handleDialogClose={handleDialogClose}
-        info={dialogContent}
-        title="New Connection"
-        description="Set up a new database connection"
-        titleAccessory={
-          <SophoProgress total={totalSteps} completed={completedSteps} />
-        }
-      />
-    </div>
+    <Flex
+      flex="grow"
+      paddingX="2xl"
+      paddingY="xs"
+      marginTop="xs"
+      marginBottom="xs"
+      marginLeft="xs"
+      marginRight="xs"
+      direction="column"
+    >
+      <Flex justifyContent="space-between">
+        <Heading accessbilityLevel={1}>New Connection</Heading>
+        <Button
+          label="Go back to Settings"
+          size="md"
+          backgroundColor="accent"
+          shape="rectangle"
+          leadingIconName="chevron_left"
+          onClick={handleBack}
+        ></Button>
+      </Flex>
+      <Form
+        onSubmit={onSubmitHandler}
+        onChange={onChangeHandler}
+        className={styles.form}
+      >
+        <Form.Fields className={styles.formFields}>
+          <Flex direction="row" gap="lg" justifyContent="space-between">
+            <Flex direction="column" gap="sm" width={"100%"}>
+              <Heading accessbilityLevel={2} textColor="black" size="lg">
+                Basic Details
+              </Heading>
+              <Heading accessbilityLevel={3} textColor="subtle" size="base">
+                Set your basic connection details
+              </Heading>
+            </Flex>
+            <Grid
+              columnGutter="2xl"
+              rowGutter="md"
+              className={styles.basicFormFields}
+            >
+              <GridItem colSpan={6}>
+                <Form.Field name="name" className={styles.formField}>
+                  <Form.Label className={styles.formLabel}>Name</Form.Label>
+                  <Form.Input placeholder="Connection name" />
+                </Form.Field>
+              </GridItem>
+              <GridItem colSpan={6}>
+                <Form.Field name="description" className={styles.formField}>
+                  <Form.Label className={styles.formLabel}>
+                    Description
+                  </Form.Label>
+                  <Form.Input placeholder="Connection description" />
+                </Form.Field>
+              </GridItem>
+              <GridItem colSpan={12}>
+                <Form.Field name="source_type" className={styles.formField}>
+                  <Form.Label className={styles.formLabel}>
+                    Source Type
+                  </Form.Label>
+                  <Form.Select
+                    options={sourceTypeOptions}
+                    groupName="Source Type"
+                  />
+                </Form.Field>
+              </GridItem>
+            </Grid>
+          </Flex>
+          <Separator></Separator>
+          <Flex direction="row" gap="lg" justifyContent="space-between">
+            <Flex direction="column" gap="sm" width={"100%"}>
+              <Heading accessbilityLevel={2} textColor="black" size="lg">
+                Specific Details
+              </Heading>
+              <Heading accessbilityLevel={3} textColor="subtle" size="base">
+                {sourceType === null
+                  ? "Select source type to see the specific details"
+                  : sourceType === SourceTypeEnum.PostgreSQL
+                    ? "Enter your PostgreSQL connection details"
+                    : `Enter your ${sourceType.charAt(0) + sourceType.slice(1).toLowerCase()} connection details`}
+              </Heading>
+            </Flex>
+            {sourceType === SourceTypeEnum.PostgreSQL && (
+              <Grid
+                columnGutter="2xl"
+                rowGutter="md"
+                className={styles.basicFormFields}
+              >
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="username"
+                    required
+                    errorMessage="Enter the username"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>
+                      Username
+                    </Form.Label>
+                    <Form.Input placeholder="admin" />
+                  </Form.Field>
+                </GridItem>
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="password"
+                    required
+                    errorMessage="Enter the password"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>
+                      Password
+                    </Form.Label>
+                    <Form.Password placeholder="toughpassword@123" />
+                  </Form.Field>
+                </GridItem>
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="host"
+                    required
+                    errorMessage="Enter the database host name"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>Host</Form.Label>
+                    <Form.Input placeholder="localhost" />
+                  </Form.Field>
+                </GridItem>
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="port"
+                    required
+                    errorMessage="Enter the database port number"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>Port</Form.Label>
+                    <Form.Input placeholder="5432" />
+                  </Form.Field>
+                </GridItem>
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="database"
+                    required
+                    errorMessage="Enter the database name"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>
+                      Database
+                    </Form.Label>
+                    <Form.Input placeholder="my_database" />
+                  </Form.Field>
+                </GridItem>
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="schema"
+                    errorMessage="Enter the schema"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>
+                      Schema (optional)
+                    </Form.Label>
+                    <Form.Input placeholder="public" />
+                  </Form.Field>
+                </GridItem>
+              </Grid>
+            )}
+            {sourceType === SourceTypeEnum.Sqlite && (
+              <Grid
+                columnGutter="2xl"
+                rowGutter="2xl"
+                className={styles.basicFormFields}
+              >
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="database"
+                    required
+                    errorMessage="Invalid path to the database file"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>
+                      Path to the database file
+                    </Form.Label>
+                    <Form.Input placeholder="/Users/username/database.db" />
+                  </Form.Field>
+                </GridItem>
+              </Grid>
+            )}
+          </Flex>
+        </Form.Fields>
+        <Separator></Separator>
+        <Flex gap="md">
+          <Form.Submit label="Save" size="md" />
+          <Button
+            backgroundColor="white"
+            label="Back"
+            shape="rectangle"
+            size="md"
+            onClick={handleBack}
+          />
+        </Flex>
+      </Form>
+    </Flex>
   );
 }

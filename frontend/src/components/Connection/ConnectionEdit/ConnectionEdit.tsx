@@ -1,53 +1,35 @@
-import { useMemo } from "react";
-import { useStore } from "src/store";
-import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 import {
-  SophoForm,
-  SophoFormElement,
-  SophoFormElementType,
-  InputType,
-} from "src/components/SophoForm";
+  Button,
+  Flex,
+  Form,
+  Grid,
+  GridItem,
+  Heading,
+  Separator,
+} from "src/components/design-system";
 import { SourceTypeEnum } from "src/constants/database_types";
-import { SophoDialog } from "src/components/SophoDialog";
+import styles from "./ConnectionEdit.module.css";
+import { useParams, useNavigate } from "react-router";
 import { useConnection, useUpdateConnection } from "src/api/connection/queries";
-
-const sourceTypeOptions = Object.values(SourceTypeEnum).map((type) => ({
-  value: type,
-  label: type.charAt(0) + type.slice(1).toLowerCase(),
-}));
+import { useStore } from "src/store";
+import { APP_ROUTES } from "src/constants/app_routes";
+import { ConnectionDetailsPageStateEnum } from "../dto";
 
 export function ConnectionEdit() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const updateMutation = useUpdateConnection();
-  const connectionId = useStore((state) => state.connection.connectionId);
-  const connectionDetailsPageState = useStore((state) => state.connection.connectionDetailsPageState);
-  const setConnectionDetailsPageState = useStore((state) => state.connection.setConnectionDetailsPageState);
+  const setConnectionDetailsPageState = useStore(
+    (state) => state.connection.setConnectionDetailsPageState
+  );
   const {
     data: connection,
     isLoading,
     error: queryError,
-  } = useConnection(connectionId);
+  } = useConnection(id ?? "");
 
-  const shouldOpenDialog =
-    connectionDetailsPageState === ConnectionDetailsPageStateEnum.EDIT;
-
-  function handleOnOpenChange(open: boolean) {
-    if (!open) {
-      setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    }
-  }
-
-  function handleDialogClose() {
-    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-  }
-
-  function handleCancelCallback() {
-    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-  }
-
-  function handleSubmitCallback(formData: FormData) {
-    if (!connection) {
-      throw new Error("Connection is null in handleSubmitCallback");
-    }
+  const onSubmitHandler = (formData: FormData) => {
+    if (!connection) return;
     const payload = {
       id: connection.id,
       source_type: connection.source_type,
@@ -63,130 +45,244 @@ export function ConnectionEdit() {
       password: formData.get("password") as string,
       description: (formData.get("description") as string) || null,
     };
-    updateMutation.mutate({ connectionId, payload });
+    updateMutation.mutate({ connectionId: connection.id, payload });
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-  }
+    navigate(APP_ROUTES.SETTINGS);
+  };
 
-  const formElements = useMemo<SophoFormElement[]>(() => {
-    if (!connection) return [];
-    return [
-    {
-      key: "source_type",
-      name: "Source Type",
-      required: true,
-      error_message: "Source is not selected",
-      type: SophoFormElementType.SELECT,
-      options: sourceTypeOptions,
-      defaultValue: connection.source_type,
-      disabled: true,
-    },
-    {
-      key: "name",
-      name: "Connector Name",
-      required: true,
-      error_message: "Enter the connector name",
-      placeholder: "e.g., my connector",
-      type: SophoFormElementType.INPUT,
-      input_type: InputType.TEXT,
-      defaultValue: connection.name,
-    },
-    {
-      key: "username",
-      name: "Username",
-      required: true,
-      error_message: "Enter the username",
-      placeholder: "e.g., admin",
-      type: SophoFormElementType.INPUT,
-      input_type: InputType.TEXT,
-      defaultValue: connection.username,
-    },
-    {
-      key: "password",
-      name: "Password",
-      required: false,
-      error_message: "Enter the password",
-      placeholder: "*****",
-      type: SophoFormElementType.INPUT,
-      input_type: InputType.PASSWORD,
-      defaultValue: connection.password,
-    },
-    {
-      key: "host",
-      name: "Host",
-      required: true,
-      error_message: "Enter the database host name",
-      placeholder: "e.g., localhost or db.example.com",
-      type: SophoFormElementType.INPUT,
-      input_type: InputType.TEXT,
-      defaultValue: connection.host,
-    },
-    {
-      key: "port",
-      name: "Port",
-      required: true,
-      error_message: "Enter the database port number",
-      placeholder: "e.g., 5432",
-      type: SophoFormElementType.INPUT,
-      input_type: InputType.NUMBER,
-      defaultValue: connection.port,
-    },
-    {
-      key: "database",
-      name: "Database",
-      required: true,
-      error_message: "Enter the database name",
-      placeholder: "my_database",
-      type: SophoFormElementType.INPUT,
-      input_type: InputType.TEXT,
-      defaultValue: connection.database,
-    },
-    {
-      key: "schema",
-      name: "Schema (optional)",
-      required: false,
-      error_message: "Enter the schema",
-      placeholder: "public",
-      type: SophoFormElementType.INPUT,
-      input_type: InputType.TEXT,
-      defaultValue: connection.schema,
-    },
-    {
-      key: "description",
-      name: "Description (optional)",
-      required: false,
-      error_message: "Enter a description",
-      placeholder: "A brief description of the connection",
-      type: SophoFormElementType.INPUT,
-      input_type: InputType.TEXT,
-      defaultValue: connection.description,
-    },
-    ];
-  }, [connection]);
+  const handleBack = () => {
+    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
+    navigate(APP_ROUTES.SETTINGS);
+  };
 
   if (isLoading) return <div>Loading connection details...</div>;
   if (queryError)
     return <div>Error loading connection: {queryError.message}</div>;
-  if (!connection) return <div>No connection data found.</div>;
+  if (!connection || !id) return <div>No connection data found.</div>;
 
-  const dialogContent = (
-    <SophoForm
-      formElements={formElements}
-      onSubmitCallback={handleSubmitCallback}
-      onCancelCallback={handleCancelCallback}
-      submitButtonText="Save Changes"
-      showCancelButton={true}
-      showSubmitButton={true}
-    />
-  );
+  const defaultValues: Record<string, unknown> = {
+    name: connection.name,
+    description: connection.description ?? "",
+    username: connection.username,
+    password: connection.password,
+    host: connection.host,
+    port: connection.port != null ? String(connection.port) : "",
+    database: connection.database,
+    schema: connection.schema ?? "",
+  };
+
+  const sourceTypeLabel =
+    connection.source_type.charAt(0) +
+    connection.source_type.slice(1).toLowerCase();
 
   return (
-    <SophoDialog
-      shouldOpenDialog={shouldOpenDialog}
-      handleOnOpenChange={handleOnOpenChange}
-      handleDialogClose={handleDialogClose}
-      info={dialogContent}
-      title="Edit Connection"
-      description="Update your database connection details"
-    />
+    <Flex
+      flex="grow"
+      paddingX="2xl"
+      paddingY="xs"
+      marginTop="xs"
+      marginBottom="xs"
+      marginLeft="xs"
+      marginRight="xs"
+      direction="column"
+    >
+      <Flex justifyContent="space-between">
+        <Heading accessbilityLevel={1}>Edit Connection</Heading>
+        <Button
+          label="Go back to Settings"
+          size="md"
+          backgroundColor="accent"
+          shape="rectangle"
+          leadingIconName="chevron_left"
+          onClick={handleBack}
+        />
+      </Flex>
+      <Form
+        onSubmit={onSubmitHandler}
+        defaultValues={defaultValues}
+        className={styles.form}
+      >
+        <Form.Fields className={styles.formFields}>
+          <Flex direction="row" gap="lg" justifyContent="space-between">
+            <Flex direction="column" gap="sm" width={"100%"}>
+              <Heading accessbilityLevel={2} textColor="black" size="lg">
+                Basic Details
+              </Heading>
+              <Heading accessbilityLevel={3} textColor="subtle" size="base">
+                Set your basic connection details
+              </Heading>
+            </Flex>
+            <Grid
+              columnGutter="2xl"
+              rowGutter="md"
+              className={styles.basicFormFields}
+            >
+              <GridItem colSpan={6}>
+                <Form.Field
+                  name="name"
+                  required
+                  errorMessage="Enter the connector name"
+                  className={styles.formField}
+                >
+                  <Form.Label className={styles.formLabel}>Name</Form.Label>
+                  <Form.Input placeholder="Connection name" />
+                </Form.Field>
+              </GridItem>
+              <GridItem colSpan={6}>
+                <Form.Field name="description" className={styles.formField}>
+                  <Form.Label className={styles.formLabel}>
+                    Description
+                  </Form.Label>
+                  <Form.Input placeholder="Connection description" />
+                </Form.Field>
+              </GridItem>
+              <GridItem colSpan={12}>
+                <div className={styles.formField}>
+                  <Form.Label className={styles.formLabel}>
+                    Source Type
+                  </Form.Label>
+                  <div
+                    style={{
+                      padding: "var(--space-sm) var(--space-md)",
+                      backgroundColor: "var(--color-grey-100)",
+                      borderRadius: "var(--radius-md)",
+                      color: "var(--color-grey-600)",
+                    }}
+                  >
+                    {sourceTypeLabel}
+                  </div>
+                </div>
+              </GridItem>
+            </Grid>
+          </Flex>
+          <Separator />
+          <Flex direction="row" gap="lg" justifyContent="space-between">
+            <Flex direction="column" gap="sm" width={"100%"}>
+              <Heading accessbilityLevel={2} textColor="black" size="lg">
+                Specific Details
+              </Heading>
+              <Heading accessbilityLevel={3} textColor="subtle" size="base">
+                {connection.source_type === SourceTypeEnum.PostgreSQL
+                  ? "Enter your PostgreSQL connection details"
+                  : `Enter your ${sourceTypeLabel} connection details`}
+              </Heading>
+            </Flex>
+            {connection.source_type === SourceTypeEnum.PostgreSQL && (
+              <Grid
+                columnGutter="2xl"
+                rowGutter="md"
+                className={styles.basicFormFields}
+              >
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="username"
+                    required
+                    errorMessage="Enter the username"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>
+                      Username
+                    </Form.Label>
+                    <Form.Input placeholder="admin" />
+                  </Form.Field>
+                </GridItem>
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="password"
+                    required
+                    errorMessage="Enter the password"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>
+                      Password
+                    </Form.Label>
+                    <Form.Password placeholder="toughpassword@123" />
+                  </Form.Field>
+                </GridItem>
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="host"
+                    required
+                    errorMessage="Enter the database host name"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>Host</Form.Label>
+                    <Form.Input placeholder="localhost" />
+                  </Form.Field>
+                </GridItem>
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="port"
+                    required
+                    errorMessage="Enter the database port number"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>Port</Form.Label>
+                    <Form.Input placeholder="5432" />
+                  </Form.Field>
+                </GridItem>
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="database"
+                    required
+                    errorMessage="Enter the database name"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>
+                      Database
+                    </Form.Label>
+                    <Form.Input placeholder="my_database" />
+                  </Form.Field>
+                </GridItem>
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="schema"
+                    errorMessage="Enter the schema"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>
+                      Schema (optional)
+                    </Form.Label>
+                    <Form.Input placeholder="public" />
+                  </Form.Field>
+                </GridItem>
+              </Grid>
+            )}
+            {connection.source_type === SourceTypeEnum.Sqlite && (
+              <Grid
+                columnGutter="2xl"
+                rowGutter="2xl"
+                className={styles.basicFormFields}
+              >
+                <GridItem colSpan={6}>
+                  <Form.Field
+                    name="database"
+                    required
+                    errorMessage="Invalid path to the database file"
+                    className={styles.formField}
+                  >
+                    <Form.Label className={styles.formLabel}>
+                      Path to the database file
+                    </Form.Label>
+                    <Form.Input placeholder="/Users/username/database.db" />
+                  </Form.Field>
+                </GridItem>
+              </Grid>
+            )}
+          </Flex>
+        </Form.Fields>
+        <Separator />
+        <Flex gap="md">
+          <Form.Submit label="Save Changes" size="md" />
+          <Button
+            backgroundColor="white"
+            label="Back"
+            shape="rectangle"
+            size="md"
+            onClick={handleBack}
+          />
+        </Flex>
+      </Form>
+    </Flex>
   );
 }

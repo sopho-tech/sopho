@@ -501,6 +501,10 @@ fn invalidate_session_cookies(cookies: &Cookies, app_state: &AppState) {
 }
 
 pub async fn seed_admin_user(app_state: &AppState) {
+    if crate::configuration::service::is_admin_user_setup_done(app_state).await {
+        return;
+    }
+
     let username = app_state.config.admin_username.as_ref();
     let password = app_state.config.admin_password.as_ref();
     let email = app_state.config.admin_email.as_ref();
@@ -514,6 +518,7 @@ pub async fn seed_admin_user(app_state: &AppState) {
             "Admin user with email {} already exists, skipping seed",
             email
         );
+        crate::configuration::service::mark_admin_user_setup_done(app_state).await;
         return;
     }
 
@@ -536,7 +541,10 @@ pub async fn seed_admin_user(app_state: &AppState) {
     };
 
     match repository::save_user(&app_state.database_connection, user).await {
-        Ok(_) => tracing::info!("Admin user {} created successfully", username),
+        Ok(_) => {
+            tracing::info!("Admin user {} created successfully", username);
+            crate::configuration::service::mark_admin_user_setup_done(app_state).await;
+        }
         Err(e) => tracing::error!("Admin seeding failed: could not save user: {:?}", e),
     }
 }

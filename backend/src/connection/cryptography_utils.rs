@@ -12,13 +12,11 @@ fn encrypt_field(key: &str, value: &str) -> Result<String, aes_gcm::Error> {
 
 pub fn encrypt_connection(entity: &mut connection::Model, key: &str) -> Result<(), aes_gcm::Error> {
     entity.database = encrypt_field(key, &entity.database)?;
-    entity.host = encrypt_field(key, &entity.host)?;
-    entity.password = encrypt_field(key, &entity.password)?;
-    entity.port = encrypt_field(key, &entity.port)?;
-    if let Some(ref s) = entity.schema {
-        entity.schema = Some(encrypt_field(key, s)?);
-    }
-    entity.username = encrypt_field(key, &entity.username)?;
+    entity.host = entity.host.as_ref().map(|s| encrypt_field(key, s)).transpose()?;
+    entity.password = entity.password.as_ref().map(|s| encrypt_field(key, s)).transpose()?;
+    entity.port = entity.port.as_ref().map(|s| encrypt_field(key, s)).transpose()?;
+    entity.schema = entity.schema.as_ref().map(|s| encrypt_field(key, s)).transpose()?;
+    entity.username = entity.username.as_ref().map(|s| encrypt_field(key, s)).transpose()?;
     Ok(())
 }
 
@@ -36,11 +34,9 @@ pub fn encrypt_connection_dto(payload: &mut ConnectionDto, key: &str) -> Result<
 
 pub fn decrypt_connection(entity: &mut connection::Model, key: &str) {
     entity.database = try_decrypt(key, &entity.database);
-    entity.host = try_decrypt(key, &entity.host);
-    entity.password = try_decrypt(key, &entity.password);
-    entity.port = try_decrypt(key, &entity.port);
-    if let Some(ref s) = entity.schema {
-        entity.schema = Some(try_decrypt(key, s));
-    }
-    entity.username = try_decrypt(key, &entity.username);
+    entity.host = entity.host.as_ref().map(|s| try_decrypt(key, s));
+    entity.password = entity.password.as_ref().map(|s| try_decrypt(key, s));
+    entity.port = entity.port.as_ref().map(|s| try_decrypt(key, s));
+    entity.schema = entity.schema.as_ref().map(|s| try_decrypt(key, s));
+    entity.username = entity.username.as_ref().map(|s| try_decrypt(key, s));
 }

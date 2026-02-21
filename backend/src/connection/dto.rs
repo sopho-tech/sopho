@@ -21,13 +21,31 @@ where
     }
 }
 
+fn deserialize_optional_port<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum PortInput {
+        Number(i64),
+        String(String),
+    }
+    let opt = Option::<PortInput>::deserialize(deserializer)?;
+    Ok(opt.map(|p| match p {
+        PortInput::Number(n) => n.to_string(),
+        PortInput::String(s) => s,
+    }))
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateConnectionDto {
     pub name: String,
-    pub username: String,
-    pub password: String,
-    pub host: String,
-    pub port: i32,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub host: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_port")]
+    pub port: Option<String>,
     pub database: String,
     pub schema: Option<String>,
     pub description: Option<String>,
@@ -65,11 +83,11 @@ impl From<entity::connection::Model> for ConnectionDto {
             description: model.description,
             source_type: SourceType::from_str(&model.source_type).unwrap(),
             database: model.database,
-            host: model.host,
-            port: model.port,
+            host: model.host.unwrap_or_default(),
+            port: model.port.unwrap_or_default(),
             schema: model.schema,
-            username: model.username,
-            password: model.password,
+            username: model.username.unwrap_or_default(),
+            password: model.password.unwrap_or_default(),
             created_at: model.created_at,
             updated_at: model.updated_at,
             status: ConnectionStatus::from_str(&model.status).unwrap(),

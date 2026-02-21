@@ -106,6 +106,7 @@ pub struct CreateCellDto {
     pub connection_id: Option<Uuid>,
     pub name: Option<String>,
     pub content: Option<String>,
+    pub display_order: Option<i32>,
     #[serde(deserialize_with = "CellType::deserialize_from_str")]
     pub cell_type: CellType,
 }

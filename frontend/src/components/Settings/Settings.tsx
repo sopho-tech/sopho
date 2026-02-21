@@ -20,7 +20,7 @@ export function Settings() {
   return (
     <Flex
       flex="grow"
-      paddingX="xs"
+      paddingX="2xl"
       paddingY="xs"
       marginTop="xs"
       marginBottom="xs"

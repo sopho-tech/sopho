@@ -45,6 +45,8 @@ const CardRoot = ({ children, className, variant, onClick }: CardRootProps) => {
         paddingY="md"
         direction="column"
         gap="lg"
+        height="100%"
+        justifyContent="space-between"
       >
         {children}
       </MotionFlex>

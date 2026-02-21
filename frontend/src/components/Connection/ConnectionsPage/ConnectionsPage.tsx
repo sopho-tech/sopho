@@ -2,13 +2,14 @@ import { useCallback } from "react";
 import { useStore } from "src/store";
 import { ConnectionsTable } from "src/components/Connection/ConnectionsTable/ConnectionsTable";
 import { ConnectionDetail } from "src/components/Connection/ConnectionDetail/ConnectionDetail";
-import { ConnectionEdit } from "src/components/Connection/ConnectionEdit/ConnectionEdit";
 import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
-import { ConnectionNew } from "src/components/Connection/ConnectionNew";
 import { Button } from "src/components/design-system/Button/Button";
 import { Flex } from "src/components/design-system/Flex/Flex";
+import { useNavigate } from "react-router";
+import { APP_ROUTES } from "src/constants/app_routes";
 
 export function Connections() {
+  const navigate = useNavigate();
   const connectionDetailsPageState = useStore(
     (state) => state.connection.connectionDetailsPageState
   );
@@ -18,7 +19,8 @@ export function Connections() {
 
   const handleNewClick = useCallback(() => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW);
-  }, [setConnectionDetailsPageState]);
+    navigate(APP_ROUTES.CONNECTION_NEW);
+  }, [setConnectionDetailsPageState, navigate]);
 
   return (
     <Flex direction="column" flex="grow" gap="md" overflow="hidden">
@@ -36,14 +38,8 @@ export function Connections() {
           onClick={handleNewClick}
         />
       </Flex>
-      {connectionDetailsPageState === ConnectionDetailsPageStateEnum.NEW && (
-        <ConnectionNew />
-      )}
       {connectionDetailsPageState === ConnectionDetailsPageStateEnum.DETAIL && (
         <ConnectionDetail />
-      )}
-      {connectionDetailsPageState === ConnectionDetailsPageStateEnum.EDIT && (
-        <ConnectionEdit />
       )}
       <ConnectionsTable />
     </Flex>

@@ -7,8 +7,6 @@ import type {
   ChartContent,
 } from "../../Cell/dto";
 
-export const formLabel = (c: string) => ({ labelIconContainerStyleClass: c });
-
 export const InfoTooltip = ({ message }: { message: string }) => (
   <div className={CellEditorStyle.infoTooltipMessage}>{message}</div>
 );

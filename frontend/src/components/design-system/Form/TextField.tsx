@@ -4,31 +4,22 @@ import { IconType } from "src/components/design-system/datatypes";
 import { FieldError } from "./FieldError";
 
 type TextFieldProps = {
-  label?: string;
   placeholder?: string;
-  showLabel?: boolean;
   icon?: IconType;
   readonly?: boolean;
-  containerStyleClass?: string;
-  labelStyleClass?: string;
-  inputContainerClassName?: string;
+  containerClassName?: string;
 };
 
 export function TextField({
-  label,
   placeholder,
-  showLabel = true,
   icon,
   readonly = false,
-  containerStyleClass,
-  labelStyleClass,
-  inputContainerClassName,
+  containerClassName,
 }: TextFieldProps) {
   const field = useFieldContext<string>();
   const fieldName = field.name;
   return (
-    <label className={containerStyleClass}>
-      {showLabel && label && <span className={labelStyleClass}>{label}</span>}
+    <>
       <Input
         type="text"
         value={field.state.value}
@@ -38,9 +29,9 @@ export function TextField({
         id={fieldName}
         name={fieldName}
         disabled={readonly}
-        containerClassName={inputContainerClassName}
+        containerClassName={containerClassName}
       />
       <FieldError errors={field.state.meta.errors} />
-    </label>
+    </>
   );
 }

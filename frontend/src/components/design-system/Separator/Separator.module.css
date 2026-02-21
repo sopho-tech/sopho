@@ -1,0 +1,14 @@
+.separator {
+  flex-shrink: 0;
+  background-color: var(--border-color-light);
+}
+
+.horizontal {
+  height: var(--border-width-medium);
+  width: 100%;
+}
+
+.vertical {
+  width: var(--border-width-medium);
+  height: 100%;
+}

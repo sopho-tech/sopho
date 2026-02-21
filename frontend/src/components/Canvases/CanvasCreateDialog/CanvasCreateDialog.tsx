@@ -77,21 +77,23 @@ export function CanvasCreateDialog() {
     <Form defaultValues={DEFAULT_FORM_VALUES} onSubmit={onSubmitCallback}>
       <Form.ErrorBanner />
       <Form.Fields>
-        <Form.Input
+        <Form.Field
           name="name"
-          label="Name"
           required
           errorMessage="Please fill name"
           className={styles.formFieldContainer}
-          labelClassName={styles.formLabelContainer}
-        />
-        <Form.Input
+        >
+          <Form.Label className={styles.formLabelContainer}>Name</Form.Label>
+          <Form.Input placeholder="Enter name" />
+        </Form.Field>
+        <Form.Field
           name="description"
-          label="Description"
           errorMessage="Please enter description"
           className={styles.formFieldContainer}
-          labelClassName={styles.formLabelContainer}
-        />
+        >
+          <Form.Label className={styles.formLabelContainer}>Description</Form.Label>
+          <Form.Input placeholder="Enter description" />
+        </Form.Field>
       </Form.Fields>
       <Form.Actions>
         <Form.Cancel onClick={handleDialogClose} />

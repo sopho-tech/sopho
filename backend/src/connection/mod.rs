@@ -1,8 +1,8 @@
+pub mod constants;
 mod controller;
 pub mod cryptography_utils;
-pub mod service;
-mod dto;
+pub mod dto;
 mod repository;
-mod constants;
+pub mod service;
 
 pub use controller::routes;

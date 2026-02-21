@@ -14,16 +14,11 @@ import { useDashboardSave } from "src/components/Dashboard/hooks";
 import styles from "src/components/Dashboard/Dashboard.module.css";
 import "react-grid-layout/css/styles.css";
 import { Flex } from "src/components/design-system";
-import { EmptyState } from "src/components/EmptyState";
 import { useStore, DashboardMode } from "src/store";
 
 const ReactGridLayout = WidthProvider(RGL);
 
-type DashboardProps = {
-  onSwitchToNotebook?: () => void;
-};
-
-export function Dashboard({ onSwitchToNotebook }: DashboardProps) {
+export function Dashboard() {
   const params = useParams();
   const canvasId = params.id || "";
   const mode = useStore((state) => state.dashboard.mode);
@@ -92,50 +87,38 @@ export function Dashboard({ onSwitchToNotebook }: DashboardProps) {
     [setLayout]
   );
 
-  const margin = useMemo<[number, number]>(() => [10, 10], []);
-  const containerPadding = useMemo<[number, number]>(() => [10, 10], []);
+  const margin = useMemo<[number, number]>(() => [20, 20], []);
+  const containerPadding = useMemo<[number, number]>(() => [0, 0], []);
 
   return (
     <Flex gap="2xs" flex="grow">
-      {layout.length === 0 ? (
-        <Flex flex="grow" alignItems="center" justifyContent="center">
-          <EmptyState
-            icon="table"
-            heading="No chart cells in your notebook yet"
-            description="Add a chart cell in your notebook to visualize data and build dashboards"
-            buttonLabel="Go to Notebook"
-            onButtonClick={() => onSwitchToNotebook?.()}
-          />
-        </Flex>
-      ) : (
-        <ReactGridLayout
-          className={`${styles.layout} ${isEditing ? styles.layoutEditing : ""}`}
-          layout={layout}
-          cols={12}
-          rowHeight={100}
-          margin={margin}
-          containerPadding={containerPadding}
-          onLayoutChange={handleLayoutChange}
-          onDragStart={handleDragStart}
-          onDrag={handleDrag}
-          onDragStop={handleDragStop}
-          onResize={handleDrag}
-          onResizeStop={handleDrag}
-          useCSSTransforms={true}
-          draggableHandle={`.${styles.dragHandle}`}
-          isDraggable={isEditing}
-          isResizable={isEditing}
-          onDrop={handleOnDrop}
-          onDropDragOver={handleOnDropDragOver}
-          isDroppable={true}
-        >
-          {layout.map((layoutItem) => (
-            <div key={layoutItem.i} className={styles.gridItem}>
-              <DashboardChart cellId={layoutItem.i} />
-            </div>
-          ))}
-        </ReactGridLayout>
-      )}
+      <ReactGridLayout
+        className={`${styles.layout} ${isEditing ? styles.layoutEditing : ""}`}
+        layout={layout}
+        cols={12}
+        rowHeight={100}
+        margin={margin}
+        containerPadding={containerPadding}
+        onLayoutChange={handleLayoutChange}
+        onDragStart={handleDragStart}
+        onDrag={handleDrag}
+        onDragStop={handleDragStop}
+        onResize={handleDrag}
+        onResizeStop={handleDrag}
+        useCSSTransforms={true}
+        draggableHandle={`.${styles.dragHandle}`}
+        isDraggable={isEditing}
+        isResizable={isEditing}
+        onDrop={handleOnDrop}
+        onDropDragOver={handleOnDropDragOver}
+        isDroppable={true}
+      >
+        {layout.map((layoutItem) => (
+          <div key={layoutItem.i} className={styles.gridItem}>
+            <DashboardChart cellId={layoutItem.i} />
+          </div>
+        ))}
+      </ReactGridLayout>
       <ChartBrowser />
       <DashboardToolbar />
     </Flex>

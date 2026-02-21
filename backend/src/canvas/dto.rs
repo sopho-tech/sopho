@@ -4,6 +4,13 @@ use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[derive(Debug)]
+pub struct CreateCanvasResult {
+    pub canvas: entity::canvas::Model,
+    pub notebook: entity::notebook::Model,
+    pub dashboard: entity::dashboard::Model,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateCanvasDto {
     pub name: String,

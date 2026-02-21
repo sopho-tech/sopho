@@ -10,6 +10,8 @@ import { ReactQueryClientProvider } from "./utils/react_query_provider";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { Canvases } from "src/components/Canvases";
 import { Canvas } from "src/components/Canvases/Canvas";
+import { ConnectionNew } from "./components/Connection/ConnectionNew";
+import { ConnectionEdit } from "./components/Connection/ConnectionEdit/ConnectionEdit";
 
 const router = createBrowserRouter([
   {
@@ -22,6 +24,14 @@ const router = createBrowserRouter([
       {
         path: APP_ROUTES.SETTINGS,
         element: <Settings />,
+      },
+      {
+        path: APP_ROUTES.CONNECTION_NEW,
+        element: <ConnectionNew />,
+      },
+      {
+        path: APP_ROUTES.CONNECTION_EDIT,
+        element: <ConnectionEdit />,
       },
       {
         path: APP_ROUTES.PROFILE,

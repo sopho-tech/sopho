@@ -13,7 +13,8 @@ type GutterValue = GutterSize | ResponsiveGutter;
 
 type GridProps = {
   as?: React.ElementType;
-  gutter?: GutterValue;
+  columnGutter?: GutterValue;
+  rowGutter?: GutterValue;
   className?: string;
   children: React.ReactNode;
 };
@@ -34,9 +35,35 @@ function isResponsiveGutter(gutter: GutterValue): gutter is ResponsiveGutter {
   return typeof gutter === "object" && gutter !== null;
 }
 
+function applyResponsiveVars(
+  style: Record<string, string>,
+  gutter: ResponsiveGutter,
+  prefix: string
+) {
+  const defaultGutter = gutter.base ?? "sm";
+  style[`--grid-${prefix}-gutter-default`] = `var(--space-${defaultGutter})`;
+
+  if (gutter.sm !== undefined) {
+    style[`--grid-${prefix}-gutter-sm`] = `var(--space-${gutter.sm})`;
+  }
+  if (gutter.md !== undefined) {
+    style[`--grid-${prefix}-gutter-md`] = `var(--space-${gutter.md})`;
+  }
+  if (gutter.lg !== undefined) {
+    style[`--grid-${prefix}-gutter-lg`] = `var(--space-${gutter.lg})`;
+  }
+  if (gutter.xl !== undefined) {
+    style[`--grid-${prefix}-gutter-xl`] = `var(--space-${gutter.xl})`;
+  }
+  if (gutter["2xl"] !== undefined) {
+    style[`--grid-${prefix}-gutter-2xl`] = `var(--space-${gutter["2xl"]})`;
+  }
+}
+
 export function Grid({
   as: Component = "div",
-  gutter = "sm",
+  columnGutter = "sm",
+  rowGutter = "sm",
   className,
   children,
 }: GridProps) {
@@ -55,42 +82,34 @@ export function Grid({
     ? `${styles.grid} ${className}`.trim()
     : styles.grid;
 
-  // Build CSS custom properties for responsive gutter
-  const style: React.CSSProperties = {};
-  let dataGutter: string | undefined;
-  let dataResponsive: string | undefined;
+  const style: Record<string, string> = {};
+  let dataColumnGutter: string | undefined;
+  let dataRowGutter: string | undefined;
+  let dataColResponsive: string | undefined;
+  let dataRowResponsive: string | undefined;
 
-  if (isResponsiveGutter(gutter)) {
-    const defaultGutter = gutter.base ?? "sm";
-    (style as Record<string, string>)["--grid-gutter-default"] = `var(--space-${defaultGutter})`;
-
-    if (gutter.sm !== undefined) {
-      (style as Record<string, string>)["--grid-gutter-sm"] = `var(--space-${gutter.sm})`;
-    }
-    if (gutter.md !== undefined) {
-      (style as Record<string, string>)["--grid-gutter-md"] = `var(--space-${gutter.md})`;
-    }
-    if (gutter.lg !== undefined) {
-      (style as Record<string, string>)["--grid-gutter-lg"] = `var(--space-${gutter.lg})`;
-    }
-    if (gutter.xl !== undefined) {
-      (style as Record<string, string>)["--grid-gutter-xl"] = `var(--space-${gutter.xl})`;
-    }
-    if (gutter["2xl"] !== undefined) {
-      (style as Record<string, string>)["--grid-gutter-2xl"] = `var(--space-${gutter["2xl"]})`;
-    }
-    dataResponsive = "true";
+  if (isResponsiveGutter(columnGutter)) {
+    applyResponsiveVars(style, columnGutter, "col");
+    dataColResponsive = "true";
   } else {
-    // Simple string value - use data-gutter for backward compatibility
-    dataGutter = gutter;
+    dataColumnGutter = columnGutter;
+  }
+
+  if (isResponsiveGutter(rowGutter)) {
+    applyResponsiveVars(style, rowGutter, "row");
+    dataRowResponsive = "true";
+  } else {
+    dataRowGutter = rowGutter;
   }
 
   return (
     <Component
       className={mergedClassName}
       style={style}
-      data-gutter={dataGutter}
-      data-responsive={dataResponsive}
+      data-column-gutter={dataColumnGutter}
+      data-row-gutter={dataRowGutter}
+      data-col-responsive={dataColResponsive}
+      data-row-responsive={dataRowResponsive}
     >
       {children}
     </Component>

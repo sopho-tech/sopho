@@ -7,23 +7,17 @@ import styles from "./PasswordField.module.css";
 import { FieldError } from "./FieldError";
 
 type PasswordFieldProps = {
-  label?: string;
   placeholder?: string;
-  showLabel?: boolean;
   icon?: IconType;
   readonly?: boolean;
-  containerStyleClass?: string;
-  labelStyleClass?: string;
+  containerClassName?: string;
 };
 
 export function PasswordField({
-  label,
   placeholder,
-  showLabel = true,
   icon,
   readonly = false,
-  containerStyleClass,
-  labelStyleClass,
+  containerClassName,
 }: PasswordFieldProps) {
   const field = useFieldContext<string>();
   const [showPassword, setShowPassword] = useState(false);
@@ -36,9 +30,7 @@ export function PasswordField({
   };
 
   return (
-    <label className={containerStyleClass}>
-      {showLabel && label && <span className={labelStyleClass}>{label}</span>}
-      <div className={styles.passwordContainer}>
+    <div className={`${styles.passwordContainer} ${containerClassName ?? ""}`.trim()}>
         <div className={styles.passwordInputWrapper}>
           <Input
             type={showPassword ? "text" : "password"}
@@ -65,7 +57,6 @@ export function PasswordField({
         </div>
 
         <FieldError errors={field.state.meta.errors} />
-      </div>
-    </label>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 mod state;
 
 pub mod cryptography_utils;
-pub mod database_utils;
 pub mod error_codes;
 pub mod errors;
 pub mod server_utils;

@@ -2,24 +2,24 @@ import { useCallback, useMemo } from "react";
 import { Flex } from "src/components/design-system";
 import { SophoTable, TableType } from "src/components/SophoTable/SophoTable";
 import { useAllCanvases } from "src/api/canvas/queries";
-import { useCanvasesPagination } from "src/components/Canvases/hooks.tsx";
+import {
+  useCanvasesPagination,
+  useCanvasActions,
+} from "src/components/Canvases/hooks.tsx";
 import { createCanvasesTableColumns } from "src/components/Canvases/CanvasesTable/canvasesTableColumns";
 import styles from "src/components/Canvases/CanvasesTable/CanvasesTable.module.css";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { CanvasDto } from "src/components/Canvases/dto";
+import { CanvasesEmptyState } from "src/components/Home/components/EmptyState";
 
-type CanvasesTableProps = {
-  onViewClick: (id: string) => void;
-  onEditClick: (id: string) => void;
-  onDeleteClick: (id: string) => void;
-};
-
-export function CanvasesTable({
-  onViewClick,
-  onEditClick,
-  onDeleteClick,
-}: CanvasesTableProps) {
+export function CanvasesTable() {
+  const {
+    handleViewCanvas,
+    handleEditCanvas,
+    handleDeleteCanvas,
+    handleOpenCreateDialog,
+  } = useCanvasActions();
   const navigate = useNavigate();
   const {
     pagination,
@@ -35,9 +35,9 @@ export function CanvasesTable({
   } = useAllCanvases(pagination.pageIndex, pagination.pageSize);
 
   const columns = createCanvasesTableColumns({
-    onViewClick,
-    onEditClick,
-    onDeleteClick,
+    onViewClick: handleViewCanvas,
+    onEditClick: handleEditCanvas,
+    onDeleteClick: handleDeleteCanvas,
   });
 
   const handleRowClick = useCallback(
@@ -75,6 +75,19 @@ export function CanvasesTable({
       handlePageClick,
     ]
   );
+
+  const isEmpty =
+    !isLoading &&
+    !isError &&
+    (canvases?.totalItems ?? 0) === 0;
+
+  if (isEmpty) {
+    return (
+      <Flex direction="column" flex="grow" marginTop="lg" overflow="hidden">
+        <CanvasesEmptyState onCreateCanvas={handleOpenCreateDialog} />
+      </Flex>
+    );
+  }
 
   return (
     <Flex direction="column" flex="grow" marginTop="lg" overflow="hidden">

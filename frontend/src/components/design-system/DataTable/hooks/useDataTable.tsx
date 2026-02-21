@@ -115,13 +115,16 @@ export function useDataTable<T>({
       };
 
       if (col.type === "accessor" && col.accessor) {
+        const accessorKey = String(col.accessor);
         return columnHelper.accessor(
-          col.accessor as Parameters<typeof columnHelper.accessor>[0],
+          (row: T) => (row as Record<string, unknown>)[accessorKey] as unknown,
           {
             id: col.key,
             ...columnDef,
             header: headerContent,
-            cell: col.cell || ((props: { getValue: () => unknown }) => props.getValue()),
+            cell:
+              col.cell ||
+              ((props: { getValue: () => unknown }) => props.getValue()),
           }
         );
       } else {

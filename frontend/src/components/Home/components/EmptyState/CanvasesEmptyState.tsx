@@ -11,7 +11,7 @@ export function CanvasesEmptyState({
     <EmptyState
       icon="layers"
       heading="No canvases yet"
-      description="Create a canvas to build notebooks, dashboards and explore data"
+      description="Create a canvas to explore data and build dashboards"
       buttonLabel="New Canvas"
       onButtonClick={onCreateCanvas}
     />
