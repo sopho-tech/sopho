@@ -17,8 +17,6 @@ const SEGMENTED_OPTIONS: {
   { value: "dashboard", leadingIcon: "calendar", tooltip: "dashboard" },
 ];
 
-const noop = () => {};
-
 type CanvasButtonsProps = {
   viewType: string;
   onViewTypeChange: (value: string) => void;
