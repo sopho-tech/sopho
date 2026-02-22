@@ -81,7 +81,7 @@ async fn get_connection_status(
 ) -> Result<ConnectionStatus, crate::common::errors::ValidationError> {
     let source_type = SourceType::from_str(&connection_entity.source_type).unwrap();
     match source_type {
-        SourceType::Postgresql => Ok(postgres::get_connection_status(connection_entity).await),
+        SourceType::Postgresql | SourceType::Supabase => Ok(postgres::get_connection_status(connection_entity).await),
         SourceType::Sqlite => sqlite::get_connection_status(connection_entity).await,
         _ => panic!("Unsupported source type"),
     }

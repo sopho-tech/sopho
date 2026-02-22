@@ -87,7 +87,7 @@ pub async fn execute_query(
                         let value = row.try_get::<String, _>(i);
                         value.map(serde_json::Value::String)
                     }
-                    "JSONB" => row
+                    "JSON" | "JSONB" => row
                         .try_get::<sqlx::types::Json<serde_json::Value>, _>(i)
                         .map(|j| {
                             serde_json::Value::String(

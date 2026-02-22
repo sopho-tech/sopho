@@ -435,7 +435,7 @@ async fn get_database_connection(
     };
 
     let database_connection = match SourceType::from_str(&connection.source_type).unwrap() {
-        SourceType::Postgresql => postgres::get_database_connection(&connection).await,
+        SourceType::Postgresql | SourceType::Supabase => postgres::get_database_connection(&connection).await,
         SourceType::Sqlite => sqlite::get_database_connection(&connection).await,
         _ => panic!("Not implemented"),
     };

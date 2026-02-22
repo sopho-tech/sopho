@@ -137,10 +137,13 @@ export function ConnectionNew() {
                   ? "Select source type to see the specific details"
                   : sourceType === SourceTypeEnum.PostgreSQL
                     ? "Enter your PostgreSQL connection details"
-                    : `Enter your ${sourceType.charAt(0) + sourceType.slice(1).toLowerCase()} connection details`}
+                    : sourceType === SourceTypeEnum.Supabase
+                      ? "Enter your Supabase connection details"
+                      : `Enter your ${sourceType.charAt(0) + sourceType.slice(1).toLowerCase()} connection details`}
               </Heading>
             </Flex>
-            {sourceType === SourceTypeEnum.PostgreSQL && (
+            {(sourceType === SourceTypeEnum.PostgreSQL ||
+              sourceType === SourceTypeEnum.Supabase) && (
               <Grid
                 columnGutter="2xl"
                 rowGutter="md"

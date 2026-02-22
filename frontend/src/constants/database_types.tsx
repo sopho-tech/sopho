@@ -1,5 +1,6 @@
 export enum SourceTypeEnum {
   PostgreSQL = "POSTGRESQL",
+  Supabase = "SUPABASE",
   Sqlite = "SQLITE",
 }
 
