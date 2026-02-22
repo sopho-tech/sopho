@@ -231,7 +231,11 @@ button {
   --heading-3-line-height: var(--line-height-comfortable);
   --heading-3-font-weight: var(--font-weight-semibold);
   --heading-3-letter-spacing: var(--letter-spacing-normal);
-  --heading-4-font-size: clamp(var(--font-size-lg), 2.5vw, var(--font-size-2xl));
+  --heading-4-font-size: clamp(
+    var(--font-size-lg),
+    2.5vw,
+    var(--font-size-2xl)
+  );
   --heading-4-line-height: var(--line-height-cozy);
   --heading-4-font-weight: var(--font-weight-medium);
   --heading-4-letter-spacing: var(--letter-spacing-normal);
@@ -239,13 +243,18 @@ button {
   --heading-5-line-height: var(--line-height-normal);
   --heading-5-font-weight: var(--font-weight-medium);
   --heading-5-letter-spacing: var(--letter-spacing-normal);
-  --heading-6-font-size: clamp(var(--font-size-sm), 1.5vw, var(--font-size-base));
+  --heading-6-font-size: clamp(
+    var(--font-size-sm),
+    1.5vw,
+    var(--font-size-base)
+  );
   --heading-6-line-height: var(--line-height-normal);
   --heading-6-font-weight: var(--font-weight-medium);
   --heading-6-letter-spacing: var(--letter-spacing-wide);
   --heading-6-text-transform: uppercase;
 
   /* Spacing System */
+  --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
   /* 4px */
   --space-xs: 0.5rem;

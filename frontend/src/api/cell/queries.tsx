@@ -7,6 +7,7 @@ import {
   CreateCellDto,
   ExecuteCellResponseDto,
   CellExecutionResultDto,
+  CellType,
 } from "src/components/Notebook/Cell/dto";
 import { notebookKeys } from "src/api/notebook/queries";
 import { dashboardKeys } from "src/api/dashboard/queries";
@@ -183,6 +184,12 @@ export const useDeleteCell = (notebookId?: string, canvasId?: string) => {
       if (notebookId) {
         queryClient.invalidateQueries({
           queryKey: notebookKeys.detail(notebookId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: notebookKeys.cellsByNotebook(notebookId, CellType.CHART),
+        });
+        queryClient.invalidateQueries({
+          queryKey: notebookKeys.cellsByNotebook(notebookId, CellType.SQL),
         });
       }
 

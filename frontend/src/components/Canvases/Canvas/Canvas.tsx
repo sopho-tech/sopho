@@ -55,13 +55,17 @@ export function Canvas() {
     setViewType(ViewType[v.toUpperCase() as keyof typeof ViewType]);
   }, []);
 
+  const handleNavigateToNotebook = useCallback(() => {
+    setViewType(ViewType.NOTEBOOK);
+  }, []);
+
   if (!query.data) {
     return <span>No data available</span>;
   }
 
   const renderView = () => {
     if (viewType == ViewType.DASHBOARD) {
-      return <Dashboard />;
+      return <Dashboard onNavigateToNotebook={handleNavigateToNotebook} />;
     }
     return <Notebook />;
   };

@@ -31,6 +31,8 @@ export function EmptyState({
       alignSelf="center"
       paddingY="lg"
       paddingX="lg"
+      height="100%"
+      width="100%"
     >
       <Icon type={icon} color="lightgrey" size="2xl" interactive={false} />
       <Flex

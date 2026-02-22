@@ -29,7 +29,9 @@ export const notebookKeys = {
 const notebookApi = {
   getNotebook: async (notebookId: string): Promise<NotebookDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.NOTEBOOK.GET_BY_ID?.replace(":id", notebookId) || `/notebooks/${notebookId}`,
+      url:
+        API_ENDPOINTS.NOTEBOOK.GET_BY_ID?.replace(":id", notebookId) ||
+        `/notebooks/${notebookId}`,
       onlyBody: true,
     });
     return response as NotebookDto;
@@ -93,7 +95,8 @@ const notebookApi = {
 
   deleteNotebook: async (notebookId: string): Promise<void> => {
     const response = await fetch(
-      API_ENDPOINTS.NOTEBOOK.DELETE?.replace(":id", notebookId) || `/notebooks/${notebookId}`,
+      API_ENDPOINTS.NOTEBOOK.DELETE?.replace(":id", notebookId) ||
+        `/notebooks/${notebookId}`,
       {
         method: "DELETE",
         credentials: "include",
@@ -107,7 +110,11 @@ const notebookApi = {
 
   getNotebooksByCanvasId: async (canvasId: string): Promise<NotebookDto[]> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.NOTEBOOK.GET_BY_CANVAS_ID?.replace(":canvas_id", canvasId) || `/notebooks/canvas/${canvasId}`,
+      url:
+        API_ENDPOINTS.NOTEBOOK.GET_BY_CANVAS_ID?.replace(
+          ":canvas_id",
+          canvasId
+        ) || `/notebooks/canvas/${canvasId}`,
       onlyBody: true,
     });
     return response as NotebookDto[];
@@ -118,7 +125,10 @@ const notebookApi = {
     cellType?: string
   ): Promise<NotebookDto> => {
     const url = new URL(
-      API_ENDPOINTS.NOTEBOOK.GET_CELLS_BY_NOTEBOOK_ID?.replace(":id", notebookId) || `/notebooks/${notebookId}/cells`,
+      API_ENDPOINTS.NOTEBOOK.GET_CELLS_BY_NOTEBOOK_ID?.replace(
+        ":id",
+        notebookId
+      ) || `/notebooks/${notebookId}/cells`,
       window.location.origin
     );
     if (cellType) {
