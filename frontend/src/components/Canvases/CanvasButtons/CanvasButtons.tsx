@@ -13,8 +13,8 @@ const SEGMENTED_OPTIONS: {
   leadingIcon: IconType;
   tooltip: string;
 }[] = [
-  { value: "notebook", leadingIcon: "book", tooltip: "notebook" },
-  { value: "dashboard", leadingIcon: "calendar", tooltip: "dashboard" },
+  { value: "notebook", leadingIcon: "table", tooltip: "notebook" },
+  { value: "dashboard", leadingIcon: "layout_dashboard", tooltip: "dashboard" },
 ];
 
 type CanvasButtonsProps = {

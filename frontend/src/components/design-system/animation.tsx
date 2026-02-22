@@ -57,6 +57,12 @@ export const defaultEnterTransition: Transition = {
   ease: EASE,
 };
 
+export const layoutSpringTransition: Transition = {
+  type: "spring",
+  stiffness: 500,
+  damping: 35,
+};
+
 export const enterAnimationTransitions: Record<EnterAnimation, Transition> = {
   [EnterAnimation.BLUR]: {
     ...defaultEnterTransition,
