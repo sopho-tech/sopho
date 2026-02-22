@@ -55,7 +55,7 @@
 }
 
 .selectItem {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: 1;
   color: var(--color-text);
   border-radius: var(--border-radius-lg);
@@ -78,7 +78,7 @@
 
 .selectLabel {
   padding: 0 25px;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   line-height: 25px;
   color: var(--inactive-color-normal);
 }

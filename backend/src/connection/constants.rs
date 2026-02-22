@@ -3,6 +3,7 @@ use serde::{Serialize, Deserialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SourceType {
     Postgresql,
+    Supabase,
     MySql,
     Sqlite,
     MsSql,
@@ -21,6 +22,7 @@ impl SourceType {
     pub fn to_string(&self) -> String {
         match self {
             SourceType::Postgresql => "POSTGRESQL".to_string(),
+            SourceType::Supabase => "SUPABASE".to_string(),
             SourceType::MySql => "MYSQL".to_string(),
             SourceType::Sqlite => "SQLITE".to_string(),
             SourceType::MsSql => "MS_SQL".to_string(),
@@ -39,6 +41,7 @@ impl SourceType {
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "POSTGRESQL" => Ok(SourceType::Postgresql),
+            "SUPABASE" => Ok(SourceType::Supabase),
             "MYSQL" => Ok(SourceType::MySql),
             "SQLITE" => Ok(SourceType::Sqlite),
             "MS_SQL" => Ok(SourceType::MsSql),

@@ -133,8 +133,9 @@ pub async fn get_session(cookies: Cookies, app_state: AppState) -> impl IntoResp
         return (
             StatusCode::UNAUTHORIZED,
             Json(serde_json::json!({
+                "status": StatusCode::UNAUTHORIZED.to_string(),
                 "message": "Access token expired",
-                "error_code": codes::ACCESS_TOKEN_EXPIRED.as_str()
+                "code": codes::ACCESS_TOKEN_EXPIRED.as_str()
             })),
         );
     }

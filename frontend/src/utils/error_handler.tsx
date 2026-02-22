@@ -45,15 +45,15 @@ const errorHandler = (
   mutation?: Mutation<unknown, unknown, unknown, unknown>,
   variables?: unknown
 ) => {
-  const status = error instanceof Response ? error.status : undefined;
   if (error instanceof ApiError) {
-  if (status === 401) {
-    if (query) {
-      refreshAndRetry(query);
-    } else if (mutation) {
-      refreshAndRetry(undefined, mutation, variables);
+    const api_error = error as ApiError;
+    if (api_error.status === 401) {
+      if (query) {
+        refreshAndRetry(query);
+      } else if (mutation) {
+        refreshAndRetry(undefined, mutation, variables);
+      }
     }
-  }
   }
 };
 

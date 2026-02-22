@@ -164,10 +164,13 @@ export function ConnectionEdit() {
               <Heading accessbilityLevel={3} textColor="subtle" size="base">
                 {connection.source_type === SourceTypeEnum.PostgreSQL
                   ? "Enter your PostgreSQL connection details"
-                  : `Enter your ${sourceTypeLabel} connection details`}
+                  : connection.source_type === SourceTypeEnum.Supabase
+                    ? "Enter your Supabase connection details"
+                    : `Enter your ${sourceTypeLabel} connection details`}
               </Heading>
             </Flex>
-            {connection.source_type === SourceTypeEnum.PostgreSQL && (
+            {(connection.source_type === SourceTypeEnum.PostgreSQL ||
+              connection.source_type === SourceTypeEnum.Supabase) && (
               <Grid
                 columnGutter="2xl"
                 rowGutter="md"

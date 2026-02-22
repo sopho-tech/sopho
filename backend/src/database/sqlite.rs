@@ -100,7 +100,6 @@ pub async fn execute_query(
                 .unwrap_or(serde_json::Value::Null);
             raw.insert(key, val);
         }
-        info!("raw row: {:?}", raw);
     }
 
     let mut columns: Vec<serde_json::Value> = Vec::new();
