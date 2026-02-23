@@ -1,0 +1,29 @@
+---
+title: SQLite
+description: Connect to SQLite database
+icon: Database
+---
+
+SQLite is a lightweight, serverless, file-based database that lives entirely within your application. More details about SQLite can be found at [SQLite](https://sqlite.org).
+
+## Connection Details
+
+When configuring a SQLite connection, you will need the following details:
+
+| Field | Description |
+|-------|-------------|
+| **Database Path** | Absolute (`/path/to/db.sqlite`) or relative (`./path/to/db.sqlite`) path to the database file. |
+
+## Supported File Extensions
+
+SQLite databases must use one of these file extensions:
+
+- `.sqlite`
+- `.sqlite3`
+- `.db`
+
+## Path Requirements
+
+- Paths must be absolute (starting with `/`) or relative (starting with `./`)
+- Path traversal (`..`) is not allowed for security
+- The database file must exist and be readable

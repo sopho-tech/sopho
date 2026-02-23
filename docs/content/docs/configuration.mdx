@@ -1,0 +1,58 @@
+---
+title: Configuration
+description: Configure Sopho using various properties 
+icon: Cog
+---
+
+The following environment variables are available to configure Sopho for different requirements.
+
+## DATABASE_URL
+
+This is used to connect to the database for running Sopho. Sopho stores data needed for its functioning in this database such as contents of cell, dashboard, canvas, authentication and so on. Do not confuse this database with [Connections](/connections). The latter are the databases and other data sources on top of which the analytics is performed using Sopho.
+
+Sopho currently supports PostgreSQL and SQLite as options for the database. PostgreSQL is recommended for production usage. SQLite is apt for demos, exploration and hobby use cases.
+
+The environment variable expects a database connection string as its value. For PostgreSQL, it should be in the following format:
+```text
+postgresql://username:password@hostname:5432/dbname
+```
+For SQLite, it should be in the following format:
+```text
+sqlite:///Users/username/database.db?mode=rwc
+```
+
+If the environment variable is not set, Sopho uses SQLite as the database by default.
+
+## PORT
+
+Used for setting the network port on which Sopho will run. If the environment variable is not set, it uses the port `8000` by default.
+
+## COOKIE_SECURE
+
+When enabled, session cookies are marked with the Secure attribute and sent only over HTTPS. Set to `true` when serving Sopho over HTTPS (e.g. in production). Keep `false` when serving over HTTP. Defaults to `false`. See [MDN](https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/Cookies#secure) for details.
+
+## ENCRYPTION_KEY
+
+It is used for encrypting sensitive data stored in Sopho's database such as credentials for different [Connections](/connections).
+
+If not set, Sopho first looks for an existing key in `./data/secret.key`. If none exists, a key is generated and stored there. This is not recommended for production usage.
+
+For production usage, provide a cryptographically secure key via the environment variable. Generate one with:
+
+```bash
+openssl rand -base64 32
+```
+The output of the above command can be set as the value of the environment variable.
+
+## Admin Credentials
+
+The first time Sopho runs, the following four environment variables are used to seed the initial admin user so you can log in after bootup. The application fails to start if any of these are not set.
+
+| Variable | Purpose |
+|----------|---------|
+| `ADMIN_USERNAME` | Login username for the admin account |
+| `ADMIN_PASSWORD` | Password for the admin account |
+| `ADMIN_EMAIL` | Email used to identify the admin and enforce uniqueness |
+| `ADMIN_FULL_NAME` | Display name for the admin user |
+
+Use a strong password in production.

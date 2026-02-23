@@ -1,4 +1,4 @@
-name: Build and Push Image to GHCR
+name: Build and Push Sopho Image to GHCR
 
 on:
   workflow_dispatch:

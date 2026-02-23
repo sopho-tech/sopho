@@ -46,11 +46,11 @@ impl Configurations {
             frontend_dir: Cow::Borrowed("/app/frontend/dist/"),
             environment: match dotenv::var("ENVIRONMENT") {
                 Ok(environment) => environment.into(),
-                Err(err) => bail!("missing ENVIRONMENT: {err}"),
+                Err(_err) => Cow::Borrowed("production"),
             },
             cookie_secure: match dotenv::var("COOKIE_SECURE") {
                 Ok(cookie_secure) => cookie_secure.parse()?,
-                Err(err) => bail!("missing COOKIE_SECURE: {err}"),
+                Err(_err) => false,
             },
             encryption_key: match dotenv::var("ENCRYPTION_KEY") {
                 Ok(v) => v.into(),
