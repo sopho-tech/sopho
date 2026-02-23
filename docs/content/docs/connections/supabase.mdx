@@ -1,0 +1,24 @@
+---
+title: Supabase
+description: Connect to Supabase Projects
+icon: Database
+---
+
+Supabase is an open source Firebase alternative that provides a hosted PostgreSQL database. Sopho connects to Supabase using the same PostgreSQL protocol since Supabase is built on top of PostgreSQL. Hence, the connection details are very similar to [PostgreSQL](/connections/postgresql). More details about Supabase can be found at [Supabase](https://supabase.com).
+
+## Connection Details
+
+When configuring a Supabase connection, you will need the following details:
+
+| Field | Description |
+|-------|-------------|
+| **Host** | The hostname of your Supabase project |
+| **Port** | The port number. Typically `5432` for Supabase |
+| **Database** | The name of the database to connect to. Typically `postgres`. |
+| **Username** | Your Supabase project's username. |
+| **Password** | Your Supabase project's password. |
+
+
+## Getting Credentials
+
+Details on how to get the required connection credentials can be found at [Connecting to Supabase](https://supabase.com/docs/guides/database/connecting-to-postgres). Sopho will be able to work with Supabase's Direct connection and Poolers since they generate the same connection string format.

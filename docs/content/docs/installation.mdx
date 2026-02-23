@@ -1,0 +1,81 @@
+---
+title: Installation
+description: Get Sopho up and running
+icon: Package
+---
+
+## Using Docker
+
+The preferred way for installing and using Sopho is through Docker.
+
+1. Run the following command to pull the Docker image:
+```bash
+docker pull ghcr.io/sopho-tech/sopho/sopho:latest
+```
+
+2. After the image has been pulled, run the container:
+```bash
+docker run -d -p 8000:8000 \
+  --name sopho \
+  -e ADMIN_USERNAME="admin" \
+  -e ADMIN_PASSWORD="password" \
+  -e ADMIN_EMAIL="admin@admin.com" \
+  -e ADMIN_FULL_NAME="admin admin" \
+  ghcr.io/sopho-tech/sopho/sopho:latest
+```
+<Callout title="Production Usage">
+  The container will use SQLite as the backend database by default. SQLite is not recommended for production usage. Use PostgreSQL for production. More details on fine tuning can be found at [Configuration](/configuration#database_url).
+</Callout>
+
+## From Source
+
+<Callout type="warn" title="Not Recommended">
+  Building from source is intended for development and contribution. For production or general use, [Docker](#using-docker) is the preferred installation method.
+</Callout>
+
+### Prerequisites
+
+Before building Sopho from source, ensure you have the following installed:
+
+| Requirement | Version | Purpose |
+|-------------|---------|---------|
+| [Rust](https://www.rust-lang.org/) + Cargo | 1.75 or later | Backend compilation |
+| [Node.js](https://nodejs.org/) | 18 or later (LTS recommended) | Frontend build tooling |
+| npm | 10 or later (bundled with Node.js) | Frontend dependencies |
+| [Make](https://www.gnu.org/software/make/) | Any | Build automation |
+
+Verify your setup:
+
+```bash
+rustc --version
+node --version
+npm --version
+make --version
+```
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/sopho-tech/sopho.git
+cd sopho
+```
+
+### Build
+
+From the repository root, build both the frontend and backend:
+
+```bash
+make install
+```
+
+### Configuration
+
+Properties can be fine tuned using environment variables described in [Configuration](/configuration).
+
+### Run
+
+To start Sopho:
+
+```bash
+make run
+```

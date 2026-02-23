@@ -27,7 +27,7 @@ pub async fn seed_demo_data(app_state: &AppState) {
             password: None,
             host: None,
             port: None,
-            database: format!("{}/src/demo/ecommerce.db", env!("CARGO_MANIFEST_DIR")),
+            database: format!("{}/demo/ecommerce.db", env!("CARGO_MANIFEST_DIR")),
             schema: None,
             description: Some("Demo SQLite database with ecommerce sales data".to_string()),
             source_type: SourceType::Sqlite,
