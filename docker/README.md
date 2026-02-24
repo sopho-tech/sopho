@@ -6,7 +6,7 @@
 2. Run the following command:
 
 ```bash
-docker build -f docker/Dockerfile .
+docker build -f docker/Dockerfile . -t sopho:test
 ```
 
 ## Running Container

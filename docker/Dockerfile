@@ -25,9 +25,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /app/frontend
 COPY --from=frontend-builder /app/dist /app/frontend/dist
 
-# Copy backend binary
+# Copy backend binary and demo data
 WORKDIR /app/backend
 COPY --from=backend-builder /app/target/release/sopho ./sopho
+COPY backend/demo /app/demo
 RUN chmod +x sopho
 
 EXPOSE 8000
