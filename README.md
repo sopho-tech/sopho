@@ -8,7 +8,7 @@
 </div>
 
 <h3 align="center">
-  Open source analytics platform
+  Open Source Business Intelligence
 </h3>
 
 <p align="center">
@@ -23,66 +23,57 @@
   </a>
 </p>
 
+<img src="assets/dashboard.webp" alt="Sopho Dashboard" style="border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);" />
+
 ## Description
 
-Single platform for analytics, business intelligence, dashboards, notebooks, visualizations, and collaboration.
-
-## Demo
-
-[soho-demo.mov](https://github.com/user-attachments/assets/5dec457a-a227-4763-b403-05dea827216f)
-
-## Table of Contents
-
-- [Demo](#demo)
-- [Features](#features)
-- [Installation](#installation)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [License](#license)
-- [Community](#community)
+Sopho is an open source Business Intelligence (BI) platform rethought from scratch to be simple, performant, secure and AI-native.
 
 ## Features
 
-- **Canvas**: Unified Notebooks and Dashboards through a Canvas abstraction, streamlining dashboard creation.
-- **Chart Cells**: Notebooks has SQL Cells for SQL editing and Chart Cells for creating charts based on the SQL Cells.
-- **Dashboards**: Dashboard creation using drag and drop on chart cells.
+### Beautiful
+
+Sopho is designed to be beautiful and intuitive. Sopho strives to be the best quality product in its category. Deeply inspired by [Conversations on Quality](https://linear.app/quality).
+
+### Integrated Notebook and Dashboard
+
+You no longer have to move between different SQL queries, charts, and dashboards open in different browser tabs to explore data and to create your dashboards. Sopho simplifies this by putting everything in one place using a new abstraction called Canvas, preventing the loss of context and the endless switching.
+
+### Shortcuts
+
+Shortcuts are a first-class citizen in the roadmap of Sopho. Currently, Sopho supports shortcuts for global search (Cmd+K), creation of various assets, and for editing cells in the notebook. Shortcuts are integrated wherever possible to save precious time.
+
+### Performant
+
+Sopho is built using the latest technologies in the frontend and the backend world. Sopho uses Rust for the backend, React + Vite for the frontend, and PostgreSQL for data storage. Maintainability and performance are the core pillars for the choices of technologies.
 
 ## Installation
 
-### Prerequisites
+The preferred way for installing and using Sopho is through Docker.
 
-- [Node.js](https://nodejs.org/) and npm
-- [Rust](https://www.rust-lang.org/) and Cargo
-
-### Build and Install
-
-Navigate to the root directory of the codebase. To build both the frontend and backend:
+1. Run the following command to pull the Docker image:
 
 ```bash
-make install
+docker pull ghcr.io/sopho-tech/sopho/sopho:latest
 ```
 
-### Running the Application
-
-#### Production Mode
-
-To run the application in production mode:
+2. After the image has been pulled, run the container:
 
 ```bash
-make run
+docker run -d -p 8000:8000 \
+  --name sopho \
+  -e ADMIN_USERNAME="admin" \
+  -e ADMIN_PASSWORD="password" \
+  -e ADMIN_EMAIL="admin@admin.com" \
+  -e ADMIN_FULL_NAME="admin admin" \
+  ghcr.io/sopho-tech/sopho/sopho:latest
 ```
 
-#### Development Mode
-
-To run both frontend and backend in development mode (with hot reload):
-
-```bash
-make dev
-```
+The container will use SQLite as the backend database by default. SQLite is not recommended for production usage. Use PostgreSQL for production.
 
 ## Documentation
 
-Coming soon
+For setup guides, configuration, and API reference, see the [official documentation](https://docs.sopho.io/).
 
 ## License
 
@@ -90,4 +81,4 @@ This project is licensed under the GNU Affero General Public License v3.0. See t
 
 ## Community
 
-Coming soon
+Join our [Discord server](https://discord.gg/CHZVaUHw) for help with issues, questions, and community discussions.
