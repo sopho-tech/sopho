@@ -1,4 +1,5 @@
 use crate::common::errors::{ExecuteQueryError, ValidationError};
+use crate::data_catalog::dto::{Column as CatalogColumn, Database, Schema, Table};
 use crate::database::constants::DatabaseConnection;
 use crate::database::constants::QueryResult;
 use crate::{connection::constants::ConnectionStatus, entity};
@@ -10,8 +11,11 @@ use sqlx::Error;
 use sqlx::Row;
 use sqlx::TypeInfo;
 use sqlx::ValueRef;
-use tracing::info;
 use uuid::Uuid;
+
+fn quote_ident(identifier: &str) -> String {
+    format!("\"{}\"", identifier.replace('"', "\"\""))
+}
 
 fn get_database_url(connection_entity: &entity::connection::Model) -> String {
     format!("sqlite:///{}?mode=rwc", connection_entity.database)
@@ -90,13 +94,34 @@ pub async fn execute_query(
             let val = row
                 .try_get::<String, _>(col.ordinal())
                 .map(serde_json::Value::String)
-                .or_else(|_| row.try_get::<i64, _>(col.ordinal()).map(|v| serde_json::json!(v)))
-                .or_else(|_| row.try_get::<f64, _>(col.ordinal()).map(|v| serde_json::json!(v)))
-                .or_else(|_| row.try_get::<bool, _>(col.ordinal()).map(|v| serde_json::json!(v)))
-                .or_else(|_| row.try_get::<NaiveDate, _>(col.ordinal()).map(|v| serde_json::json!(v)))
-                .or_else(|_| row.try_get::<NaiveDateTime, _>(col.ordinal()).map(|v| serde_json::json!(v)))
-                .or_else(|_| row.try_get::<Uuid, _>(col.ordinal()).map(|v| serde_json::json!(v)))
-                .or_else(|_| row.try_get::<Vec<u8>, _>(col.ordinal()).map(|v| serde_json::Value::String(STANDARD.encode(&v))))
+                .or_else(|_| {
+                    row.try_get::<i64, _>(col.ordinal())
+                        .map(|v| serde_json::json!(v))
+                })
+                .or_else(|_| {
+                    row.try_get::<f64, _>(col.ordinal())
+                        .map(|v| serde_json::json!(v))
+                })
+                .or_else(|_| {
+                    row.try_get::<bool, _>(col.ordinal())
+                        .map(|v| serde_json::json!(v))
+                })
+                .or_else(|_| {
+                    row.try_get::<NaiveDate, _>(col.ordinal())
+                        .map(|v| serde_json::json!(v))
+                })
+                .or_else(|_| {
+                    row.try_get::<NaiveDateTime, _>(col.ordinal())
+                        .map(|v| serde_json::json!(v))
+                })
+                .or_else(|_| {
+                    row.try_get::<Uuid, _>(col.ordinal())
+                        .map(|v| serde_json::json!(v))
+                })
+                .or_else(|_| {
+                    row.try_get::<Vec<u8>, _>(col.ordinal())
+                        .map(|v| serde_json::Value::String(STANDARD.encode(&v)))
+                })
                 .unwrap_or(serde_json::Value::Null);
             raw.insert(key, val);
         }
@@ -197,4 +222,81 @@ pub async fn execute_query(
         columns,
         data: json_rows,
     })
+}
+
+pub async fn get_data_catalog(
+    connection: &entity::connection::Model,
+) -> Result<Database, sqlx::Error> {
+    let mut conn = match get_database_connection(connection).await? {
+        DatabaseConnection::Sqlite(conn) => conn,
+        _ => unreachable!(),
+    };
+
+    let database_name = connection.name.clone();
+
+    let table_rows = sqlx::query(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+    )
+    .fetch_all(&mut conn)
+    .await?;
+
+    let mut tables: Vec<Table> = Vec::new();
+    for table_row in table_rows {
+        let table_name: String = table_row.try_get("name")?;
+        let pragma_query = format!("PRAGMA table_info({})", quote_ident(&table_name));
+        let column_rows = sqlx::query(&pragma_query).fetch_all(&mut conn).await?;
+
+        let mut columns: std::collections::HashMap<String, CatalogColumn> =
+            std::collections::HashMap::new();
+        for column_row in column_rows {
+            let column_name: String = column_row.try_get("name")?;
+            let data_type: String = column_row
+                .try_get::<Option<String>, _>("type")?
+                .unwrap_or_default();
+
+            let quoted_table = quote_ident(&table_name);
+            let quoted_column = quote_ident(&column_name);
+            let sample_query = format!(
+                "SELECT DISTINCT CAST({column} AS TEXT) AS value FROM {table} WHERE {column} IS NOT NULL LIMIT 5",
+                column = quoted_column,
+                table = quoted_table
+            );
+            let sample_rows = sqlx::query(&sample_query).fetch_all(&mut conn).await?;
+            let sample_values = sample_rows
+                .into_iter()
+                .filter_map(|sample_row| {
+                    sample_row
+                        .try_get::<Option<String>, _>("value")
+                        .ok()
+                        .flatten()
+                })
+                .collect::<Vec<_>>();
+
+            columns.insert(
+                column_name.clone(),
+                CatalogColumn::with_samples(
+                    column_name,
+                    "",
+                    sample_values,
+                    data_type,
+                    false,
+                    false,
+                ),
+            );
+        }
+
+        tables.push(Table {
+            name: table_name,
+            description: String::new(),
+            columns,
+            should_delete: false,
+            should_select: false,
+        });
+    }
+
+    Ok(Database::new(
+        database_name,
+        connection.description.as_deref().unwrap_or(""),
+        [Schema::new("main", "", tables, false, false)],
+    ))
 }

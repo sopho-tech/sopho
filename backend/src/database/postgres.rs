@@ -1,4 +1,5 @@
 use crate::common::errors::ExecuteQueryError;
+use crate::data_catalog::dto::{Column as CatalogColumn, Database, Schema, Table};
 use crate::database::constants::{DatabaseConnection, QueryResult};
 use crate::{connection::constants::ConnectionStatus, entity};
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
@@ -8,6 +9,10 @@ use sqlx::Connection;
 use sqlx::Error;
 use sqlx::Row;
 use uuid::Uuid;
+
+fn quote_ident(identifier: &str) -> String {
+    format!("\"{}\"", identifier.replace('"', "\"\""))
+}
 
 pub fn get_database_url(payload: &entity::connection::Model) -> String {
     format!(
@@ -142,4 +147,93 @@ pub async fn execute_query(
         columns,
         data: json_rows,
     })
+}
+
+pub async fn get_data_catalog(
+    connection: &entity::connection::Model,
+) -> Result<Database, sqlx::Error> {
+    let mut conn = match get_database_connection(connection).await? {
+        DatabaseConnection::Postgres(conn) => conn,
+        _ => unreachable!(),
+    };
+
+    let database_name = connection.name.clone();
+
+    let metadata_rows = sqlx::query(
+        r#"
+        SELECT
+            t.table_schema AS schema_name,
+            t.table_name AS table_name,
+            c.column_name AS column_name,
+            c.data_type AS data_type
+        FROM information_schema.tables t
+        JOIN information_schema.columns c
+            ON t.table_schema = c.table_schema
+            AND t.table_name = c.table_name
+        WHERE t.table_type = 'BASE TABLE'
+            AND t.table_schema NOT IN ('pg_catalog', 'information_schema')
+        ORDER BY t.table_schema, t.table_name, c.ordinal_position
+        "#,
+    )
+    .fetch_all(&mut conn)
+    .await?;
+
+    let mut schema_map: std::collections::HashMap<String, Schema> =
+        std::collections::HashMap::new();
+
+    for row in metadata_rows {
+        let schema_name: String = row.try_get("schema_name")?;
+        let table_name: String = row.try_get("table_name")?;
+        let column_name: String = row.try_get("column_name")?;
+        let data_type: String = row.try_get("data_type")?;
+
+        let quoted_schema = quote_ident(&schema_name);
+        let quoted_table = quote_ident(&table_name);
+        let quoted_column = quote_ident(&column_name);
+        let sample_query = format!(
+            "SELECT DISTINCT {column}::text AS value FROM {schema}.{table} WHERE {column} IS NOT NULL LIMIT 5",
+            column = quoted_column,
+            schema = quoted_schema,
+            table = quoted_table
+        );
+        let sample_rows = sqlx::query(&sample_query).fetch_all(&mut conn).await?;
+        let sample_values = sample_rows
+            .into_iter()
+            .filter_map(|sample_row| {
+                sample_row
+                    .try_get::<Option<String>, _>("value")
+                    .ok()
+                    .flatten()
+            })
+            .collect::<Vec<_>>();
+
+        let schema = schema_map.entry(schema_name.clone()).or_insert_with(|| {
+            Schema::new(
+                schema_name.clone(),
+                "",
+                std::iter::empty::<Table>(),
+                false,
+                false,
+            )
+        });
+        let table = schema.tables.entry(table_name.clone()).or_insert_with(|| {
+            Table::new(
+                table_name.clone(),
+                "",
+                std::iter::empty::<(String, CatalogColumn)>(),
+                false,
+                false,
+            )
+        });
+        table.columns.insert(
+            column_name.clone(),
+            CatalogColumn::with_samples(column_name, "", sample_values, data_type, false, false),
+        );
+    }
+
+    Ok(Database::new(
+        database_name,
+        connection.description.as_deref().unwrap_or(""),
+        schema_map.into_values().collect::<Vec<_>>(),
+    ))
 }

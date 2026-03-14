@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum DashboardStatus {
@@ -36,5 +36,5 @@ impl DashboardStatus {
     {
         let s = value.to_string();
         serializer.serialize_str(&s)
-    }   
+    }
 }

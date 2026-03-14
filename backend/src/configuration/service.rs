@@ -35,7 +35,10 @@ async fn mark_setup_done(app_state: &AppState, key: &str) {
     let result = match repository::find_by_key(db, key).await {
         Ok(Some(model)) => repository::update_value(db, model, "true").await,
         Ok(None) => {
-            error!("Configuration {} not found; migration may not have run", key);
+            error!(
+                "Configuration {} not found; migration may not have run",
+                key
+            );
             return;
         }
         Err(e) => {

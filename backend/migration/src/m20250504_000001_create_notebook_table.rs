@@ -1,7 +1,7 @@
 use crate::db::add_created_at_and_updated_at_timestamps;
 use sea_orm_migration::{
     prelude::*,
-    schema::{uuid, pk_uuid, string, string_null},
+    schema::{pk_uuid, string, string_null, uuid},
 };
 #[derive(DeriveMigrationName)]
 pub struct Migration;

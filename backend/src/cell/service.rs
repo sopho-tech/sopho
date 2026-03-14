@@ -8,13 +8,15 @@ use crate::cell::repository;
 use crate::common::error_codes::codes;
 use crate::common::errors::CreateCellError;
 use crate::common::errors::ExecuteQueryError;
+use crate::common::errors::ExecuteSqlError;
+use crate::common::errors::GetDatabaseConnectionError;
 use crate::common::errors::SophoError;
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::connection::constants::SourceType;
 use crate::connection::service as connection_service;
 use crate::dashboard::service as dashboard_service;
-use crate::database::constants::DatabaseConnection;
+use crate::database::constants::{DatabaseConnection, QueryResult};
 use crate::database::{postgres, sqlite};
 use crate::entity;
 use crate::notebook::does_notebook_exist;
@@ -408,8 +410,8 @@ pub async fn execute_cell(app_state: AppState, id: Uuid) -> impl IntoResponse {
         }
     };
     match cell_type {
-        CellType::Sql => return execute_sql_cell(app_state, cell).await,
-        CellType::Chart => return execute_chart_cell(app_state, cell).await,
+        CellType::Sql => return execute_sql_cell(&app_state, cell).await,
+        CellType::Chart => return execute_chart_cell(&app_state, cell).await,
         _ => {
             return (
                 StatusCode::EXPECTATION_FAILED,
@@ -419,44 +421,46 @@ pub async fn execute_cell(app_state: AppState, id: Uuid) -> impl IntoResponse {
     }
 }
 
-async fn get_database_connection(
-    app_state: AppState,
+async fn fetch_connection(
+    app_state: &AppState,
     connection_id: Uuid,
-) -> Result<DatabaseConnection, (http::StatusCode, axum::Json<JsonValue>)> {
-    let connection = connection_service::execute_get_connection(&app_state, connection_id).await;
-    let connection = match connection {
-        Ok(connection) => connection,
-        Err(e) => {
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            ));
-        }
-    };
+) -> Result<entity::connection::Model, GetDatabaseConnectionError> {
+    connection_service::execute_get_connection(&app_state, connection_id)
+        .await
+        .map_err(|e| match &e {
+            sea_orm::DbErr::RecordNotFound(_) => GetDatabaseConnectionError::ConnectionNotFound,
+            _ => GetDatabaseConnectionError::Connection(e),
+        })
+}
 
+async fn get_database_connection(
+    connection: &entity::connection::Model,
+) -> Result<DatabaseConnection, GetDatabaseConnectionError> {
     let database_connection = match SourceType::from_str(&connection.source_type).unwrap() {
-        SourceType::Postgresql | SourceType::Supabase => postgres::get_database_connection(&connection).await,
-        SourceType::Sqlite => sqlite::get_database_connection(&connection).await,
+        SourceType::Postgresql | SourceType::Supabase => {
+            postgres::get_database_connection(connection).await?
+        }
+        SourceType::Sqlite => sqlite::get_database_connection(connection).await?,
         _ => panic!("Not implemented"),
     };
+    Ok(database_connection)
+}
 
+async fn execute_query(
+    database_connection: &mut DatabaseConnection,
+    query: &str,
+) -> Result<QueryResult, ExecuteQueryError> {
     match database_connection {
-        Ok(database_connection) => Ok(database_connection),
-        Err(e) => Err((
-            StatusCode::BAD_REQUEST,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        )),
+        DatabaseConnection::Postgres(conn) => postgres::execute_query(conn, query).await,
+        DatabaseConnection::Sqlite(conn) => sqlite::execute_query(conn, query).await,
     }
 }
 
 async fn execute_query_and_format_results(
-    mut database_connection: DatabaseConnection,
+    database_connection: &mut DatabaseConnection,
     query: &str,
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let result = match &mut database_connection {
-        DatabaseConnection::Postgres(conn) => postgres::execute_query(conn, query).await,
-        DatabaseConnection::Sqlite(conn) => sqlite::execute_query(conn, query).await,
-    };
+    let result = execute_query(database_connection, query).await;
     match result {
         Ok(result) => (
             StatusCode::OK,
@@ -630,18 +634,22 @@ pub async fn execute_cell_preview(
                     );
                 }
             };
+            let connection = match fetch_connection(&app_state, connection_id).await {
+                Ok(conn) => conn,
+                Err(err) => return get_database_connection_error_response(err),
+            };
             let query = match get_sql_query_from_content(&payload.content) {
                 Ok(q) => q,
                 Err(err) => return err,
             };
-            execute_sql_with_query(app_state, connection_id, &query).await
+            execute_sql_with_query(&connection, &query).await
         }
         CellType::Chart => {
             let chart_content = match parse_chart_content_from_string(&payload.content) {
                 Ok(c) => c,
                 Err(err) => return err,
             };
-            execute_chart_with_content(app_state, chart_content).await
+            execute_chart_with_content(&app_state, chart_content).await
         }
         _ => (
             StatusCode::BAD_REQUEST,
@@ -652,20 +660,69 @@ pub async fn execute_cell_preview(
     }
 }
 
+fn get_database_connection_error_response(
+    err: GetDatabaseConnectionError,
+) -> (http::StatusCode, axum::Json<JsonValue>) {
+    match err {
+        GetDatabaseConnectionError::ConnectionNotFound => (
+            StatusCode::NOT_FOUND,
+            axum::Json(serde_json::json!({ "error": "Connection not found" })),
+        ),
+        GetDatabaseConnectionError::Connection(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        ),
+        GetDatabaseConnectionError::DatabaseConnection(e) => (
+            StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        ),
+    }
+}
+
 async fn execute_sql_with_query(
-    app_state: AppState,
-    connection_id: Uuid,
+    connection: &entity::connection::Model,
     query: &str,
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let database_connection = match get_database_connection(app_state, connection_id).await {
+    let mut database_connection = match get_database_connection(connection).await {
         Ok(conn) => conn,
-        Err(err) => return err,
+        Err(err) => return get_database_connection_error_response(err),
     };
-    execute_query_and_format_results(database_connection, query).await
+    execute_query_and_format_results(&mut database_connection, query).await
+}
+
+pub async fn execute_sql_query(
+    connection: &entity::connection::Model,
+    query: &str,
+) -> Result<QueryResult, ExecuteSqlError> {
+    let mut database_connection = match get_database_connection(connection).await {
+        Ok(conn) => conn,
+        Err(err) => return Err(err.into()),
+    };
+    execute_query(&mut database_connection, query)
+        .await
+        .map_err(Into::into)
+}
+
+pub async fn execute_sql_queries_in_parallel(
+    connection: &entity::connection::Model,
+    queries: &Vec<&str>,
+) -> Vec<Result<QueryResult, ExecuteSqlError>> {
+    let mut database_connection = match get_database_connection(connection).await {
+        Ok(conn) => conn,
+        Err(err) => return vec![Err(err.into())],
+    };
+    let mut results = Vec::with_capacity(queries.len());
+    for query in queries {
+        let result = execute_query(&mut database_connection, query)
+            .await
+            .map_err(Into::into);
+        results.push(result);
+    }
+    results
 }
 
 async fn execute_sql_cell(
-    app_state: AppState,
+    app_state: &AppState,
     cell: entity::cell::Model,
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
     let connection_id = match cell.connection_id {
@@ -681,11 +738,15 @@ async fn execute_sql_cell(
             );
         }
     };
+    let connection = match fetch_connection(app_state, connection_id).await {
+        Ok(conn) => conn,
+        Err(err) => return get_database_connection_error_response(err),
+    };
     let query = match get_sql_query_from_cell(&cell) {
         Ok(q) => q,
         Err(err) => return err,
     };
-    execute_sql_with_query(app_state, connection_id, &query).await
+    execute_sql_with_query(&connection, &query).await
 }
 
 fn parse_chart_content_from_cell(
@@ -720,7 +781,10 @@ fn get_source_cell_id(chart_content: &dto::ChartContent) -> Uuid {
 async fn get_source_cell_for_chart(
     app_state: &AppState,
     source_cell_id: Uuid,
-) -> Result<(entity::cell::Model, Uuid, String), (http::StatusCode, axum::Json<JsonValue>)> {
+) -> Result<
+    (entity::cell::Model, entity::connection::Model, String),
+    (http::StatusCode, axum::Json<JsonValue>),
+> {
     let source_cell = execute_get_cell(app_state, source_cell_id).await;
     let source_cell = match source_cell {
         Ok(source_cell) => source_cell,
@@ -744,12 +808,17 @@ async fn get_source_cell_for_chart(
         }
     };
 
+    let connection = match fetch_connection(app_state, connection_id).await {
+        Ok(conn) => conn,
+        Err(err) => return Err(get_database_connection_error_response(err)),
+    };
+
     let source_query = match get_sql_query_from_cell(&source_cell) {
         Ok(query) => query,
         Err(err) => return Err(err),
     };
 
-    Ok((source_cell, connection_id, source_query))
+    Ok((source_cell, connection, source_query))
 }
 
 fn build_chart_aggregated_query(
@@ -815,12 +884,12 @@ fn build_chart_aggregated_query(
 }
 
 async fn execute_chart_with_content(
-    app_state: AppState,
+    app_state: &AppState,
     chart_content: dto::ChartContent,
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
     let source_cell_id = get_source_cell_id(&chart_content);
-    let (_, connection_id, source_query) =
-        match get_source_cell_for_chart(&app_state, source_cell_id).await {
+    let (_, connection, source_query) =
+        match get_source_cell_for_chart(app_state, source_cell_id).await {
             Ok(result) => result,
             Err(err) => return err,
         };
@@ -828,11 +897,11 @@ async fn execute_chart_with_content(
         Ok(query) => query,
         Err(err) => return err,
     };
-    execute_sql_with_query(app_state, connection_id, &aggregated_query).await
+    execute_sql_with_query(&connection, &aggregated_query).await
 }
 
 async fn execute_chart_cell(
-    app_state: AppState,
+    app_state: &AppState,
     cell: entity::cell::Model,
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
     let chart_content = match parse_chart_content_from_cell(&cell) {
