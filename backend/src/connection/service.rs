@@ -81,7 +81,9 @@ async fn get_connection_status(
 ) -> Result<ConnectionStatus, crate::common::errors::ValidationError> {
     let source_type = SourceType::from_str(&connection_entity.source_type).unwrap();
     match source_type {
-        SourceType::Postgresql | SourceType::Supabase => Ok(postgres::get_connection_status(connection_entity).await),
+        SourceType::Postgresql | SourceType::Supabase => {
+            Ok(postgres::get_connection_status(connection_entity).await)
+        }
         SourceType::Sqlite => sqlite::get_connection_status(connection_entity).await,
         _ => panic!("Unsupported source type"),
     }
@@ -112,8 +114,11 @@ pub async fn execute_create_connection(
         .map_err(CreateConnectionError::ConnectionStatus)?;
     connection_entity.status = connection_status.to_string();
 
-    cryptography_utils::encrypt_connection(&mut connection_entity, &app_state.config.encryption_key)
-        .map_err(|_| CreateConnectionError::Encryption)?;
+    cryptography_utils::encrypt_connection(
+        &mut connection_entity,
+        &app_state.config.encryption_key,
+    )
+    .map_err(|_| CreateConnectionError::Encryption)?;
 
     let mut connection =
         repository::save_connection(&app_state.database_connection, connection_entity)
@@ -150,6 +155,13 @@ pub async fn create_connection(
             axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
     }
+}
+
+pub async fn execute_delete_connection(
+    app_state: &AppState,
+    id: Uuid,
+) -> Result<sea_orm::DeleteResult, sea_orm::DbErr> {
+    repository::delete_connection(&app_state.database_connection, id).await
 }
 
 pub async fn update_connection(

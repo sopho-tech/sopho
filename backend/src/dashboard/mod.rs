@@ -3,7 +3,7 @@ mod dto;
 pub mod service;
 
 pub use dto::{DashboardDto, Layout};
-mod repository;
 mod constants;
+mod repository;
 
 pub use controller::routes;

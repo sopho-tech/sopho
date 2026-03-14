@@ -85,7 +85,8 @@ pub async fn deactivate_session(
     match session {
         Some(session_model) => {
             let mut session_active_model: entity::session::ActiveModel = session_model.into();
-            session_active_model.status = sea_orm::Set(SessionStatus::Inactive.as_str().to_string());
+            session_active_model.status =
+                sea_orm::Set(SessionStatus::Inactive.as_str().to_string());
             session_active_model.updated_at = sea_orm::Set(time_utils::now_utc_into());
             session_active_model.update(db).await
         }

@@ -1,4 +1,22 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::fmt;
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum SqlDialect {
+    Postgresql,
+    MySql,
+    Sqlite,
+}
+
+impl fmt::Display for SqlDialect {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SqlDialect::Postgresql => write!(f, "PostgreSQL"),
+            SqlDialect::MySql => write!(f, "MySQL"),
+            SqlDialect::Sqlite => write!(f, "SQLite"),
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SourceType {
@@ -73,6 +91,24 @@ impl SourceType {
         let s = value.to_string();
         serializer.serialize_str(&s)
     }
+
+    pub fn to_sql_dialect(&self) -> Option<SqlDialect> {
+        match self {
+            SourceType::Postgresql | SourceType::Supabase => Some(SqlDialect::Postgresql),
+            SourceType::MySql => Some(SqlDialect::MySql),
+            SourceType::Sqlite => Some(SqlDialect::Sqlite),
+            SourceType::MsSql
+            | SourceType::Oracle
+            | SourceType::MongoDb
+            | SourceType::Redis
+            | SourceType::Elasticsearch
+            | SourceType::Kafka
+            | SourceType::Api
+            | SourceType::File
+            | SourceType::GoogleSheets
+            | SourceType::Airtable => None,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -116,3 +152,5 @@ impl ConnectionStatus {
         serializer.serialize_str(&s)
     }
 }
+
+

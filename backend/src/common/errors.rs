@@ -32,6 +32,40 @@ pub enum CreateCellError {
     Repository(#[from] sea_orm::DbErr),
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum GetDatabaseConnectionError {
+    #[error("Connection not found")]
+    ConnectionNotFound,
+    #[error("Failed to get connection: {0}")]
+    Connection(sea_orm::DbErr),
+    #[error("Failed to connect to database: {0}")]
+    DatabaseConnection(#[from] sqlx::Error),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ExecuteSqlError {
+    #[error("{0}")]
+    GetConnection(#[from] GetDatabaseConnectionError),
+    #[error("{0}")]
+    ExecuteQuery(#[from] ExecuteQueryError),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum GetDataCatalogError {
+    #[error("Unsupported source type: {0}")]
+    UnsupportedSourceType(String),
+    #[error("Failed to parse source type: {0}")]
+    SourceTypeParse(String),
+    #[error("Failed to fetch data catalog: {0}")]
+    DatabaseConnection(#[from] sqlx::Error),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum TextToSqlError {
+    #[error("Tables in pruned data catalog missing from functional role analysis: {0}")]
+    MissingTablesInFunctionalRoleAnalysis(String),
+}
+
 #[derive(Error, Debug)]
 pub enum SophoError {
     #[error("Validation error: {0}")]

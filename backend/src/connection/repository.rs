@@ -5,7 +5,10 @@ use sea_orm::Set;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait};
 use uuid::Uuid;
 
-pub async fn save_connection(db: &DatabaseConnection, connection: connection::Model) -> Result<connection::Model, DbErr> {
+pub async fn save_connection(
+    db: &DatabaseConnection,
+    connection: connection::Model,
+) -> Result<connection::Model, DbErr> {
     let connection_active_model: connection::ActiveModel = connection.into();
     let connection_active_model = connection_active_model.insert(db).await?;
     Ok(connection_active_model.into())
@@ -22,6 +25,10 @@ pub async fn get_connection(db: &DatabaseConnection, id: Uuid) -> Result<connect
 pub async fn get_all_connections(db: &DatabaseConnection) -> Result<Vec<connection::Model>, DbErr> {
     let connections = connection::Entity::find().all(db).await?;
     Ok(connections)
+}
+
+pub async fn delete_connection(db: &DatabaseConnection, id: Uuid) -> Result<sea_orm::DeleteResult, DbErr> {
+    connection::Entity::delete_by_id(id).exec(db).await
 }
 
 pub async fn update_connection(

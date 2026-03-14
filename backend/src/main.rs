@@ -1,3 +1,4 @@
+mod ai;
 mod authentication;
 mod canvas;
 mod cell;
@@ -5,6 +6,7 @@ mod common;
 mod configuration;
 mod connection;
 mod dashboard;
+mod data_catalog;
 mod database;
 mod db;
 mod demo;
@@ -13,6 +15,8 @@ mod middlewares;
 mod monitor;
 mod notebook;
 mod search;
+#[cfg(test)]
+mod tests;
 
 use crate::common::AppState;
 use axum::http::HeaderValue;
