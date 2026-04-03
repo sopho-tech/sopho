@@ -1,0 +1,229 @@
+import { ChartType } from "src/components/Chart";
+import { ExecuteCellResponseDto } from "src/components/Notebook/Cell/dto";
+
+export type CreateConversationDto = {
+  connection_id: string;
+  user_message: string;
+};
+
+export type ConversationDto = {
+  id: string;
+  connection_id: string;
+  name: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ConversationMessageContentDto = {
+  id: string;
+  conversation_message_id: string;
+  sequence_number: number;
+  content_type: string;
+  content: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export const Sender = {
+  Human: "HUMAN",
+  Assistant: "ASSISTANT",
+} as const;
+
+export type Sender = (typeof Sender)[keyof typeof Sender];
+
+export type ConversationMessageDto = {
+  id: string;
+  conversation_id: string;
+  sequence_number: number;
+  sender: Sender;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  content: ConversationMessageContentDto[];
+};
+
+export type ConversationWithMessagesDto = {
+  conversation: ConversationDto;
+  messages: ConversationMessageDto[];
+  should_execute_completion: boolean;
+};
+
+export type SchemaLinkingRelevantColumn = {
+  column_name: string;
+  relevance_reason: string;
+};
+
+export type SchemaLinkingRefinedTable = {
+  table_name: string;
+  relevant_columns: SchemaLinkingRelevantColumn[];
+};
+
+export type SchemaLinkingRejectedCandidate = {
+  table: string;
+  column: string;
+  reject_reason: string;
+};
+
+export type SchemaLinkingFinalSynthesisResponse = {
+  refined_schema: SchemaLinkingRefinedTable[];
+  rejected_candidates: SchemaLinkingRejectedCandidate[];
+  exploration_queries: string[];
+  status: string;
+};
+
+export type EmpericalObservationColumn = {
+  column_name: string;
+  relevance_reason: string;
+  observations: string;
+};
+
+export type EmpericalObservation = {
+  relevant: boolean;
+  relevant_columns: EmpericalObservationColumn[];
+  table_summary: string;
+};
+
+export type DataCatalogColumn = {
+  name: string;
+  data_type: string;
+  description: string;
+  sample_values: string[];
+};
+
+export type DataCatalogTable = {
+  name: string;
+  description: string;
+  columns: Record<string, DataCatalogColumn>;
+};
+
+export type DataCatalogSchema = {
+  name: string;
+  description: string;
+  tables: Record<string, DataCatalogTable>;
+};
+
+export type DataCatalogDatabase = {
+  name: string;
+  description: string;
+  schemas: Record<string, DataCatalogSchema>;
+};
+
+export const AgentEventName = {
+  Starting: "starting",
+  Error: "error",
+  Completed: "completed",
+  GeneratingCandidateHypothesis: "generating_candidate_hypothesis",
+  GeneratedCandidateHypothesis: "generated_candidate_hypothesis",
+  IntegratingCandidatePlans: "integrating_candidate_plans",
+  IntegratedCandidatePlans: "integrated_candidate_plans",
+  ExecutingSearchSpaceReduction: "executing_search_space_reduction",
+  ExecutedSearchSpaceReduction: "executed_search_space_reduction",
+  ExecutingFunctionalRoleAnalysis: "executing_functional_role_analysis",
+  ExecutedFunctionalRoleAnalysis: "executed_functional_role_analysis",
+  ExecutingDataProfiling: "executing_data_profiling",
+  ExecutedDataProfiling: "executed_data_profiling",
+  ExecutingSchemaLinkingSynthesis: "executing_schema_linking_synthesis",
+  ExecutedSchemaLinkingSynthesis: "executed_schema_linking_synthesis",
+  GeneratingSql: "generating_sql",
+  GeneratedSql: "generated_sql",
+  ExecutingQuery: "executing_query",
+  ExecutedQuery: "executed_query",
+  RecommendingVisualization: "recommending_visualization",
+  RecommendedVisualization: "recommended_visualization",
+} as const;
+
+export type AgentEventName =
+  (typeof AgentEventName)[keyof typeof AgentEventName];
+
+export const IN_PROGRESS_EVENTS = new Set<string>([
+  AgentEventName.GeneratingCandidateHypothesis,
+  AgentEventName.IntegratingCandidatePlans,
+  AgentEventName.ExecutingSearchSpaceReduction,
+  AgentEventName.ExecutingFunctionalRoleAnalysis,
+  AgentEventName.ExecutingDataProfiling,
+  AgentEventName.ExecutingSchemaLinkingSynthesis,
+  AgentEventName.GeneratingSql,
+  AgentEventName.ExecutingQuery,
+  AgentEventName.RecommendingVisualization,
+]);
+
+export type AgentEvent = {
+  event_name: AgentEventName;
+  data?: unknown;
+};
+
+export type GeneratedCandidateHypothesisData = string[];
+
+export type IntegratedCandidatePlansData = {
+  master_plan: string;
+};
+
+export type ExecutedSearchSpaceReductionData = {
+  pruned_data_catalog: DataCatalogDatabase;
+};
+
+export type TableFunction = {
+  database: string;
+  schema: string;
+  table: string;
+  table_function: string;
+};
+
+export type FunctionalRoleAnalysisResult = {
+  database_structure: string;
+  query_specific_content_analysis: string;
+  table_functions: TableFunction[];
+};
+
+export type ExecutedFunctionalRoleAnalysisData = {
+  functional_role_analysis_result: FunctionalRoleAnalysisResult;
+};
+
+export type ExecutedDataProfilingData = {
+  emperical_observations: EmpericalObservation[];
+};
+
+export type ExecutedSchemaLinkingSynthesisData = {
+  linked_schema: SchemaLinkingFinalSynthesisResponse;
+};
+
+export type GeneratedSqlData = {
+  sql: string;
+};
+
+export type RecommendedVisualizationData = {
+  visualization: {
+    chart_type: ChartType;
+    x_axis?: string;
+    y_axis?: string;
+    category?: string;
+    value?: string;
+    reasoning: string;
+  };
+};
+
+export type ChartRenderData = {
+  queryData: ExecuteCellResponseDto;
+  visualization: RecommendedVisualizationData["visualization"];
+};
+
+export function extractChartData(events: AgentEvent[]): ChartRenderData | null {
+  const queryEvent = events.find(
+    (e) => e.event_name === AgentEventName.ExecutedQuery,
+  );
+  const vizEvent = events.find(
+    (e) => e.event_name === AgentEventName.RecommendedVisualization,
+  );
+
+  if (!queryEvent?.data || !vizEvent?.data) return null;
+
+  const queryData = queryEvent.data as ExecuteCellResponseDto;
+  const vizData = vizEvent.data as RecommendedVisualizationData;
+
+  return {
+    queryData,
+    visualization: vizData.visualization,
+  };
+}

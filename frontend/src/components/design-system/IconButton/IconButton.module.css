@@ -4,6 +4,23 @@
   cursor: pointer;
   transition: transform 0.1s ease-out;
   align-items: center;
+  justify-content: center;
+}
+
+.sizeNone {
+  padding: 0;
+}
+
+.sizeSm {
+  padding: var(--space-2xs);
+}
+
+.sizeMd {
+  padding: var(--space-xs);
+}
+
+.sizeLg {
+  padding: var(--space-sm);
 }
 
 .button:active {

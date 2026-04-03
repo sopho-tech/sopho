@@ -39,7 +39,10 @@ export type {
 export { DataTable } from "src/components/design-system/DataTable";
 export type { ColumnConfig } from "src/components/design-system/DataTable";
 export { DropdownMenu } from "src/components/design-system/DropdownMenu";
-export type { DropdownMenuItem } from "src/components/design-system/DropdownMenu";
+export type {
+  DropdownMenuItem,
+  DropdownMenuRootProps,
+} from "src/components/design-system/DropdownMenu";
 export { Toolbar } from "src/components/design-system/Toolbar";
 export { Accordion } from "src/components/design-system/Accordion";
 export type {
@@ -58,3 +61,11 @@ export { Badge } from "src/components/design-system/Badge";
 export { Card } from "src/components/design-system/Card";
 export { Separator } from "src/components/design-system/Separator";
 export type { SeparatorProps } from "src/components/design-system/Separator";
+export { Collapsible } from "src/components/design-system/Collapsible";
+export type {
+  CollapsibleRootProps,
+  CollapsibleTriggerProps,
+  CollapsibleContentProps,
+} from "src/components/design-system/Collapsible";
+export { Spinner } from "src/components/design-system/Spinner";
+export { ShimmeringText } from "src/components/design-system/ShimmeringText";

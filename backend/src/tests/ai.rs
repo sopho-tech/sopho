@@ -1,9 +1,10 @@
 // TODO Complete verification of test results
 
+use crate::ai::agent_utils::ModelClient;
 use crate::ai::dto::{
-    EmpericalObservation, EmpericalObservationColumn, FunctionalRoleAnalysisResult,
-    SchemaLinkingFinalSynthesisResponse, SchemaLinkingRefinedTable, SchemaLinkingRejectedCandidate,
-    SchemaLinkingRelevantColumn, TableFunction,
+    EmpericalObservation, EmpericalObservationColumn, Event, EventChannels,
+    FunctionalRoleAnalysisResult, SchemaLinkingFinalSynthesisResponse, SchemaLinkingRefinedTable,
+    SchemaLinkingRejectedCandidate, SchemaLinkingRelevantColumn, TableFunction,
 };
 use crate::ai::text_to_sql_agent::{
     execute, execute_hypothesis_verification, execute_search_space_reduction,
@@ -15,8 +16,8 @@ use crate::connection::dto::CreateConnectionDto;
 use crate::connection::service::{execute_create_connection, execute_delete_connection};
 use crate::data_catalog::dto::{Column, Database, Schema, Table};
 use crate::{db, entity};
-use rig::providers::anthropic;
 use std::path::Path;
+use tokio::sync::mpsc;
 use tracing::error;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
@@ -43,6 +44,8 @@ async fn init_app_state() -> AppState {
     }
     let database_connection = db::get_db(&database_url).await.unwrap();
     db::run_migrations(&database_connection).await.unwrap();
+    let anthropic_api_key = std::env::var("ANTHROPIC_API_KEY")
+        .expect("ANTHROPIC_API_KEY must be set to run integration tests");
     let config = Configurations::builder()
         .database_url(database_url.clone())
         .encryption_key("test-secret-key-32-chars-long!!")
@@ -50,10 +53,12 @@ async fn init_app_state() -> AppState {
         .admin_password("test_password")
         .admin_email("admin@test.local")
         .admin_full_name("Test Admin")
+        .anthropic_api_key(anthropic_api_key.clone())
         .build()
         .unwrap();
     let client = reqwest::Client::new();
-    AppState::new(database_connection, config, client)
+    let model_client = ModelClient::anthropic(anthropic_api_key.as_ref()).unwrap();
+    AppState::new(database_connection, config, client, model_client)
 }
 
 async fn create_test_connection(app_state: &AppState) -> entity::connection::Model {
@@ -79,12 +84,6 @@ async fn create_test_connection(app_state: &AppState) -> entity::connection::Mod
             panic!("Failed to create test connection");
         }
     };
-}
-
-fn test_create_client() -> anthropic::Client {
-    let api_key = std::env::var("ANTHROPIC_API_KEY")
-        .expect("ANTHROPIC_API_KEY must be set to run these tests");
-    anthropic::Client::new(&api_key).unwrap()
 }
 
 fn sample_pruned_data_catalog(connection_name: &str, connection_description: &str) -> Database {
@@ -352,16 +351,19 @@ fn init_tracing() {
 #[ignore]
 async fn execute_works() {
     init_tracing();
-    let client = test_create_client();
     let (app_state, connection) = setup_test_env().await;
+    let (sse_tx, _sse_rx) = mpsc::channel::<Event>(32);
+    let (persist_tx, _persist_rx) = mpsc::channel::<Event>(32);
+    let channels = EventChannels { sse_tx, persist_tx };
     let sql = execute(
         &app_state,
         &connection,
         "What are the top 5 customers by revenue?",
-        &client,
+        &channels,
     )
     .await
     .unwrap();
+    assert!(!sql.is_empty());
     teardown_test_env(&app_state, connection.id).await;
 }
 
@@ -370,13 +372,11 @@ async fn execute_works() {
 async fn execute_search_space_reduction_works() {
     init_tracing();
     let (app_state, connection) = setup_test_env().await;
-    let client = test_create_client();
     let pruned_data_catalog = execute_search_space_reduction(
         &app_state,
         &connection,
         "What are the top 5 customers by revenue?",
         MASTER_PLAN_TOP_5_CUSTOMERS,
-        &client,
     )
     .await
     .unwrap();
@@ -388,11 +388,13 @@ async fn execute_search_space_reduction_works() {
 async fn execute_hypothesis_verification_works() {
     init_tracing();
     let (app_state, connection) = setup_test_env().await;
-    let client = test_create_client();
     let pruned_data_catalog = sample_pruned_data_catalog(
         &connection.name,
         connection.description.as_deref().unwrap_or(""),
     );
+    let (sse_tx, _sse_rx) = mpsc::channel::<Event>(8);
+    let (persist_tx, _persist_rx) = mpsc::channel::<Event>(8);
+    let channels = EventChannels { sse_tx, persist_tx };
     execute_hypothesis_verification(
         &app_state,
         &connection,
@@ -405,7 +407,7 @@ async fn execute_hypothesis_verification_works() {
             5. Select the top 5 customers from the sorted list
         "#,
         &pruned_data_catalog,
-        &client,
+        &channels,
     )
     .await
     .unwrap();
@@ -585,18 +587,17 @@ const MASTER_PLAN_TOP_5_CUSTOMERS: &str = r#"
 async fn schema_linking_final_synthesis_works() {
     init_tracing();
     let (app_state, connection) = setup_test_env().await;
-    let client = test_create_client();
     let pruned_data_catalog = sample_pruned_data_catalog(
         &connection.name,
         connection.description.as_deref().unwrap_or(""),
     );
     let result = schema_linking_final_synthesis(
+        &app_state,
         &connection,
         "What are the top 5 customers by revenue?",
         sample_functional_role_analysis_result(),
         &sample_emperical_observations(),
         &pruned_data_catalog,
-        &client,
     )
     .await
     .unwrap();
@@ -608,10 +609,9 @@ async fn schema_linking_final_synthesis_works() {
 async fn sql_generation_works() {
     init_tracing();
     let (app_state, connection) = setup_test_env().await;
-    let client = test_create_client();
     let result = sql_generation(
+        &app_state,
         &connection,
-        &client,
         "What are the top 5 customers by revenue?",
         MASTER_PLAN_TOP_5_CUSTOMERS,
         sample_linked_schema(),

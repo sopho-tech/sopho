@@ -152,5 +152,3 @@ impl ConnectionStatus {
         serializer.serialize_str(&s)
     }
 }
-
-

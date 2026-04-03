@@ -1,5 +1,5 @@
 import { CanvasCreateDialog } from "src/components/Canvases/CanvasCreateDialog";
-import { Flex, Heading, SearchBar, Button } from "src/components/design-system";
+import { Flex, SearchBar, Button } from "src/components/design-system";
 import { useCanvasActions } from "src/components/Canvases/hooks.tsx";
 import { CanvasesTable } from "src/components/Canvases/CanvasesTable";
 import { TopBar } from "src/components/TopBar";
@@ -25,8 +25,13 @@ export function Canvases() {
           />
         </TopBar.Right>
       </TopBar>
-      <Flex paddingX="2xl" direction="column" gap="lg">
-        <Heading accessbilityLevel={1}>Canvases</Heading>
+      <Flex
+        paddingX="2xl"
+        direction="column"
+        gap="lg"
+        flex="grow"
+        overflow="scrollY"
+      >
         <CanvasesTable />
       </Flex>
       <CanvasCreateDialog />

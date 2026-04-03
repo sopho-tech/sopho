@@ -1,4 +1,4 @@
-import { Flex, Heading } from "src/components/design-system";
+import { Flex } from "src/components/design-system";
 import {
   HomeHeader,
   HomeEmptyState,
@@ -7,10 +7,15 @@ import {
 
 export function Home() {
   return (
-    <Flex direction="column" flex="grow" gap="lg" overflow="scrollY">
+    <Flex direction="column" flex="grow" overflow="hidden">
       <HomeHeader />
-      <Flex paddingX="2xl" direction="column" gap="lg">
-        <Heading accessbilityLevel={1}>Home</Heading>
+      <Flex
+        paddingX="2xl"
+        direction="column"
+        gap="lg"
+        flex="grow"
+        overflow="scrollY"
+      >
         <RecentlyUpdatedCanvases />
         <HomeEmptyState />
       </Flex>

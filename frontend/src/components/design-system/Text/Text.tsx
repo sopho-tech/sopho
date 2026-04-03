@@ -4,6 +4,7 @@ export type TextColor =
   | "default"
   | "white"
   | "subtle"
+  | "darkGrey"
   | "disabled"
   | "error"
   | "success"
@@ -24,6 +25,7 @@ type TextProps = {
     | "4xl"
     | "5xl"
     | "6xl";
+  truncate?: boolean;
   children: React.ReactNode;
 };
 
@@ -32,9 +34,14 @@ export function Text({
   children,
   color = "default",
   fontSize,
+  truncate,
 }: TextProps) {
   const Component = as;
-  const classNames = [styles[color], fontSize && styles[`fontSize-${fontSize}`]]
+  const classNames = [
+    styles[color],
+    fontSize && styles[`fontSize-${fontSize}`],
+    truncate && styles.truncate,
+  ]
     .filter(Boolean)
     .join(" ");
   return <Component className={classNames}>{children}</Component>;

@@ -7,4 +7,9 @@ export const APP_ROUTES = {
   CONNECTION_EDIT: "/settings/connection/:id/edit",
   SIGN_IN: "/signin",
   PROFILE: "/profile",
+  CONVERSATIONAL_ANALYTICS: "/conversational_analytics",
+  CONVERSATIONAL_ANALYTICS_ROUTES: {
+    INDEX: "/conversational_analytics/",
+    CONVERSATION: "/conversational_analytics/conversation/:id",
+  },
 };

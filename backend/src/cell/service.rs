@@ -8,16 +8,14 @@ use crate::cell::repository;
 use crate::common::error_codes::codes;
 use crate::common::errors::CreateCellError;
 use crate::common::errors::ExecuteQueryError;
-use crate::common::errors::ExecuteSqlError;
 use crate::common::errors::GetDatabaseConnectionError;
 use crate::common::errors::SophoError;
 use crate::common::time_utils;
 use crate::common::AppState;
-use crate::connection::constants::SourceType;
 use crate::connection::service as connection_service;
 use crate::dashboard::service as dashboard_service;
-use crate::database::constants::{DatabaseConnection, QueryResult};
-use crate::database::{postgres, sqlite};
+use crate::database::constants::DatabaseConnection;
+use crate::database::service as database_service;
 use crate::entity;
 use crate::notebook::does_notebook_exist;
 use crate::notebook::service as notebook_service;
@@ -25,7 +23,6 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use sea_orm::TransactionTrait;
 use sqlx::types::JsonValue;
-use tracing::info;
 use uuid::Uuid;
 
 pub async fn does_cell_exist(app_state: &AppState, id: Uuid) -> bool {
@@ -433,34 +430,11 @@ async fn fetch_connection(
         })
 }
 
-async fn get_database_connection(
-    connection: &entity::connection::Model,
-) -> Result<DatabaseConnection, GetDatabaseConnectionError> {
-    let database_connection = match SourceType::from_str(&connection.source_type).unwrap() {
-        SourceType::Postgresql | SourceType::Supabase => {
-            postgres::get_database_connection(connection).await?
-        }
-        SourceType::Sqlite => sqlite::get_database_connection(connection).await?,
-        _ => panic!("Not implemented"),
-    };
-    Ok(database_connection)
-}
-
-async fn execute_query(
-    database_connection: &mut DatabaseConnection,
-    query: &str,
-) -> Result<QueryResult, ExecuteQueryError> {
-    match database_connection {
-        DatabaseConnection::Postgres(conn) => postgres::execute_query(conn, query).await,
-        DatabaseConnection::Sqlite(conn) => sqlite::execute_query(conn, query).await,
-    }
-}
-
 async fn execute_query_and_format_results(
     database_connection: &mut DatabaseConnection,
     query: &str,
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let result = execute_query(database_connection, query).await;
+    let result = database_service::execute_query(database_connection, query).await;
     match result {
         Ok(result) => (
             StatusCode::OK,
@@ -683,42 +657,12 @@ async fn execute_sql_with_query(
     connection: &entity::connection::Model,
     query: &str,
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let mut database_connection = match get_database_connection(connection).await {
-        Ok(conn) => conn,
-        Err(err) => return get_database_connection_error_response(err),
-    };
+    let mut database_connection =
+        match database_service::get_database_connection(connection).await {
+            Ok(conn) => conn,
+            Err(err) => return get_database_connection_error_response(err),
+        };
     execute_query_and_format_results(&mut database_connection, query).await
-}
-
-pub async fn execute_sql_query(
-    connection: &entity::connection::Model,
-    query: &str,
-) -> Result<QueryResult, ExecuteSqlError> {
-    let mut database_connection = match get_database_connection(connection).await {
-        Ok(conn) => conn,
-        Err(err) => return Err(err.into()),
-    };
-    execute_query(&mut database_connection, query)
-        .await
-        .map_err(Into::into)
-}
-
-pub async fn execute_sql_queries_in_parallel(
-    connection: &entity::connection::Model,
-    queries: &Vec<&str>,
-) -> Vec<Result<QueryResult, ExecuteSqlError>> {
-    let mut database_connection = match get_database_connection(connection).await {
-        Ok(conn) => conn,
-        Err(err) => return vec![Err(err.into())],
-    };
-    let mut results = Vec::with_capacity(queries.len());
-    for query in queries {
-        let result = execute_query(&mut database_connection, query)
-            .await
-            .map_err(Into::into);
-        results.push(result);
-    }
-    results
 }
 
 async fn execute_sql_cell(

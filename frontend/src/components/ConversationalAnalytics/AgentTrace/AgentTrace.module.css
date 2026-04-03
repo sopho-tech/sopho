@@ -1,0 +1,107 @@
+.traceToggle:hover {
+  background-color: var(--color-grey-200);
+}
+
+.step {
+  min-height: 40px;
+}
+
+.stepIconWrapper {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--border-radius-full);
+  flex-shrink: 0;
+  position: relative;
+  z-index: var(--z-index-1);
+  background-color: var(--color-grey-100);
+}
+
+.stepLine {
+  width: 1.5px;
+  flex: 1;
+  background-color: var(--color-grey-200);
+  min-height: 20px;
+}
+
+.stepHeader {
+  cursor: pointer;
+  user-select: none;
+}
+
+.hypothesisItem,
+.sqlBlock {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-grey-800);
+  white-space: pre-wrap;
+}
+
+.masterPlan {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  color: var(--color-grey-800);
+  white-space: pre-wrap;
+}
+
+.catalogSchemaName {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-grey-800);
+}
+
+.catalogTableChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-3xs) var(--space-xs);
+  background-color: var(--color-primary-100);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-primary-800);
+  font-weight: var(--font-weight-medium);
+}
+
+.observationSummary {
+  font-size: var(--font-size-xs);
+  color: var(--color-grey-700);
+  padding: var(--space-2xs) 0;
+  font-style: italic;
+}
+
+.refinedTableName {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-grey-900);
+}
+
+.refinedColumn {
+  font-size: var(--font-size-xs);
+  color: var(--color-grey-700);
+}
+
+.refinedColumnName {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-grey-800);
+}
+
+.errorBlock {
+  padding: var(--space-xs) var(--space-sm);
+  background-color: var(--color-red-100);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-thin) solid var(--color-red-300);
+  font-size: var(--font-size-xs);
+  color: var(--color-red-700);
+  white-space: pre-wrap;
+}
+
+.noContentStep .stepHeader {
+  cursor: default;
+}
+
+.noContentStep .stepHeaderChevron {
+  visibility: hidden;
+}
+
+.rejectedLabel {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-grey-600);
+  margin-bottom: var(--space-2xs);
+}

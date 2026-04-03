@@ -12,6 +12,10 @@ const HOME_TOOLTIP = { text: "Home", direction: "right" } as const;
 const NOTEBOOKS_TOOLTIP = { text: "Notebooks", direction: "right" } as const;
 const SETTINGS_TOOLTIP = { text: "Settings", direction: "right" } as const;
 const PROFILE_TOOLTIP = { text: "Profile", direction: "right" } as const;
+const CONVERSATION_ANALYTICS_TOOLTIP = {
+  text: "Conversational Analytics",
+  direction: "right",
+} as const;
 
 export function Sidebar() {
   const location = useLocation();
@@ -54,6 +58,20 @@ export function Sidebar() {
                   type="layers"
                   state={getState(APP_ROUTES.CANVASES)}
                   tooltip={NOTEBOOKS_TOOLTIP}
+                />
+              </NavLink>
+            </NavigationMenu.Link>
+          </NavigationMenu.Item>
+          <NavigationMenu.Item className={SidebarStyles.navItem}>
+            <NavigationMenu.Link asChild>
+              <NavLink
+                to={APP_ROUTES.CONVERSATIONAL_ANALYTICS}
+                className={SidebarStyles.link}
+              >
+                <IconButtonLink
+                  type="bot"
+                  state={getState(APP_ROUTES.CONVERSATIONAL_ANALYTICS)}
+                  tooltip={CONVERSATION_ANALYTICS_TOOLTIP}
                 />
               </NavLink>
             </NavigationMenu.Link>

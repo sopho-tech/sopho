@@ -1,3 +1,5 @@
+use crate::data_catalog::dto::Database;
+
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TableRef {
     pub database: String,
@@ -36,6 +38,11 @@ pub struct DeletionSet {
 pub struct SelectionSet {
     pub relevant_tables: Vec<SchemaTables>,
     pub relevant_columns: Vec<TableColumns>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct LogicalPlanningResponse {
+    pub logical_steps: Vec<String>,
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -179,4 +186,105 @@ pub struct SqlGenerationAction {
     pub next_action: Option<String>,
     pub sql: Option<String>,
     pub query_description: Option<String>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct VisualizationRecommendation {
+    pub chart_type: crate::cell::constants::ChartType,
+    pub x_axis: Option<String>,
+    pub y_axis: Option<String>,
+    pub category: Option<String>,
+    pub value: Option<String>,
+    pub reasoning: String,
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(tag = "event_name", content = "data", rename_all = "snake_case")]
+pub enum Event {
+    Starting,
+    Error(String),
+    Completed,
+    GeneratingCandidateHypothesis,
+    GeneratedCandidateHypothesis(Vec<String>),
+    IntegratingCandidatePlans,
+    IntegratedCandidatePlans {
+        master_plan: String,
+    },
+    ExecutingSearchSpaceReduction,
+    ExecutedSearchSpaceReduction {
+        pruned_data_catalog: Database,
+    },
+    ExecutingFunctionalRoleAnalysis,
+    ExecutedFunctionalRoleAnalysis {
+        functional_role_analysis_result: FunctionalRoleAnalysisResult,
+    },
+    ExecutingDataProfiling,
+    ExecutedDataProfiling {
+        emperical_observations: Vec<EmpericalObservation>,
+    },
+    ExecutingSchemaLinkingSynthesis,
+    ExecutedSchemaLinkingSynthesis {
+        linked_schema: SchemaLinkingFinalSynthesisResponse,
+    },
+    GeneratingSql,
+    GeneratedSql {
+        sql: String,
+    },
+    ExecutingQuery,
+    ExecutedQuery {
+        columns: Vec<serde_json::Value>,
+        data: Vec<serde_json::Value>,
+    },
+    RecommendingVisualization,
+    RecommendedVisualization {
+        visualization: VisualizationRecommendation,
+    },
+}
+
+pub struct EventChannels {
+    pub sse_tx: tokio::sync::mpsc::Sender<Event>,
+    pub persist_tx: tokio::sync::mpsc::Sender<Event>,
+}
+
+impl EventChannels {
+    pub async fn send(&self, event: Event) -> anyhow::Result<()> {
+        if let Err(e) = self.sse_tx.send(event.clone()).await {
+            tracing::error!("Failed to send event to SSE channel: {e}");
+        }
+        self.persist_tx.send(event).await?;
+        Ok(())
+    }
+
+    pub async fn send_sse_only(&self, event: Event) {
+        let _ = self.sse_tx.send(event).await;
+    }
+}
+
+impl Event {
+    pub fn to_json_string(&self) -> String {
+        serde_json::to_string(self).expect("Event JSON serialization")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Event;
+
+    #[test]
+    fn event_json_event_name_and_data_shape() {
+        let s = Event::Starting.to_json_string();
+        let v: serde_json::Value = serde_json::from_str(&s).unwrap();
+        assert_eq!(v["event_name"], "starting");
+        assert!(v["data"].is_null());
+
+        let s = Event::Error("oops".into()).to_json_string();
+        let v: serde_json::Value = serde_json::from_str(&s).unwrap();
+        assert_eq!(v["event_name"], "error");
+        assert_eq!(v["data"], "oops");
+
+        let s = Event::GeneratedCandidateHypothesis(vec!["a".into()]).to_json_string();
+        let v: serde_json::Value = serde_json::from_str(&s).unwrap();
+        assert_eq!(v["event_name"], "generated_candidate_hypothesis");
+        assert_eq!(v["data"], serde_json::json!(["a"]));
+    }
 }

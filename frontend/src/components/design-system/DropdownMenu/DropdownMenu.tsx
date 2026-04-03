@@ -11,12 +11,19 @@ export type DropdownMenuItem = {
   disabled?: boolean;
 };
 
-type DropdownMenuRootProps = {
-  children: ReactNode;
+export type DropdownMenuRootProps = {
+  children?: ReactNode;
+  dir?: "ltr" | "rtl";
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  modal?: boolean;
 };
 
-function DropdownMenuRoot({ children }: DropdownMenuRootProps) {
-  return <RadixDropdownMenu.Root>{children}</RadixDropdownMenu.Root>;
+function DropdownMenuRoot({ children, ...props }: DropdownMenuRootProps) {
+  return (
+    <RadixDropdownMenu.Root {...props}>{children}</RadixDropdownMenu.Root>
+  );
 }
 
 type DropdownMenuTriggerProps = {

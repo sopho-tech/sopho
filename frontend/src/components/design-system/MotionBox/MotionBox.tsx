@@ -1,6 +1,7 @@
 import styles from "src/components/design-system/Box/Box.module.css";
 import type {
   SharedLayoutProps,
+  BoxElement,
   Display,
 } from "src/components/design-system/datatypes";
 import {
@@ -12,12 +13,14 @@ import {
 import { motion, type HTMLMotionProps } from "motion/react";
 
 export type MotionBoxProps = SharedLayoutProps & {
+  as?: BoxElement;
   display?: Display;
   children: React.ReactNode;
   sx?: React.CSSProperties;
 } & Omit<HTMLMotionProps<"div">, keyof SharedLayoutProps | "style">;
 
 export function MotionBox({
+  as = "div",
   backgroundColor = "default",
   display,
   ref,
@@ -25,6 +28,7 @@ export function MotionBox({
   sx,
   ...props
 }: MotionBoxProps) {
+  const MotionComponent = motion[as];
   const { layoutProps, htmlProps } = separateLayoutProps(props);
 
   const layoutStyles = getSharedLayoutStyles(layoutProps);
@@ -44,13 +48,14 @@ export function MotionBox({
   const mergedStyle = mergeBoxStyles(display, layoutStyles, sx, htmlStyle);
 
   return (
-    <motion.div
-      ref={ref as React.Ref<HTMLDivElement>}
+    <MotionComponent
+      // @ts-expect-error - polymorphic motion element ref
+      ref={ref}
       className={mergedClassName}
       style={mergedStyle}
       {...htmlPropsWithoutClassNameAndStyle}
     >
       {children}
-    </motion.div>
+    </MotionComponent>
   );
 }

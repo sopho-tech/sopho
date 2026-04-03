@@ -42,6 +42,16 @@
   border-bottom: var(--border-table-cell);
 }
 
+.tableHeaderCellCompact {
+  padding: var(--space-2xs) var(--space-xs);
+  font-size: var(--font-size-xs);
+}
+
+.tableDataCellCompact {
+  padding: var(--space-2xs) var(--space-xs);
+  font-size: var(--font-size-xs);
+}
+
 .tableBodyRow:hover {
   background-color: var(--color-grey-200);
 }

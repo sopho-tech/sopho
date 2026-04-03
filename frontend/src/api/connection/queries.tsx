@@ -2,11 +2,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { ConnectionDto } from "src/components/Connection/dto";
+import { type ExecuteCellResponseDto } from "src/components/Notebook/Cell/dto";
 
 export type CreateConnectionDto = Omit<
   ConnectionDto,
   "id" | "created_at" | "updated_at"
 >;
+
+export type QueryExecutionResultDto =
+  | { status: "success"; data: ExecuteCellResponseDto }
+  | { status: "error"; error: unknown };
 
 export const connectionKeys = {
   all: ["connections"] as const,
@@ -14,6 +19,8 @@ export const connectionKeys = {
   list: (filters: string) => [...connectionKeys.lists(), { filters }] as const,
   details: () => [...connectionKeys.all, "detail"] as const,
   detail: (id: string) => [...connectionKeys.details(), id] as const,
+  queryExecution: (connectionId: string, query: string) =>
+    [...connectionKeys.all, "query-execution", connectionId, query] as const,
 };
 
 const connectionApi = {
@@ -61,6 +68,21 @@ const connectionApi = {
       },
     });
     return response as ConnectionDto;
+  },
+
+  executeQuery: async ({
+    connectionId,
+    query,
+  }: {
+    connectionId: string;
+    query: string;
+  }): Promise<ExecuteCellResponseDto> => {
+    const response = await ApiService.post({
+      url: API_ENDPOINTS.CONNECTION.EXECUTE_QUERY.replace(":id", connectionId),
+      data: { query },
+      headers: { "Content-Type": "application/json" },
+    });
+    return response as ExecuteCellResponseDto;
   },
 
   deleteConnection: async (connectionId: string): Promise<void> => {
@@ -126,6 +148,38 @@ export const useCreateConnection = () => {
     onError: (error) => {
       console.error("Failed to create connection:", error);
     },
+  });
+};
+
+export const useExecuteQuery = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: connectionApi.executeQuery,
+    onSuccess: (data, { connectionId, query }) => {
+      queryClient.setQueryData(
+        connectionKeys.queryExecution(connectionId, query),
+        { status: "success", data } satisfies QueryExecutionResultDto,
+      );
+    },
+    onError: (error, { connectionId, query }) => {
+      queryClient.setQueryData(
+        connectionKeys.queryExecution(connectionId, query),
+        { status: "error", error } satisfies QueryExecutionResultDto,
+      );
+    },
+  });
+};
+
+export const useQueryExecutionResult = (
+  connectionId: string,
+  query: string,
+) => {
+  return useQuery<QueryExecutionResultDto>({
+    queryKey: connectionKeys.queryExecution(connectionId, query),
+    queryFn: () =>
+      Promise.reject(new Error("Execution results are cache-only")),
+    enabled: false,
   });
 };
 

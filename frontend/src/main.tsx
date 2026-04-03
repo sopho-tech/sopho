@@ -12,6 +12,9 @@ import { Canvases } from "src/components/Canvases";
 import { Canvas } from "src/components/Canvases/Canvas";
 import { ConnectionNew } from "./components/Connection/ConnectionNew";
 import { ConnectionEdit } from "./components/Connection/ConnectionEdit/ConnectionEdit";
+import { ConversationalAnalytics } from "src/components/ConversationalAnalytics";
+import { NewConversationPanel } from "./components/ConversationalAnalytics/NewConversationPanel";
+import { ExistingConversationPanel } from "./components/ConversationalAnalytics/ExistingConversationPanel";
 
 const router = createBrowserRouter([
   {
@@ -20,6 +23,20 @@ const router = createBrowserRouter([
       {
         path: APP_ROUTES.INDEX,
         element: <Home />,
+      },
+      {
+        path: APP_ROUTES.CONVERSATIONAL_ANALYTICS,
+        element: <ConversationalAnalytics />,
+        children: [
+          {
+            path: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX,
+            element: <NewConversationPanel />,
+          },
+          {
+            path: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION,
+            element: <ExistingConversationPanel />,
+          },
+        ],
       },
       {
         path: APP_ROUTES.SETTINGS,
@@ -58,5 +75,5 @@ createRoot(document.getElementById("root")!).render(
     <ReactQueryClientProvider>
       <RouterProvider router={router} />
     </ReactQueryClientProvider>
-  </StrictMode>
+  </StrictMode>,
 );

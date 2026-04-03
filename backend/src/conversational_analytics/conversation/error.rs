@@ -1,0 +1,45 @@
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum ConversationError {
+    #[error("Database error: {0}")]
+    Database(#[from] sea_orm::DbErr),
+    #[error("Conversion error: {0}")]
+    Conversion(String),
+    #[error("Conversation not found")]
+    NotFound,
+}
+
+#[derive(Debug, Error)]
+pub enum ExecuteCompletionError {
+    #[error("Database error: {0}")]
+    Database(#[from] sea_orm::DbErr),
+    #[error("Connection not found")]
+    ConnectionNotFound,
+    #[error("Conversation not found")]
+    ConversationNotFound,
+    #[error("There are no questions to answer")]
+    NoQuestionsToAnswer,
+    #[error("The last sender is not human")]
+    LastSenderNotHuman,
+    #[error("The last message content is invalid")]
+    InvalidLastMessageContent,
+    #[error("Question must not be empty")]
+    EmptyQuestion,
+    #[error("Question exceeds maximum length")]
+    QuestionTooLong,
+    #[error("Anthropic client is not configured")]
+    AnthropicNotConfigured,
+}
+
+impl From<ConversationError> for ExecuteCompletionError {
+    fn from(e: ConversationError) -> Self {
+        match e {
+            ConversationError::Database(d) => ExecuteCompletionError::Database(d),
+            ConversationError::Conversion(s) => {
+                ExecuteCompletionError::Database(sea_orm::DbErr::Custom(s))
+            }
+            ConversationError::NotFound => ExecuteCompletionError::ConversationNotFound,
+        }
+    }
+}

@@ -14,7 +14,7 @@ export function RecentlyUpdatedCanvases() {
   }
 
   return (
-    <Flex direction="column" gap="md">
+    <Flex direction="column" gap="md" paddingTop="md">
       <Heading
         accessbilityLevel={2}
         weight="medium"

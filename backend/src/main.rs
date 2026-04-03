@@ -5,6 +5,7 @@ mod cell;
 mod common;
 mod configuration;
 mod connection;
+mod conversational_analytics;
 mod dashboard;
 mod data_catalog;
 mod database;
@@ -108,6 +109,15 @@ async fn main() {
                 app_state.clone(),
                 middlewares::auth_middleware_fn,
             )),
+        )
+        .nest(
+            "/api/v1/conversational_analytics",
+            conversational_analytics::routes(app_state.clone()).layer(
+                axum::middleware::from_fn_with_state(
+                    app_state.clone(),
+                    middlewares::auth_middleware_fn,
+                ),
+            ),
         )
         .fallback_service(static_files_service)
         .layer(middleware::from_fn(move |req: Request, next: Next| {

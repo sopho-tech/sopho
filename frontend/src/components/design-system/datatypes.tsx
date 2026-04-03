@@ -2,6 +2,8 @@ export type SpacingSize = "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 
 export type ButtonSize = "sm" | "md" | "lg";
 
+export type IconButtonSize = "none" | "sm" | "md" | "lg";
+
 export type ButtonType = "submit" | "button";
 
 export type ButtonEmphasis = "primary" | "secondary" | "tertiary";
@@ -66,11 +68,22 @@ export type IconType =
   | "lock"
   | "user"
   | "logout"
+  | "message"
   | "layers"
   | "bar_chart"
   | "table"
   | "layout_dashboard"
-  | "plug";
+  | "plug"
+  | "bot"
+  | "panel"
+  | "copy"
+  | "database"
+  | "scan_search"
+  | "brain"
+  | "telescope"
+  | "workflow"
+  | "circle_check"
+  | "circle_dot";
 
 export type IconSize = "sm" | "md" | "lg" | "2xl";
 
@@ -112,7 +125,7 @@ export type ColorVariant =
   | "white"
   | "grey";
 
-export type BorderVariant = "default";
+export type BorderVariant = "default" | "divider";
 
 export type ShadowVariant = "2xs" | "xs" | "sm" | "md" | "lg" | "xl";
 
@@ -147,12 +160,20 @@ export type BoxElement =
 export type SharedLayoutProps = {
   borderRadius?: BorderRadius;
   border?: BorderVariant;
+  borderTop?: BorderVariant;
+  borderRight?: BorderVariant;
+  borderBottom?: BorderVariant;
+  borderLeft?: BorderVariant;
   shadow?: ShadowVariant;
   backgroundColor?: ColorVariant;
   direction?: Direction;
   gap?: SpacingSize;
   paddingX?: SpacingSize;
   paddingY?: SpacingSize;
+  paddingTop?: SpacingSize;
+  paddingRight?: SpacingSize;
+  paddingBottom?: SpacingSize;
+  paddingLeft?: SpacingSize;
   marginTop?: SpacingValue;
   marginBottom?: SpacingValue;
   marginLeft?: SpacingValue;
