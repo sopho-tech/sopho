@@ -73,7 +73,7 @@ pub async fn get_connection_status(
 pub async fn get_database_connection(
     connection: &entity::connection::Model,
 ) -> Result<DatabaseConnection, Error> {
-    let database_url = get_database_url(&connection);
+    let database_url = get_database_url(connection);
     let database_connection = sqlx::sqlite::SqliteConnection::connect(&database_url).await?;
     Ok(DatabaseConnection::Sqlite(database_connection))
 }
@@ -128,7 +128,7 @@ pub async fn execute_query(
     }
 
     let mut columns: Vec<serde_json::Value> = Vec::new();
-    if let Some(first_row) = rows.get(0) {
+    if let Some(first_row) = rows.first() {
         columns = first_row
             .columns()
             .iter()

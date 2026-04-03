@@ -12,21 +12,17 @@ pub enum CellType {
 
 impl fmt::Display for CellType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        f.write_str(match self {
+            CellType::Text => "TEXT",
+            CellType::Code => "CODE",
+            CellType::Markdown => "MARKDOWN",
+            CellType::Sql => "SQL",
+            CellType::Chart => "CHART",
+        })
     }
 }
 
 impl CellType {
-    pub fn to_string(&self) -> String {
-        match self {
-            CellType::Text => "TEXT".to_string(),
-            CellType::Code => "CODE".to_string(),
-            CellType::Markdown => "MARKDOWN".to_string(),
-            CellType::Sql => "SQL".to_string(),
-            CellType::Chart => "CHART".to_string(),
-        }
-    }
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "TEXT" => Ok(CellType::Text),
@@ -91,13 +87,6 @@ pub enum CellStatus {
 }
 
 impl CellStatus {
-    pub fn to_string(&self) -> String {
-        match self {
-            CellStatus::Active => "ACTIVE".to_string(),
-            CellStatus::Inactive => "INACTIVE".to_string(),
-        }
-    }
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "ACTIVE" => Ok(CellStatus::Active),
@@ -125,7 +114,10 @@ impl CellStatus {
 
 impl std::fmt::Display for CellStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        f.write_str(match self {
+            CellStatus::Active => "ACTIVE",
+            CellStatus::Inactive => "INACTIVE",
+        })
     }
 }
 
@@ -136,13 +128,6 @@ pub enum ChartOrientation {
 }
 
 impl ChartOrientation {
-    pub fn to_string(&self) -> String {
-        match self {
-            ChartOrientation::Horizontal => "HORIZONTAL".to_string(),
-            ChartOrientation::Vertical => "VERTICAL".to_string(),
-        }
-    }
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "HORIZONTAL" => Ok(ChartOrientation::Horizontal),
@@ -199,7 +184,10 @@ impl ChartOrientation {
 
 impl std::fmt::Display for ChartOrientation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        f.write_str(match self {
+            ChartOrientation::Horizontal => "HORIZONTAL",
+            ChartOrientation::Vertical => "VERTICAL",
+        })
     }
 }
 
@@ -216,14 +204,6 @@ impl SortOrder {
             SortOrder::None => "NONE",
             SortOrder::Asc => "ASC",
             SortOrder::Desc => "DESC",
-        }
-    }
-
-    pub fn to_string(&self) -> String {
-        match self {
-            SortOrder::None => "NONE".to_string(),
-            SortOrder::Asc => "ASC".to_string(),
-            SortOrder::Desc => "DESC".to_string(),
         }
     }
 
@@ -284,7 +264,7 @@ impl SortOrder {
 
 impl std::fmt::Display for SortOrder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        f.write_str(self.as_str())
     }
 }
 
@@ -295,13 +275,6 @@ pub enum AxisTickShow {
 }
 
 impl AxisTickShow {
-    pub fn to_string(&self) -> String {
-        match self {
-            AxisTickShow::Show => "SHOW".to_string(),
-            AxisTickShow::Hide => "HIDE".to_string(),
-        }
-    }
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "SHOW" => Ok(AxisTickShow::Show),
@@ -358,7 +331,10 @@ impl AxisTickShow {
 
 impl std::fmt::Display for AxisTickShow {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        f.write_str(match self {
+            AxisTickShow::Show => "SHOW",
+            AxisTickShow::Hide => "HIDE",
+        })
     }
 }
 
@@ -369,13 +345,6 @@ pub enum AxisMinorTickShow {
 }
 
 impl AxisMinorTickShow {
-    pub fn to_string(&self) -> String {
-        match self {
-            AxisMinorTickShow::Show => "SHOW".to_string(),
-            AxisMinorTickShow::Hide => "HIDE".to_string(),
-        }
-    }
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "SHOW" => Ok(AxisMinorTickShow::Show),
@@ -432,7 +401,10 @@ impl AxisMinorTickShow {
 
 impl std::fmt::Display for AxisMinorTickShow {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        f.write_str(match self {
+            AxisMinorTickShow::Show => "SHOW",
+            AxisMinorTickShow::Hide => "HIDE",
+        })
     }
 }
 
@@ -444,14 +416,6 @@ pub enum MetricFormat {
 }
 
 impl MetricFormat {
-    pub fn to_string(&self) -> String {
-        match self {
-            MetricFormat::Default => "DEFAULT".to_string(),
-            MetricFormat::Percentage => "PERCENTAGE".to_string(),
-            MetricFormat::Currency => "CURRENCY".to_string(),
-        }
-    }
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "DEFAULT" => Ok(MetricFormat::Default),
@@ -493,7 +457,11 @@ impl MetricFormat {
 
 impl std::fmt::Display for MetricFormat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        f.write_str(match self {
+            MetricFormat::Default => "DEFAULT",
+            MetricFormat::Percentage => "PERCENTAGE",
+            MetricFormat::Currency => "CURRENCY",
+        })
     }
 }
 
@@ -515,15 +483,6 @@ pub enum CellDisplayOrderMovement {
 }
 
 impl CellDisplayOrderMovement {
-    pub fn to_string(&self) -> String {
-        match self {
-            CellDisplayOrderMovement::Up => "UP".to_string(),
-            CellDisplayOrderMovement::Down => "DOWN".to_string(),
-            CellDisplayOrderMovement::Top => "TOP".to_string(),
-            CellDisplayOrderMovement::Bottom => "BOTTOM".to_string(),
-        }
-    }
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "UP" => Ok(CellDisplayOrderMovement::Up),
@@ -548,5 +507,16 @@ impl CellDisplayOrderMovement {
     {
         let s = value.to_string();
         serializer.serialize_str(&s)
+    }
+}
+
+impl std::fmt::Display for CellDisplayOrderMovement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            CellDisplayOrderMovement::Up => "UP",
+            CellDisplayOrderMovement::Down => "DOWN",
+            CellDisplayOrderMovement::Top => "TOP",
+            CellDisplayOrderMovement::Bottom => "BOTTOM",
+        })
     }
 }

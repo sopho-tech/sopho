@@ -37,25 +37,6 @@ pub enum SourceType {
 }
 
 impl SourceType {
-    pub fn to_string(&self) -> String {
-        match self {
-            SourceType::Postgresql => "POSTGRESQL".to_string(),
-            SourceType::Supabase => "SUPABASE".to_string(),
-            SourceType::MySql => "MYSQL".to_string(),
-            SourceType::Sqlite => "SQLITE".to_string(),
-            SourceType::MsSql => "MS_SQL".to_string(),
-            SourceType::Oracle => "ORACLE".to_string(),
-            SourceType::MongoDb => "MONGODB".to_string(),
-            SourceType::Redis => "REDIS".to_string(),
-            SourceType::Elasticsearch => "ELASTICSEARCH".to_string(),
-            SourceType::Kafka => "KAFKA".to_string(),
-            SourceType::Api => "API".to_string(),
-            SourceType::File => "FILE".to_string(),
-            SourceType::GoogleSheets => "GOOGLE_SHEETS".to_string(),
-            SourceType::Airtable => "AIRTABLE".to_string(),
-        }
-    }
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "POSTGRESQL" => Ok(SourceType::Postgresql),
@@ -111,6 +92,27 @@ impl SourceType {
     }
 }
 
+impl fmt::Display for SourceType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            SourceType::Postgresql => "POSTGRESQL",
+            SourceType::Supabase => "SUPABASE",
+            SourceType::MySql => "MYSQL",
+            SourceType::Sqlite => "SQLITE",
+            SourceType::MsSql => "MS_SQL",
+            SourceType::Oracle => "ORACLE",
+            SourceType::MongoDb => "MONGODB",
+            SourceType::Redis => "REDIS",
+            SourceType::Elasticsearch => "ELASTICSEARCH",
+            SourceType::Kafka => "KAFKA",
+            SourceType::Api => "API",
+            SourceType::File => "FILE",
+            SourceType::GoogleSheets => "GOOGLE_SHEETS",
+            SourceType::Airtable => "AIRTABLE",
+        })
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ConnectionStatus {
     Active,
@@ -119,14 +121,6 @@ pub enum ConnectionStatus {
 }
 
 impl ConnectionStatus {
-    pub fn to_string(&self) -> String {
-        match self {
-            ConnectionStatus::Active => "ACTIVE".to_string(),
-            ConnectionStatus::Inactive => "INACTIVE".to_string(),
-            ConnectionStatus::Failed => "FAILED".to_string(),
-        }
-    }
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "ACTIVE" => Ok(ConnectionStatus::Active),
@@ -150,5 +144,15 @@ impl ConnectionStatus {
     {
         let s = value.to_string();
         serializer.serialize_str(&s)
+    }
+}
+
+impl fmt::Display for ConnectionStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            ConnectionStatus::Active => "ACTIVE",
+            ConnectionStatus::Inactive => "INACTIVE",
+            ConnectionStatus::Failed => "FAILED",
+        })
     }
 }

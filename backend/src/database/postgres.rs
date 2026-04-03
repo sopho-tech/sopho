@@ -28,7 +28,7 @@ pub fn get_database_url(payload: &entity::connection::Model) -> String {
 pub async fn get_connection_status(
     connection_entity: &entity::connection::Model,
 ) -> ConnectionStatus {
-    let database_url = get_database_url(&connection_entity);
+    let database_url = get_database_url(connection_entity);
     let sqlx_connection_result = sqlx::postgres::PgConnection::connect(&database_url).await;
 
     match sqlx_connection_result {
@@ -49,7 +49,7 @@ pub async fn get_connection_status(
 pub async fn get_database_connection(
     connection: &entity::connection::Model,
 ) -> Result<DatabaseConnection, Error> {
-    let database_url = get_database_url(&connection);
+    let database_url = get_database_url(connection);
     let conn = sqlx::postgres::PgConnection::connect(&database_url).await?;
     Ok(DatabaseConnection::Postgres(conn))
 }
@@ -64,7 +64,7 @@ pub async fn execute_query(
         .map_err(ExecuteQueryError::Database)?;
 
     let mut columns: Vec<serde_json::Value> = Vec::new();
-    if let Some(first_row) = rows.get(0) {
+    if let Some(first_row) = rows.first() {
         columns = first_row
             .columns()
             .iter()

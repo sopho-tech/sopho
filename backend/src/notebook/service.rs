@@ -67,7 +67,7 @@ pub async fn get_all_notebooks(
             let paginated_response = PaginatedResponse {
                 data: response_dto_list,
                 total_pages,
-                page: page,
+                page,
                 page_size,
                 total_items,
             };
@@ -110,14 +110,12 @@ pub async fn get_cells_by_notebook_id(
         Ok(cells) => {
             let mut response_dto = dto::NotebookDto::from(notebook);
             response_dto.cells = cells;
-            return (StatusCode::OK, axum::Json(serde_json::json!(response_dto)));
+            (StatusCode::OK, axum::Json(serde_json::json!(response_dto)))
         }
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            )
-        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        ),
     }
 }
 

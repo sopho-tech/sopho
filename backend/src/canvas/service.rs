@@ -71,7 +71,7 @@ pub async fn get_all_canvases(
             let paginated_response = PaginatedResponse {
                 data: response_dto_list,
                 total_pages,
-                page: page,
+                page,
                 page_size,
                 total_items,
             };

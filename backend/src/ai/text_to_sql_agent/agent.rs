@@ -121,7 +121,7 @@ pub async fn execute_schema_linking(
 
 async fn execute_hypothesis_generation(
     app_state: &AppState,
-    connection: &entity::connection::Model,
+    _connection: &entity::connection::Model,
     question: &str,
     channels: &EventChannels,
 ) -> Result<Vec<LogicalPlanningResponse>> {
@@ -183,7 +183,7 @@ pub(crate) async fn execute_search_space_reduction(
     question: &str,
     master_plan: &str,
 ) -> Result<Database> {
-    let data_catalog_batches = get_data_catalog_batches(&connection, DATA_CATALOG_BATCHES)
+    let data_catalog_batches = get_data_catalog_batches(connection, DATA_CATALOG_BATCHES)
         .await
         .map_err(anyhow::Error::from)?;
     info!("initial data_catalog_batches: {:?}", data_catalog_batches);
@@ -275,7 +275,7 @@ pub(crate) async fn execute_hypothesis_verification(
 /// Functional role analysis does not return tables irrelevant for further analysis.
 async fn execute_functional_role_analysis(
     app_state: &AppState,
-    connection: &entity::connection::Model,
+    _connection: &entity::connection::Model,
     question: &str,
     master_plan: &str,
     pruned_data_catalog: &Database,
@@ -361,7 +361,7 @@ async fn execute_data_profiling(
 
         let prompt = UserPrompt::DataProfilingAfter {
             table_name: table_function.table.clone(),
-            observations: observations,
+            observations,
         }
         .render();
 
@@ -471,7 +471,10 @@ pub(crate) async fn schema_linking_final_synthesis(
             round + 1
         );
         result = agent
-            .prompt_typed_with_history::<SchemaLinkingFinalSynthesisResponse>(prompt, &mut chat_history)
+            .prompt_typed_with_history::<SchemaLinkingFinalSynthesisResponse>(
+                prompt,
+                &mut chat_history,
+            )
             .await?;
         info!(
             "schema_linking_final_synthesis: after refine round {} status={}, exploration_queries={}",
@@ -520,7 +523,7 @@ pub(crate) async fn sql_generation(
     }
     .render();
 
-    for round in 0..SQL_GENERATION_ROUNDS {
+    for _round in 0..SQL_GENERATION_ROUNDS {
         let result: SqlGenerationAction = agent
             .prompt_typed_with_history(&prompt, &mut chat_history)
             .await?;

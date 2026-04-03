@@ -17,7 +17,7 @@ use uuid::Uuid;
 pub async fn save_cell(db: &DatabaseConnection, cell: cell::Model) -> Result<cell::Model, DbErr> {
     let cell_active_model: cell::ActiveModel = cell.into();
     let cell_active_model = cell_active_model.insert(db).await?;
-    Ok(cell_active_model.into())
+    Ok(cell_active_model)
 }
 
 pub async fn save_cell_transaction(
@@ -26,7 +26,7 @@ pub async fn save_cell_transaction(
 ) -> Result<cell::Model, DbErr> {
     let cell_active_model: cell::ActiveModel = cell.into();
     let cell_active_model = cell_active_model.insert(txn).await?;
-    Ok(cell_active_model.into())
+    Ok(cell_active_model)
 }
 
 pub async fn get_cell(db: &DatabaseConnection, id: Uuid) -> Result<cell::Model, DbErr> {
@@ -58,7 +58,7 @@ pub async fn update_cell_display_order(
     let mut cell_entity: cell::ActiveModel = cell.into();
     cell_entity.display_order = Set(display_order);
     cell_entity.updated_at = Set(time_utils::now_utc_into());
-    cell_entity.update(db).await.map(Into::into)
+    cell_entity.update(db).await
 }
 
 pub async fn update_cell_display_order_transaction(
@@ -70,7 +70,7 @@ pub async fn update_cell_display_order_transaction(
     let mut cell_entity: cell::ActiveModel = cell.into();
     cell_entity.display_order = Set(display_order);
     cell_entity.updated_at = Set(time_utils::now_utc_into());
-    cell_entity.update(txn).await.map(Into::into)
+    cell_entity.update(txn).await
 }
 
 pub async fn get_cells_by_notebook_id_and_cell_type(
@@ -102,7 +102,7 @@ pub async fn update_cell(
     cell_id: Uuid,
     payload: dto::CellDto,
 ) -> Result<cell::Model, DbErr> {
-    let cell = get_cell(&db, cell_id).await;
+    let cell = get_cell(db, cell_id).await;
     match cell {
         Ok(cell) => {
             let mut cell_entity: cell::ActiveModel = cell.into();
@@ -116,7 +116,7 @@ pub async fn update_cell(
             cell_entity.created_at = Set(payload.created_at);
 
             let cell_entity = cell_entity.update(db).await;
-            return cell_entity;
+            cell_entity
         }
         Err(e) => Err(e),
     }

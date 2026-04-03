@@ -22,11 +22,6 @@ impl ErrorCode {
             ErrorCode::SyntaxError => "SYNTAX_ERROR",
         }
     }
-
-    /// Returns the error code as a string
-    pub fn to_string(&self) -> String {
-        self.as_str().to_string()
-    }
 }
 
 impl std::fmt::Display for ErrorCode {

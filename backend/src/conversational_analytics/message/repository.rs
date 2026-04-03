@@ -11,7 +11,7 @@ pub async fn save_message_transaction(
 ) -> Result<conversation_message::Model, DbErr> {
     let active: conversation_message::ActiveModel = message.into();
     let inserted = active.insert(txn).await?;
-    Ok(inserted.into())
+    Ok(inserted)
 }
 
 pub async fn save_message_connection(
@@ -20,7 +20,7 @@ pub async fn save_message_connection(
 ) -> Result<conversation_message::Model, DbErr> {
     let active: conversation_message::ActiveModel = message.into();
     let inserted = active.insert(db).await?;
-    Ok(inserted.into())
+    Ok(inserted)
 }
 
 pub async fn get_message(

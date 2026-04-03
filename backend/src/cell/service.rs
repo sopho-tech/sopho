@@ -68,9 +68,9 @@ async fn generate_cell_name(
     match total_cells {
         Ok(total_cells) => {
             let cell_number = total_cells + 1;
-            return Ok(format!("{}_{}", cell_type, cell_number));
+            Ok(format!("{}_{}", cell_type, cell_number))
         }
-        Err(e) => return Err(e),
+        Err(e) => Err(e),
     }
 }
 
@@ -94,10 +94,8 @@ pub async fn get_cells_by_notebook_id_and_cell_type(
     };
     match cells {
         Ok(cells) => {
-            let response_dtos: Vec<dto::CellDto> = cells
-                .into_iter()
-                .map(|cell| dto::CellDto::from(cell))
-                .collect();
+            let response_dtos: Vec<dto::CellDto> =
+                cells.into_iter().map(dto::CellDto::from).collect();
             Ok(response_dtos)
         }
         Err(e) => Err(SophoError::DatabaseError(e)),
@@ -108,7 +106,7 @@ async fn get_number_of_cells_in_notebook(
     app_state: &AppState,
     notebook_id: Uuid,
 ) -> Result<i32, SophoError> {
-    let cells = get_cells_by_notebook_id_and_cell_type(&app_state, notebook_id, None).await;
+    let cells = get_cells_by_notebook_id_and_cell_type(app_state, notebook_id, None).await;
     match cells {
         Ok(cells) => Ok(cells.len() as i32),
         Err(e) => Err(e),
@@ -120,7 +118,7 @@ async fn get_number_of_cells_in_notebook_by_type(
     id: Uuid,
     cell_type: CellType,
 ) -> Result<i32, SophoError> {
-    let cells = get_cells_by_notebook_id_and_cell_type(&app_state, id, None).await;
+    let cells = get_cells_by_notebook_id_and_cell_type(app_state, id, None).await;
     match cells {
         Ok(cells) => {
             let count = cells
@@ -409,12 +407,10 @@ pub async fn execute_cell(app_state: AppState, id: Uuid) -> impl IntoResponse {
     match cell_type {
         CellType::Sql => return execute_sql_cell(&app_state, cell).await,
         CellType::Chart => return execute_chart_cell(&app_state, cell).await,
-        _ => {
-            return (
-                StatusCode::EXPECTATION_FAILED,
-                axum::Json(serde_json::json!({ "error": "cell type not supported" })),
-            );
-        }
+        _ => (
+            StatusCode::EXPECTATION_FAILED,
+            axum::Json(serde_json::json!({ "error": "cell type not supported" })),
+        ),
     }
 }
 
@@ -422,7 +418,7 @@ async fn fetch_connection(
     app_state: &AppState,
     connection_id: Uuid,
 ) -> Result<entity::connection::Model, GetDatabaseConnectionError> {
-    connection_service::execute_get_connection(&app_state, connection_id)
+    connection_service::execute_get_connection(app_state, connection_id)
         .await
         .map_err(|e| match &e {
             sea_orm::DbErr::RecordNotFound(_) => GetDatabaseConnectionError::ConnectionNotFound,
@@ -657,11 +653,11 @@ async fn execute_sql_with_query(
     connection: &entity::connection::Model,
     query: &str,
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let mut database_connection =
-        match database_service::get_database_connection(connection).await {
-            Ok(conn) => conn,
-            Err(err) => return get_database_connection_error_response(err),
-        };
+    let mut database_connection = match database_service::get_database_connection(connection).await
+    {
+        Ok(conn) => conn,
+        Err(err) => return get_database_connection_error_response(err),
+    };
     execute_query_and_format_results(&mut database_connection, query).await
 }
 
@@ -891,7 +887,7 @@ pub async fn get_cell_counts_by_canvas_id(
 ) -> Result<(i32, i32), SophoError> {
     let notebook = notebook_service::get_notebook_by_canvas_id(app_state, canvas_id)
         .await
-        .map_err(|e| SophoError::DatabaseError(e))?;
+        .map_err(SophoError::DatabaseError)?;
 
     let sql_count = repository::count_cells_by_notebook_id_and_cell_type(
         &app_state.database_connection,
@@ -899,7 +895,7 @@ pub async fn get_cell_counts_by_canvas_id(
         CellType::Sql,
     )
     .await
-    .map_err(|e| SophoError::DatabaseError(e))?;
+    .map_err(SophoError::DatabaseError)?;
 
     let chart_count = repository::count_cells_by_notebook_id_and_cell_type(
         &app_state.database_connection,
@@ -907,7 +903,7 @@ pub async fn get_cell_counts_by_canvas_id(
         CellType::Chart,
     )
     .await
-    .map_err(|e| SophoError::DatabaseError(e))?;
+    .map_err(SophoError::DatabaseError)?;
 
     Ok((sql_count as i32, chart_count as i32))
 }

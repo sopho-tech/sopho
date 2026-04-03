@@ -12,7 +12,7 @@ pub async fn save_message_content_transaction(
 ) -> Result<conversation_message_content::Model, DbErr> {
     let active: conversation_message_content::ActiveModel = row.into();
     let inserted = active.insert(txn).await?;
-    Ok(inserted.into())
+    Ok(inserted)
 }
 
 pub async fn save_message_content_connection(
@@ -21,7 +21,7 @@ pub async fn save_message_content_connection(
 ) -> Result<conversation_message_content::Model, DbErr> {
     let active: conversation_message_content::ActiveModel = row.into();
     let inserted = active.insert(db).await?;
-    Ok(inserted.into())
+    Ok(inserted)
 }
 
 pub async fn get_message_content(

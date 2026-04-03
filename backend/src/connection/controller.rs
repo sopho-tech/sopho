@@ -67,9 +67,9 @@ async fn execute_query(
             StatusCode::BAD_REQUEST,
             axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
-        Err(ExecuteSqlError::ExecuteQuery(ExecuteQueryError::Database(
-            sqlx::Error::Database(e),
-        ))) => (
+        Err(ExecuteSqlError::ExecuteQuery(ExecuteQueryError::Database(sqlx::Error::Database(
+            e,
+        )))) => (
             StatusCode::BAD_REQUEST,
             axum::Json(serde_json::json!({
                 "status": StatusCode::BAD_REQUEST.as_u16(),

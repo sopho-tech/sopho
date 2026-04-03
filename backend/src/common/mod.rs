@@ -9,4 +9,5 @@ pub mod token_utils;
 
 pub use server_utils::{PaginatedResponse, Pagination};
 pub use state::AppState;
+#[cfg(test)]
 pub use state::Configurations;

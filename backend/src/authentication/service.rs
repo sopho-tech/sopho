@@ -338,7 +338,7 @@ fn generate_refresh_token() -> String {
     // Refresh tokens should be longer as they have longer lifetimes
     let mut buffer = [0u8; 64]; // 512 bits
     getrandom::fill(&mut buffer).expect("Failed to generate random bytes");
-    STANDARD.encode(&buffer)
+    STANDARD.encode(buffer)
 }
 
 fn generate_access_token() -> String {
@@ -346,7 +346,7 @@ fn generate_access_token() -> String {
     // Access tokens can be shorter as they have shorter lifetimes
     let mut buffer = [0u8; 32]; // 256 bits
     getrandom::fill(&mut buffer).expect("Failed to generate random bytes");
-    STANDARD.encode(&buffer)
+    STANDARD.encode(buffer)
 }
 
 pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
@@ -523,7 +523,7 @@ pub async fn seed_admin_user(app_state: &AppState) {
         return;
     }
 
-    let password_hash = match hash_password(password.as_ref()) {
+    let password_hash = match hash_password(password) {
         Ok(h) => h,
         Err(e) => {
             tracing::error!("Admin seeding failed: could not hash password: {:?}", e);

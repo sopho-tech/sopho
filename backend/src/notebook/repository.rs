@@ -12,7 +12,7 @@ pub async fn save_notebook_connection(
 ) -> Result<notebook::Model, DbErr> {
     let notebook_active_model: notebook::ActiveModel = notebook.into();
     let notebook_active_model = notebook_active_model.insert(db).await?;
-    Ok(notebook_active_model.into())
+    Ok(notebook_active_model)
 }
 
 pub async fn save_notebook_transaction(
@@ -21,7 +21,7 @@ pub async fn save_notebook_transaction(
 ) -> Result<notebook::Model, DbErr> {
     let notebook_active_model: notebook::ActiveModel = notebook.into();
     let notebook_active_model = notebook_active_model.insert(txn).await?;
-    Ok(notebook_active_model.into())
+    Ok(notebook_active_model)
 }
 
 pub async fn get_notebook(db: &DatabaseConnection, id: Uuid) -> Result<notebook::Model, DbErr> {
@@ -57,7 +57,7 @@ pub async fn update_notebook(
     notebook_id: Uuid,
     payload: &dto::NotebookDto,
 ) -> Result<notebook::Model, DbErr> {
-    let notebook = get_notebook(&db, notebook_id).await;
+    let notebook = get_notebook(db, notebook_id).await;
     match notebook {
         Ok(notebook) => {
             let mut notebook_entity: notebook::ActiveModel = notebook.into();
@@ -68,7 +68,7 @@ pub async fn update_notebook(
             notebook_entity.created_at = Set(payload.created_at);
 
             let notebook_entity = notebook_entity.update(txn).await;
-            return notebook_entity;
+            notebook_entity
         }
         Err(e) => Err(e),
     }

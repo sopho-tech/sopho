@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum DashboardStatus {
@@ -7,13 +8,6 @@ pub enum DashboardStatus {
 }
 
 impl DashboardStatus {
-    pub fn to_string(&self) -> String {
-        match self {
-            DashboardStatus::Active => "ACTIVE".to_string(),
-            DashboardStatus::Inactive => "INACTIVE".to_string(),
-        }
-    }
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "ACTIVE" => Ok(DashboardStatus::Active),
@@ -36,5 +30,14 @@ impl DashboardStatus {
     {
         let s = value.to_string();
         serializer.serialize_str(&s)
+    }
+}
+
+impl fmt::Display for DashboardStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            DashboardStatus::Active => "ACTIVE",
+            DashboardStatus::Inactive => "INACTIVE",
+        })
     }
 }

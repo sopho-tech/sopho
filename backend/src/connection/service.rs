@@ -1,6 +1,4 @@
-use crate::common::errors::{
-    CreateConnectionError, ExecuteSqlError, GetDatabaseConnectionError,
-};
+use crate::common::errors::{CreateConnectionError, ExecuteSqlError, GetDatabaseConnectionError};
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::connection::constants::ConnectionStatus;
@@ -66,7 +64,7 @@ pub async fn get_all_connections(app_state: AppState) -> impl IntoResponse {
             }
             let response_dto_list: Vec<dto::ConnectionDto> = connections
                 .into_iter()
-                .map(|connection| dto::ConnectionDto::from(connection))
+                .map(dto::ConnectionDto::from)
                 .collect();
             (
                 StatusCode::OK,
@@ -227,15 +225,16 @@ pub async fn execute_query(
     id: Uuid,
     payload: dto::ExecuteQueryDto,
 ) -> Result<QueryResult, ExecuteSqlError> {
-    let connection = execute_get_connection(app_state, id)
-        .await
-        .map_err(|e| -> ExecuteSqlError {
-            match e {
-                sea_orm::DbErr::RecordNotFound(_) => {
-                    GetDatabaseConnectionError::ConnectionNotFound.into()
+    let connection =
+        execute_get_connection(app_state, id)
+            .await
+            .map_err(|e| -> ExecuteSqlError {
+                match e {
+                    sea_orm::DbErr::RecordNotFound(_) => {
+                        GetDatabaseConnectionError::ConnectionNotFound.into()
+                    }
+                    other => GetDatabaseConnectionError::Connection(other).into(),
                 }
-                other => GetDatabaseConnectionError::Connection(other).into(),
-            }
-        })?;
+            })?;
     database_service::execute_sql_query(&connection, &payload.query).await
 }

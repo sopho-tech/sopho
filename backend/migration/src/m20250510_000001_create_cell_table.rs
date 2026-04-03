@@ -34,6 +34,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(Iden)]
+#[allow(clippy::enum_variant_names)]
 pub enum Cell {
     Table,
     Id,

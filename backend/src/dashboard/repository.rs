@@ -13,7 +13,7 @@ pub async fn save_dashboard_connection(
 ) -> Result<dashboard::Model, DbErr> {
     let dashboard_active_model: dashboard::ActiveModel = dashboard.into();
     let dashboard_active_model = dashboard_active_model.insert(db).await?;
-    Ok(dashboard_active_model.into())
+    Ok(dashboard_active_model)
 }
 
 pub async fn save_dashboard_transaction(
@@ -22,7 +22,7 @@ pub async fn save_dashboard_transaction(
 ) -> Result<dashboard::Model, DbErr> {
     let dashboard_active_model: dashboard::ActiveModel = dashboard.into();
     let dashboard_active_model = dashboard_active_model.insert(txn).await?;
-    Ok(dashboard_active_model.into())
+    Ok(dashboard_active_model)
 }
 
 pub async fn get_dashboard(db: &DatabaseConnection, id: Uuid) -> Result<dashboard::Model, DbErr> {
@@ -78,7 +78,7 @@ pub async fn update_dashboard_layout_transaction(
     dashboard_active.layout = Set(dto::Layout::to_json(layout));
     dashboard_active.updated_at = Set(time_utils::now_utc_into());
     let result = dashboard_active.update(txn).await?;
-    Ok(result.into())
+    Ok(result)
 }
 
 pub async fn update_dashboard(
@@ -86,7 +86,7 @@ pub async fn update_dashboard(
     dashboard_id: Uuid,
     payload: dto::DashboardDto,
 ) -> Result<dashboard::Model, DbErr> {
-    let dashboard = get_dashboard(&db, dashboard_id).await;
+    let dashboard = get_dashboard(db, dashboard_id).await;
     match dashboard {
         Ok(dashboard) => {
             let mut dashboard_entity: dashboard::ActiveModel = dashboard.into();
@@ -101,7 +101,7 @@ pub async fn update_dashboard(
             dashboard_entity.updated_at = Set(time_utils::now_utc_into());
 
             let dashboard_entity = dashboard_entity.update(db).await;
-            return dashboard_entity;
+            dashboard_entity
         }
         Err(e) => Err(e),
     }
