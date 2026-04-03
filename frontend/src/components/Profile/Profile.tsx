@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from "react";
 import { Flex } from "src/components/design-system/Flex/Flex";
-import { Heading } from "../design-system";
 import { useCurrentUser, useDeleteSession } from "src/api/auth_api";
 import { Form } from "src/components/design-system/Form/Form";
 import { Button } from "src/components/design-system/Button/Button";
@@ -30,7 +29,7 @@ export function Profile() {
             full_name: user.full_name || "",
           }
         : null,
-    [user]
+    [user],
   );
 
   const handleSubmit = useCallback(() => {}, []);
@@ -50,7 +49,6 @@ export function Profile() {
       marginRight="xs"
       direction="column"
     >
-      <Heading accessbilityLevel={1}>Profile</Heading>
       {defaultValues && (
         <Form defaultValues={defaultValues} onSubmit={handleSubmit} readonly>
           <Form.Fields className={styles.fieldsContainer}>

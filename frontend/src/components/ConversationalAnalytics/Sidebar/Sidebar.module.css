@@ -1,0 +1,10 @@
+.dialogContent {
+  width: 30%;
+}
+
+.formFieldContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  align-items: stretch;
+}

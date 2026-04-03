@@ -13,12 +13,20 @@ import type {
 export const layoutPropKeys: (keyof SharedLayoutProps)[] = [
   "borderRadius",
   "border",
+  "borderTop",
+  "borderRight",
+  "borderBottom",
+  "borderLeft",
   "shadow",
   "backgroundColor",
   "direction",
   "gap",
   "paddingX",
   "paddingY",
+  "paddingTop",
+  "paddingRight",
+  "paddingBottom",
+  "paddingLeft",
   "marginTop",
   "marginBottom",
   "marginLeft",
@@ -41,7 +49,7 @@ export const layoutPropKeys: (keyof SharedLayoutProps)[] = [
 ];
 
 export function separateLayoutProps<T extends Record<string, any>>(
-  props: T
+  props: T,
 ): {
   layoutProps: SharedLayoutProps;
   htmlProps: Omit<T, keyof SharedLayoutProps> & {
@@ -67,7 +75,7 @@ export function mergeBoxStyles(
   display: string | undefined,
   layoutStyles: React.CSSProperties,
   sx: React.CSSProperties | undefined,
-  htmlStyle: React.CSSProperties | undefined
+  htmlStyle: React.CSSProperties | undefined,
 ): React.CSSProperties {
   return {
     display,
@@ -79,7 +87,7 @@ export function mergeBoxStyles(
 
 export function mergeBoxClassName(
   backgroundColorClassName: string,
-  htmlClassName?: string
+  htmlClassName?: string,
 ): string {
   return htmlClassName
     ? `${backgroundColorClassName} ${htmlClassName}`.trim()
@@ -87,7 +95,7 @@ export function mergeBoxClassName(
 }
 
 export function getFlexStyles(
-  flex: FlexValue | undefined
+  flex: FlexValue | undefined,
 ): React.CSSProperties {
   if (flex === undefined) return {};
 
@@ -116,7 +124,7 @@ export function getFlexStyles(
 }
 
 export function getOverflowStyles(
-  overflow: OverflowValue | undefined
+  overflow: OverflowValue | undefined,
 ): React.CSSProperties {
   if (overflow === "scrollY") {
     return { overflowY: "auto" };
@@ -128,7 +136,7 @@ export function getOverflowStyles(
 }
 
 function getSpacingValue(
-  value: SpacingValue | undefined
+  value: SpacingValue | undefined,
 ): string | number | undefined {
   if (value === undefined) return undefined;
 
@@ -169,23 +177,45 @@ function getBorderRadius(borderRadius: string) {
   return getCSSVariable(`--border-radius-${borderRadius}`);
 }
 
-function getBorderStyles(
-  border: BorderVariant | undefined
-): React.CSSProperties {
-  if (border === undefined) return {};
+const borderValueByVariant: Record<BorderVariant, string> = {
+  default: "var(--border-default-medium)",
+  divider: "var(--border-divider)",
+};
 
-  const borderMapping: Record<BorderVariant, string> = {
-    default: "var(--border-default-medium)",
-  };
-
-  const borderValue = borderMapping[border];
-  if (!borderValue) return {};
-
-  return { border: borderValue };
+function getBorderStyles(props: {
+  border?: BorderVariant;
+  borderTop?: BorderVariant;
+  borderRight?: BorderVariant;
+  borderBottom?: BorderVariant;
+  borderLeft?: BorderVariant;
+}): React.CSSProperties {
+  const { border, borderTop, borderRight, borderBottom, borderLeft } = props;
+  const styles: React.CSSProperties = {};
+  if (border !== undefined) {
+    const v = borderValueByVariant[border];
+    if (v) styles.border = v;
+  }
+  if (borderTop !== undefined) {
+    const v = borderValueByVariant[borderTop];
+    if (v) styles.borderTop = v;
+  }
+  if (borderRight !== undefined) {
+    const v = borderValueByVariant[borderRight];
+    if (v) styles.borderRight = v;
+  }
+  if (borderBottom !== undefined) {
+    const v = borderValueByVariant[borderBottom];
+    if (v) styles.borderBottom = v;
+  }
+  if (borderLeft !== undefined) {
+    const v = borderValueByVariant[borderLeft];
+    if (v) styles.borderLeft = v;
+  }
+  return styles;
 }
 
 function getShadowStyles(
-  shadow: ShadowVariant | undefined
+  shadow: ShadowVariant | undefined,
 ): React.CSSProperties {
   if (shadow === undefined) return {};
 
@@ -205,13 +235,17 @@ function getShadowStyles(
 }
 
 export function getSharedLayoutStyles(
-  props: SharedLayoutProps
+  props: SharedLayoutProps,
 ): React.CSSProperties {
   const {
     direction,
     gap,
     paddingX,
     paddingY,
+    paddingTop,
+    paddingRight,
+    paddingBottom,
+    paddingLeft,
     marginTop,
     marginBottom,
     marginLeft,
@@ -232,6 +266,10 @@ export function getSharedLayoutStyles(
     width,
     borderRadius,
     border,
+    borderTop,
+    borderRight,
+    borderBottom,
+    borderLeft,
     shadow,
   } = props;
 
@@ -241,6 +279,18 @@ export function getSharedLayoutStyles(
     : undefined;
   const paddingYSize = paddingY
     ? getCSSVariable(`--space-${paddingY}`)
+    : undefined;
+  const paddingTopSize = paddingTop
+    ? getCSSVariable(`--space-${paddingTop}`)
+    : undefined;
+  const paddingRightSize = paddingRight
+    ? getCSSVariable(`--space-${paddingRight}`)
+    : undefined;
+  const paddingBottomSize = paddingBottom
+    ? getCSSVariable(`--space-${paddingBottom}`)
+    : undefined;
+  const paddingLeftSize = paddingLeft
+    ? getCSSVariable(`--space-${paddingLeft}`)
     : undefined;
   const zIndexVal = zIndex ? getCSSVariable(`--z-index-${zIndex}`) : undefined;
 
@@ -261,6 +311,10 @@ export function getSharedLayoutStyles(
       paddingTop: paddingYSize,
       paddingBottom: paddingYSize,
     }),
+    ...(paddingTopSize && { paddingTop: paddingTopSize }),
+    ...(paddingRightSize && { paddingRight: paddingRightSize }),
+    ...(paddingBottomSize && { paddingBottom: paddingBottomSize }),
+    ...(paddingLeftSize && { paddingLeft: paddingLeftSize }),
     ...(marginTop !== undefined && { marginTop: getSpacingValue(marginTop) }),
     ...(marginBottom !== undefined && {
       marginBottom: getSpacingValue(marginBottom),
@@ -278,7 +332,13 @@ export function getSharedLayoutStyles(
     ...(alignContent && { alignContent }),
     ...(alignSelf && { alignSelf }),
     ...(borderRadius && { borderRadius: getBorderRadius(borderRadius) }),
-    ...getBorderStyles(border),
+    ...getBorderStyles({
+      border,
+      borderTop,
+      borderRight,
+      borderBottom,
+      borderLeft,
+    }),
     ...getShadowStyles(shadow),
     ...getFlexStyles(flex),
     ...getOverflowStyles(overflow),

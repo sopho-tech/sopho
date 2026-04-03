@@ -1,4 +1,6 @@
-use crate::common::errors::CreateConnectionError;
+use crate::common::errors::{
+    CreateConnectionError, ExecuteSqlError, GetDatabaseConnectionError,
+};
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::connection::constants::ConnectionStatus;
@@ -6,7 +8,9 @@ use crate::connection::constants::SourceType;
 use crate::connection::cryptography_utils;
 use crate::connection::dto;
 use crate::connection::repository;
+use crate::database::constants::QueryResult;
 use crate::database::postgres;
+use crate::database::service as database_service;
 use crate::database::sqlite;
 use crate::entity;
 use axum::http::StatusCode;
@@ -216,4 +220,22 @@ pub async fn update_connection(
             axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
     }
+}
+
+pub async fn execute_query(
+    app_state: &AppState,
+    id: Uuid,
+    payload: dto::ExecuteQueryDto,
+) -> Result<QueryResult, ExecuteSqlError> {
+    let connection = execute_get_connection(app_state, id)
+        .await
+        .map_err(|e| -> ExecuteSqlError {
+            match e {
+                sea_orm::DbErr::RecordNotFound(_) => {
+                    GetDatabaseConnectionError::ConnectionNotFound.into()
+                }
+                other => GetDatabaseConnectionError::Connection(other).into(),
+            }
+        })?;
+    database_service::execute_sql_query(&connection, &payload.query).await
 }

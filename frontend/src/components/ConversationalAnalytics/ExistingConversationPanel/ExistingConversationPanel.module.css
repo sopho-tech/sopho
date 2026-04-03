@@ -1,0 +1,32 @@
+.conversationHeaderTrigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  border: none;
+  cursor: pointer;
+}
+
+.messageColumn .messageWrapper:nth-child(odd) {
+  align-self: flex-end;
+}
+
+.messageColumn .messageWrapper:nth-child(even) {
+  align-self: flex-start;
+  width: 90%;
+}
+
+.messageFooter {
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition:
+    opacity var(--transition-duration-short) var(--transition-easing-default),
+    transform var(--transition-duration-short)
+      var(--transition-easing-standard-decelerate);
+}
+
+.messageWrapper:hover .messageFooter {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}

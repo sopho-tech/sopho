@@ -2,6 +2,7 @@ import {
   IconColor,
   IconSize,
   IconType,
+  IconButtonSize,
 } from "src/components/design-system/datatypes";
 import styles from "src/components/design-system/IconButton/IconButton.module.css";
 import { Icon } from "src/components/design-system/Icon";
@@ -11,6 +12,7 @@ type IconButtonProps = {
   type: IconType;
   backgroundColor: IconColor;
   iconColor: IconColor;
+  size?: IconButtonSize;
   iconSize?: IconSize;
   tooltip?: {
     text?: string;
@@ -26,6 +28,7 @@ export function IconButton({
   type,
   backgroundColor,
   iconColor,
+  size = "none",
   iconSize,
   tooltip,
   onClick,
@@ -33,9 +36,16 @@ export function IconButton({
   className: customClassName,
 }: IconButtonProps) {
   const backgroundColorClassName = styles[backgroundColor];
+  const sizeClassNames: Record<IconButtonSize, string> = {
+    none: styles.sizeNone,
+    sm: styles.sizeSm,
+    md: styles.sizeMd,
+    lg: styles.sizeLg,
+  };
+  const sizeClassName = sizeClassNames[size];
   const button = (
     <button
-      className={`${styles.button} ${backgroundColorClassName} ${customClassName ?? ""}`.trim()}
+      className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${customClassName ?? ""}`.trim()}
       onClick={onClick}
       tabIndex={tabIndex}
     >

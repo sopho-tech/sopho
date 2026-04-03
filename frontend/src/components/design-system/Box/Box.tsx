@@ -1,3 +1,4 @@
+// TODO Fix @ts-expect-error - polymorphic Component expects intersection of all element refs
 import styles from "src/components/design-system/Box/Box.module.css";
 import type {
   SharedLayoutProps,
@@ -41,7 +42,7 @@ export function Box({
 
   const mergedClassName = mergeBoxClassName(
     backgroundColorClassName,
-    className
+    className,
   );
 
   const mergedStyle = mergeBoxStyles(display, layoutStyles, sx, htmlStyle);

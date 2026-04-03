@@ -497,39 +497,13 @@ impl std::fmt::Display for MetricFormat {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ChartType {
     Bar,
     Line,
     Pie,
     Metric,
-}
-
-impl ChartType {
-    pub fn to_string(&self) -> String {
-        match self {
-            ChartType::Bar => "BAR".to_string(),
-            ChartType::Line => "LINE".to_string(),
-            ChartType::Pie => "PIE".to_string(),
-            ChartType::Metric => "METRIC".to_string(),
-        }
-    }
-
-    pub fn from_str(s: &str) -> Result<Self, String> {
-        match s {
-            "BAR" => Ok(ChartType::Bar),
-            "LINE" => Ok(ChartType::Line),
-            "PIE" => Ok(ChartType::Pie),
-            "METRIC" => Ok(ChartType::Metric),
-            _ => Err(format!("Invalid chart type: {}", s)),
-        }
-    }
-}
-
-impl std::fmt::Display for ChartType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]

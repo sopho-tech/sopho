@@ -12,8 +12,8 @@
   padding: var(--space-xs) var(--space-sm);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-tightest);
-  color: var(--color-grey-900);
-  background-color: var(--color-grey-100);
+  color: var(--color-grey-100);
+  background-color: var(--color-grey-900);
   box-shadow: var(--shadow-xl);
   user-select: none;
   animation-duration: 400ms;

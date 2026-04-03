@@ -1,40 +1,45 @@
-use crate::ai::constants::{self, DATA_CATALOG_BATCHES, SCHEMA_LINKING_MAX_REFINE_ROUNDS};
-use crate::ai::dto::{
-    DeletionSet, EmpericalObservation, ExplorationQuery, ExplorationQueryResult,
-    FunctionalRoleAnalysisResult, RefineNextAction, SchemaLinkingFinalSynthesisForSql,
-    SchemaLinkingFinalSynthesisResponse, SchemaStatusColumn, SchemaStatusTable, SelectionSet,
-    SqlGenerationAction, SqlGenerationActionType, TableFunction,
+use super::constants::{
+    DATA_CATALOG_BATCHES, LOGICAL_PLAN_HYPOTHESIS_GENERATION_ROUNDS,
+    SCHEMA_LINKING_MAX_REFINE_ROUNDS, SQL_GENERATION_ROUNDS,
 };
-use crate::ai::prompts::{SystemPrompt, UserPrompt};
-use crate::cell::service::{execute_sql_queries_in_parallel, execute_sql_query};
+use super::system_prompt::SystemPrompt;
+use super::user_prompt::UserPrompt;
+use crate::ai::dto::{
+    DeletionSet, EmpericalObservation, Event, EventChannels, ExplorationQuery,
+    ExplorationQueryResult, FunctionalRoleAnalysisResult, LogicalPlanningResponse,
+    RefineNextAction, SchemaLinkingFinalSynthesisForSql, SchemaLinkingFinalSynthesisResponse,
+    SchemaStatusColumn, SchemaStatusTable, SelectionSet, SqlGenerationAction,
+    SqlGenerationActionType, TableFunction,
+};
 use crate::common::AppState;
 use crate::connection::constants::{SourceType, SqlDialect};
 use crate::data_catalog::dto::Database;
 use crate::data_catalog::{
     get_data_catalog_batches, join_pruned_batches, prune_data_catalog_batch,
 };
+use crate::database::service::{execute_sql_queries_in_parallel, execute_sql_query};
 use crate::entity;
 use anyhow::Result;
-use rig::completion::Prompt;
 use rig::message::Message;
-use rig::prelude::TypedPrompt;
-use rig::{
-    client::{Client, CompletionClient},
-    providers::anthropic::client::AnthropicExt,
-};
 use tracing::info;
 
 pub async fn execute(
     app_state: &AppState,
     connection: &entity::connection::Model,
     question: &str,
-    client: &Client<AnthropicExt>,
+    channels: &EventChannels,
 ) -> Result<String> {
     let (master_plan, linked_schema) =
-        execute_schema_linking(app_state, connection, question, client).await?;
+        execute_schema_linking(app_state, connection, question, channels).await?;
+    channels.send(Event::GeneratingSql).await?;
     let generated_sql =
-        sql_generation(connection, &client, question, &master_plan, linked_schema).await?;
+        sql_generation(app_state, connection, question, &master_plan, linked_schema).await?;
     info!("generated_sql: {}", generated_sql);
+    channels
+        .send(Event::GeneratedSql {
+            sql: generated_sql.clone(),
+        })
+        .await?;
     Ok(generated_sql)
 }
 
@@ -42,25 +47,31 @@ pub async fn execute_schema_linking(
     app_state: &AppState,
     connection: &entity::connection::Model,
     question: &str,
-    client: &Client<AnthropicExt>,
+    channels: &EventChannels,
 ) -> Result<(String, SchemaLinkingFinalSynthesisResponse)> {
     let candidate_hypothesis =
-        execute_hypothesis_generation(app_state, connection, question, client).await?;
+        execute_hypothesis_generation(app_state, connection, question, channels).await?;
 
-    let master_plan = execute_integrate_candidate_plans(
-        app_state,
-        connection,
-        question,
-        client,
-        candidate_hypothesis,
-    )
-    .await?;
+    channels.send(Event::IntegratingCandidatePlans).await?;
+    let master_plan =
+        execute_integrate_candidate_plans(app_state, connection, question, candidate_hypothesis)
+            .await?;
+    channels
+        .send(Event::IntegratedCandidatePlans {
+            master_plan: master_plan.clone(),
+        })
+        .await?;
 
     info!("master_plan: {master_plan}");
 
+    channels.send(Event::ExecutingSearchSpaceReduction).await?;
     let pruned_data_catalog =
-        execute_search_space_reduction(app_state, connection, question, &master_plan, &client)
-            .await?;
+        execute_search_space_reduction(app_state, connection, question, &master_plan).await?;
+    channels
+        .send(Event::ExecutedSearchSpaceReduction {
+            pruned_data_catalog: pruned_data_catalog.clone(),
+        })
+        .await?;
     info!(
         "pruned_data_catalog: {}",
         serde_json::to_string_pretty(&pruned_data_catalog).unwrap_or_default()
@@ -72,7 +83,7 @@ pub async fn execute_schema_linking(
             question,
             &master_plan,
             &pruned_data_catalog,
-            &client,
+            channels,
         )
         .await?;
     info!(
@@ -84,15 +95,23 @@ pub async fn execute_schema_linking(
         serde_json::to_string_pretty(&functional_role_analysis_result).unwrap_or_default()
     );
 
+    channels
+        .send(Event::ExecutingSchemaLinkingSynthesis)
+        .await?;
     let linked_schema = schema_linking_final_synthesis(
+        app_state,
         connection,
         question,
         functional_role_analysis_result,
         &emperical_observations,
         &pruned_data_catalog,
-        &client,
     )
     .await?;
+    channels
+        .send(Event::ExecutedSchemaLinkingSynthesis {
+            linked_schema: linked_schema.clone(),
+        })
+        .await?;
     info!(
         "linked_schema: {}",
         serde_json::to_string_pretty(&linked_schema).unwrap_or_default()
@@ -104,48 +123,57 @@ async fn execute_hypothesis_generation(
     app_state: &AppState,
     connection: &entity::connection::Model,
     question: &str,
-    client: &Client<AnthropicExt>,
-) -> Result<Vec<String>> {
-    let hypothesis_generation_agent = client
-        .agent("claude-haiku-4-5")
-        .name("hypothesis_generation_agent")
-        .preamble(SystemPrompt::LogicalPlanning.as_str())
-        .temperature(0.8)
-        .max_tokens(2048)
-        .build();
+    channels: &EventChannels,
+) -> Result<Vec<LogicalPlanningResponse>> {
+    channels.send(Event::GeneratingCandidateHypothesis).await?;
+    let hypothesis_generation_agent = app_state.model_client.build_agent(
+        "claude-haiku-4-5",
+        "hypothesis_generation_agent",
+        SystemPrompt::LogicalPlanning.as_str(),
+        0.8,
+        2048,
+    );
     let mut candidate_hypothesis = Vec::new();
-    for _rounds in 0..constants::LOGICAL_PLAN_HYPOTHESIS_GENERATION_ROUNDS {
+    for _rounds in 0..LOGICAL_PLAN_HYPOTHESIS_GENERATION_ROUNDS {
         let prompt = UserPrompt::LogicalPlanningHypothesisGeneration {
             question: question.to_string(),
         }
         .render();
-        let result = hypothesis_generation_agent.prompt(prompt).await?;
+        let result: LogicalPlanningResponse = hypothesis_generation_agent
+            .prompt_typed::<LogicalPlanningResponse>(prompt)
+            .await?;
         candidate_hypothesis.push(result);
     }
+    let hypothesis_for_event: Vec<String> = candidate_hypothesis
+        .iter()
+        .map(|p| p.logical_steps.join("\n"))
+        .collect();
+    channels
+        .send(Event::GeneratedCandidateHypothesis(hypothesis_for_event))
+        .await?;
     Ok(candidate_hypothesis)
 }
 
 async fn execute_integrate_candidate_plans(
     app_state: &AppState,
-    connection: &entity::connection::Model,
+    _connection: &entity::connection::Model,
     question: &str,
-    client: &Client<AnthropicExt>,
-    candidate_hypothesis: Vec<String>,
+    candidate_hypothesis: Vec<LogicalPlanningResponse>,
 ) -> Result<String> {
-    let integrate_candidate_plan_agent = client
-        .agent("claude-haiku-4-5")
-        .name("integrate_candidate_plan_agent")
-        .preamble(SystemPrompt::AggregatingPlanCandidates.as_str())
-        .temperature(0.2)
-        .max_tokens(2048)
-        .build();
+    let integrate_candidate_plan_agent = app_state.model_client.build_agent(
+        "claude-haiku-4-5",
+        "integrate_candidate_plan_agent",
+        SystemPrompt::AggregatingPlanCandidates.as_str(),
+        0.2,
+        2048,
+    );
     let candidate_plans_str = format_candidate_plans_for_prompt(candidate_hypothesis);
     let prompt = UserPrompt::AggregatingPlanCandidates {
         question: question.to_string(),
         candidate_plans: candidate_plans_str,
     }
     .render();
-    let master_plan = integrate_candidate_plan_agent.prompt(prompt).await?;
+    let master_plan = integrate_candidate_plan_agent.prompt(&prompt).await?;
     Ok(master_plan)
 }
 
@@ -154,7 +182,6 @@ pub(crate) async fn execute_search_space_reduction(
     connection: &entity::connection::Model,
     question: &str,
     master_plan: &str,
-    client: &Client<AnthropicExt>,
 ) -> Result<Database> {
     let data_catalog_batches = get_data_catalog_batches(&connection, DATA_CATALOG_BATCHES)
         .await
@@ -162,28 +189,36 @@ pub(crate) async fn execute_search_space_reduction(
     info!("initial data_catalog_batches: {:?}", data_catalog_batches);
     let mut pruned_batches = Vec::new();
     for mut data_catalog_batch in data_catalog_batches {
-        let data_catalog_deletion_agent = client
-            .agent("claude-haiku-4-5")
-            .name("data_catalog_deletion_agent")
-            .preamble(SystemPrompt::IdentifyingDeletionSet.as_str())
-            .temperature(0.2)
-            .max_tokens(2048)
-            .build();
-        let data_catalog_selection_agent = client
-            .agent("claude-haiku-4-5")
-            .name("data_catalog_selection_agent")
-            .preamble(SystemPrompt::IdentifyingSelectionSet.as_str())
-            .temperature(0.2)
-            .max_tokens(2048)
-            .build();
+        let data_catalog_deletion_agent = app_state.model_client.build_agent(
+            "claude-haiku-4-5",
+            "data_catalog_deletion_agent",
+            SystemPrompt::IdentifyingDeletionSet.as_str(),
+            0.2,
+            2048,
+        );
+        let data_catalog_selection_agent = app_state.model_client.build_agent(
+            "claude-haiku-4-5",
+            "data_catalog_selection_agent",
+            SystemPrompt::IdentifyingSelectionSet.as_str(),
+            0.2,
+            2048,
+        );
         let data_catalog_json = data_catalog_batch.to_display_string().unwrap_or_default();
         let prompt = format!(
             "USER QUESTION {}\n MASTER LOGICAL PLAN: {}\n DATABASE SCHEMA: {}",
             question, master_plan, data_catalog_json
         );
         let (deletion_result, selection_result) = tokio::join!(
-            data_catalog_deletion_agent.prompt_typed::<DeletionSet>(&prompt),
-            data_catalog_selection_agent.prompt_typed::<SelectionSet>(&prompt)
+            async {
+                data_catalog_deletion_agent
+                    .prompt_typed::<DeletionSet>(&prompt)
+                    .await
+            },
+            async {
+                data_catalog_selection_agent
+                    .prompt_typed::<SelectionSet>(&prompt)
+                    .await
+            }
         );
         let deletion_set = deletion_result?;
         let selection_set = selection_result?;
@@ -202,26 +237,38 @@ pub(crate) async fn execute_hypothesis_verification(
     question: &str,
     master_plan: &str,
     pruned_data_catalog: &Database,
-    client: &Client<AnthropicExt>,
+    channels: &EventChannels,
 ) -> Result<(Vec<EmpericalObservation>, FunctionalRoleAnalysisResult)> {
+    channels
+        .send(Event::ExecutingFunctionalRoleAnalysis)
+        .await?;
     let functional_role_analysis_result = execute_functional_role_analysis(
         app_state,
         connection,
         question,
         master_plan,
         pruned_data_catalog,
-        client,
     )
     .await?;
+    channels
+        .send(Event::ExecutedFunctionalRoleAnalysis {
+            functional_role_analysis_result: functional_role_analysis_result.clone(),
+        })
+        .await?;
+    channels.send(Event::ExecutingDataProfiling).await?;
     let emperical_observations = execute_data_profiling(
         app_state,
         connection,
         question,
         pruned_data_catalog,
-        client,
         &functional_role_analysis_result,
     )
     .await?;
+    channels
+        .send(Event::ExecutedDataProfiling {
+            emperical_observations: emperical_observations.clone(),
+        })
+        .await?;
     Ok((emperical_observations, functional_role_analysis_result))
 }
 
@@ -232,15 +279,14 @@ async fn execute_functional_role_analysis(
     question: &str,
     master_plan: &str,
     pruned_data_catalog: &Database,
-    client: &Client<AnthropicExt>,
 ) -> Result<FunctionalRoleAnalysisResult> {
-    let functional_role_analysis_agent = client
-        .agent("claude-haiku-4-5")
-        .name("functional_role_analysis_agent")
-        .preamble(SystemPrompt::SemanticLinking.as_str())
-        .temperature(0.2)
-        .max_tokens(2048)
-        .build();
+    let functional_role_analysis_agent = app_state.model_client.build_agent(
+        "claude-haiku-4-5",
+        "functional_role_analysis_agent",
+        SystemPrompt::SemanticLinking.as_str(),
+        0.2,
+        2048,
+    );
     let prompt = UserPrompt::FunctionalRoleAnalysis {
         question: question.to_string(),
         logical_plan: master_plan.to_string(),
@@ -261,7 +307,6 @@ async fn execute_data_profiling(
     connection: &entity::connection::Model,
     question: &str,
     pruned_data_catalog: &Database,
-    client: &Client<AnthropicExt>,
     functional_role_analysis_result: &FunctionalRoleAnalysisResult,
 ) -> Result<Vec<EmpericalObservation>> {
     let mut emperical_observations: Vec<EmpericalObservation> = Vec::new();
@@ -273,13 +318,13 @@ async fn execute_data_profiling(
             };
         let mut chat_history: Vec<Message> = Vec::new();
 
-        let data_profiling_agent = client
-            .agent("claude-haiku-4-5")
-            .name("data_profiling_before_agent")
-            .preamble(SystemPrompt::DataProfiling.as_str())
-            .temperature(0.2)
-            .max_tokens(2048)
-            .build();
+        let data_profiling_agent = app_state.model_client.build_agent(
+            "claude-haiku-4-5",
+            "data_profiling_before_agent",
+            SystemPrompt::DataProfiling.as_str(),
+            0.2,
+            2048,
+        );
         let sql_dialect = sql_dialect_from_source_type(&connection.source_type);
         let prompt = UserPrompt::DataProfilingBefore {
             table_name: table_function.table.clone(),
@@ -290,8 +335,7 @@ async fn execute_data_profiling(
         }
         .render();
         let exploration_queries: Vec<ExplorationQuery> = data_profiling_agent
-            .prompt_typed(prompt)
-            .with_history(&mut chat_history)
+            .prompt_typed_with_history(prompt, &mut chat_history)
             .await?;
 
         let queries: Vec<&str> = exploration_queries.iter().map(|q| q.sql.as_str()).collect();
@@ -322,8 +366,7 @@ async fn execute_data_profiling(
         .render();
 
         let table_emperical_observation: EmpericalObservation = data_profiling_agent
-            .prompt_typed(prompt)
-            .with_history(&mut chat_history)
+            .prompt_typed_with_history(prompt, &mut chat_history)
             .await?;
 
         info!(
@@ -337,25 +380,35 @@ async fn execute_data_profiling(
 }
 
 pub(crate) async fn schema_linking_final_synthesis(
+    app_state: &AppState,
     connection: &entity::connection::Model,
     question: &str,
     functional_role_analysis_result: FunctionalRoleAnalysisResult,
     emperical_observations: &[EmpericalObservation],
     pruned_data_catalog: &Database,
-    client: &Client<AnthropicExt>,
 ) -> Result<SchemaLinkingFinalSynthesisResponse> {
-    let agent = client
-        .agent("claude-haiku-4-5")
-        .name("schema_linking_final_synthesis_agent")
-        .preamble(SystemPrompt::SchemaLinkingFinalSynthesis.as_str())
-        .temperature(0.2)
-        .max_tokens(2048)
-        .build();
+    info!(
+        "schema_linking_final_synthesis: starting (tables={}, empirical_observations={})",
+        functional_role_analysis_result.table_functions.len(),
+        emperical_observations.len()
+    );
+
+    let agent = app_state.model_client.build_agent(
+        "claude-haiku-4-5",
+        "schema_linking_final_synthesis_agent",
+        SystemPrompt::SchemaLinkingFinalSynthesis.as_str(),
+        0.2,
+        16384,
+    );
 
     let schema_status = generate_schema_status(
         &functional_role_analysis_result.table_functions,
         emperical_observations,
         pruned_data_catalog,
+    );
+    info!(
+        "schema_linking_final_synthesis: schema_status ready (chars={})",
+        schema_status.len()
     );
 
     let mut chat_history: Vec<Message> = Vec::new();
@@ -368,13 +421,21 @@ pub(crate) async fn schema_linking_final_synthesis(
         sql_dialect,
     }
     .render();
+    info!("schema_linking_final_synthesis: calling model for initial synthesis");
     let mut result = agent
-        .prompt_typed::<SchemaLinkingFinalSynthesisResponse>(prompt)
-        .with_history(&mut chat_history)
+        .prompt_typed_with_history::<SchemaLinkingFinalSynthesisResponse>(prompt, &mut chat_history)
         .await?;
+    info!(
+        "schema_linking_final_synthesis: initial response status={}, exploration_queries={}, refined_schema_tables={}, rejected_candidates={}",
+        result.status,
+        result.exploration_queries.len(),
+        result.refined_schema.len(),
+        result.rejected_candidates.len()
+    );
 
-    for _round in 0..SCHEMA_LINKING_MAX_REFINE_ROUNDS {
+    for round in 0..SCHEMA_LINKING_MAX_REFINE_ROUNDS {
         if result.status == "CONFIRM" {
+            info!("schema_linking_final_synthesis: CONFIRM, stopping refinement");
             break;
         }
         let queries: Vec<&str> = result
@@ -382,6 +443,12 @@ pub(crate) async fn schema_linking_final_synthesis(
             .iter()
             .map(|s| s.as_str())
             .collect();
+        info!(
+            "schema_linking_final_synthesis: refine round {}/{} executing {} exploration queries",
+            round + 1,
+            SCHEMA_LINKING_MAX_REFINE_ROUNDS,
+            queries.len()
+        );
         let query_results = execute_sql_queries_in_parallel(connection, &queries).await;
 
         let results: String = result
@@ -399,30 +466,49 @@ pub(crate) async fn schema_linking_final_synthesis(
             .join("\n");
 
         let prompt = UserPrompt::SchemaLinkingFinalSynthesisExplorationResults { results }.render();
+        info!(
+            "schema_linking_final_synthesis: calling model after refine round {}",
+            round + 1
+        );
         result = agent
-            .prompt_typed::<SchemaLinkingFinalSynthesisResponse>(prompt)
-            .with_history(&mut chat_history)
+            .prompt_typed_with_history::<SchemaLinkingFinalSynthesisResponse>(prompt, &mut chat_history)
             .await?;
+        info!(
+            "schema_linking_final_synthesis: after refine round {} status={}, exploration_queries={}",
+            round + 1,
+            result.status,
+            result.exploration_queries.len()
+        );
+    }
+
+    if result.status == "CONFIRM" {
+        info!("schema_linking_final_synthesis: finished with CONFIRM");
+    } else {
+        info!(
+            "schema_linking_final_synthesis: finished after {} refine rounds without CONFIRM (status={})",
+            SCHEMA_LINKING_MAX_REFINE_ROUNDS,
+            result.status
+        );
     }
 
     Ok(result)
 }
 
 pub(crate) async fn sql_generation(
+    app_state: &AppState,
     connection: &entity::connection::Model,
-    client: &Client<AnthropicExt>,
     question: &str,
     master_plan: &str,
     linked_schema: SchemaLinkingFinalSynthesisResponse,
 ) -> Result<String> {
     let mut generated_sql = String::new();
-    let agent = client
-        .agent("claude-haiku-4-5")
-        .name("sql_generation_agent")
-        .preamble(SystemPrompt::SqlGeneration.as_str())
-        .temperature(0.2)
-        .max_tokens(2048)
-        .build();
+    let agent = app_state.model_client.build_agent(
+        "claude-haiku-4-5",
+        "sql_generation_agent",
+        SystemPrompt::SqlGeneration.as_str(),
+        0.2,
+        2048,
+    );
     let mut chat_history: Vec<Message> = Vec::new();
     let sql_dialect = sql_dialect_from_source_type(&connection.source_type);
     let mut prompt = UserPrompt::SqlGenerationFirst {
@@ -434,10 +520,9 @@ pub(crate) async fn sql_generation(
     }
     .render();
 
-    for round in 0..constants::SQL_GENERATION_ROUNDS {
+    for round in 0..SQL_GENERATION_ROUNDS {
         let result: SqlGenerationAction = agent
-            .prompt_typed(&prompt)
-            .with_history(&mut chat_history)
+            .prompt_typed_with_history(&prompt, &mut chat_history)
             .await?;
         match result.action {
             SqlGenerationActionType::Explore => {
@@ -493,13 +578,16 @@ pub(crate) async fn sql_generation(
     Ok(generated_sql)
 }
 
-fn format_candidate_plans_for_prompt(candidate_plans: Vec<String>) -> String {
+fn format_candidate_plans_for_prompt(candidate_plans: Vec<LogicalPlanningResponse>) -> String {
     candidate_plans
         .into_iter()
         .enumerate()
-        .map(|(i, r)| format!("plan{}: {}", i + 1, r))
+        .map(|(i, r)| {
+            let body = r.logical_steps.join("\n");
+            format!("plan{}:\n{}", i + 1, body)
+        })
         .collect::<Vec<_>>()
-        .join("\n")
+        .join("\n\n")
 }
 
 fn generate_schema_status(

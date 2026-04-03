@@ -6,6 +6,7 @@ export enum EnterAnimation {
 }
 
 export enum Duration {
+  VERY_FAST = 0.02,
   FAST = 0.2,
   NORMAL = 0.4,
   MEDIUM = 0.6,
@@ -18,6 +19,11 @@ export enum Scale {
 }
 
 export const EASE = [0.4, 0, 0.2, 1] as const;
+
+export const hoverHighlightTransition: Transition = {
+  duration: Duration.VERY_FAST,
+  ease: EASE,
+};
 
 export type AnimationType = {
   enter?: EnterAnimation;
@@ -63,6 +69,11 @@ export const layoutSpringTransition: Transition = {
   damping: 35,
 };
 
+export const rotateToggleTransition: Transition = {
+  duration: 0.3,
+  ease: [0.87, 0, 0.13, 1],
+};
+
 export const enterAnimationTransitions: Record<EnterAnimation, Transition> = {
   [EnterAnimation.BLUR]: {
     ...defaultEnterTransition,
@@ -77,21 +88,21 @@ export const enterAnimationTransitions: Record<EnterAnimation, Transition> = {
 };
 
 export function getEnterAnimationVariants(
-  animationType?: EnterAnimation
+  animationType?: EnterAnimation,
 ): Variants | undefined {
   if (!animationType) return undefined;
   return enterAnimationVariants[animationType];
 }
 
 export function getEnterAnimationTransition(
-  animationType?: EnterAnimation
+  animationType?: EnterAnimation,
 ): Transition | undefined {
   if (!animationType) return undefined;
   return enterAnimationTransitions[animationType];
 }
 
 export function getEnterAnimationVariantsWithFallback(
-  animationType?: EnterAnimation
+  animationType?: EnterAnimation,
 ): Variants {
   const animationVariants = getEnterAnimationVariants(animationType);
   if (!animationVariants) {

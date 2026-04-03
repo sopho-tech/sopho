@@ -75,6 +75,11 @@ pub struct ConnectionDto {
     pub status: ConnectionStatus,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ExecuteQueryDto {
+    pub query: String,
+}
+
 impl From<entity::connection::Model> for ConnectionDto {
     fn from(model: entity::connection::Model) -> Self {
         Self {

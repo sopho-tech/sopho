@@ -1,0 +1,33 @@
+.spinner {
+  flex-shrink: 0;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.accent {
+  color: var(--color-primary-500);
+}
+
+.white {
+  color: var(--color-background);
+}
+
+.grey {
+  color: var(--color-grey-500);
+}
+
+.lightgrey {
+  color: var(--color-grey-300);
+}
+
+.black {
+  color: var(--color-grey-800);
+}

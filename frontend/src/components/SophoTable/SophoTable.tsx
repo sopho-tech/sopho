@@ -16,6 +16,8 @@ export enum TableType {
   PAGINATED = "PAGINATED",
 }
 
+export type TableSize = "default" | "compact";
+
 export type ColumnConfig<T> = {
   key: string;
   header: string;
@@ -39,6 +41,7 @@ export type PaginationConfig = {
 
 type SophoTableProps<T> = {
   tableType?: TableType;
+  size?: TableSize;
   columns: ColumnConfig<T>[];
   data: T[];
   isLoading?: boolean;
@@ -87,6 +90,7 @@ function useCreateReactTable<T>(
 
 export function SophoTable<T>({
   tableType = TableType.FULL,
+  size = "default",
   columns,
   data,
   isLoading = false,
@@ -102,6 +106,7 @@ export function SophoTable<T>({
   tableContainerStyle,
   onRowClick,
 }: SophoTableProps<T>) {
+  const isCompact = size === "compact";
   const columnHelper = createColumnHelper<T>();
 
   const reactTableColumns: ColumnDef<T, unknown>[] = columns.map((col) => {
@@ -154,7 +159,7 @@ export function SophoTable<T>({
                   return (
                     <th
                       key={header.id}
-                      className={`${styles.tableHeaderCell} ${tableHeaderCellStyle || ""} ${isFirst && tableFirstHeaderCellStyle ? tableFirstHeaderCellStyle : ""} ${isLast && tableLastHeaderCellStyle ? tableLastHeaderCellStyle : ""}`}
+                      className={`${styles.tableHeaderCell} ${isCompact ? styles.tableHeaderCellCompact : ""} ${tableHeaderCellStyle || ""} ${isFirst && tableFirstHeaderCellStyle ? tableFirstHeaderCellStyle : ""} ${isLast && tableLastHeaderCellStyle ? tableLastHeaderCellStyle : ""}`}
                       style={{ width: header.getSize() }}
                     >
                       {header.isPlaceholder
@@ -180,7 +185,7 @@ export function SophoTable<T>({
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
-                    className={`${styles.tableDataCell} ${tableDataCellStyle}`}
+                    className={`${styles.tableDataCell} ${isCompact ? styles.tableDataCellCompact : ""} ${tableDataCellStyle}`}
                     style={{ width: cell.column.getSize() }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

@@ -52,6 +52,17 @@ import {
   Table,
   LayoutDashboard,
   Plug,
+  Bot,
+  PanelLeft,
+  MessageCircle,
+  Copy,
+  Database,
+  ScanSearch,
+  Brain,
+  Telescope,
+  Workflow,
+  CircleCheck,
+  CircleDot,
 } from "lucide-react";
 
 const iconMap: Record<IconType, LucideIcon> = {
@@ -97,11 +108,22 @@ const iconMap: Record<IconType, LucideIcon> = {
   lock: Lock,
   user: User,
   logout: LogOut,
+  message: MessageCircle,
   layers: Layers,
   bar_chart: BarChart,
   table: Table,
   layout_dashboard: LayoutDashboard,
   plug: Plug,
+  bot: Bot,
+  panel: PanelLeft,
+  copy: Copy,
+  database: Database,
+  scan_search: ScanSearch,
+  brain: Brain,
+  telescope: Telescope,
+  workflow: Workflow,
+  circle_check: CircleCheck,
+  circle_dot: CircleDot,
 };
 
 const sizeMap: Record<IconSize, number> = {

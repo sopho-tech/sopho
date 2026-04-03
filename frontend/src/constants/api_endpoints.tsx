@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
     GET_BY_ID: "/api/v1/connection/:id",
     UPDATE: "/api/v1/connection/:id",
     DELETE: "/api/v1/connection/:id",
+    EXECUTE_QUERY: "/api/v1/connection/:id/execute-query",
   },
   NOTEBOOK: {
     CREATE: "/api/v1/notebook",
@@ -46,5 +47,14 @@ export const API_ENDPOINTS = {
   },
   SEARCH: {
     SEARCH: "/api/v1/search",
+  },
+  CONVERSATIONAL_ANALYTICS: {
+    CREATE: "/api/v1/conversational_analytics",
+    GET_ALL: "/api/v1/conversational_analytics",
+    GET_BY_ID: "/api/v1/conversational_analytics/:conversation_id",
+    UPDATE: "/api/v1/conversational_analytics/:conversation_id",
+    DELETE: "/api/v1/conversational_analytics/:conversation_id",
+    COMPLETION: "/api/v1/conversational_analytics/:conversation_id/completion",
+    SUGGEST_NAME: "/api/v1/conversational_analytics/:conversation_id/suggest-name",
   },
 };

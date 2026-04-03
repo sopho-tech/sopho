@@ -1,3 +1,12 @@
+.truncate {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .default {
   color: var(--color-grey-900);
 }
@@ -10,12 +19,28 @@
   color: var(--color-grey-500);
 }
 
+.darkGrey {
+  color: var(--color-grey-700);
+}
+
 .disabled {
   color: var(--font-color-disabled);
 }
 
 .error {
   color: var(--color-red-500);
+}
+
+.success {
+  color: var(--color-green-600);
+}
+
+.warning {
+  color: var(--color-yellow-700);
+}
+
+.black {
+  color: var(--color-grey-900);
 }
 
 .fontSize-xs {

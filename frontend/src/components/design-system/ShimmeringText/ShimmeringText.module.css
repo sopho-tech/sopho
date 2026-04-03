@@ -1,0 +1,42 @@
+.container {
+  display: inline-flex;
+  --color: var(--color-grey-500);
+  --shimmer-color: var(--color-accent-500);
+}
+
+.fontSize-xs {
+  font-size: var(--font-size-xs);
+}
+
+.fontSize-sm {
+  font-size: var(--font-size-sm);
+}
+
+.fontSize-base {
+  font-size: var(--font-size-base);
+}
+
+.fontSize-lg {
+  font-size: var(--font-size-lg);
+}
+
+.fontSize-xl {
+  font-size: var(--font-size-xl);
+}
+
+.fontSize-2xl {
+  font-size: var(--font-size-2xl);
+}
+
+.fontSize-3xl {
+  font-size: var(--font-size-3xl);
+}
+
+.fontSize-4xl {
+  font-size: var(--font-size-4xl);
+}
+
+.char {
+  display: inline-block;
+  white-space: pre;
+}

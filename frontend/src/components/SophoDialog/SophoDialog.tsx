@@ -11,6 +11,7 @@ interface SophoDialogProps {
   description?: string;
   titleAccessory?: React.ReactElement;
   dialogContentStyleClass?: string;
+  modal?: boolean;
 }
 
 export function SophoDialog({
@@ -22,10 +23,11 @@ export function SophoDialog({
   description,
   titleAccessory,
   dialogContentStyleClass,
+  modal = true,
 }: SophoDialogProps) {
   return (
     <Dialog.Root
-      modal={true}
+      modal={modal}
       open={shouldOpenDialog}
       onOpenChange={handleOnOpenChange}
     >
