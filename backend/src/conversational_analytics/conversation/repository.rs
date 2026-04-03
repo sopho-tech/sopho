@@ -12,7 +12,7 @@ pub async fn save_conversation_transaction(
 ) -> Result<conversation::Model, DbErr> {
     let conversation_active_model: conversation::ActiveModel = conversation.into();
     let conversation_active_model = conversation_active_model.insert(txn).await?;
-    Ok(conversation_active_model.into())
+    Ok(conversation_active_model)
 }
 
 pub async fn get_conversation(
@@ -46,7 +46,7 @@ pub async fn update_conversation(
     active.status = Set(payload.status.to_string());
     active.updated_at = Set(time_utils::now_utc_into());
     let result = active.update(db).await?;
-    Ok(result.into())
+    Ok(result)
 }
 
 pub async fn delete_conversation_transaction(

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod ai;
 mod authentication;
 mod canvas;
@@ -141,9 +143,8 @@ async fn main() {
         .layer(TraceLayer::new_for_http())
         .layer(CookieManagerLayer::new());
 
-    let cors;
-    if app_state.config.environment == "development" {
-        cors = CorsLayer::new()
+    let cors = if app_state.config.environment == "development" {
+        CorsLayer::new()
             .allow_methods([
                 Method::GET,
                 Method::POST,
@@ -153,9 +154,9 @@ async fn main() {
             ])
             .allow_origin(HeaderValue::from_str("http://localhost").unwrap())
             .allow_credentials(true)
-            .allow_headers([header::CONTENT_TYPE]);
+            .allow_headers([header::CONTENT_TYPE])
     } else {
-        cors = CorsLayer::new()
+        CorsLayer::new()
             .allow_methods([
                 Method::GET,
                 Method::POST,
@@ -164,8 +165,8 @@ async fn main() {
                 Method::DELETE,
             ])
             .allow_credentials(true)
-            .allow_headers([header::CONTENT_TYPE]);
-    }
+            .allow_headers([header::CONTENT_TYPE])
+    };
     app = app.layer(cors);
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", app_state.config.port))

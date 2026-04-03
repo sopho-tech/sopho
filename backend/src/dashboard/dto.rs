@@ -44,15 +44,12 @@ impl Layout {
     }
 
     pub fn to_json(layout: Option<Vec<Layout>>) -> Option<Json> {
-        layout.map(|layouts| {
-            let value = serde_json::to_value(layouts).unwrap_or(serde_json::Value::Null);
-            Json::from(value)
-        })
+        layout.map(|layouts| serde_json::to_value(layouts).unwrap_or(serde_json::Value::Null))
     }
 
     pub fn from_json(json: Option<Json>) -> Option<Vec<Layout>> {
         json.and_then(|j| {
-            let value: serde_json::Value = j.into();
+            let value: serde_json::Value = j;
             serde_json::from_value(value).ok()
         })
     }

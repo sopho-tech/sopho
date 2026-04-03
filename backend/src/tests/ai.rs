@@ -78,12 +78,12 @@ async fn create_test_connection(app_state: &AppState) -> entity::connection::Mod
     )
     .await
     {
-        Ok(c) => return c,
+        Ok(c) => c,
         Err(err) => {
             error!("Failed to create test connection: {}", err);
             panic!("Failed to create test connection");
         }
-    };
+    }
 }
 
 fn sample_pruned_data_catalog(connection_name: &str, connection_description: &str) -> Database {
@@ -372,7 +372,7 @@ async fn execute_works() {
 async fn execute_search_space_reduction_works() {
     init_tracing();
     let (app_state, connection) = setup_test_env().await;
-    let pruned_data_catalog = execute_search_space_reduction(
+    let _pruned_data_catalog = execute_search_space_reduction(
         &app_state,
         &connection,
         "What are the top 5 customers by revenue?",
@@ -591,7 +591,7 @@ async fn schema_linking_final_synthesis_works() {
         &connection.name,
         connection.description.as_deref().unwrap_or(""),
     );
-    let result = schema_linking_final_synthesis(
+    let _result = schema_linking_final_synthesis(
         &app_state,
         &connection,
         "What are the top 5 customers by revenue?",
@@ -609,7 +609,7 @@ async fn schema_linking_final_synthesis_works() {
 async fn sql_generation_works() {
     init_tracing();
     let (app_state, connection) = setup_test_env().await;
-    let result = sql_generation(
+    let _result = sql_generation(
         &app_state,
         &connection,
         "What are the top 5 customers by revenue?",

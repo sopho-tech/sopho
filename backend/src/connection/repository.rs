@@ -11,7 +11,7 @@ pub async fn save_connection(
 ) -> Result<connection::Model, DbErr> {
     let connection_active_model: connection::ActiveModel = connection.into();
     let connection_active_model = connection_active_model.insert(db).await?;
-    Ok(connection_active_model.into())
+    Ok(connection_active_model)
 }
 
 pub async fn get_connection(db: &DatabaseConnection, id: Uuid) -> Result<connection::Model, DbErr> {

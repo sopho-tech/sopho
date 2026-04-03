@@ -5,9 +5,7 @@ use crate::common::cryptography_utils::{
     generate_and_store_encryption_key, get_encryption_key_from_path,
 };
 use crate::db;
-use anyhow;
 use anyhow::bail;
-use reqwest;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use std::borrow::Cow;
@@ -122,10 +120,8 @@ impl ConfigurationsBuilder {
             port: self.port.unwrap_or(8000),
             frontend_dir: self
                 .frontend_dir
-                .unwrap_or_else(|| Cow::Borrowed("/app/frontend/dist/")),
-            environment: self
-                .environment
-                .unwrap_or_else(|| Cow::Borrowed("production")),
+                .unwrap_or(Cow::Borrowed("/app/frontend/dist/")),
+            environment: self.environment.unwrap_or(Cow::Borrowed("production")),
             cookie_secure: self.cookie_secure.unwrap_or(false),
             encryption_key: self
                 .encryption_key

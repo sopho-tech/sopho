@@ -196,7 +196,7 @@ pub async fn get_dashboard_charts_count_by_canvas_id(
     let dashboard = get_dashboard_by_canvas_id_entity(app_state, canvas_id).await?;
 
     if let Some(layout_json) = dashboard.layout {
-        let layout_value: serde_json::Value = layout_json.into();
+        let layout_value: serde_json::Value = layout_json;
         if let Ok(layout_items) = serde_json::from_value::<Vec<serde_json::Value>>(layout_value) {
             return Ok(layout_items.len() as i32);
         }

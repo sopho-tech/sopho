@@ -27,7 +27,7 @@ pub fn join_pruned_batches(batches: Vec<Database>) -> Database {
                     let cols: Vec<_> = table
                         .columns
                         .iter()
-                        .filter(|(_, col)| !(!col.should_select && col.should_delete))
+                        .filter(|(_, col)| col.should_select || !col.should_delete)
                         .map(|(name, col)| (name.as_str(), col))
                         .collect();
                     (table_name.clone(), cols)

@@ -14,9 +14,7 @@ pub enum UserPrompt {
 impl UserPrompt {
     pub fn render(&self) -> String {
         match self {
-            UserPrompt::SuggestName { question } => {
-                SUGGEST_NAME.replace("{question}", question)
-            }
+            UserPrompt::SuggestName { question } => SUGGEST_NAME.replace("{question}", question),
         }
     }
 }

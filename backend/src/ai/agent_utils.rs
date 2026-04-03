@@ -1,8 +1,8 @@
 use rig::client::CompletionClient;
 use rig::completion::TypedPrompt;
 use rig::completion::{Prompt, PromptError, StructuredOutputError};
-use rig::message::Message;
 use rig::http_client::Error;
+use rig::message::Message;
 use rig::providers::anthropic;
 use rig::wasm_compat::WasmCompatSend;
 use schemars::JsonSchema;
@@ -75,10 +75,7 @@ impl Agent {
         T: JsonSchema + DeserializeOwned + WasmCompatSend,
     {
         match self {
-            Self::Anthropic(agent) => agent
-                .prompt_typed::<T>(prompt)
-                .with_history(history)
-                .await,
+            Self::Anthropic(agent) => agent.prompt_typed::<T>(prompt).with_history(history).await,
         }
     }
 }

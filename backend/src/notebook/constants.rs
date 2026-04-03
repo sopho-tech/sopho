@@ -1,5 +1,6 @@
 use crate::cell::constants::CellType;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum NotebookStatus {
@@ -9,14 +10,6 @@ pub enum NotebookStatus {
 }
 
 impl NotebookStatus {
-    pub fn to_string(&self) -> String {
-        match self {
-            NotebookStatus::Active => "ACTIVE".to_string(),
-            NotebookStatus::Inactive => "INACTIVE".to_string(),
-            NotebookStatus::Failed => "FAILED".to_string(),
-        }
-    }
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "ACTIVE" => Ok(NotebookStatus::Active),
@@ -43,6 +36,16 @@ impl NotebookStatus {
     }
 }
 
+impl fmt::Display for NotebookStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            NotebookStatus::Active => "ACTIVE",
+            NotebookStatus::Inactive => "INACTIVE",
+            NotebookStatus::Failed => "FAILED",
+        })
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 pub struct QueryFilters {
     #[serde(
@@ -54,6 +57,6 @@ pub struct QueryFilters {
 
 impl QueryFilters {
     pub fn cell_type(&self) -> Option<CellType> {
-        return self.cell_type.clone();
+        self.cell_type.clone()
     }
 }

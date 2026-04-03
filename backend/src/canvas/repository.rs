@@ -36,7 +36,7 @@ pub async fn save_canvas_transaction(
 ) -> Result<canvas::Model, DbErr> {
     let canvas_active_model: canvas::ActiveModel = canvas.into();
     let canvas_active_model = canvas_active_model.insert(txn).await?;
-    Ok(canvas_active_model.into())
+    Ok(canvas_active_model)
 }
 
 pub async fn save_canvas_connection(
@@ -45,7 +45,7 @@ pub async fn save_canvas_connection(
 ) -> Result<canvas::Model, DbErr> {
     let canvas_active_model: canvas::ActiveModel = canvas.into();
     let canvas_active_model = canvas_active_model.insert(db).await?;
-    Ok(canvas_active_model.into())
+    Ok(canvas_active_model)
 }
 
 pub async fn delete_canvas_transaction(txn: &DatabaseTransaction, id: Uuid) -> Result<(), DbErr> {
@@ -64,7 +64,7 @@ pub async fn update_canvas(
     canvas_active.description = Set(payload.description);
     canvas_active.updated_at = Set(time_utils::now_utc_into());
     let result = canvas_active.update(db).await?;
-    Ok(result.into())
+    Ok(result)
 }
 
 pub async fn search_canvases_by_name(

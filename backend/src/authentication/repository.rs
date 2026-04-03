@@ -10,7 +10,7 @@ pub async fn save_user(
 ) -> Result<entity::user::Model, DbErr> {
     let user_active_model: entity::user::ActiveModel = user.into();
     let user_active_model = user_active_model.insert(db).await?;
-    Ok(user_active_model.into())
+    Ok(user_active_model)
 }
 
 pub async fn get_user(db: &DatabaseConnection, id: Uuid) -> Result<entity::user::Model, DbErr> {
@@ -71,7 +71,7 @@ pub async fn create_session(
 ) -> Result<entity::session::Model, DbErr> {
     let session_active_model: entity::session::ActiveModel = session.into();
     let session_active_model = session_active_model.insert(db).await?;
-    Ok(session_active_model.into())
+    Ok(session_active_model)
 }
 
 pub async fn deactivate_session(

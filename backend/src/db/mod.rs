@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use migration;
 use migration::MigratorTrait;
 
 use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr};
