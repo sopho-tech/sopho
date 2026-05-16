@@ -1,14 +1,19 @@
 mod system_prompt;
 mod user_prompt;
 
+use crate::ai::agent_utils::ModelRole;
 use crate::common::AppState;
 use anyhow::Result;
 
 const MAX_NAME_LENGTH: usize = 60;
 
 pub async fn suggest_name(app_state: &AppState, question: &str) -> Result<String> {
-    let agent = app_state.model_client.build_agent(
-        "claude-haiku-4-5",
+    let model_client = app_state
+        .current_model_client()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let agent = model_client.build_agent(
+        ModelRole::Default,
         "conversation_name_agent",
         system_prompt::SystemPrompt::SuggestName.as_str(),
         0.3,

@@ -3,6 +3,10 @@ export const APP_ROUTES = {
   CANVAS: "/canvas/:id",
   CANVASES: "/canvas",
   SETTINGS: "/settings",
+  SETTINGS_ROUTES: {
+    CONNECTIONS: "/settings/connections",
+    AI_CONFIGURATIONS: "/settings/ai-configurations",
+  },
   CONNECTION_NEW: "/settings/connection/new",
   CONNECTION_EDIT: "/settings/connection/:id/edit",
   SIGN_IN: "/signin",

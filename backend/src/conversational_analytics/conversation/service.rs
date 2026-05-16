@@ -8,6 +8,8 @@ use crate::ai::conversation_name_agent;
 use crate::ai::dto::EventChannels;
 use crate::ai::text_to_sql_agent;
 use crate::ai::visualization_agent;
+use crate::ai_configuration::dto::AiConfigurationStatus;
+use crate::ai_configuration::service as ai_config_service;
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::connection::service as connection_service;
@@ -32,6 +34,22 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt as _;
 use uuid::Uuid;
+
+async fn ensure_ai_live(app_state: &AppState) -> Result<(), ConversationError> {
+    let status = ai_config_service::get_status(app_state).await.map_err(
+        |e| match e {
+            crate::ai_configuration::error::AiConfigurationError::Database(d) => {
+                ConversationError::Database(d)
+            }
+            other => ConversationError::Conversion(other.to_string()),
+        },
+    )?;
+    if status.status == AiConfigurationStatus::Live {
+        Ok(())
+    } else {
+        Err(ConversationError::AiNotLive)
+    }
+}
 
 pub async fn get_conversation(
     app_state: AppState,
@@ -97,6 +115,7 @@ pub async fn create_conversation(
     app_state: AppState,
     payload: dto::CreateConversationDto,
 ) -> Result<dto::ConversationDto, ConversationError> {
+    ensure_ai_live(&app_state).await?;
     let now = time_utils::now_utc_into();
     let conversation_id = Uuid::new_v4();
     let conversation = entity::conversation::Model {
@@ -169,6 +188,7 @@ pub async fn suggest_conversation_name(
     app_state: AppState,
     conversation_id: Uuid,
 ) -> Result<dto::ConversationDto, ConversationError> {
+    ensure_ai_live(&app_state).await?;
     let conversation =
         repository::get_conversation(&app_state.database_connection, conversation_id)
             .await
@@ -282,6 +302,7 @@ pub async fn execute_completion(
     conversation_id: Uuid,
 ) -> Result<Sse<impl futures_util::Stream<Item = Result<Event, Infallible>>>, ExecuteCompletionError>
 {
+    ensure_ai_live(&app_state).await?;
     let (question, last_message_sequence_number) =
         resolve_last_human_question_for_completion(&app_state, conversation_id).await?;
 

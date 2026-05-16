@@ -1,11 +1,14 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import "src/css/index.css";
 import { Home } from "src/components/Home/Home";
 import SignIn from "src/components/SignIn/SignIn";
 import { Settings } from "src/components/Settings";
+import { Connections } from "src/components/Connection/ConnectionsPage";
+import { AIConfiguration } from "src/components/Settings/AIConfiguration";
 import { Profile } from "src/components/Profile";
 import { ProtectedRoute } from "src/components/ProtectedRoute";
-import { createBrowserRouter, RouterProvider } from "react-router";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { ReactQueryClientProvider } from "./utils/react_query_provider";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { Canvases } from "src/components/Canvases";
@@ -41,14 +44,33 @@ const router = createBrowserRouter([
       {
         path: APP_ROUTES.SETTINGS,
         element: <Settings />,
-      },
-      {
-        path: APP_ROUTES.CONNECTION_NEW,
-        element: <ConnectionNew />,
-      },
-      {
-        path: APP_ROUTES.CONNECTION_EDIT,
-        element: <ConnectionEdit />,
+        children: [
+          {
+            index: true,
+            element: (
+              <Navigate
+                to={APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS}
+                replace
+              />
+            ),
+          },
+          {
+            path: "connections",
+            element: <Connections />,
+          },
+          {
+            path: "ai-configurations",
+            element: <AIConfiguration />,
+          },
+          {
+            path: "connection/new",
+            element: <ConnectionNew />,
+          },
+          {
+            path: "connection/:id/edit",
+            element: <ConnectionEdit />,
+          },
+        ],
       },
       {
         path: APP_ROUTES.PROFILE,

@@ -3,27 +3,36 @@ use rig::completion::TypedPrompt;
 use rig::completion::{Prompt, PromptError, StructuredOutputError};
 use rig::http_client::Error;
 use rig::message::Message;
-use rig::providers::anthropic;
+use rig::providers::{anthropic, openai};
 use rig::wasm_compat::WasmCompatSend;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 
+#[derive(Clone, Copy, Debug)]
+pub enum ModelRole {
+    Default,
+}
+
 #[derive(Clone)]
 pub enum ModelClient {
     Anthropic(rig::client::Client<anthropic::client::AnthropicExt>),
+    OpenAI(rig::client::Client<openai::client::OpenAICompletionsExt>),
 }
 
 impl ModelClient {
-    pub fn anthropic(anthropic_api_key: &str) -> Result<Self, Error> {
-        let client = anthropic::Client::builder()
-            .api_key(anthropic_api_key)
-            .build()?;
+    pub fn anthropic(api_key: &str) -> Result<Self, Error> {
+        let client = anthropic::Client::builder().api_key(api_key).build()?;
         Ok(Self::Anthropic(client))
+    }
+
+    pub fn openai(api_key: &str) -> Result<Self, Error> {
+        let client = openai::CompletionsClient::builder().api_key(api_key).build()?;
+        Ok(Self::OpenAI(client))
     }
 
     pub fn build_agent(
         &self,
-        model_name: &str,
+        role: ModelRole,
         agent_name: &str,
         system_prompt: &str,
         temperature: f64,
@@ -32,7 +41,16 @@ impl ModelClient {
         match self {
             Self::Anthropic(client) => Agent::Anthropic(
                 client
-                    .agent(model_name)
+                    .agent(model_name_for(self, role))
+                    .name(agent_name)
+                    .preamble(system_prompt)
+                    .temperature(temperature)
+                    .max_tokens(max_tokens)
+                    .build(),
+            ),
+            Self::OpenAI(client) => Agent::OpenAI(
+                client
+                    .agent(model_name_for(self, role))
                     .name(agent_name)
                     .preamble(system_prompt)
                     .temperature(temperature)
@@ -43,14 +61,23 @@ impl ModelClient {
     }
 }
 
+fn model_name_for(client: &ModelClient, role: ModelRole) -> &'static str {
+    match (client, role) {
+        (ModelClient::Anthropic(_), ModelRole::Default) => "claude-haiku-4-5",
+        (ModelClient::OpenAI(_), ModelRole::Default) => "gpt-4o-mini",
+    }
+}
+
 pub enum Agent {
     Anthropic(rig::agent::Agent<rig::providers::anthropic::completion::CompletionModel>),
+    OpenAI(rig::agent::Agent<rig::providers::openai::completion::CompletionModel>),
 }
 
 impl Agent {
     pub async fn prompt(&self, prompt: &str) -> Result<String, PromptError> {
         match self {
             Self::Anthropic(agent) => agent.prompt(prompt).await,
+            Self::OpenAI(agent) => agent.prompt(prompt).await,
         }
     }
 
@@ -63,6 +90,7 @@ impl Agent {
     {
         match self {
             Self::Anthropic(agent) => agent.prompt_typed::<T>(prompt).await,
+            Self::OpenAI(agent) => agent.prompt_typed::<T>(prompt).await,
         }
     }
 
@@ -76,6 +104,7 @@ impl Agent {
     {
         match self {
             Self::Anthropic(agent) => agent.prompt_typed::<T>(prompt).with_history(history).await,
+            Self::OpenAI(agent) => agent.prompt_typed::<T>(prompt).with_history(history).await,
         }
     }
 }

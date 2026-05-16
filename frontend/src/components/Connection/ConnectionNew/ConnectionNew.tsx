@@ -6,6 +6,7 @@ import {
   GridItem,
   Heading,
   Separator,
+  Text,
 } from "src/components/design-system";
 import { SourceTypeEnum } from "src/constants/database_types";
 import styles from "./ConnectionNew.module.css";
@@ -43,7 +44,7 @@ export function ConnectionNew() {
     };
     createMutation.mutate(payload);
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    navigate(APP_ROUTES.SETTINGS);
+    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
   };
 
   const onChangeHandler = (_: FormData, fieldName: string, value: string) => {
@@ -54,22 +55,25 @@ export function ConnectionNew() {
 
   const handleBack = () => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    navigate(APP_ROUTES.SETTINGS);
+    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
   };
 
   return (
-    <Flex
-      flex="grow"
-      paddingX="2xl"
-      paddingY="xs"
-      marginTop="xs"
-      marginBottom="xs"
-      marginLeft="xs"
-      marginRight="xs"
-      direction="column"
-    >
-      <Flex justifyContent="space-between">
-        <Heading accessbilityLevel={1}>New Connection</Heading>
+    <Flex flex="grow" direction="column" gap="lg" width="100%">
+      <Flex
+        direction="row"
+        justifyContent="space-between"
+        alignItems="flex-start"
+        gap="md"
+      >
+        <Flex direction="column" gap="2xs">
+          <Heading accessbilityLevel={2} size="2xl" textColor="black">
+            New Connection
+          </Heading>
+          <Text fontSize="sm" color="subtle">
+            Connect a new data source to your workspace.
+          </Text>
+        </Flex>
         <Button
           label="Go back to Settings"
           size="md"

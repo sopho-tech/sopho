@@ -40,6 +40,8 @@ function getTextColor(backgroundColor: string) {
       return "white";
     case "grey":
       return "black";
+    case "red":
+      return "white";
     default:
       return "default";
   }
@@ -61,7 +63,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       emphasis,
       ...restProps
     },
-    ref
+    ref,
   ) => {
     const backgroundColorClassName = styles[backgroundColor];
     const sizeClassName =
@@ -96,5 +98,5 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
       </motion.button>
     );
-  }
+  },
 );

@@ -47,12 +47,12 @@ export function ConnectionEdit() {
     };
     updateMutation.mutate({ connectionId: connection.id, payload });
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    navigate(APP_ROUTES.SETTINGS);
+    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
   };
 
   const handleBack = () => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    navigate(APP_ROUTES.SETTINGS);
+    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
   };
 
   if (isLoading) return <div>Loading connection details...</div>;

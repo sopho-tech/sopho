@@ -1,6 +1,7 @@
 mod system_prompt;
 mod user_prompt;
 
+use crate::ai::agent_utils::ModelRole;
 use crate::ai::dto::{Event, EventChannels, VisualizationRecommendation};
 use crate::common::AppState;
 use crate::database::service::execute_sql_query;
@@ -59,8 +60,12 @@ async fn recommend_visualization(
         .cloned()
         .collect();
 
-    let agent = app_state.model_client.build_agent(
-        "claude-haiku-4-5",
+    let model_client = app_state
+        .current_model_client()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let agent = model_client.build_agent(
+        ModelRole::Default,
         "visualization_recommendation_agent",
         system_prompt::SystemPrompt::Recommendation.as_str(),
         0.2,

@@ -1,6 +1,5 @@
-// TODO anthropic api should not be mandatory for running backend. Make it like a feature flag.
-
-use crate::ai::agent_utils;
+use crate::ai::agent_utils::ModelClient;
+use crate::ai_configuration;
 use crate::common::cryptography_utils::{
     generate_and_store_encryption_key, get_encryption_key_from_path,
 };
@@ -9,6 +8,8 @@ use anyhow::bail;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use std::borrow::Cow;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use tracing::warn;
 
 #[derive(Clone, Debug, Deserialize)]
@@ -23,7 +24,6 @@ pub struct Configurations {
     pub admin_password: Cow<'static, str>,
     pub admin_email: Cow<'static, str>,
     pub admin_full_name: Cow<'static, str>,
-    pub anthropic_api_key: Cow<'static, str>,
 }
 
 pub struct ConfigurationsBuilder {
@@ -37,7 +37,6 @@ pub struct ConfigurationsBuilder {
     admin_password: Option<Cow<'static, str>>,
     admin_email: Option<Cow<'static, str>>,
     admin_full_name: Option<Cow<'static, str>>,
-    anthropic_api_key: Option<Cow<'static, str>>,
 }
 
 impl ConfigurationsBuilder {
@@ -53,7 +52,6 @@ impl ConfigurationsBuilder {
             admin_password: None,
             admin_email: None,
             admin_full_name: None,
-            anthropic_api_key: None,
         }
     }
 
@@ -107,11 +105,6 @@ impl ConfigurationsBuilder {
         self
     }
 
-    pub fn anthropic_api_key(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.anthropic_api_key = Some(v.into());
-        self
-    }
-
     pub fn build(self) -> anyhow::Result<Configurations> {
         Ok(Configurations {
             database_url: self
@@ -138,9 +131,6 @@ impl ConfigurationsBuilder {
             admin_full_name: self
                 .admin_full_name
                 .ok_or_else(|| anyhow::anyhow!("admin_full_name is required"))?,
-            anthropic_api_key: self
-                .anthropic_api_key
-                .ok_or_else(|| anyhow::anyhow!("anthropic_api_key is required"))?,
         })
     }
 }
@@ -214,10 +204,6 @@ impl Configurations {
                 Ok(v) => v.into(),
                 Err(err) => bail!("missing ADMIN_FULL_NAME: {err}"),
             },
-            anthropic_api_key: match dotenv::var("ANTHROPIC_API_KEY") {
-                Ok(v) => v.into(),
-                Err(err) => bail!("missing ANTHROPIC_API_KEY: {err}"),
-            },
         })
     }
 }
@@ -227,7 +213,7 @@ pub struct AppState {
     pub database_connection: DatabaseConnection,
     pub config: Configurations,
     pub client: reqwest::Client,
-    pub model_client: agent_utils::ModelClient,
+    pub model_client: Arc<RwLock<Option<ModelClient>>>,
 }
 
 impl AppState {
@@ -235,7 +221,7 @@ impl AppState {
         database_connection: DatabaseConnection,
         config: Configurations,
         client: reqwest::Client,
-        model_client: agent_utils::ModelClient,
+        model_client: Arc<RwLock<Option<ModelClient>>>,
     ) -> Self {
         Self {
             database_connection,
@@ -245,11 +231,21 @@ impl AppState {
         }
     }
 
+    pub async fn current_model_client(&self) -> Option<ModelClient> {
+        self.model_client.read().await.clone()
+    }
+
     pub async fn from_env() -> anyhow::Result<Self> {
         let config = Configurations::from_env()?;
         let database_connection = db::get_db(&config.database_url).await.unwrap();
         let client = reqwest::Client::new();
-        let model_client = agent_utils::ModelClient::anthropic(config.anthropic_api_key.as_ref())?;
+        let model_client: Arc<RwLock<Option<ModelClient>>> = Arc::new(RwLock::new(None));
         Ok(Self::new(database_connection, config, client, model_client))
+    }
+
+    pub async fn load_ai_configuration(&self) {
+        if let Err(e) = ai_configuration::service::load_at_startup(self).await {
+            warn!("failed to load ai_configuration at startup: {e}");
+        }
     }
 }

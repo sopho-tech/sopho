@@ -22,7 +22,7 @@ export function useHomeNavigation() {
   }, [navigate, setCanvasPageState]);
 
   const handleCreateConnection = useCallback(() => {
-    navigate(APP_ROUTES.SETTINGS);
+    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW);
   }, [navigate, setConnectionDetailsPageState]);
 

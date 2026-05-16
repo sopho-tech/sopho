@@ -22,6 +22,7 @@ type IconButtonProps = {
   onClick: () => void;
   tabIndex?: number;
   className?: string;
+  disabled?: boolean;
 };
 
 export function IconButton({
@@ -34,6 +35,7 @@ export function IconButton({
   onClick,
   tabIndex,
   className: customClassName,
+  disabled = false,
 }: IconButtonProps) {
   const backgroundColorClassName = styles[backgroundColor];
   const sizeClassNames: Record<IconButtonSize, string> = {
@@ -48,6 +50,7 @@ export function IconButton({
       className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${customClassName ?? ""}`.trim()}
       onClick={onClick}
       tabIndex={tabIndex}
+      disabled={disabled}
     >
       <Icon color={iconColor} type={type} size={iconSize}></Icon>
     </button>
