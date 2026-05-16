@@ -83,28 +83,32 @@ async fn execute_completion(
     match service::execute_completion(app_state, conversation_id).await {
         Ok(sse) => sse.into_response(),
         Err(e) => {
-            let (status, error) = match &e {
+            let (status, error, code) = match &e {
                 ExecuteCompletionError::Database(_) => {
-                    (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+                    (StatusCode::INTERNAL_SERVER_ERROR, e.to_string(), None)
                 }
                 ExecuteCompletionError::ConnectionNotFound => {
-                    (StatusCode::NOT_FOUND, e.to_string())
+                    (StatusCode::NOT_FOUND, e.to_string(), None)
                 }
                 ExecuteCompletionError::ConversationNotFound => {
-                    (StatusCode::NOT_FOUND, e.to_string())
+                    (StatusCode::NOT_FOUND, e.to_string(), None)
                 }
                 ExecuteCompletionError::NoQuestionsToAnswer
                 | ExecuteCompletionError::LastSenderNotHuman
                 | ExecuteCompletionError::InvalidLastMessageContent
                 | ExecuteCompletionError::EmptyQuestion
                 | ExecuteCompletionError::QuestionTooLong => {
-                    (StatusCode::BAD_REQUEST, e.to_string())
+                    (StatusCode::BAD_REQUEST, e.to_string(), None)
                 }
-                ExecuteCompletionError::AnthropicNotConfigured => {
-                    (StatusCode::SERVICE_UNAVAILABLE, e.to_string())
+                ExecuteCompletionError::AiNotLive => {
+                    (StatusCode::FORBIDDEN, e.to_string(), Some("ai_not_live"))
                 }
             };
-            (status, axum::Json(serde_json::json!({ "error": error }))).into_response()
+            let body = match code {
+                Some(c) => serde_json::json!({ "error": error, "code": c }),
+                None => serde_json::json!({ "error": error }),
+            };
+            (status, axum::Json(body)).into_response()
         }
     }
 }
@@ -120,10 +124,19 @@ async fn suggest_name(
 }
 
 fn conversation_error_http_response(e: ConversationError) -> (StatusCode, axum::Json<Value>) {
-    let (status, error) = match &e {
-        ConversationError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
-        ConversationError::Conversion(_) => (StatusCode::UNPROCESSABLE_ENTITY, e.to_string()),
-        ConversationError::NotFound => (StatusCode::NOT_FOUND, e.to_string()),
+    let (status, error, code) = match &e {
+        ConversationError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string(), None),
+        ConversationError::Conversion(_) => (StatusCode::UNPROCESSABLE_ENTITY, e.to_string(), None),
+        ConversationError::NotFound => (StatusCode::NOT_FOUND, e.to_string(), None),
+        ConversationError::AiNotLive => (
+            StatusCode::FORBIDDEN,
+            e.to_string(),
+            Some("ai_not_live"),
+        ),
     };
-    (status, axum::Json(serde_json::json!({ "error": error })))
+    let body = match code {
+        Some(c) => serde_json::json!({ "error": error, "code": c }),
+        None => serde_json::json!({ "error": error }),
+    };
+    (status, axum::Json(body))
 }

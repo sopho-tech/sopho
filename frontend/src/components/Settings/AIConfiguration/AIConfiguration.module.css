@@ -1,0 +1,75 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  width: 100%;
+  max-width: 32rem;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: 0;
+  background: transparent;
+  overflow: visible;
+  grid-template-columns: none;
+  width: 100%;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2xs);
+  width: 100%;
+}
+
+.field > :global(button[role="combobox"]) {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.field .fullWidthPasswordShell {
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.field .fullWidthPasswordShell > * {
+  width: 100%;
+  min-width: 0;
+}
+
+.fullWidthPasswordContainer {
+  width: 100%;
+  align-items: stretch;
+}
+
+.fullWidthPasswordContainer > div:first-child {
+  width: 100%;
+  min-width: 0;
+}
+
+.feedback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  width: 100%;
+}
+
+.actionsTrailing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}

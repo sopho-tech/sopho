@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod ai;
+mod ai_configuration;
 mod authentication;
 mod canvas;
 mod cell;
@@ -60,6 +61,8 @@ async fn main() {
         .await
         .unwrap();
 
+    app_state.load_ai_configuration().await;
+
     authentication::service::seed_admin_user(&app_state).await;
     demo::service::seed_demo_data(&app_state).await;
 
@@ -115,6 +118,15 @@ async fn main() {
         .nest(
             "/api/v1/conversational_analytics",
             conversational_analytics::routes(app_state.clone()).layer(
+                axum::middleware::from_fn_with_state(
+                    app_state.clone(),
+                    middlewares::auth_middleware_fn,
+                ),
+            ),
+        )
+        .nest(
+            "/api/v1/ai_configuration",
+            ai_configuration::routes(app_state.clone()).layer(
                 axum::middleware::from_fn_with_state(
                     app_state.clone(),
                     middlewares::auth_middleware_fn,

@@ -57,4 +57,10 @@ export const API_ENDPOINTS = {
     COMPLETION: "/api/v1/conversational_analytics/:conversation_id/completion",
     SUGGEST_NAME: "/api/v1/conversational_analytics/:conversation_id/suggest-name",
   },
+  AI_CONFIGURATION: {
+    GET: "/api/v1/ai_configuration",
+    UPDATE: "/api/v1/ai_configuration",
+    DELETE: "/api/v1/ai_configuration",
+    TEST: "/api/v1/ai_configuration/test",
+  },
 };

@@ -17,7 +17,9 @@ use crate::connection::service::{execute_create_connection, execute_delete_conne
 use crate::data_catalog::dto::{Column, Database, Schema, Table};
 use crate::{db, entity};
 use std::path::Path;
+use std::sync::Arc;
 use tokio::sync::mpsc;
+use tokio::sync::RwLock;
 use tracing::error;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
@@ -44,8 +46,26 @@ async fn init_app_state() -> AppState {
     }
     let database_connection = db::get_db(&database_url).await.unwrap();
     db::run_migrations(&database_connection).await.unwrap();
-    let anthropic_api_key = std::env::var("ANTHROPIC_API_KEY")
-        .expect("ANTHROPIC_API_KEY must be set to run integration tests");
+    let anthropic_api_key = match std::env::var("ANTHROPIC_API_KEY") {
+        Ok(v) => v,
+        Err(_) => {
+            eprintln!("skipping AI integration test: ANTHROPIC_API_KEY not set");
+            return AppState::new(
+                database_connection,
+                Configurations::builder()
+                    .database_url(database_url.clone())
+                    .encryption_key("test-secret-key-32-chars-long!!")
+                    .admin_username("admin")
+                    .admin_password("test_password")
+                    .admin_email("admin@test.local")
+                    .admin_full_name("Test Admin")
+                    .build()
+                    .unwrap(),
+                reqwest::Client::new(),
+                Arc::new(RwLock::new(None)),
+            );
+        }
+    };
     let config = Configurations::builder()
         .database_url(database_url.clone())
         .encryption_key("test-secret-key-32-chars-long!!")
@@ -53,11 +73,11 @@ async fn init_app_state() -> AppState {
         .admin_password("test_password")
         .admin_email("admin@test.local")
         .admin_full_name("Test Admin")
-        .anthropic_api_key(anthropic_api_key.clone())
         .build()
         .unwrap();
     let client = reqwest::Client::new();
     let model_client = ModelClient::anthropic(anthropic_api_key.as_ref()).unwrap();
+    let model_client = Arc::new(RwLock::new(Some(model_client)));
     AppState::new(database_connection, config, client, model_client)
 }
 

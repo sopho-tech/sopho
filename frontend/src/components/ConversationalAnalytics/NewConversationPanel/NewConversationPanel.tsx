@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { generatePath, useNavigate } from "react-router";
 import styles from "./NewConversationPanel.module.css";
 import {
+  Box,
   Flex,
   Heading,
   IconButton,
@@ -35,6 +36,7 @@ import {
 } from "@tiptap/extensions";
 import { useCreateConversation } from "src/api/conversational_analytics/queries";
 import { useConnections } from "src/api/connection/queries";
+import { useAiConfiguration } from "src/api/ai_configuration";
 import { APP_ROUTES } from "src/constants/app_routes";
 
 export function NewConversationPanel() {
@@ -43,6 +45,10 @@ export function NewConversationPanel() {
   const { data: connections } = useConnections();
 
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
+  const { data: aiConfiguration } = useAiConfiguration();
+  const isAiReady = aiConfiguration?.status === "live";
+  const aiDisabledTooltip =
+    "Configure a working AI provider in Settings → AI Configurations to start new conversations.";
 
   const editor = useEditor({
     extensions: [
@@ -84,6 +90,7 @@ export function NewConversationPanel() {
   const providerValue = useMemo(() => ({ editor }), [editor]);
 
   const handleSubmit = () => {
+    if (!isAiReady) return;
     const user_message = editor?.getText().trim() ?? "";
     if (!user_message || !editor || isPending || !selectedConnectionId) return;
     createConversation(
@@ -156,14 +163,20 @@ export function NewConversationPanel() {
                   ))}
                 </Select.Content>
               </Select>
-              <IconButton
-                type="arrow_up"
-                backgroundColor="accent"
-                iconColor="white"
-                tooltip={{ text: "Send", direction: "top" }}
-                onClick={handleSubmit}
-                size="md"
-              />
+              <Box sx={{ opacity: isAiReady ? 1 : 0.5 }}>
+                <IconButton
+                  type="arrow_up"
+                  backgroundColor="accent"
+                  iconColor="white"
+                  tooltip={{
+                    text: isAiReady ? "Send" : aiDisabledTooltip,
+                    direction: "top",
+                  }}
+                  onClick={handleSubmit}
+                  size="md"
+                  disabled={!isAiReady}
+                />
+              </Box>
             </Flex>
           </Flex>
         </EditorContext.Provider>

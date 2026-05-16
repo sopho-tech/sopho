@@ -8,6 +8,8 @@ pub enum ConversationError {
     Conversion(String),
     #[error("Conversation not found")]
     NotFound,
+    #[error("AI provider is not configured or not live")]
+    AiNotLive,
 }
 
 #[derive(Debug, Error)]
@@ -28,8 +30,8 @@ pub enum ExecuteCompletionError {
     EmptyQuestion,
     #[error("Question exceeds maximum length")]
     QuestionTooLong,
-    #[error("Anthropic client is not configured")]
-    AnthropicNotConfigured,
+    #[error("AI provider is not configured or not live")]
+    AiNotLive,
 }
 
 impl From<ConversationError> for ExecuteCompletionError {
@@ -40,6 +42,7 @@ impl From<ConversationError> for ExecuteCompletionError {
                 ExecuteCompletionError::Database(sea_orm::DbErr::Custom(s))
             }
             ConversationError::NotFound => ExecuteCompletionError::ConversationNotFound,
+            ConversationError::AiNotLive => ExecuteCompletionError::AiNotLive,
         }
     }
 }

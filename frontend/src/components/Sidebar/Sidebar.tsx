@@ -78,7 +78,10 @@ export function Sidebar() {
           </NavigationMenu.Item>
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
-              <NavLink to={APP_ROUTES.SETTINGS} className={SidebarStyles.link}>
+              <NavLink
+                to={APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS}
+                className={SidebarStyles.link}
+              >
                 <IconButtonLink
                   type="settings"
                   state={getState(APP_ROUTES.SETTINGS)}

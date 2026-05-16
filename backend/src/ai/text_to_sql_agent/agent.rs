@@ -4,6 +4,7 @@ use super::constants::{
 };
 use super::system_prompt::SystemPrompt;
 use super::user_prompt::UserPrompt;
+use crate::ai::agent_utils::ModelRole;
 use crate::ai::dto::{
     DeletionSet, EmpericalObservation, Event, EventChannels, ExplorationQuery,
     ExplorationQueryResult, FunctionalRoleAnalysisResult, LogicalPlanningResponse,
@@ -126,8 +127,12 @@ async fn execute_hypothesis_generation(
     channels: &EventChannels,
 ) -> Result<Vec<LogicalPlanningResponse>> {
     channels.send(Event::GeneratingCandidateHypothesis).await?;
-    let hypothesis_generation_agent = app_state.model_client.build_agent(
-        "claude-haiku-4-5",
+    let model_client = app_state
+        .current_model_client()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let hypothesis_generation_agent = model_client.build_agent(
+        ModelRole::Default,
         "hypothesis_generation_agent",
         SystemPrompt::LogicalPlanning.as_str(),
         0.8,
@@ -160,8 +165,12 @@ async fn execute_integrate_candidate_plans(
     question: &str,
     candidate_hypothesis: Vec<LogicalPlanningResponse>,
 ) -> Result<String> {
-    let integrate_candidate_plan_agent = app_state.model_client.build_agent(
-        "claude-haiku-4-5",
+    let model_client = app_state
+        .current_model_client()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let integrate_candidate_plan_agent = model_client.build_agent(
+        ModelRole::Default,
         "integrate_candidate_plan_agent",
         SystemPrompt::AggregatingPlanCandidates.as_str(),
         0.2,
@@ -189,15 +198,19 @@ pub(crate) async fn execute_search_space_reduction(
     info!("initial data_catalog_batches: {:?}", data_catalog_batches);
     let mut pruned_batches = Vec::new();
     for mut data_catalog_batch in data_catalog_batches {
-        let data_catalog_deletion_agent = app_state.model_client.build_agent(
-            "claude-haiku-4-5",
+        let model_client = app_state
+            .current_model_client()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+        let data_catalog_deletion_agent = model_client.build_agent(
+            ModelRole::Default,
             "data_catalog_deletion_agent",
             SystemPrompt::IdentifyingDeletionSet.as_str(),
             0.2,
             2048,
         );
-        let data_catalog_selection_agent = app_state.model_client.build_agent(
-            "claude-haiku-4-5",
+        let data_catalog_selection_agent = model_client.build_agent(
+            ModelRole::Default,
             "data_catalog_selection_agent",
             SystemPrompt::IdentifyingSelectionSet.as_str(),
             0.2,
@@ -280,8 +293,12 @@ async fn execute_functional_role_analysis(
     master_plan: &str,
     pruned_data_catalog: &Database,
 ) -> Result<FunctionalRoleAnalysisResult> {
-    let functional_role_analysis_agent = app_state.model_client.build_agent(
-        "claude-haiku-4-5",
+    let model_client = app_state
+        .current_model_client()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let functional_role_analysis_agent = model_client.build_agent(
+        ModelRole::Default,
         "functional_role_analysis_agent",
         SystemPrompt::SemanticLinking.as_str(),
         0.2,
@@ -318,8 +335,12 @@ async fn execute_data_profiling(
             };
         let mut chat_history: Vec<Message> = Vec::new();
 
-        let data_profiling_agent = app_state.model_client.build_agent(
-            "claude-haiku-4-5",
+        let model_client = app_state
+            .current_model_client()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+        let data_profiling_agent = model_client.build_agent(
+            ModelRole::Default,
             "data_profiling_before_agent",
             SystemPrompt::DataProfiling.as_str(),
             0.2,
@@ -393,8 +414,12 @@ pub(crate) async fn schema_linking_final_synthesis(
         emperical_observations.len()
     );
 
-    let agent = app_state.model_client.build_agent(
-        "claude-haiku-4-5",
+    let model_client = app_state
+        .current_model_client()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let agent = model_client.build_agent(
+        ModelRole::Default,
         "schema_linking_final_synthesis_agent",
         SystemPrompt::SchemaLinkingFinalSynthesis.as_str(),
         0.2,
@@ -505,8 +530,12 @@ pub(crate) async fn sql_generation(
     linked_schema: SchemaLinkingFinalSynthesisResponse,
 ) -> Result<String> {
     let mut generated_sql = String::new();
-    let agent = app_state.model_client.build_agent(
-        "claude-haiku-4-5",
+    let model_client = app_state
+        .current_model_client()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let agent = model_client.build_agent(
+        ModelRole::Default,
         "sql_generation_agent",
         SystemPrompt::SqlGeneration.as_str(),
         0.2,

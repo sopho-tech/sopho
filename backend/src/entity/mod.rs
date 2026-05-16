@@ -2,6 +2,7 @@
 
 pub mod prelude;
 
+pub mod ai_configuration;
 pub mod canvas;
 pub mod cell;
 pub mod chart;

@@ -5,6 +5,8 @@ import { ConnectionDetail } from "src/components/Connection/ConnectionDetail/Con
 import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 import { Button } from "src/components/design-system/Button/Button";
 import { Flex } from "src/components/design-system/Flex/Flex";
+import { Heading } from "src/components/design-system/Heading/Heading";
+import { Text } from "src/components/design-system/Text/Text";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
 
@@ -23,12 +25,21 @@ export function Connections() {
   }, [setConnectionDetailsPageState, navigate]);
 
   return (
-    <Flex direction="column" flex="grow" gap="md" overflow="hidden">
+    <Flex direction="column" flex="grow" gap="lg" overflow="hidden">
       <Flex
-        direction="row-reverse"
+        direction="row"
         justifyContent="space-between"
-        alignItems="center"
+        alignItems="flex-start"
+        gap="md"
       >
+        <Flex direction="column" gap="2xs">
+          <Heading accessbilityLevel={2} size="2xl" textColor="black">
+            Connections
+          </Heading>
+          <Text fontSize="sm" color="subtle">
+            Manage the data sources available to your workspace.
+          </Text>
+        </Flex>
         <Button
           label="New"
           leadingIconName="add"
