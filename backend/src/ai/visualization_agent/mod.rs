@@ -60,10 +60,7 @@ async fn recommend_visualization(
         .cloned()
         .collect();
 
-    let model_client = app_state
-        .current_model_client()
-        .await
-        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let model_client = app_state.require_model_client().await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
         "visualization_recommendation_agent",

@@ -1,0 +1,51 @@
+import {
+  Sender,
+  useConversation,
+} from "src/api/conversational_analytics";
+import { useAiConfiguration } from "src/api/ai_configuration";
+import { useConversationStream } from "src/components/ConversationalAnalytics/ConversationStreamContext";
+
+export type FollowUpGateReason =
+  | "ai_not_ready"
+  | "streaming"
+  | "awaiting_response"
+  | "loading";
+
+export type FollowUpGate =
+  | { canSend: true }
+  | { canSend: false; reason: FollowUpGateReason };
+
+export function useCanSendFollowUp(conversationId: string): FollowUpGate {
+  const conversationQuery = useConversation(conversationId);
+  const { data: aiConfiguration } = useAiConfiguration();
+  const { isStreaming } = useConversationStream(conversationId);
+
+  if (conversationQuery.isLoading || !conversationQuery.data) {
+    return { canSend: false, reason: "loading" };
+  }
+  if (aiConfiguration?.status !== "live") {
+    return { canSend: false, reason: "ai_not_ready" };
+  }
+  if (isStreaming) {
+    return { canSend: false, reason: "streaming" };
+  }
+  const messages = conversationQuery.data.messages;
+  const lastMessage = messages[messages.length - 1];
+  if (lastMessage && lastMessage.sender === Sender.Human) {
+    return { canSend: false, reason: "awaiting_response" };
+  }
+  return { canSend: true };
+}
+
+export function getFollowUpDisabledTooltip(reason: FollowUpGateReason): string {
+  switch (reason) {
+    case "ai_not_ready":
+      return "Configure a working AI provider in Settings → AI Configurations to send messages.";
+    case "streaming":
+      return "Wait for the current response to finish.";
+    case "awaiting_response":
+      return "Wait for the current response to finish.";
+    case "loading":
+      return "Loading conversation…";
+  }
+}

@@ -1,7 +1,9 @@
 use super::dto;
+use super::error::AppendUserMessageError;
 use super::error::ConversationError;
 use super::error::ExecuteCompletionError;
 use super::service;
+use crate::common::error_codes::codes;
 use crate::common::AppState;
 use axum::extract::Json;
 use axum::extract::Path;
@@ -22,6 +24,7 @@ pub fn routes(app_state: AppState) -> Router {
         .route("/{conversation_id}", delete(delete_conversation))
         .route("/{conversation_id}/completion", post(execute_completion))
         .route("/{conversation_id}/suggest-name", post(suggest_name))
+        .route("/{conversation_id}/messages", post(append_user_message))
         .with_state(app_state)
 }
 
@@ -101,7 +104,7 @@ async fn execute_completion(
                     (StatusCode::BAD_REQUEST, e.to_string(), None)
                 }
                 ExecuteCompletionError::AiNotLive => {
-                    (StatusCode::FORBIDDEN, e.to_string(), Some("ai_not_live"))
+                    (StatusCode::FORBIDDEN, e.to_string(), Some(codes::AI_NOT_LIVE.as_str()))
                 }
             };
             let body = match code {
@@ -123,6 +126,41 @@ async fn suggest_name(
     }
 }
 
+async fn append_user_message(
+    State(app_state): State<AppState>,
+    Path(conversation_id): Path<Uuid>,
+    Json(payload): Json<dto::AppendUserMessageDto>,
+) -> impl IntoResponse {
+    match service::append_user_message(app_state, conversation_id, payload).await {
+        Ok(response_dto) => (StatusCode::OK, axum::Json(serde_json::json!(response_dto))).into_response(),
+        Err(e) => {
+            let (status, error, code) = match &e {
+                AppendUserMessageError::Database(_) => {
+                    (StatusCode::INTERNAL_SERVER_ERROR, e.to_string(), None)
+                }
+                AppendUserMessageError::NotFound => (StatusCode::NOT_FOUND, e.to_string(), None),
+                AppendUserMessageError::ConversationBusy => (
+                    StatusCode::CONFLICT,
+                    e.to_string(),
+                    Some(codes::CONVERSATION_BUSY.as_str()),
+                ),
+                AppendUserMessageError::EmptyQuestion
+                | AppendUserMessageError::QuestionTooLong => {
+                    (StatusCode::BAD_REQUEST, e.to_string(), None)
+                }
+                AppendUserMessageError::AiNotLive => {
+                    (StatusCode::FORBIDDEN, e.to_string(), Some(codes::AI_NOT_LIVE.as_str()))
+                }
+            };
+            let body = match code {
+                Some(c) => serde_json::json!({ "error": error, "code": c }),
+                None => serde_json::json!({ "error": error }),
+            };
+            (status, axum::Json(body)).into_response()
+        }
+    }
+}
+
 fn conversation_error_http_response(e: ConversationError) -> (StatusCode, axum::Json<Value>) {
     let (status, error, code) = match &e {
         ConversationError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string(), None),
@@ -131,7 +169,7 @@ fn conversation_error_http_response(e: ConversationError) -> (StatusCode, axum::
         ConversationError::AiNotLive => (
             StatusCode::FORBIDDEN,
             e.to_string(),
-            Some("ai_not_live"),
+            Some(codes::AI_NOT_LIVE.as_str()),
         ),
     };
     let body = match code {

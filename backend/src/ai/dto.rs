@@ -198,6 +198,39 @@ pub struct VisualizationRecommendation {
     pub reasoning: String,
 }
 
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RouterCode {
+    TextToSql,
+    Followup,
+    Clarify,
+    RejectOffTopic,
+    RejectUnsafe,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct RouterDecision {
+    pub code: RouterCode,
+    pub message: String,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ConversationHistoryTerminalStatus {
+    Completed,
+    AwaitingClarification,
+    Rejected,
+    Failed,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct ConversationHistoryTurn {
+    pub user_question: String,
+    pub terminal_status: ConversationHistoryTerminalStatus,
+    pub assistant_message: Option<String>,
+    pub generated_sql: Option<String>,
+}
+
 #[derive(Clone, Debug, serde::Serialize)]
 #[serde(tag = "event_name", content = "data", rename_all = "snake_case")]
 pub enum Event {
@@ -239,6 +272,10 @@ pub enum Event {
     RecommendedVisualization {
         visualization: VisualizationRecommendation,
     },
+    Routing,
+    Routed { decision: RouterDecision },
+    AwaitingClarification,
+    Rejected,
 }
 
 pub struct EventChannels {

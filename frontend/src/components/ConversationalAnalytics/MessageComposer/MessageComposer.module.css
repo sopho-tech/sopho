@@ -1,0 +1,30 @@
+.editorContent {
+  width: 100%;
+  min-width: 0;
+}
+
+.tiptap {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.5rem;
+  padding-top: var(--space-lg);
+  padding-left: var(--space-lg);
+  padding-right: var(--space-lg);
+  border: none;
+  outline: none;
+  color: var(--color-text);
+  overflow: hidden;
+  cursor: text;
+}
+
+.tiptap p:global(.is-editor-empty):first-child::before {
+  color: var(--color-text-placeholder);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap:focus {
+  outline: none;
+}

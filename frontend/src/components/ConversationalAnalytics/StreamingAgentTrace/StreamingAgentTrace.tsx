@@ -9,6 +9,8 @@ import {
   STEP_LABELS,
   TRACE_HIDDEN_EVENTS,
   TraceStep,
+  RouterDecisionBubble,
+  extractRouterDecision,
 } from "src/components/ConversationalAnalytics/AgentTrace/trace-steps";
 import { QueryResultChart } from "src/components/ConversationalAnalytics/QueryResultChart";
 
@@ -62,8 +64,9 @@ export function StreamingAgentTrace({
   const steps = useMemo(() => buildDisplaySteps(events), [events]);
   const statusText = useMemo(() => deriveStatusText(events), [events]);
   const chartData = useMemo(() => extractChartData(events), [events]);
+  const routerDecision = useMemo(() => extractRouterDecision(events), [events]);
 
-  if (steps.length === 0 && !isStreaming) return null;
+  if (steps.length === 0 && !isStreaming && !routerDecision) return null;
 
   return (
     <>
@@ -90,6 +93,12 @@ export function StreamingAgentTrace({
           </Flex>
         )}
       </Box>
+      {routerDecision && (
+        <RouterDecisionBubble
+          data={routerDecision.data}
+          createdAt={routerDecision.createdAt}
+        />
+      )}
       {chartData && <QueryResultChart chartData={chartData} />}
     </>
   );

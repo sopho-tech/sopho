@@ -11,6 +11,7 @@ use serde::de::DeserializeOwned;
 #[derive(Clone, Copy, Debug)]
 pub enum ModelRole {
     Default,
+    Small,
 }
 
 #[derive(Clone)]
@@ -64,7 +65,9 @@ impl ModelClient {
 fn model_name_for(client: &ModelClient, role: ModelRole) -> &'static str {
     match (client, role) {
         (ModelClient::Anthropic(_), ModelRole::Default) => "claude-haiku-4-5",
+        (ModelClient::Anthropic(_), ModelRole::Small) => "claude-haiku-4-5",
         (ModelClient::OpenAI(_), ModelRole::Default) => "gpt-4o-mini",
+        (ModelClient::OpenAI(_), ModelRole::Small) => "gpt-4o-mini",
     }
 }
 
