@@ -1,16 +1,23 @@
 import { useParams } from "react-router";
 import {
   ConversationMessageDto,
+  MessageStatus,
   Sender,
+  useAppendUserMessage,
   useConversation,
 } from "src/api/conversational_analytics";
 import { ConversationActionsMenu } from "src/components/ConversationalAnalytics/ConversationActionsMenu";
 import { Flex, Icon, Text } from "src/components/design-system";
 import { MessageHoverFooter } from "./MessageHoverFooter";
+import {
+  getFollowUpDisabledTooltip,
+  useCanSendFollowUp,
+} from "./useCanSendFollowUp";
 import styles from "./ExistingConversationPanel.module.css";
-import { Fragment, useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { AgentTrace } from "src/components/ConversationalAnalytics/AgentTrace";
 import { StreamingAgentTrace } from "src/components/ConversationalAnalytics/StreamingAgentTrace";
+import { MessageComposer } from "src/components/ConversationalAnalytics/MessageComposer";
 import {
   useConversationStream,
   useStartStream,
@@ -29,7 +36,7 @@ const Message = ({ connectionId, message }: MessageProps) => {
         .map((c) => c.content)
         .join("\n");
       return (
-        <Fragment>
+        <Flex direction="column" className={styles.messageBubbleGroup}>
           <Flex
             backgroundColor="grey"
             borderRadius="lg"
@@ -43,7 +50,7 @@ const Message = ({ connectionId, message }: MessageProps) => {
             textToCopy={text}
             footerClassName={styles.messageFooter}
           />
-        </Fragment>
+        </Flex>
       );
     }
     if (message.sender == Sender.Assistant) {
@@ -66,6 +73,8 @@ export const ExistingConversationPanel = () => {
   const startStream = useStartStream();
   const { events: streamingEvents, isStreaming } =
     useConversationStream(conversationId);
+  const appendUserMessage = useAppendUserMessage(conversationId);
+  const gate = useCanSendFollowUp(conversationId);
 
   useEffect(() => {
     if (!conversationId || !conversationQuery.isSuccess) return;
@@ -80,50 +89,97 @@ export const ExistingConversationPanel = () => {
 
   const connectionId = conversationQuery.data?.conversation.connection_id ?? "";
 
-  const render = () => {
-    return conversationQuery.data?.messages.map(
-      (message: ConversationMessageDto) => (
-        <Message
-          key={message.id}
-          connectionId={connectionId}
-          message={message}
-        />
-      ),
+  const handleSubmit = (text: string) => {
+    if (!gate.canSend) return;
+    appendUserMessage.mutate(
+      { user_message: text },
+      {
+        onSuccess: () => {
+          startStream(conversationId);
+        },
+      },
     );
+  };
+
+  const composerDisabled = !gate.canSend || appendUserMessage.isPending;
+  const composerDisabledTooltip = gate.canSend
+    ? undefined
+    : getFollowUpDisabledTooltip(gate.reason);
+
+  const lastAssistantStatus = useMemo(() => {
+    const all = conversationQuery.data?.messages ?? [];
+    for (let i = all.length - 1; i >= 0; i--) {
+      if (all[i].sender === Sender.Assistant) return all[i].status;
+    }
+    return null;
+  }, [conversationQuery.data?.messages]);
+
+  const composerPlaceholder =
+    lastAssistantStatus === MessageStatus.AwaitingClarification
+      ? "Answer the clarifying question…"
+      : "Ask something else...";
+
+  const messagesToRender = useMemo(() => {
+    const all = conversationQuery.data?.messages ?? [];
+    if (!isStreaming) return all;
+    const last = all[all.length - 1];
+    if (last?.sender === Sender.Assistant) return all.slice(0, -1);
+    return all;
+  }, [conversationQuery.data?.messages, isStreaming]);
+
+  const renderMessages = () => {
+    return messagesToRender.map((message: ConversationMessageDto) => (
+      <Message key={message.id} connectionId={connectionId} message={message} />
+    ));
   };
 
   const conversation = conversationQuery.data?.conversation;
 
   return (
-    <Flex direction="column" paddingTop="lg" overflow="scrollY">
-      {conversation && (
-        <Flex paddingBottom="md" alignItems="center" width="100%">
-          <ConversationActionsMenu conversation={conversation}>
-            <button
-              type="button"
-              className={styles.conversationHeaderTrigger}
-              aria-label="Conversation actions"
-            >
-              <Flex flex="grow" alignItems="center" sx={{ minWidth: 0 }}>
-                <Text truncate fontSize="lg" color="darkGrey">
-                  {conversation.name}
-                </Text>
-              </Flex>
-              <Icon type="chevron_down" color="grey" size="md" />
-            </button>
-          </ConversationActionsMenu>
-        </Flex>
-      )}
-      <Flex direction="column" className={styles.messageColumn}>
-        {render()}
-        {(isStreaming || streamingEvents.length > 0) && (
-          <Flex direction="column" className={styles.messageWrapper}>
-            <StreamingAgentTrace
-              events={streamingEvents}
-              isStreaming={isStreaming}
-            />
+    <Flex direction="column" height="100%" width="100%">
+      <Flex direction="column" flex="grow" overflow="scrollY" paddingTop="lg">
+        {conversation && (
+          <Flex paddingBottom="md" alignItems="center" width="100%">
+            <ConversationActionsMenu conversation={conversation}>
+              <button
+                type="button"
+                className={styles.conversationHeaderTrigger}
+                aria-label="Conversation actions"
+              >
+                <Flex flex="grow" alignItems="center" sx={{ minWidth: 0 }}>
+                  <Text truncate fontSize="lg" color="darkGrey">
+                    {conversation.name}
+                  </Text>
+                </Flex>
+                <Icon type="chevron_down" color="grey" size="md" />
+              </button>
+            </ConversationActionsMenu>
           </Flex>
         )}
+        <Flex direction="column" className={styles.messageColumn}>
+          {renderMessages()}
+          {(isStreaming || streamingEvents.length > 0) && (
+            <Flex direction="column" className={styles.messageWrapper}>
+              <StreamingAgentTrace
+                events={streamingEvents}
+                isStreaming={isStreaming}
+              />
+            </Flex>
+          )}
+        </Flex>
+      </Flex>
+      <Flex
+        direction="column"
+        paddingTop="md"
+        paddingBottom="md"
+        sx={{ flexShrink: 0 }}
+      >
+        <MessageComposer
+          placeholder={composerPlaceholder}
+          onSubmit={handleSubmit}
+          disabled={composerDisabled}
+          disabledTooltip={composerDisabledTooltip}
+        />
       </Flex>
     </Flex>
   );

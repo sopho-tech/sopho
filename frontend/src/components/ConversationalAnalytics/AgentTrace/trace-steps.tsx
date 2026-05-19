@@ -7,7 +7,9 @@ import {
   Collapsible,
   MotionFlex,
   Spinner,
+  Badge,
 } from "src/components/design-system";
+import type { BadgeProps } from "src/components/design-system/Badge/Badge";
 import { rotateToggleTransition } from "src/components/design-system/animation";
 import type {
   IconType,
@@ -34,13 +36,19 @@ import {
   type EmpericalObservationColumn,
   type SchemaLinkingFinalSynthesisResponse,
   type SchemaLinkingRejectedCandidate,
+  RouterCode,
+  type RouterDecisionData,
 } from "src/components/ConversationalAnalytics/dto";
+import { MessageHoverFooter } from "src/components/ConversationalAnalytics/ExistingConversationPanel/MessageHoverFooter";
+import panelStyles from "src/components/ConversationalAnalytics/ExistingConversationPanel/ExistingConversationPanel.module.css";
 import styles from "./AgentTrace.module.css";
 
 const TRACE_STEP_ICON: IconType = "circle_dot";
 const TRACE_STEP_ICON_COLOR: IconColor = "grey";
 
 export const STEP_LABELS: Record<string, string> = {
+  [AgentEventName.Routing]: "Analyzing your question…",
+  [AgentEventName.Routed]: "Routed",
   [AgentEventName.GeneratedCandidateHypothesis]: "Generated Candidate Plans",
   [AgentEventName.IntegratedCandidatePlans]: "Integrated Master Plan",
   [AgentEventName.ExecutedSearchSpaceReduction]: "Selected Data Catalog",
@@ -65,7 +73,11 @@ export const STEP_LABELS: Record<string, string> = {
 
 export const TRACE_HIDDEN_EVENTS = new Set<string>([
   AgentEventName.Starting,
+  AgentEventName.Routing,
+  AgentEventName.Routed,
   AgentEventName.Completed,
+  AgentEventName.AwaitingClarification,
+  AgentEventName.Rejected,
   AgentEventName.ExecutedQuery,
   AgentEventName.RecommendedVisualization,
 ]);
@@ -392,6 +404,88 @@ function SqlContent({ data }: { data: GeneratedSqlData }) {
 
 function ErrorContent({ data }: { data: string }) {
   return <Box className={styles.errorBlock}>{data}</Box>;
+}
+
+export type ExtractedRouterDecision = {
+  data: RouterDecisionData;
+  createdAt?: string;
+};
+
+export function extractRouterDecision(
+  events: AgentEvent[],
+  contents?: ConversationMessageContentDto[],
+): ExtractedRouterDecision | null {
+  const routed = events.find((e) => e.event_name === AgentEventName.Routed);
+  if (!routed?.data) return null;
+  const d = routed.data as RouterDecisionData;
+  if (
+    d.decision.code === RouterCode.TextToSql ||
+    d.decision.code === RouterCode.Followup
+  ) {
+    return null;
+  }
+
+  let createdAt: string | undefined;
+  if (contents) {
+    for (const content of contents) {
+      const event = parseEvent(content);
+      if (event?.event_name === AgentEventName.Routed) {
+        createdAt = content.created_at;
+        break;
+      }
+    }
+  }
+
+  return { data: d, createdAt };
+}
+
+const ROUTER_DECISION_BADGE: Record<
+  Exclude<RouterCode, typeof RouterCode.TextToSql | typeof RouterCode.Followup>,
+  { label: string; variant: NonNullable<BadgeProps["variant"]> }
+> = {
+  [RouterCode.Clarify]: { label: "Clarification", variant: "yellow" },
+  [RouterCode.RejectOffTopic]: {
+    label: "Can't help with this",
+    variant: "subtle",
+  },
+  [RouterCode.RejectUnsafe]: {
+    label: "Can't help with this",
+    variant: "default",
+  },
+};
+
+export function RouterDecisionBubble({
+  data,
+  createdAt,
+}: {
+  data: RouterDecisionData;
+  createdAt?: string;
+}) {
+  const { code, message } = data.decision;
+  if (code === RouterCode.TextToSql || code === RouterCode.Followup)
+    return null;
+
+  const { label, variant } = ROUTER_DECISION_BADGE[code];
+
+  return (
+    <Flex direction="column" className={panelStyles.messageBubbleGroup}>
+      <Box backgroundColor="grey" borderRadius="md" paddingX="sm" paddingY="xs">
+        <Badge variant={variant}>{label}</Badge>
+        {message && (
+          <Box className={styles.routerDecisionMessage} marginTop="2xs">
+            <Text as="div" fontSize="base">
+              {message}
+            </Text>
+          </Box>
+        )}
+      </Box>
+      <MessageHoverFooter
+        createdAt={createdAt ?? ""}
+        textToCopy={message}
+        footerClassName={panelStyles.messageFooter}
+      />
+    </Flex>
+  );
 }
 
 export function renderStepContent(event: AgentEvent): React.ReactNode | null {

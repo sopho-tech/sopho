@@ -6,13 +6,42 @@ pub const CHANNEL_SIZE: usize = 32;
 pub const MAX_QUESTION_LENGTH: usize = 16_384;
 pub const DEFAULT_CONVERSATION_NAME: &str = "Untitled";
 
+pub(super) enum PipelineOutcome {
+    Completed,
+    AwaitingClarification,
+    Rejected,
+}
+pub const CONVERSATION_HISTORY_TURN_LIMIT: usize = 5;
+pub const CONVERSATION_HISTORY_MESSAGE_LIMIT: usize = 2 * CONVERSATION_HISTORY_TURN_LIMIT + 1;
+
+/// Terminal statuses:
+/// 1. Processed - Successfully processed the user or system message.
+/// 2. Failed - There was some issue in processing the message. Ex: Routing agent failed, Text-to-SQL agent failed.
+/// 3. AwaitingClarification - The user question cannot be answered on its own. It can be answered if the user provides more information.
+/// This status is not valid for system messages.
+/// 4. Rejected - The type of question is not supported. Ex - "What is the purpose of life ?". This status is not valid for system messages.
+///
+/// Non-terminal statuses:
+/// 1. Processing - The user/system message is being processed.
+///
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum MessageStatus {
     Processing,
     Processed,
     Failed,
+    AwaitingClarification,
+    Rejected,
 }
+
+pub const TERMINAL_MESSAGE_STATUSES: &[MessageStatus] = &[
+    MessageStatus::Processed,
+    MessageStatus::Failed,
+    MessageStatus::AwaitingClarification,
+    MessageStatus::Rejected,
+];
+
+pub const NON_TERMINAL_MESSAGE_STATUSES: &[MessageStatus] = &[MessageStatus::Processing];
 
 impl fmt::Display for MessageStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -20,6 +49,8 @@ impl fmt::Display for MessageStatus {
             MessageStatus::Processing => write!(f, "PROCESSING"),
             MessageStatus::Processed => write!(f, "PROCESSED"),
             MessageStatus::Failed => write!(f, "FAILED"),
+            MessageStatus::AwaitingClarification => write!(f, "AWAITING_CLARIFICATION"),
+            MessageStatus::Rejected => write!(f, "REJECTED"),
         }
     }
 }
@@ -32,6 +63,8 @@ impl FromStr for MessageStatus {
             "PROCESSING" => Ok(MessageStatus::Processing),
             "PROCESSED" => Ok(MessageStatus::Processed),
             "FAILED" => Ok(MessageStatus::Failed),
+            "AWAITING_CLARIFICATION" => Ok(MessageStatus::AwaitingClarification),
+            "REJECTED" => Ok(MessageStatus::Rejected),
             _ => Err(format!("Invalid message status: {}", s)),
         }
     }

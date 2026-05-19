@@ -8,6 +8,8 @@ pub enum ErrorCode {
     InvalidAccessToken,
     MissingPrerequisites,
     SyntaxError,
+    AiNotLive,
+    ConversationBusy,
 }
 
 impl ErrorCode {
@@ -20,6 +22,8 @@ impl ErrorCode {
             ErrorCode::InvalidAccessToken => "INVALID_ACCESS_TOKEN",
             ErrorCode::MissingPrerequisites => "MISSING_PREREQUISITES",
             ErrorCode::SyntaxError => "SYNTAX_ERROR",
+            ErrorCode::AiNotLive => "AI_NOT_LIVE",
+            ErrorCode::ConversationBusy => "CONVERSATION_BUSY",
         }
     }
 }
@@ -40,4 +44,6 @@ pub mod codes {
     pub const INVALID_ACCESS_TOKEN: ErrorCode = ErrorCode::InvalidAccessToken;
     pub const MISSING_PREREQUISITES: ErrorCode = ErrorCode::MissingPrerequisites;
     pub const SYNTAX_ERROR: ErrorCode = ErrorCode::SyntaxError;
+    pub const AI_NOT_LIVE: ErrorCode = ErrorCode::AiNotLive;
+    pub const CONVERSATION_BUSY: ErrorCode = ErrorCode::ConversationBusy;
 }

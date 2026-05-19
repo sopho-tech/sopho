@@ -235,6 +235,12 @@ impl AppState {
         self.model_client.read().await.clone()
     }
 
+    pub async fn require_model_client(&self) -> anyhow::Result<ModelClient> {
+        self.current_model_client()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("AI is not configured"))
+    }
+
     pub async fn from_env() -> anyhow::Result<Self> {
         let config = Configurations::from_env()?;
         let database_connection = db::get_db(&config.database_url).await.unwrap();

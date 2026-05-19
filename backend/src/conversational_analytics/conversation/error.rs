@@ -34,6 +34,35 @@ pub enum ExecuteCompletionError {
     AiNotLive,
 }
 
+#[derive(Debug, Error)]
+pub enum AppendUserMessageError {
+    #[error("Database error: {0}")]
+    Database(#[from] sea_orm::DbErr),
+    #[error("Conversation not found")]
+    NotFound,
+    #[error("Conversation is busy; wait for the current response to finish")]
+    ConversationBusy,
+    #[error("Question must not be empty")]
+    EmptyQuestion,
+    #[error("Question exceeds maximum length")]
+    QuestionTooLong,
+    #[error("AI provider is not configured or not live")]
+    AiNotLive,
+}
+
+impl From<ConversationError> for AppendUserMessageError {
+    fn from(e: ConversationError) -> Self {
+        match e {
+            ConversationError::Database(d) => AppendUserMessageError::Database(d),
+            ConversationError::Conversion(s) => {
+                AppendUserMessageError::Database(sea_orm::DbErr::Custom(s))
+            }
+            ConversationError::NotFound => AppendUserMessageError::NotFound,
+            ConversationError::AiNotLive => AppendUserMessageError::AiNotLive,
+        }
+    }
+}
+
 impl From<ConversationError> for ExecuteCompletionError {
     fn from(e: ConversationError) -> Self {
         match e {

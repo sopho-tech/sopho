@@ -14,6 +14,17 @@ import { useSuggestConversationName } from "src/api/conversational_analytics";
 import { streamSse } from "src/utils/fetch_sse";
 import { AgentEventName, type AgentEvent } from "./dto";
 
+const TERMINAL_EVENTS = new Set<string>([
+  AgentEventName.Completed,
+  AgentEventName.Error,
+  AgentEventName.AwaitingClarification,
+  AgentEventName.Rejected,
+]);
+
+function isTerminalEvent(eventName: string): boolean {
+  return TERMINAL_EVENTS.has(eventName);
+}
+
 type StreamEntry = {
   events: AgentEvent[];
   isStreaming: boolean;
@@ -108,7 +119,7 @@ export function ConversationStreamProvider({
               onMessage: (data) => {
                 try {
                   const parsed = JSON.parse(data) as AgentEvent;
-                  if (parsed.event_name === AgentEventName.Completed) {
+                  if (isTerminalEvent(parsed.event_name)) {
                     store.controllers.delete(conversationId);
                     store.streams.delete(conversationId);
                     notify(store);

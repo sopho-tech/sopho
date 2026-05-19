@@ -1,7 +1,7 @@
 use crate::entity::conversation_message;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
-    QueryFilter, QueryOrder, Set,
+    QueryFilter, QueryOrder, QuerySelect, Set,
 };
 use uuid::Uuid;
 
@@ -60,12 +60,20 @@ pub async fn get_first_message_by_conversation_id(
 pub async fn list_messages_by_conversation_id(
     db: &DatabaseConnection,
     conversation_id: Uuid,
+    limit: Option<u64>,
+    descending: bool,
 ) -> Result<Vec<conversation_message::Model>, DbErr> {
-    conversation_message::Entity::find()
-        .filter(conversation_message::Column::ConversationId.eq(conversation_id))
-        .order_by_asc(conversation_message::Column::SequenceNumber)
-        .all(db)
-        .await
+    let mut query = conversation_message::Entity::find()
+        .filter(conversation_message::Column::ConversationId.eq(conversation_id));
+    query = if descending {
+        query.order_by_desc(conversation_message::Column::SequenceNumber)
+    } else {
+        query.order_by_asc(conversation_message::Column::SequenceNumber)
+    };
+    if let Some(limit) = limit {
+        query = query.limit(limit);
+    }
+    query.all(db).await
 }
 
 pub async fn update_message_status(

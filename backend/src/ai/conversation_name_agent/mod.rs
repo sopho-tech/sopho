@@ -8,10 +8,7 @@ use anyhow::Result;
 const MAX_NAME_LENGTH: usize = 60;
 
 pub async fn suggest_name(app_state: &AppState, question: &str) -> Result<String> {
-    let model_client = app_state
-        .current_model_client()
-        .await
-        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let model_client = app_state.require_model_client().await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
         "conversation_name_agent",

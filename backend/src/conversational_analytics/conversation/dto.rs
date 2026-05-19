@@ -42,6 +42,11 @@ impl TryFrom<entity::conversation::Model> for ConversationDto {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct AppendUserMessageDto {
+    pub user_message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ConversationWithMessagesDto {
     pub conversation: ConversationDto,
     pub messages: Vec<ConversationMessageWithContentDto>,

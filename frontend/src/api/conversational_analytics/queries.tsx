@@ -11,6 +11,7 @@ import {
   ConversationDto,
   ConversationWithMessagesDto,
 } from "src/components/ConversationalAnalytics/dto";
+import type { AppendUserMessageDto } from "src/components/ConversationalAnalytics/dto";
 
 export type {
   ConversationMessageContentDto,
@@ -18,9 +19,13 @@ export type {
   ConversationDto,
   ConversationMessageDto,
   ConversationWithMessagesDto,
+  AppendUserMessageDto,
 } from "src/components/ConversationalAnalytics/dto";
 
-export { Sender } from "src/components/ConversationalAnalytics/dto";
+export {
+  MessageStatus,
+  Sender,
+} from "src/components/ConversationalAnalytics/dto";
 
 export const conversationKeys = {
   all: ["conversations"] as const,
@@ -90,6 +95,23 @@ const conversationalAnalyticsApi = {
       ),
     });
     return response as ConversationDto;
+  },
+
+  appendUserMessage: async (
+    conversationId: string,
+    payload: AppendUserMessageDto,
+  ): Promise<ConversationWithMessagesDto> => {
+    const response = await ApiService.post({
+      url: API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.APPEND_MESSAGE.replace(
+        ":conversation_id",
+        conversationId,
+      ),
+      data: payload,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return response as ConversationWithMessagesDto;
   },
 
   deleteConversation: async (conversationId: string): Promise<void> => {
@@ -185,6 +207,24 @@ export const useDeleteConversation = () => {
       queryClient.removeQueries({
         queryKey: conversationKeys.detail(conversationId),
       });
+      queryClient.invalidateQueries({
+        queryKey: conversationKeys.lists(),
+      });
+    },
+  });
+};
+
+export const useAppendUserMessage = (conversationId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: AppendUserMessageDto) =>
+      conversationalAnalyticsApi.appendUserMessage(conversationId, payload),
+    onSuccess: (data) => {
+      queryClient.setQueryData<ConversationWithMessagesDto>(
+        conversationKeys.detail(conversationId),
+        data,
+      );
       queryClient.invalidateQueries({
         queryKey: conversationKeys.lists(),
       });

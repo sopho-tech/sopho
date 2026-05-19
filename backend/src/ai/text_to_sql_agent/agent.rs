@@ -127,10 +127,7 @@ async fn execute_hypothesis_generation(
     channels: &EventChannels,
 ) -> Result<Vec<LogicalPlanningResponse>> {
     channels.send(Event::GeneratingCandidateHypothesis).await?;
-    let model_client = app_state
-        .current_model_client()
-        .await
-        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let model_client = app_state.require_model_client().await?;
     let hypothesis_generation_agent = model_client.build_agent(
         ModelRole::Default,
         "hypothesis_generation_agent",
@@ -165,10 +162,7 @@ async fn execute_integrate_candidate_plans(
     question: &str,
     candidate_hypothesis: Vec<LogicalPlanningResponse>,
 ) -> Result<String> {
-    let model_client = app_state
-        .current_model_client()
-        .await
-        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let model_client = app_state.require_model_client().await?;
     let integrate_candidate_plan_agent = model_client.build_agent(
         ModelRole::Default,
         "integrate_candidate_plan_agent",
@@ -198,10 +192,7 @@ pub(crate) async fn execute_search_space_reduction(
     info!("initial data_catalog_batches: {:?}", data_catalog_batches);
     let mut pruned_batches = Vec::new();
     for mut data_catalog_batch in data_catalog_batches {
-        let model_client = app_state
-            .current_model_client()
-            .await
-            .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+        let model_client = app_state.require_model_client().await?;
         let data_catalog_deletion_agent = model_client.build_agent(
             ModelRole::Default,
             "data_catalog_deletion_agent",
@@ -293,10 +284,7 @@ async fn execute_functional_role_analysis(
     master_plan: &str,
     pruned_data_catalog: &Database,
 ) -> Result<FunctionalRoleAnalysisResult> {
-    let model_client = app_state
-        .current_model_client()
-        .await
-        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let model_client = app_state.require_model_client().await?;
     let functional_role_analysis_agent = model_client.build_agent(
         ModelRole::Default,
         "functional_role_analysis_agent",
@@ -335,10 +323,7 @@ async fn execute_data_profiling(
             };
         let mut chat_history: Vec<Message> = Vec::new();
 
-        let model_client = app_state
-            .current_model_client()
-            .await
-            .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+        let model_client = app_state.require_model_client().await?;
         let data_profiling_agent = model_client.build_agent(
             ModelRole::Default,
             "data_profiling_before_agent",
@@ -414,10 +399,7 @@ pub(crate) async fn schema_linking_final_synthesis(
         emperical_observations.len()
     );
 
-    let model_client = app_state
-        .current_model_client()
-        .await
-        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let model_client = app_state.require_model_client().await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
         "schema_linking_final_synthesis_agent",
@@ -530,10 +512,7 @@ pub(crate) async fn sql_generation(
     linked_schema: SchemaLinkingFinalSynthesisResponse,
 ) -> Result<String> {
     let mut generated_sql = String::new();
-    let model_client = app_state
-        .current_model_client()
-        .await
-        .ok_or_else(|| anyhow::anyhow!("AI is not configured"))?;
+    let model_client = app_state.require_model_client().await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
         "sql_generation_agent",

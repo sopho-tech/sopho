@@ -52,8 +52,12 @@ pub async fn get_first_message_for_conversation(
 pub async fn list_messages_for_conversation(
     db: &DatabaseConnection,
     conversation_id: Uuid,
+    limit: Option<u64>,
+    descending: bool,
 ) -> Result<Vec<dto::ConversationMessageDto>, ConversationError> {
-    let models = repository::list_messages_by_conversation_id(db, conversation_id).await?;
+    let models =
+        repository::list_messages_by_conversation_id(db, conversation_id, limit, descending)
+            .await?;
     Ok(models
         .into_iter()
         .map(dto::ConversationMessageDto::from)

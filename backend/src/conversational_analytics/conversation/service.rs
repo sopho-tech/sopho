@@ -1,11 +1,14 @@
 use super::constants;
-use super::constants::ConversationStatus;
+use super::constants::{ConversationStatus, PipelineOutcome};
 use super::dto;
+use super::error::AppendUserMessageError;
 use super::error::ConversationError;
 use super::error::ExecuteCompletionError;
 use super::repository;
 use crate::ai::conversation_name_agent;
 use crate::ai::dto::EventChannels;
+use crate::ai::dto::{ConversationHistoryTerminalStatus, ConversationHistoryTurn, RouterCode};
+use crate::ai::router_agent;
 use crate::ai::text_to_sql_agent;
 use crate::ai::visualization_agent;
 use crate::ai_configuration::dto::AiConfigurationStatus;
@@ -15,9 +18,11 @@ use crate::common::AppState;
 use crate::connection::service as connection_service;
 use crate::conversational_analytics::conversation::constants::ContentType;
 use crate::conversational_analytics::conversation::constants::MessageStatus;
+use crate::conversational_analytics::conversation::constants::TERMINAL_MESSAGE_STATUSES;
+use crate::conversational_analytics::conversation::constants::CONVERSATION_HISTORY_MESSAGE_LIMIT;
 use crate::conversational_analytics::message::constants::Sender;
 use crate::conversational_analytics::message::dto::{
-    ConversationMessageWithContentDto, CreateConversationMessageDto,
+    ConversationMessageDto, ConversationMessageWithContentDto, CreateConversationMessageDto,
 };
 use crate::conversational_analytics::message::repository as message_repository;
 use crate::conversational_analytics::message::service as message_service;
@@ -36,14 +41,14 @@ use tokio_stream::StreamExt as _;
 use uuid::Uuid;
 
 async fn ensure_ai_live(app_state: &AppState) -> Result<(), ConversationError> {
-    let status = ai_config_service::get_status(app_state).await.map_err(
-        |e| match e {
+    let status = ai_config_service::get_status(app_state)
+        .await
+        .map_err(|e| match e {
             crate::ai_configuration::error::AiConfigurationError::Database(d) => {
                 ConversationError::Database(d)
             }
             other => ConversationError::Conversion(other.to_string()),
-        },
-    )?;
+        })?;
     if status.status == AiConfigurationStatus::Live {
         Ok(())
     } else {
@@ -66,6 +71,8 @@ pub async fn get_conversation(
     let messages = message_service::list_messages_for_conversation(
         &app_state.database_connection,
         conversation_id,
+        None,
+        false,
     )
     .await?;
     let message_ids: Vec<Uuid> = messages.iter().map(|m| m.id).collect();
@@ -236,6 +243,68 @@ pub async fn suggest_conversation_name(
     dto::ConversationDto::try_from(model).map_err(ConversationError::Conversion)
 }
 
+pub async fn append_user_message(
+    app_state: AppState,
+    conversation_id: Uuid,
+    payload: dto::AppendUserMessageDto,
+) -> Result<dto::ConversationWithMessagesDto, AppendUserMessageError> {
+    ensure_ai_live(&app_state).await?;
+
+    repository::get_conversation(&app_state.database_connection, conversation_id)
+        .await
+        .map_err(|e| match &e {
+            sea_orm::DbErr::RecordNotFound(_) => AppendUserMessageError::NotFound,
+            _ => AppendUserMessageError::Database(e),
+        })?;
+
+    let last_message = message_service::get_last_message_for_conversation(
+        &app_state.database_connection,
+        conversation_id,
+    )
+    .await?;
+    let last_message = last_message.ok_or(AppendUserMessageError::ConversationBusy)?;
+    let status_ok = last_message
+        .status
+        .parse::<MessageStatus>()
+        .ok()
+        .is_some_and(|status| TERMINAL_MESSAGE_STATUSES.contains(&status));
+    if last_message.sender != Sender::Assistant.to_string() || !status_ok {
+        return Err(AppendUserMessageError::ConversationBusy);
+    }
+
+    let question = validate_question(&payload.user_message).map_err(|e| match e {
+        ExecuteCompletionError::EmptyQuestion => AppendUserMessageError::EmptyQuestion,
+        ExecuteCompletionError::QuestionTooLong => AppendUserMessageError::QuestionTooLong,
+        _ => AppendUserMessageError::Database(sea_orm::DbErr::Custom(
+            "unexpected validation error".to_string(),
+        )),
+    })?;
+
+    let txn = app_state.database_connection.begin().await?;
+
+    let new_message = CreateConversationMessageDto {
+        conversation_id,
+        sequence_number: last_message.sequence_number + 1,
+        sender: Sender::Human.to_string(),
+        content: question.to_string(),
+        status: MessageStatus::Processed.to_string(),
+    };
+    let created_message = message_service::create_message(&txn, new_message).await?;
+
+    let user_message_content = CreateConversationMessageContentDto {
+        conversation_message_id: created_message.id,
+        sequence_number: 1,
+        content_type: ContentType::Text.to_string(),
+        content: question.to_string(),
+        status: MessageStatus::Processed.to_string(),
+    };
+    message_content_service::create_message_content(&txn, user_message_content).await?;
+
+    txn.commit().await?;
+
+    Ok(get_conversation(app_state, conversation_id).await?)
+}
+
 fn validate_question(question: &str) -> Result<&str, ExecuteCompletionError> {
     let question = question.trim();
     if question.is_empty() {
@@ -335,18 +404,31 @@ pub async fn execute_completion(
 
     tokio::spawn(async move {
         let channels = EventChannels { sse_tx, persist_tx };
-        let result = run_pipeline(&app_state, &connection, &question, &channels).await;
+        let result = async {
+            let conversation_history_turns =
+                load_conversation_history(&app_state, conversation_id, conversation_message_id)
+                    .await?;
+            run_pipeline(
+                &app_state,
+                &connection,
+                &question,
+                &conversation_history_turns,
+                &channels,
+            )
+            .await
+        }
+        .await;
         if let Err(e) = &result {
             let _ = channels
                 .send(crate::ai::dto::Event::Error(e.to_string()))
                 .await;
         }
-        let _ = channels.send(crate::ai::dto::Event::Completed).await;
 
-        let status = if result.is_ok() {
-            MessageStatus::Processed
-        } else {
-            MessageStatus::Failed
+        let status = match &result {
+            Ok(PipelineOutcome::Completed) => MessageStatus::Processed,
+            Ok(PipelineOutcome::AwaitingClarification) => MessageStatus::AwaitingClarification,
+            Ok(PipelineOutcome::Rejected) => MessageStatus::Rejected,
+            Err(_) => MessageStatus::Failed,
         };
         let _ = message_repository::update_message_status(
             &app_state.database_connection,
@@ -373,12 +455,47 @@ async fn run_pipeline(
     app_state: &AppState,
     connection: &entity::connection::Model,
     question: &str,
+    conversation_history_turns: &[ConversationHistoryTurn],
     channels: &EventChannels,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<PipelineOutcome> {
     channels.send(crate::ai::dto::Event::Starting).await?;
-    let sql = text_to_sql_agent::execute(app_state, connection, question, channels).await?;
-    visualization_agent::execute(app_state, connection, question, &sql, channels).await?;
-    Ok(())
+    channels.send(crate::ai::dto::Event::Routing).await?;
+    let decision = router_agent::execute(app_state, question, conversation_history_turns).await?;
+    channels
+        .send(crate::ai::dto::Event::Routed {
+            decision: decision.clone(),
+        })
+        .await?;
+
+    match decision.code {
+        RouterCode::TextToSql | RouterCode::Followup => {
+            let effective_question = {
+                let m = decision.message.trim();
+                if m.is_empty() {
+                    question
+                } else {
+                    m
+                }
+            };
+            let sql =
+                text_to_sql_agent::execute(app_state, connection, effective_question, channels)
+                    .await?;
+            visualization_agent::execute(app_state, connection, effective_question, &sql, channels)
+                .await?;
+            channels.send(crate::ai::dto::Event::Completed).await?;
+            Ok(PipelineOutcome::Completed)
+        }
+        RouterCode::Clarify => {
+            channels
+                .send(crate::ai::dto::Event::AwaitingClarification)
+                .await?;
+            Ok(PipelineOutcome::AwaitingClarification)
+        }
+        RouterCode::RejectOffTopic | RouterCode::RejectUnsafe => {
+            channels.send(crate::ai::dto::Event::Rejected).await?;
+            Ok(PipelineOutcome::Rejected)
+        }
+    }
 }
 
 async fn persist_events(
@@ -398,4 +515,149 @@ async fn persist_events(
         let _ = message_content_service::create_message_content_connection(db, create_dto).await;
         sequence_number += 1;
     }
+}
+
+async fn load_conversation_history(
+    app_state: &AppState,
+    conversation_id: Uuid,
+    current_assistant_message_id: Uuid,
+) -> anyhow::Result<Vec<ConversationHistoryTurn>> {
+    let messages = message_service::list_messages_for_conversation(
+        &app_state.database_connection,
+        conversation_id,
+        Some(CONVERSATION_HISTORY_MESSAGE_LIMIT as u64),
+        true,
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("conversation history: failed to list messages: {e}");
+        anyhow::anyhow!("failed to load conversation history: {e}")
+    })?;
+
+    let mut pairs: Vec<(ConversationMessageDto, ConversationMessageDto)> = Vec::new();
+    let mut current_human: Option<ConversationMessageDto> = None;
+    for msg in messages.into_iter().rev() {
+        if msg.id == current_assistant_message_id {
+            continue;
+        }
+        if msg.sender == Sender::Human.to_string() {
+            current_human = Some(msg);
+        } else if msg.sender == Sender::Assistant.to_string() {
+            if let Some(h) = current_human.take() {
+                if msg.status != MessageStatus::Processing.to_string() {
+                    pairs.push((h, msg));
+                }
+            }
+        }
+    }
+
+    let mut conversation_history_turns: Vec<ConversationHistoryTurn> = Vec::new();
+    for (human, assistant) in pairs {
+        let terminal_status = match assistant.status.parse::<MessageStatus>() {
+            Ok(MessageStatus::Processed) => ConversationHistoryTerminalStatus::Completed,
+            Ok(MessageStatus::AwaitingClarification) => {
+                ConversationHistoryTerminalStatus::AwaitingClarification
+            }
+            Ok(MessageStatus::Rejected) => ConversationHistoryTerminalStatus::Rejected,
+            Ok(MessageStatus::Failed) => ConversationHistoryTerminalStatus::Failed,
+            _ => continue,
+        };
+
+        let user_question = load_message_text(&app_state.database_connection, human.id).await;
+        let assistant_message = load_conversation_history_assistant_message(
+            &app_state.database_connection,
+            assistant.id,
+            &terminal_status,
+        )
+        .await;
+        let generated_sql = load_generated_sql(
+            &app_state.database_connection,
+            assistant.id,
+            &terminal_status,
+        )
+        .await;
+
+        conversation_history_turns.push(ConversationHistoryTurn {
+            user_question,
+            terminal_status,
+            assistant_message,
+            generated_sql,
+        });
+    }
+    Ok(conversation_history_turns)
+}
+
+async fn load_message_text(db: &sea_orm::DatabaseConnection, message_id: Uuid) -> String {
+    match message_content_service::list_message_content_for_message(db, message_id).await {
+        Ok(contents) => contents
+            .into_iter()
+            .next()
+            .map(|c| c.content)
+            .unwrap_or_default(),
+        Err(_) => String::new(),
+    }
+}
+
+async fn load_conversation_history_assistant_message(
+    db: &sea_orm::DatabaseConnection,
+    assistant_message_id: Uuid,
+    terminal_status: &ConversationHistoryTerminalStatus,
+) -> Option<String> {
+    let contents =
+        match message_content_service::list_message_content_for_message(db, assistant_message_id)
+            .await
+        {
+            Ok(c) => c,
+            Err(_) => return None,
+        };
+
+    match terminal_status {
+        ConversationHistoryTerminalStatus::AwaitingClarification
+        | ConversationHistoryTerminalStatus::Rejected => {
+            for c in contents.iter() {
+                if let Ok(value) = serde_json::from_str::<serde_json::Value>(&c.content) {
+                    if value["event_name"] == "routed" {
+                        if let Some(msg) = value["data"]["decision"]["message"].as_str() {
+                            return Some(msg.to_string());
+                        }
+                    }
+                }
+            }
+            None
+        }
+        ConversationHistoryTerminalStatus::Completed => Some("<query executed>".to_string()),
+        ConversationHistoryTerminalStatus::Failed => None,
+    }
+}
+
+async fn load_generated_sql(
+    db: &sea_orm::DatabaseConnection,
+    assistant_message_id: Uuid,
+    terminal_status: &ConversationHistoryTerminalStatus,
+) -> Option<String> {
+    match terminal_status {
+        ConversationHistoryTerminalStatus::AwaitingClarification
+        | ConversationHistoryTerminalStatus::Rejected => return None,
+        ConversationHistoryTerminalStatus::Completed
+        | ConversationHistoryTerminalStatus::Failed => {}
+    }
+
+    let contents =
+        match message_content_service::list_message_content_for_message(db, assistant_message_id)
+            .await
+        {
+            Ok(c) => c,
+            Err(_) => return None,
+        };
+    let mut generated_sql: Option<String> = None;
+    for c in contents {
+        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&c.content) {
+            if value["event_name"] == "generated_sql" {
+                if let Some(sql) = value["data"]["sql"].as_str() {
+                    generated_sql = Some(sql.to_string());
+                }
+            }
+        }
+    }
+    generated_sql
 }

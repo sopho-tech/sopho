@@ -6,6 +6,16 @@
   cursor: pointer;
 }
 
+.messageBubbleGroup {
+  width: fit-content;
+  max-width: 100%;
+  min-width: 13.5rem;
+}
+
+.messageWrapper {
+  padding-bottom: var(--space-md);
+}
+
 .messageColumn .messageWrapper:nth-child(odd) {
   align-self: flex-end;
 }

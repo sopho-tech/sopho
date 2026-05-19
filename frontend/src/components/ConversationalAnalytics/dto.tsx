@@ -6,6 +6,10 @@ export type CreateConversationDto = {
   user_message: string;
 };
 
+export type AppendUserMessageDto = {
+  user_message: string;
+};
+
 export type ConversationDto = {
   id: string;
   connection_id: string;
@@ -33,12 +37,23 @@ export const Sender = {
 
 export type Sender = (typeof Sender)[keyof typeof Sender];
 
+export const MessageStatus = {
+  Processing: "PROCESSING",
+  Processed: "PROCESSED",
+  Failed: "FAILED",
+  AwaitingClarification: "AWAITING_CLARIFICATION",
+  Rejected: "REJECTED",
+} as const;
+
+export type MessageStatus =
+  (typeof MessageStatus)[keyof typeof MessageStatus];
+
 export type ConversationMessageDto = {
   id: string;
   conversation_id: string;
   sequence_number: number;
   sender: Sender;
-  status: string;
+  status: MessageStatus;
   created_at: string;
   updated_at: string;
   content: ConversationMessageContentDto[];
@@ -112,8 +127,12 @@ export type DataCatalogDatabase = {
 
 export const AgentEventName = {
   Starting: "starting",
+  Routing: "routing",
+  Routed: "routed",
   Error: "error",
   Completed: "completed",
+  AwaitingClarification: "awaiting_clarification",
+  Rejected: "rejected",
   GeneratingCandidateHypothesis: "generating_candidate_hypothesis",
   GeneratedCandidateHypothesis: "generated_candidate_hypothesis",
   IntegratingCandidatePlans: "integrating_candidate_plans",
@@ -138,6 +157,7 @@ export type AgentEventName =
   (typeof AgentEventName)[keyof typeof AgentEventName];
 
 export const IN_PROGRESS_EVENTS = new Set<string>([
+  AgentEventName.Routing,
   AgentEventName.GeneratingCandidateHypothesis,
   AgentEventName.IntegratingCandidatePlans,
   AgentEventName.ExecutingSearchSpaceReduction,
@@ -191,6 +211,25 @@ export type ExecutedSchemaLinkingSynthesisData = {
 
 export type GeneratedSqlData = {
   sql: string;
+};
+
+export const RouterCode = {
+  TextToSql: "text_to_sql",
+  Followup: "followup",
+  Clarify: "clarify",
+  RejectOffTopic: "reject_off_topic",
+  RejectUnsafe: "reject_unsafe",
+} as const;
+
+export type RouterCode = (typeof RouterCode)[keyof typeof RouterCode];
+
+export type RouterDecision = {
+  code: RouterCode;
+  message: string;
+};
+
+export type RouterDecisionData = {
+  decision: RouterDecision;
 };
 
 export type RecommendedVisualizationData = {
