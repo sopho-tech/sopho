@@ -7,6 +7,8 @@ use super::error::ExecuteCompletionError;
 use super::repository;
 use crate::ai::conversation_name_agent;
 use crate::ai::dto::EventChannels;
+use crate::ai::followup_questions_agent;
+use crate::data_catalog;
 use crate::ai::dto::{ConversationHistoryTerminalStatus, ConversationHistoryTurn, RouterCode};
 use crate::ai::router_agent;
 use crate::ai::text_to_sql_agent;
@@ -482,6 +484,15 @@ async fn run_pipeline(
                     .await?;
             visualization_agent::execute(app_state, connection, effective_question, &sql, channels)
                 .await?;
+            send_followup_questions(
+                app_state,
+                connection,
+                effective_question,
+                &sql,
+                conversation_history_turns,
+                channels,
+            )
+            .await;
             channels.send(crate::ai::dto::Event::Completed).await?;
             Ok(PipelineOutcome::Completed)
         }
@@ -496,6 +507,45 @@ async fn run_pipeline(
             Ok(PipelineOutcome::Rejected)
         }
     }
+}
+
+async fn send_followup_questions(
+    app_state: &AppState,
+    connection: &entity::connection::Model,
+    question: &str,
+    sql: &str,
+    conversation_history_turns: &[ConversationHistoryTurn],
+    channels: &EventChannels,
+) {
+    let catalog = match data_catalog::get_data_catalog_of_connection(connection).await {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::error!("followup questions: failed to load catalog: {e}");
+            return;
+        }
+    };
+    let questions = match followup_questions_agent::suggest_followups(
+        app_state,
+        connection,
+        question,
+        sql,
+        conversation_history_turns,
+        &catalog,
+    )
+    .await
+    {
+        Ok(q) => q,
+        Err(e) => {
+            tracing::error!("followup questions: generation failed: {e}");
+            return;
+        }
+    };
+    if questions.is_empty() {
+        return;
+    }
+    let _ = channels
+        .send(crate::ai::dto::Event::SuggestedFollowups { questions })
+        .await;
 }
 
 async fn persist_events(

@@ -1,7 +1,7 @@
 mod system_prompt;
 mod user_prompt;
 
-use crate::ai::agent_utils::ModelRole;
+use crate::ai::agent_utils::{AgentName, ModelRole};
 use crate::ai::dto::{Event, EventChannels, VisualizationRecommendation};
 use crate::common::AppState;
 use crate::database::service::execute_sql_query;
@@ -63,7 +63,7 @@ async fn recommend_visualization(
     let model_client = app_state.require_model_client().await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
-        "visualization_recommendation_agent",
+        AgentName::VisualizationRecommendationAgent,
         system_prompt::SystemPrompt::Recommendation.as_str(),
         0.2,
         1024,

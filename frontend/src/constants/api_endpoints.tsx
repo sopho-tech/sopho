@@ -64,4 +64,7 @@ export const API_ENDPOINTS = {
     DELETE: "/api/v1/ai_configuration",
     TEST: "/api/v1/ai_configuration/test",
   },
+  SUGGESTED_QUESTION: {
+    GET_BY_CONNECTION: "/api/v1/suggested_question/connection/:connection_id",
+  },
 };

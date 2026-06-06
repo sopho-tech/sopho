@@ -8,6 +8,7 @@ RUN npm run build
 
 # Backend builder stage
 FROM rust:1.93.1 AS backend-builder
+RUN apt-get update && apt-get install -y --no-install-recommends protobuf-compiler && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY backend/ .
 RUN cargo build --release

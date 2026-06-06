@@ -237,6 +237,9 @@ pub enum Event {
     Starting,
     Error(String),
     Completed,
+    SuggestedFollowups {
+        questions: Vec<String>,
+    },
     GeneratingCandidateHypothesis,
     GeneratedCandidateHypothesis(Vec<String>),
     IntegratingCandidatePlans,

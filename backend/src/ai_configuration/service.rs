@@ -1,4 +1,4 @@
-use crate::ai::agent_utils::{ModelClient, ModelRole};
+use crate::ai::agent_utils::{AgentName, ModelClient, ModelRole};
 use crate::ai_configuration::dto::{
     AiConfigurationDto, Provider, TestAiConfigurationResponse,
 };
@@ -121,7 +121,7 @@ async fn run_liveness_ping(provider: Provider, api_key: &str) -> anyhow::Result<
     let client = build_client_for_provider(provider, api_key)?;
     let agent = client.build_agent(
         ModelRole::Default,
-        "liveness_check",
+        AgentName::LivenessCheckAgent,
         "Respond with exactly the word OK and nothing else.",
         0.0,
         5,

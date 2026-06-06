@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { generatePath, useNavigate } from "react-router";
 import { Flex, Heading, Select } from "src/components/design-system";
 import { useCreateConversation } from "src/api/conversational_analytics/queries";
 import { useConnections } from "src/api/connection/queries";
 import { useAiConfiguration } from "src/api/ai_configuration";
 import { APP_ROUTES } from "src/constants/app_routes";
-import { MessageComposer } from "src/components/ConversationalAnalytics/MessageComposer";
+import { MessageComposer, type MessageComposerHandle } from "src/components/ConversationalAnalytics/MessageComposer";
+import { SuggestedQuestions } from "src/components/ConversationalAnalytics/NewConversationPanel/SuggestedQuestions";
 import styles from "./NewConversationPanel.module.css";
 
 export function NewConversationPanel() {
@@ -14,12 +15,20 @@ export function NewConversationPanel() {
   const { data: connections } = useConnections();
 
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
+  const composerRef = useRef<MessageComposerHandle>(null);
+
+  useEffect(() => {
+    if (!selectedConnectionId && connections?.length) {
+      setSelectedConnectionId(connections[0].id);
+    }
+  }, [connections, selectedConnectionId]);
+
   const { data: aiConfiguration } = useAiConfiguration();
   const isAiReady = aiConfiguration?.status === "live";
   const disabled = !isAiReady || !selectedConnectionId || isPending;
 
   const aiDisabledTooltip =
-    "Configure a working AI provider in Settings → AI Configurations to start new conversations.";
+    "Configure AI provider in Settings";
   const connectionDisabledTooltip = "Select a connection to start.";
   const disabledTooltip = !isAiReady
     ? aiDisabledTooltip
@@ -56,6 +65,7 @@ export function NewConversationPanel() {
           Let's data
         </Heading>
         <MessageComposer
+          ref={composerRef}
           placeholder="Hi, how can I help you today ?"
           onSubmit={handleSubmit}
           disabled={disabled}
@@ -78,6 +88,10 @@ export function NewConversationPanel() {
               </Select.Content>
             </Select>
           }
+        />
+        <SuggestedQuestions
+          connectionId={selectedConnectionId}
+          onPick={(text) => composerRef.current?.setText(text)}
         />
       </Flex>
     </Flex>

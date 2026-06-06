@@ -18,7 +18,9 @@ mod entity;
 mod middlewares;
 mod monitor;
 mod notebook;
+mod scheduler;
 mod search;
+mod suggested_question;
 #[cfg(test)]
 mod tests;
 
@@ -65,6 +67,8 @@ async fn main() {
 
     authentication::service::seed_admin_user(&app_state).await;
     demo::service::seed_demo_data(&app_state).await;
+
+    scheduler::start(app_state.clone()).await;
 
     let frontend_dir = PathBuf::from(app_state.config.frontend_dir.as_ref());
     let index_path = frontend_dir.join("index.html");
@@ -127,6 +131,15 @@ async fn main() {
         .nest(
             "/api/v1/ai_configuration",
             ai_configuration::routes(app_state.clone()).layer(
+                axum::middleware::from_fn_with_state(
+                    app_state.clone(),
+                    middlewares::auth_middleware_fn,
+                ),
+            ),
+        )
+        .nest(
+            "/api/v1/suggested_question",
+            suggested_question::routes(app_state.clone()).layer(
                 axum::middleware::from_fn_with_state(
                     app_state.clone(),
                     middlewares::auth_middleware_fn,

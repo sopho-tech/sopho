@@ -80,6 +80,7 @@ export const TRACE_HIDDEN_EVENTS = new Set<string>([
   AgentEventName.Rejected,
   AgentEventName.ExecutedQuery,
   AgentEventName.RecommendedVisualization,
+  AgentEventName.SuggestedFollowups,
 ]);
 
 const OBSERVATION_COLUMNS: ColumnConfig<EmpericalObservationColumn>[] = [
@@ -559,10 +560,10 @@ export function TraceStep({
       disabled={!expandable}
     >
       <Flex
-        gap="xs"
+        direction="column"
         className={`${styles.step} ${!expandable ? styles.noContentStep : ""}`}
       >
-        <Flex direction="column" alignItems="center">
+        <Flex gap="2xs" alignItems="center">
           <Flex
             alignItems="center"
             justifyContent="center"
@@ -579,42 +580,44 @@ export function TraceStep({
               />
             )}
           </Flex>
-          {!isLast && <Box className={styles.stepLine} />}
+          <Box flex="grow">
+            <Collapsible.Trigger>
+              <Flex alignItems="center" gap="2xs" className={styles.stepHeader}>
+                <MotionFlex
+                  className={styles.stepHeaderChevron}
+                  alignItems="center"
+                  justifyContent="center"
+                  animate={{ rotate: open ? 90 : 0 }}
+                  transition={rotateToggleTransition}
+                >
+                  <Icon
+                    type="chevron_right"
+                    color="grey"
+                    size="sm"
+                    interactive={false}
+                  />
+                </MotionFlex>
+                <Text fontSize="xs" color="darkGrey">
+                  {label}
+                </Text>
+              </Flex>
+            </Collapsible.Trigger>
+          </Box>
         </Flex>
-        <Box flex="grow" paddingBottom="md">
-          <Collapsible.Trigger>
-            <Flex alignItems="center" gap="2xs" className={styles.stepHeader}>
-              <MotionFlex
-                className={styles.stepHeaderChevron}
-                alignItems="center"
-                justifyContent="center"
-                animate={{ rotate: open ? 90 : 0 }}
-                transition={rotateToggleTransition}
-              >
-                <Icon
-                  type="chevron_right"
-                  color="grey"
-                  size="sm"
-                  interactive={false}
-                />
-              </MotionFlex>
-              <Text fontSize="xs" color="darkGrey">
-                {label}
-              </Text>
-            </Flex>
-          </Collapsible.Trigger>
+        <Flex gap="2xs" sx={{ minHeight: !isLast ? "16px" : undefined }}>
+          <Flex direction="column" alignItems="center" className={styles.stepLineColumn}>
+            {!isLast && <Box className={styles.stepLine} />}
+          </Flex>
           {expandable && (
-            <Collapsible.Content>
-              <Box
-                paddingTop="2xs"
-                paddingLeft="md"
-                // className={styles.stepContent}
-              >
-                {renderStepContent(event)}
-              </Box>
-            </Collapsible.Content>
+            <Box flex="grow" paddingBottom="sm">
+              <Collapsible.Content>
+                <Box paddingTop="2xs" paddingLeft="md">
+                  {renderStepContent(event)}
+                </Box>
+              </Collapsible.Content>
+            </Box>
           )}
-        </Box>
+        </Flex>
       </Flex>
     </Collapsible>
   );

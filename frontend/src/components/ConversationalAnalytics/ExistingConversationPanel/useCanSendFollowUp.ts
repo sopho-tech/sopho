@@ -40,7 +40,7 @@ export function useCanSendFollowUp(conversationId: string): FollowUpGate {
 export function getFollowUpDisabledTooltip(reason: FollowUpGateReason): string {
   switch (reason) {
     case "ai_not_ready":
-      return "Configure a working AI provider in Settings → AI Configurations to send messages.";
+      return "Configure AI provider in Settings";
     case "streaming":
       return "Wait for the current response to finish.";
     case "awaiting_response":
