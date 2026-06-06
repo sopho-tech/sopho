@@ -36,6 +36,7 @@ base64 = "0.22.1"
 time = "0.3.47"
 sqlx = { version = "0.8", features = [ "runtime-tokio" ] }
 thiserror = "=2.0.12"
+strum = { version = "0.27", features = ["derive"] }
 rust_decimal = { version = "1.36", features = ["serde-with-str"] }
 migration = { path = "migration" }
 argon2 = "0.5.3"
@@ -45,3 +46,4 @@ hex = "0.4"
 aes-gcm = "0.10.3"
 indoc = "2.0.7"
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+tokio-cron-scheduler = { version = "0.15.1", features = ["postgres_storage"] }

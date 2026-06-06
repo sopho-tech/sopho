@@ -14,7 +14,7 @@ import {
   useCanSendFollowUp,
 } from "./useCanSendFollowUp";
 import styles from "./ExistingConversationPanel.module.css";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { AgentTrace } from "src/components/ConversationalAnalytics/AgentTrace";
 import { StreamingAgentTrace } from "src/components/ConversationalAnalytics/StreamingAgentTrace";
 import { MessageComposer } from "src/components/ConversationalAnalytics/MessageComposer";
@@ -22,6 +22,9 @@ import {
   useConversationStream,
   useStartStream,
 } from "src/components/ConversationalAnalytics/ConversationStreamContext";
+import type { MessageComposerHandle } from "src/components/ConversationalAnalytics/MessageComposer";
+import { extractFollowUpQuestions } from "src/components/ConversationalAnalytics/dto";
+import { SuggestedQuestionList } from "src/components/ConversationalAnalytics/SuggestedQuestionList";
 
 type MessageProps = {
   connectionId: string;
@@ -71,6 +74,7 @@ export const ExistingConversationPanel = () => {
   const conversationId = id ?? "";
   const conversationQuery = useConversation(conversationId);
   const startStream = useStartStream();
+  const composerRef = useRef<MessageComposerHandle>(null);
   const { events: streamingEvents, isStreaming } =
     useConversationStream(conversationId);
   const appendUserMessage = useAppendUserMessage(conversationId);
@@ -127,6 +131,11 @@ export const ExistingConversationPanel = () => {
     return all;
   }, [conversationQuery.data?.messages, isStreaming]);
 
+  const followUpQuestions = useMemo(
+    () => extractFollowUpQuestions(conversationQuery.data?.messages ?? []),
+    [conversationQuery.data?.messages],
+  );
+
   const renderMessages = () => {
     return messagesToRender.map((message: ConversationMessageDto) => (
       <Message key={message.id} connectionId={connectionId} message={message} />
@@ -166,6 +175,12 @@ export const ExistingConversationPanel = () => {
               />
             </Flex>
           )}
+          {gate.canSend && !isStreaming && followUpQuestions.length > 0 && (
+            <SuggestedQuestionList
+              questions={followUpQuestions.map((text) => ({ id: text, text }))}
+              onPick={(text) => composerRef.current?.setText(text)}
+            />
+          )}
         </Flex>
       </Flex>
       <Flex
@@ -175,6 +190,7 @@ export const ExistingConversationPanel = () => {
         sx={{ flexShrink: 0 }}
       >
         <MessageComposer
+          ref={composerRef}
           placeholder={composerPlaceholder}
           onSubmit={handleSubmit}
           disabled={composerDisabled}

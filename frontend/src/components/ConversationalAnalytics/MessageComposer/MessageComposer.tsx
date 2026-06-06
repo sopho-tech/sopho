@@ -4,7 +4,7 @@ import {
   EditorContext,
   type Editor,
 } from "@tiptap/react";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useImperativeHandle, type ReactNode, type Ref } from "react";
 import Blockquote from "@tiptap/extension-blockquote";
 import Bold from "@tiptap/extension-bold";
 import BulletList from "@tiptap/extension-bullet-list";
@@ -33,6 +33,10 @@ import {
 import { Box, Flex, IconButton } from "src/components/design-system";
 import styles from "./MessageComposer.module.css";
 
+export type MessageComposerHandle = {
+  setText: (text: string) => void;
+};
+
 type MessageComposerProps = {
   placeholder: string;
   onSubmit: (text: string) => void;
@@ -40,6 +44,7 @@ type MessageComposerProps = {
   disabledTooltip?: string;
   enabledTooltip?: string;
   slotLeft?: ReactNode;
+  ref?: Ref<MessageComposerHandle>;
 };
 
 const extractAndClear = (editor: Editor): string | null => {
@@ -56,6 +61,7 @@ export function MessageComposer({
   disabledTooltip,
   enabledTooltip = "Send",
   slotLeft,
+  ref,
 }: MessageComposerProps) {
   const editor = useEditor({
     extensions: [
@@ -103,6 +109,18 @@ export function MessageComposer({
       },
     },
   });
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      setText: (text: string) => {
+        if (!editor) return;
+        editor.commands.setContent(text);
+        editor.commands.focus("end");
+      },
+    }),
+    [editor],
+  );
 
   const providerValue = useMemo(() => ({ editor }), [editor]);
 

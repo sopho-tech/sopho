@@ -1,6 +1,6 @@
 use super::system_prompt::SystemPrompt;
 use super::user_prompt::UserPrompt;
-use crate::ai::agent_utils::ModelRole;
+use crate::ai::agent_utils::{AgentName, ModelRole};
 use crate::ai::dto::{ConversationHistoryTurn, RouterDecision};
 use crate::common::AppState;
 use anyhow::Result;
@@ -20,7 +20,7 @@ pub async fn execute(
     let model_client = app_state.require_model_client().await?;
     let agent = model_client.build_agent(
         ModelRole::Small,
-        "router_agent",
+        AgentName::RouterAgent,
         SystemPrompt::Routing.as_str(),
         0.0,
         256,

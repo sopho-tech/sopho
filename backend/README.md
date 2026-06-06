@@ -8,22 +8,10 @@
 cargo install sea-orm-cli
 ```
 
-2. Generate migrations
+2. Generate Entities
 
 ```bash
-sea-orm-cli migrate generate
-```
-
-3. Run migrations
-
-```bash
-sea-orm-cli migrate run
-```
-
-4. Generate Entities
-
-```bash
-sea-orm-cli generate entity -u sqlite://./data/database.db -o src/entity
+sea-orm-cli generate entity --ignore-tables seaql_migrations,scheduler_job,scheduler_notification,scheduler_notification_state -u "<DB_URL>" -o src/entity
 ```
 
 ## Serving Frontend

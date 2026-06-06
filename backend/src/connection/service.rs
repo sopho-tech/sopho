@@ -11,6 +11,7 @@ use crate::database::postgres;
 use crate::database::service as database_service;
 use crate::database::sqlite;
 use crate::entity;
+use crate::suggested_question;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 
@@ -50,6 +51,16 @@ pub async fn execute_get_connection(
     let mut connection = repository::get_connection(&app_state.database_connection, id).await?;
     cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key);
     Ok(connection)
+}
+
+pub async fn execute_get_all_connections(
+    app_state: &AppState,
+) -> Result<Vec<entity::connection::Model>, sea_orm::DbErr> {
+    let mut connections = repository::get_all_connections(&app_state.database_connection).await?;
+    for connection in connections.iter_mut() {
+        cryptography_utils::decrypt_connection(connection, &app_state.config.encryption_key);
+    }
+    Ok(connections)
 }
 
 pub async fn get_all_connections(app_state: AppState) -> impl IntoResponse {
@@ -163,6 +174,7 @@ pub async fn execute_delete_connection(
     app_state: &AppState,
     id: Uuid,
 ) -> Result<sea_orm::DeleteResult, sea_orm::DbErr> {
+    suggested_question::service::delete_for_connection(app_state, id).await?;
     repository::delete_connection(&app_state.database_connection, id).await
 }
 

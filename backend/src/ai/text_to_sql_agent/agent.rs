@@ -4,7 +4,7 @@ use super::constants::{
 };
 use super::system_prompt::SystemPrompt;
 use super::user_prompt::UserPrompt;
-use crate::ai::agent_utils::ModelRole;
+use crate::ai::agent_utils::{AgentName, ModelRole};
 use crate::ai::dto::{
     DeletionSet, EmpericalObservation, Event, EventChannels, ExplorationQuery,
     ExplorationQueryResult, FunctionalRoleAnalysisResult, LogicalPlanningResponse,
@@ -130,7 +130,7 @@ async fn execute_hypothesis_generation(
     let model_client = app_state.require_model_client().await?;
     let hypothesis_generation_agent = model_client.build_agent(
         ModelRole::Default,
-        "hypothesis_generation_agent",
+        AgentName::HypothesisGenerationAgent,
         SystemPrompt::LogicalPlanning.as_str(),
         0.8,
         2048,
@@ -165,7 +165,7 @@ async fn execute_integrate_candidate_plans(
     let model_client = app_state.require_model_client().await?;
     let integrate_candidate_plan_agent = model_client.build_agent(
         ModelRole::Default,
-        "integrate_candidate_plan_agent",
+        AgentName::IntegrateCandidatePlanAgent,
         SystemPrompt::AggregatingPlanCandidates.as_str(),
         0.2,
         2048,
@@ -195,14 +195,14 @@ pub(crate) async fn execute_search_space_reduction(
         let model_client = app_state.require_model_client().await?;
         let data_catalog_deletion_agent = model_client.build_agent(
             ModelRole::Default,
-            "data_catalog_deletion_agent",
+            AgentName::DataCatalogDeletionAgent,
             SystemPrompt::IdentifyingDeletionSet.as_str(),
             0.2,
             2048,
         );
         let data_catalog_selection_agent = model_client.build_agent(
             ModelRole::Default,
-            "data_catalog_selection_agent",
+            AgentName::DataCatalogSelectionAgent,
             SystemPrompt::IdentifyingSelectionSet.as_str(),
             0.2,
             2048,
@@ -287,7 +287,7 @@ async fn execute_functional_role_analysis(
     let model_client = app_state.require_model_client().await?;
     let functional_role_analysis_agent = model_client.build_agent(
         ModelRole::Default,
-        "functional_role_analysis_agent",
+        AgentName::FunctionalRoleAnalysisAgent,
         SystemPrompt::SemanticLinking.as_str(),
         0.2,
         2048,
@@ -326,7 +326,7 @@ async fn execute_data_profiling(
         let model_client = app_state.require_model_client().await?;
         let data_profiling_agent = model_client.build_agent(
             ModelRole::Default,
-            "data_profiling_before_agent",
+            AgentName::DataProfilingBeforeAgent,
             SystemPrompt::DataProfiling.as_str(),
             0.2,
             2048,
@@ -402,7 +402,7 @@ pub(crate) async fn schema_linking_final_synthesis(
     let model_client = app_state.require_model_client().await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
-        "schema_linking_final_synthesis_agent",
+        AgentName::SchemaLinkingFinalSynthesisAgent,
         SystemPrompt::SchemaLinkingFinalSynthesis.as_str(),
         0.2,
         16384,
@@ -515,7 +515,7 @@ pub(crate) async fn sql_generation(
     let model_client = app_state.require_model_client().await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
-        "sql_generation_agent",
+        AgentName::SqlGenerationAgent,
         SystemPrompt::SqlGeneration.as_str(),
         0.2,
         2048,

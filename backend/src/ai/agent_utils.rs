@@ -14,6 +14,31 @@ pub enum ModelRole {
     Small,
 }
 
+#[derive(Clone, Copy, Debug, strum::IntoStaticStr)]
+#[strum(serialize_all = "snake_case")]
+pub enum AgentName {
+    ConversationNameAgent,
+    LivenessCheckAgent,
+    DataCatalogDeletionAgent,
+    DataCatalogSelectionAgent,
+    DataProfilingBeforeAgent,
+    FollowupQuestionsAgent,
+    FunctionalRoleAnalysisAgent,
+    HypothesisGenerationAgent,
+    IntegrateCandidatePlanAgent,
+    RouterAgent,
+    SchemaLinkingFinalSynthesisAgent,
+    SqlGenerationAgent,
+    SuggestedQuestionsAgent,
+    VisualizationRecommendationAgent,
+}
+
+impl AgentName {
+    pub fn as_str(self) -> &'static str {
+        self.into()
+    }
+}
+
 #[derive(Clone)]
 pub enum ModelClient {
     Anthropic(rig::client::Client<anthropic::client::AnthropicExt>),
@@ -34,7 +59,7 @@ impl ModelClient {
     pub fn build_agent(
         &self,
         role: ModelRole,
-        agent_name: &str,
+        agent_name: AgentName,
         system_prompt: &str,
         temperature: f64,
         max_tokens: u64,
@@ -43,7 +68,7 @@ impl ModelClient {
             Self::Anthropic(client) => Agent::Anthropic(
                 client
                     .agent(model_name_for(self, role))
-                    .name(agent_name)
+                    .name(agent_name.as_str())
                     .preamble(system_prompt)
                     .temperature(temperature)
                     .max_tokens(max_tokens)
@@ -52,7 +77,7 @@ impl ModelClient {
             Self::OpenAI(client) => Agent::OpenAI(
                 client
                     .agent(model_name_for(self, role))
-                    .name(agent_name)
+                    .name(agent_name.as_str())
                     .preamble(system_prompt)
                     .temperature(temperature)
                     .max_tokens(max_tokens)

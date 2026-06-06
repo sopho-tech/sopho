@@ -151,6 +151,7 @@ export const AgentEventName = {
   ExecutedQuery: "executed_query",
   RecommendingVisualization: "recommending_visualization",
   RecommendedVisualization: "recommended_visualization",
+  SuggestedFollowups: "suggested_followups",
 } as const;
 
 export type AgentEventName =
@@ -243,10 +244,36 @@ export type RecommendedVisualizationData = {
   };
 };
 
+export type SuggestedFollowupsData = {
+  questions: string[];
+};
+
 export type ChartRenderData = {
   queryData: ExecuteCellResponseDto;
   visualization: RecommendedVisualizationData["visualization"];
 };
+
+export function extractFollowUpQuestions(
+  messages: ConversationMessageDto[],
+): string[] {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (message.sender !== Sender.Assistant) continue;
+    for (const content of message.content) {
+      try {
+        const event = JSON.parse(content.content) as AgentEvent;
+        if (event.event_name === AgentEventName.SuggestedFollowups) {
+          const data = event.data as { questions?: string[] } | undefined;
+          return data?.questions ?? [];
+        }
+      } catch {
+        /* ignore unparseable content */
+      }
+    }
+    return [];
+  }
+  return [];
+}
 
 export function extractChartData(events: AgentEvent[]): ChartRenderData | null {
   const queryEvent = events.find(
