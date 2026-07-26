@@ -102,3 +102,12 @@ pub async fn delete_message_contents_for_conversation_transaction(
         .await
         .map_err(ConversationError::Database)
 }
+
+pub async fn delete_message_contents_for_conversations_transaction(
+    txn: &DatabaseTransaction,
+    conversation_ids: &[Uuid],
+) -> Result<(), ConversationError> {
+    repository::delete_message_contents_for_conversations_transaction(txn, conversation_ids)
+        .await
+        .map_err(ConversationError::Database)
+}

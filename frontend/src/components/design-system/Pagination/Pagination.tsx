@@ -12,9 +12,21 @@ export type PaginationProps = {
   onPageClick: (newPage: number) => void;
   containerClassName?: string;
   showRowsPerPage?: boolean;
+  pageSizeOptions?: number[];
 };
 
+export const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
 type PageItem = number | "ellipsis-left" | "ellipsis-right";
+
+function resolvePageSizeOptions(
+  options: number[],
+  pageSize: number
+): number[] {
+  const unique = new Set(options);
+  unique.add(pageSize);
+  return [...unique].sort((a, b) => a - b);
+}
 
 function getPageItems(currentPage: number, totalPages: number): PageItem[] {
   if (totalPages <= 7) {
@@ -143,8 +155,13 @@ export function Pagination({
   onPageClick,
   containerClassName,
   showRowsPerPage = true,
+  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
 }: PaginationProps) {
   const pages = renderPages(currentPage, totalPages, onPageClick);
+  const resolvedPageSizeOptions = resolvePageSizeOptions(
+    pageSizeOptions,
+    pageSize
+  );
 
   function handleValueChange(newValue: string) {
     onChangePageSize(newValue);
@@ -170,10 +187,11 @@ export function Pagination({
             <Select.Content>
               <Select.Group>
                 <Select.Label>Page Sizes</Select.Label>
-                <Select.Item value="10">10</Select.Item>
-                <Select.Item value="20">20</Select.Item>
-                <Select.Item value="50">50</Select.Item>
-                <Select.Item value="100">100</Select.Item>
+                {resolvedPageSizeOptions.map((option) => (
+                  <Select.Item key={option} value={option.toString()}>
+                    {option}
+                  </Select.Item>
+                ))}
               </Select.Group>
             </Select.Content>
           </Select>

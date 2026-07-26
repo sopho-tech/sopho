@@ -54,6 +54,7 @@ export const API_ENDPOINTS = {
     GET_BY_ID: "/api/v1/conversational_analytics/:conversation_id",
     UPDATE: "/api/v1/conversational_analytics/:conversation_id",
     DELETE: "/api/v1/conversational_analytics/:conversation_id",
+    BULK_DELETE: "/api/v1/conversational_analytics/bulk-delete",
     COMPLETION: "/api/v1/conversational_analytics/:conversation_id/completion",
     SUGGEST_NAME: "/api/v1/conversational_analytics/:conversation_id/suggest-name",
     APPEND_MESSAGE: "/api/v1/conversational_analytics/:conversation_id/messages",

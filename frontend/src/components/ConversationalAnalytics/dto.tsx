@@ -23,6 +23,27 @@ export type ConversationDto = {
   updated_at: string;
 };
 
+export type ConversationListItemDto = ConversationDto & {
+  user_message_count: number;
+};
+
+export type PaginatedConversationsDto = {
+  items: ConversationListItemDto[];
+  total: number;
+  page: number;
+  page_size: number;
+};
+
+export type ListConversationsParams = {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+};
+
+export type BulkDeleteConversationsDto = {
+  conversation_ids: string[];
+};
+
 export type ConversationMessageContentDto = {
   id: string;
   conversation_message_id: string;

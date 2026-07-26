@@ -5,6 +5,7 @@ use crate::conversational_analytics::message::dto;
 use crate::conversational_analytics::message::repository;
 use crate::entity;
 use sea_orm::{DatabaseConnection, DatabaseTransaction};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 pub async fn create_message(
@@ -64,11 +65,33 @@ pub async fn list_messages_for_conversation(
         .collect())
 }
 
+pub async fn count_messages_by_sender_for_conversations(
+    db: &DatabaseConnection,
+    conversation_ids: &[Uuid],
+    sender: &str,
+) -> Result<HashMap<Uuid, i64>, ConversationError> {
+    if conversation_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+    let rows =
+        repository::count_messages_by_sender_for_conversations(db, conversation_ids, sender).await?;
+    Ok(rows.into_iter().collect())
+}
+
 pub async fn delete_messages_for_conversation_transaction(
     txn: &DatabaseTransaction,
     conversation_id: Uuid,
 ) -> Result<(), ConversationError> {
     repository::delete_messages_for_conversation_transaction(txn, conversation_id)
+        .await
+        .map_err(ConversationError::Database)
+}
+
+pub async fn delete_messages_for_conversations_transaction(
+    txn: &DatabaseTransaction,
+    conversation_ids: &[Uuid],
+) -> Result<(), ConversationError> {
+    repository::delete_messages_for_conversations_transaction(txn, conversation_ids)
         .await
         .map_err(ConversationError::Database)
 }

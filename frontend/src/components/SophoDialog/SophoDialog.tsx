@@ -12,6 +12,7 @@ interface SophoDialogProps {
   titleAccessory?: React.ReactElement;
   dialogContentStyleClass?: string;
   modal?: boolean;
+  size?: "sm" | "md";
 }
 
 export function SophoDialog({
@@ -24,6 +25,7 @@ export function SophoDialog({
   titleAccessory,
   dialogContentStyleClass,
   modal = true,
+  size = "md",
 }: SophoDialogProps) {
   return (
     <Dialog.Root
@@ -34,7 +36,8 @@ export function SophoDialog({
       <Dialog.Portal>
         <Dialog.Overlay className={DialogStyles.dialogOverlay} />
         <Dialog.Content
-          className={`${DialogStyles.dialogContent} ${dialogContentStyleClass || ""}`}
+          className={`${DialogStyles.dialogContent} ${size === "sm" ? DialogStyles.dialogContentSm : ""} ${dialogContentStyleClass || ""}`}
+          onClick={(event) => event.stopPropagation()}
         >
           <div className={DialogStyles.dialogHeadersContainer}>
             <Dialog.Title asChild>

@@ -8,6 +8,8 @@ pub enum ConversationError {
     Conversion(String),
     #[error("Conversation not found")]
     NotFound,
+    #[error("{0}")]
+    InvalidRequest(String),
     #[error("AI provider is not configured or not live")]
     AiNotLive,
 }
@@ -58,6 +60,9 @@ impl From<ConversationError> for AppendUserMessageError {
                 AppendUserMessageError::Database(sea_orm::DbErr::Custom(s))
             }
             ConversationError::NotFound => AppendUserMessageError::NotFound,
+            ConversationError::InvalidRequest(s) => {
+                AppendUserMessageError::Database(sea_orm::DbErr::Custom(s))
+            }
             ConversationError::AiNotLive => AppendUserMessageError::AiNotLive,
         }
     }
@@ -71,6 +76,9 @@ impl From<ConversationError> for ExecuteCompletionError {
                 ExecuteCompletionError::Database(sea_orm::DbErr::Custom(s))
             }
             ConversationError::NotFound => ExecuteCompletionError::ConversationNotFound,
+            ConversationError::InvalidRequest(s) => {
+                ExecuteCompletionError::Database(sea_orm::DbErr::Custom(s))
+            }
             ConversationError::AiNotLive => ExecuteCompletionError::AiNotLive,
         }
     }

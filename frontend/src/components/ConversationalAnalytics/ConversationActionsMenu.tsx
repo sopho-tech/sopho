@@ -9,18 +9,29 @@ import { DeleteConversationDialog } from "./Sidebar/DeleteConversationDialog";
 type ConversationActionsMenuProps = {
   conversation: ConversationDto;
   onOpenChange?: (open: boolean) => void;
+  onSelect?: () => void;
   children: ReactNode;
 };
 
 export function ConversationActionsMenu({
   conversation,
   onOpenChange,
+  onSelect,
   children,
 }: ConversationActionsMenuProps) {
   const rename = useRenameDialog();
   const deleteDialog = useDeleteConversationDialog(conversation.id);
   const menuItems: DropdownMenuItem[] = useMemo(
     () => [
+      ...(onSelect
+        ? [
+            {
+              icon: "check" as const,
+              label: "Select",
+              onClick: onSelect,
+            },
+          ]
+        : []),
       {
         icon: "edit",
         label: "Rename",
@@ -32,7 +43,7 @@ export function ConversationActionsMenu({
         onClick: () => deleteDialog.openDelete(conversation),
       },
     ],
-    [conversation, rename.openRename, deleteDialog.openDelete],
+    [conversation, onSelect, rename.openRename, deleteDialog.openDelete],
   );
   return (
     <>

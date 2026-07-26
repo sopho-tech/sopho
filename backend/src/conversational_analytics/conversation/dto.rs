@@ -43,6 +43,33 @@ impl TryFrom<entity::conversation::Model> for ConversationDto {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct ListConversationsQuery {
+    pub page: Option<u64>,
+    pub page_size: Option<u64>,
+    pub search: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConversationListItemDto {
+    #[serde(flatten)]
+    pub conversation: ConversationDto,
+    pub user_message_count: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PaginatedConversationsDto {
+    pub items: Vec<ConversationListItemDto>,
+    pub total: u64,
+    pub page: u64,
+    pub page_size: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BulkDeleteConversationsDto {
+    pub conversation_ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AppendUserMessageDto {
     pub segments: Vec<MessageSegment>,
 }

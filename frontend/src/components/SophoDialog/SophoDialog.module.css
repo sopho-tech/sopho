@@ -50,3 +50,8 @@
   gap: var(--space-sm);
   align-items: center;
 }
+
+.dialogContentSm {
+  width: min(420px, 90vw);
+  gap: var(--space-xs);
+}

@@ -110,15 +110,60 @@ pub async fn get_conversation(
     })
 }
 
-pub async fn get_all_conversations(
+fn normalize_search(search: Option<String>) -> Option<String> {
+    search
+        .map(|term| term.trim().to_string())
+        .filter(|term| !term.is_empty())
+}
+
+pub async fn list_conversations(
     app_state: AppState,
-) -> Result<Vec<dto::ConversationDto>, ConversationError> {
-    let models = repository::get_all_conversations(&app_state.database_connection).await?;
-    models
+    query: dto::ListConversationsQuery,
+) -> Result<dto::PaginatedConversationsDto, ConversationError> {
+    let page = query.page.unwrap_or(0);
+    let page_size = query
+        .page_size
+        .unwrap_or(constants::DEFAULT_PAGE_SIZE)
+        .clamp(1, constants::MAX_PAGE_SIZE);
+    let search = normalize_search(query.search);
+
+    let (models, total) = repository::list_conversations(
+        &app_state.database_connection,
+        search.as_deref(),
+        page,
+        page_size,
+    )
+    .await?;
+
+    let conversation_ids: Vec<Uuid> = models.iter().map(|model| model.id).collect();
+    let user_message_counts = message_service::count_messages_by_sender_for_conversations(
+        &app_state.database_connection,
+        &conversation_ids,
+        &Sender::Human.to_string(),
+    )
+    .await?;
+
+    let items = models
         .into_iter()
-        .map(dto::ConversationDto::try_from)
+        .map(|model| {
+            let user_message_count = user_message_counts
+                .get(&model.id)
+                .copied()
+                .unwrap_or_default();
+            dto::ConversationDto::try_from(model).map(|conversation| dto::ConversationListItemDto {
+                conversation,
+                user_message_count,
+            })
+        })
         .collect::<Result<Vec<_>, _>>()
-        .map_err(ConversationError::Conversion)
+        .map_err(ConversationError::Conversion)?;
+
+    Ok(dto::PaginatedConversationsDto {
+        items,
+        total,
+        page,
+        page_size,
+    })
 }
 
 /// Sequence number of conversation messages start from `1` not `0`
@@ -190,6 +235,49 @@ pub async fn delete_conversation(
     .await?;
     message_service::delete_messages_for_conversation_transaction(&txn, conversation_id).await?;
     repository::delete_conversation_transaction(&txn, conversation_id)
+        .await
+        .map_err(ConversationError::Database)?;
+    txn.commit().await.map_err(ConversationError::Database)?;
+    Ok(())
+}
+
+pub async fn bulk_delete_conversations(
+    app_state: AppState,
+    payload: dto::BulkDeleteConversationsDto,
+) -> Result<(), ConversationError> {
+    let mut conversation_ids = payload.conversation_ids;
+
+    if conversation_ids.is_empty() {
+        return Err(ConversationError::InvalidRequest(
+            "conversation_ids must not be empty".to_string(),
+        ));
+    }
+
+    if conversation_ids.len() > constants::MAX_BULK_DELETE_SIZE {
+        return Err(ConversationError::InvalidRequest(format!(
+            "cannot delete more than {} conversations at once",
+            constants::MAX_BULK_DELETE_SIZE
+        )));
+    }
+
+    conversation_ids.sort_unstable();
+    conversation_ids.dedup();
+
+    let existing_count =
+        repository::count_conversations_by_ids(&app_state.database_connection, &conversation_ids)
+            .await?;
+    if existing_count != conversation_ids.len() as u64 {
+        return Err(ConversationError::NotFound);
+    }
+
+    let txn = app_state.database_connection.begin().await?;
+    message_content_service::delete_message_contents_for_conversations_transaction(
+        &txn,
+        &conversation_ids,
+    )
+    .await?;
+    message_service::delete_messages_for_conversations_transaction(&txn, &conversation_ids).await?;
+    repository::delete_conversations_transaction(&txn, &conversation_ids)
         .await
         .map_err(ConversationError::Database)?;
     txn.commit().await.map_err(ConversationError::Database)?;

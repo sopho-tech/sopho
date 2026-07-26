@@ -7,6 +7,7 @@ use crate::common::error_codes::codes;
 use crate::common::AppState;
 use axum::extract::Json;
 use axum::extract::Path;
+use axum::extract::Query;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -17,8 +18,9 @@ use uuid::Uuid;
 
 pub fn routes(app_state: AppState) -> Router {
     Router::new()
-        .route("/", get(get_all_conversations))
+        .route("/", get(list_conversations))
         .route("/", post(create_conversation))
+        .route("/bulk-delete", post(bulk_delete_conversations))
         .route("/{conversation_id}", get(get_conversation))
         .route("/{conversation_id}", put(update_conversation))
         .route("/{conversation_id}", delete(delete_conversation))
@@ -28,10 +30,23 @@ pub fn routes(app_state: AppState) -> Router {
         .with_state(app_state)
 }
 
-async fn get_all_conversations(State(app_state): State<AppState>) -> impl IntoResponse {
-    match service::get_all_conversations(app_state).await {
-        Ok(list) => (StatusCode::OK, axum::Json(serde_json::json!(list))),
+async fn list_conversations(
+    State(app_state): State<AppState>,
+    Query(query): Query<dto::ListConversationsQuery>,
+) -> impl IntoResponse {
+    match service::list_conversations(app_state, query).await {
+        Ok(page) => (StatusCode::OK, axum::Json(serde_json::json!(page))),
         Err(e) => conversation_error_http_response(e),
+    }
+}
+
+async fn bulk_delete_conversations(
+    State(app_state): State<AppState>,
+    Json(payload): Json<dto::BulkDeleteConversationsDto>,
+) -> impl IntoResponse {
+    match service::bulk_delete_conversations(app_state, payload).await {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(e) => conversation_error_http_response(e).into_response(),
     }
 }
 
@@ -166,6 +181,7 @@ fn conversation_error_http_response(e: ConversationError) -> (StatusCode, axum::
         ConversationError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string(), None),
         ConversationError::Conversion(_) => (StatusCode::UNPROCESSABLE_ENTITY, e.to_string(), None),
         ConversationError::NotFound => (StatusCode::NOT_FOUND, e.to_string(), None),
+        ConversationError::InvalidRequest(_) => (StatusCode::BAD_REQUEST, e.to_string(), None),
         ConversationError::AiNotLive => (
             StatusCode::FORBIDDEN,
             e.to_string(),

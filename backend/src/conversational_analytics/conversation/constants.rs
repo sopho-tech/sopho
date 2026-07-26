@@ -5,6 +5,9 @@ use std::str::FromStr;
 pub const CHANNEL_SIZE: usize = 32;
 pub const MAX_QUESTION_LENGTH: usize = 16_384;
 pub const DEFAULT_CONVERSATION_NAME: &str = "Untitled";
+pub const DEFAULT_PAGE_SIZE: u64 = 25;
+pub const MAX_PAGE_SIZE: u64 = 100;
+pub const MAX_BULK_DELETE_SIZE: usize = 200;
 
 pub(super) enum PipelineOutcome {
     Completed,
