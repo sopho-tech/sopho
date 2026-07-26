@@ -1,13 +1,17 @@
 import { ChartType } from "src/components/Chart";
 import { ExecuteCellResponseDto } from "src/components/Notebook/Cell/dto";
 
+export type MessageSegment =
+  | { type: "TEXT"; text: string }
+  | { type: "COMMAND"; name: string };
+
 export type CreateConversationDto = {
   connection_id: string;
-  user_message: string;
+  segments: MessageSegment[];
 };
 
 export type AppendUserMessageDto = {
-  user_message: string;
+  segments: MessageSegment[];
 };
 
 export type ConversationDto = {
@@ -152,6 +156,8 @@ export const AgentEventName = {
   RecommendingVisualization: "recommending_visualization",
   RecommendedVisualization: "recommended_visualization",
   SuggestedFollowups: "suggested_followups",
+  GeneratingCanvas: "generating_canvas",
+  CanvasGenerated: "canvas_generated",
 } as const;
 
 export type AgentEventName =
@@ -168,6 +174,7 @@ export const IN_PROGRESS_EVENTS = new Set<string>([
   AgentEventName.GeneratingSql,
   AgentEventName.ExecutingQuery,
   AgentEventName.RecommendingVisualization,
+  AgentEventName.GeneratingCanvas,
 ]);
 
 export type AgentEvent = {
@@ -220,6 +227,7 @@ export const RouterCode = {
   Clarify: "clarify",
   RejectOffTopic: "reject_off_topic",
   RejectUnsafe: "reject_unsafe",
+  GenerateCanvas: "generate_canvas",
 } as const;
 
 export type RouterCode = (typeof RouterCode)[keyof typeof RouterCode];
@@ -246,6 +254,15 @@ export type RecommendedVisualizationData = {
 
 export type SuggestedFollowupsData = {
   questions: string[];
+};
+
+export type CanvasGeneratedData = {
+  canvas_id: string;
+  name: string;
+  description: string | null;
+  sql_cell_count: number;
+  chart_cell_count: number;
+  dashboard_charts_count: number;
 };
 
 export type ChartRenderData = {
@@ -292,4 +309,13 @@ export function extractChartData(events: AgentEvent[]): ChartRenderData | null {
     queryData,
     visualization: vizData.visualization,
   };
+}
+
+export function extractCanvasGenerated(
+  events: AgentEvent[],
+): CanvasGeneratedData | null {
+  const event = events.find(
+    (e) => e.event_name === AgentEventName.CanvasGenerated,
+  );
+  return event?.data ? (event.data as CanvasGeneratedData) : null;
 }

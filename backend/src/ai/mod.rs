@@ -1,4 +1,5 @@
 pub(crate) mod agent_utils;
+pub(crate) mod canvas_generation_agent;
 pub(crate) mod conversation_name_agent;
 pub(crate) mod dto;
 pub(crate) mod followup_questions_agent;

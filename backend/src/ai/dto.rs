@@ -206,6 +206,7 @@ pub enum RouterCode {
     Clarify,
     RejectOffTopic,
     RejectUnsafe,
+    GenerateCanvas,
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -279,6 +280,15 @@ pub enum Event {
     Routed { decision: RouterDecision },
     AwaitingClarification,
     Rejected,
+    GeneratingCanvas,
+    CanvasGenerated {
+        canvas_id: uuid::Uuid,
+        name: String,
+        description: Option<String>,
+        sql_cell_count: i32,
+        chart_cell_count: i32,
+        dashboard_charts_count: i32,
+    },
 }
 
 pub struct EventChannels {
@@ -304,6 +314,32 @@ impl Event {
     pub fn to_json_string(&self) -> String {
         serde_json::to_string(self).expect("Event JSON serialization")
     }
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct CanvasPlanChart {
+    pub chart_type: crate::cell::constants::ChartType,
+    pub x_axis: Option<String>,
+    pub y_axis: Option<String>,
+    pub category: Option<String>,
+    pub value: Option<String>,
+    pub aggregate_function: Option<crate::cell::constants::AggregateFunction>,
+    pub grid_width: Option<u16>,
+    pub grid_height: Option<u16>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct CanvasPlanCell {
+    pub title: String,
+    pub sql: String,
+    pub chart: Option<CanvasPlanChart>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct CanvasPlan {
+    pub name: String,
+    pub description: Option<String>,
+    pub cells: Vec<CanvasPlanCell>,
 }
 
 #[cfg(test)]

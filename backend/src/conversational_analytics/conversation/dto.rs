@@ -1,5 +1,6 @@
 use super::constants::ConversationStatus;
 use crate::conversational_analytics::message::dto::ConversationMessageWithContentDto;
+use crate::conversational_analytics::segment::MessageSegment;
 use crate::entity;
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
@@ -8,7 +9,7 @@ use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateConversationDto {
     pub connection_id: Uuid,
-    pub user_message: String,
+    pub segments: Vec<MessageSegment>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -43,7 +44,7 @@ impl TryFrom<entity::conversation::Model> for ConversationDto {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppendUserMessageDto {
-    pub user_message: String,
+    pub segments: Vec<MessageSegment>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

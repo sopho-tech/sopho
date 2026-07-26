@@ -9,6 +9,7 @@ import { DashboardToolbar } from "src/components/Dashboard/DashboardToolbar";
 import { ChartBrowser } from "src/components/Dashboard/ChartBrowser";
 import {
   convertDtoToRGLayout,
+  GRID_COLUMN_COUNT,
   DEFAULT_CHART_WIDTH,
   DEFAULT_CHART_HEIGHT,
 } from "src/components/Dashboard/dto";
@@ -134,7 +135,7 @@ export function Dashboard({ onNavigateToNotebook }: DashboardProps) {
       <ReactGridLayout
         className={`${styles.layout} ${isEditing ? styles.layoutEditing : ""}`}
         layout={layout}
-        cols={12}
+        cols={GRID_COLUMN_COUNT}
         rowHeight={100}
         margin={margin}
         containerPadding={containerPadding}

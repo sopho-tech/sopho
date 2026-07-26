@@ -20,6 +20,7 @@ export type {
   ConversationMessageDto,
   ConversationWithMessagesDto,
   AppendUserMessageDto,
+  MessageSegment,
 } from "src/components/ConversationalAnalytics/dto";
 
 export {

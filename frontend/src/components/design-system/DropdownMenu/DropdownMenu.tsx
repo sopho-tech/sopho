@@ -1,4 +1,5 @@
 import * as RadixDropdownMenu from "@radix-ui/react-dropdown-menu";
+import classNames from "classnames";
 import { ReactNode } from "react";
 import { IconType } from "src/components/design-system/datatypes";
 import { Icon } from "src/components/design-system/Icon";
@@ -48,6 +49,7 @@ type DropdownMenuContentProps = {
   side?: "top" | "right" | "bottom" | "left";
   sideOffset?: number;
   alignOffset?: number;
+  preventAutoFocus?: boolean;
 };
 
 function DropdownMenuContent({
@@ -56,7 +58,14 @@ function DropdownMenuContent({
   side = "bottom",
   sideOffset = 5,
   alignOffset,
+  preventAutoFocus = false,
 }: DropdownMenuContentProps) {
+  const autoFocusProps = preventAutoFocus
+    ? {
+        onOpenAutoFocus: (event: Event) => event.preventDefault(),
+        onCloseAutoFocus: (event: Event) => event.preventDefault(),
+      }
+    : {};
   return (
     <RadixDropdownMenu.Portal>
       <RadixDropdownMenu.Content
@@ -65,6 +74,7 @@ function DropdownMenuContent({
         side={side}
         sideOffset={sideOffset}
         alignOffset={alignOffset}
+        {...autoFocusProps}
       >
         {children}
       </RadixDropdownMenu.Content>
@@ -97,8 +107,38 @@ function DropdownMenuItemComponent({
   );
 }
 
+type DropdownMenuItemWithDescriptionProps = {
+  label: string;
+  description: string;
+  onClick: () => void;
+  highlighted?: boolean;
+  disabled?: boolean;
+};
+
+function DropdownMenuItemWithDescriptionComponent({
+  label,
+  description,
+  onClick,
+  highlighted,
+  disabled,
+}: DropdownMenuItemWithDescriptionProps) {
+  return (
+    <RadixDropdownMenu.Item
+      className={classNames(styles.itemWithDescription, {
+        [styles.highlighted]: highlighted,
+      })}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <span className={styles.itemLabel}>{label}</span>
+      <span className={styles.itemDescription}>{description}</span>
+    </RadixDropdownMenu.Item>
+  );
+}
+
 export const DropdownMenu = Object.assign(DropdownMenuRoot, {
   Trigger: DropdownMenuTrigger,
   Content: DropdownMenuContent,
   Item: DropdownMenuItemComponent,
+  ItemWithDescription: DropdownMenuItemWithDescriptionComponent,
 });

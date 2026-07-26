@@ -38,3 +38,40 @@
   align-items: center;
   gap: var(--space-md);
 }
+
+.itemWithDescription {
+  all: unset;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  padding: var(--space-xs);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  user-select: none;
+}
+
+.itemWithDescription:hover,
+.itemWithDescription[data-highlighted],
+.itemWithDescription.highlighted {
+  background-color: var(--color-grey-200);
+  outline: none;
+}
+
+.itemWithDescription[data-disabled] {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.itemLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.itemDescription {
+  font-size: var(--font-size-xs);
+  color: var(--color-grey-600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

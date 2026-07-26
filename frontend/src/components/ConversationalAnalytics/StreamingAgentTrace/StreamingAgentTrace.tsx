@@ -3,8 +3,10 @@ import { Flex, Box, ShimmeringText, Text } from "src/components/design-system";
 import {
   IN_PROGRESS_EVENTS,
   extractChartData,
+  extractCanvasGenerated,
   type AgentEvent,
 } from "src/components/ConversationalAnalytics/dto";
+import { CanvasGeneratedCard } from "src/components/ConversationalAnalytics/CanvasGeneratedCard";
 import {
   STEP_LABELS,
   TRACE_HIDDEN_EVENTS,
@@ -64,6 +66,7 @@ export function StreamingAgentTrace({
   const steps = useMemo(() => buildDisplaySteps(events), [events]);
   const statusText = useMemo(() => deriveStatusText(events), [events]);
   const chartData = useMemo(() => extractChartData(events), [events]);
+  const canvas = useMemo(() => extractCanvasGenerated(events), [events]);
   const routerDecision = useMemo(() => extractRouterDecision(events), [events]);
 
   if (steps.length === 0 && !isStreaming && !routerDecision) return null;
@@ -100,6 +103,7 @@ export function StreamingAgentTrace({
         />
       )}
       {chartData && <QueryResultChart chartData={chartData} />}
+      {canvas && <CanvasGeneratedCard data={canvas} />}
     </>
   );
 }
