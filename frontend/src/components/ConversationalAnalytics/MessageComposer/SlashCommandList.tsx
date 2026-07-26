@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  useImperativeHandle,
-  useState,
-  type Ref,
-} from "react";
+import { useEffect, useImperativeHandle, useState, type Ref } from "react";
 import { DropdownMenu } from "src/components/design-system";
 import type { SlashCommand } from "./SlashCommandExtension";
 
