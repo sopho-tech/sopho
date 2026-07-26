@@ -74,3 +74,58 @@
 .tableBody td:last-child {
   border-right: none;
 }
+
+.tableContainerPlain {
+  border: none;
+  border-radius: 0;
+}
+
+.tablePlain {
+  box-shadow: none;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.tablePlain .tableBodyRow:hover,
+.tablePlain .tableBodyRowSelected {
+  background-color: transparent;
+}
+
+.tablePlain .tableBodyRow:hover td,
+.tablePlain .tableBodyRowSelected td {
+  background-color: var(--color-grey-200);
+}
+
+.tablePlain .tableBodyRow:hover td:first-child,
+.tablePlain .tableBodyRowSelected td:first-child {
+  border-top-left-radius: var(--border-radius-lg);
+  border-bottom-left-radius: var(--border-radius-lg);
+}
+
+.tablePlain .tableBodyRow:hover td:last-child,
+.tablePlain .tableBodyRowSelected td:last-child {
+  border-top-right-radius: var(--border-radius-lg);
+  border-bottom-right-radius: var(--border-radius-lg);
+}
+
+.tableDataCellPlain {
+  border-bottom: none;
+}
+
+.tableBodyRowSelected {
+  background-color: var(--color-grey-200);
+}
+
+.rowHoverReveal {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tableBodyRow:hover .rowHoverReveal {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tableBodyRow:hover .rowHoverHide {
+  opacity: 0;
+}

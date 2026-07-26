@@ -74,6 +74,7 @@ function DropdownMenuContent({
         side={side}
         sideOffset={sideOffset}
         alignOffset={alignOffset}
+        onClick={(event) => event.stopPropagation()}
         {...autoFocusProps}
       >
         {children}

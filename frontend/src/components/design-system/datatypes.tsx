@@ -54,6 +54,8 @@ export type IconType =
   | "type"
   | "calendar"
   | "check_square"
+  | "square"
+  | "square_check"
   | "key"
   | "info"
   | "grip_vertical"

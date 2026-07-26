@@ -18,6 +18,7 @@ import { ConnectionEdit } from "./components/Connection/ConnectionEdit/Connectio
 import { ConversationalAnalytics } from "src/components/ConversationalAnalytics";
 import { NewConversationPanel } from "./components/ConversationalAnalytics/NewConversationPanel";
 import { ExistingConversationPanel } from "./components/ConversationalAnalytics/ExistingConversationPanel";
+import { ConversationList } from "src/components/ConversationalAnalytics/ConversationList";
 
 const router = createBrowserRouter([
   {
@@ -38,6 +39,10 @@ const router = createBrowserRouter([
           {
             path: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION,
             element: <ExistingConversationPanel />,
+          },
+          {
+            path: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATIONS,
+            element: <ConversationList />,
           },
         ],
       },

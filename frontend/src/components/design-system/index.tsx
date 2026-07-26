@@ -56,6 +56,8 @@ export type { PaginationProps } from "src/components/design-system/Pagination";
 export { ToolTip } from "src/components/design-system/ToolTip";
 export type { ToolTipProps } from "src/components/design-system/ToolTip";
 export { SearchBar } from "src/components/design-system/SearchBar";
+export { ExpandableSearch } from "src/components/design-system/ExpandableSearch";
+export type { ExpandableSearchProps } from "src/components/design-system/ExpandableSearch";
 export { CommandMenu } from "src/components/design-system/CommandMenu";
 export { Badge } from "src/components/design-system/Badge";
 export { Card } from "src/components/design-system/Card";

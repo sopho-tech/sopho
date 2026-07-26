@@ -80,6 +80,25 @@ pub async fn list_message_content_by_conversation_message_ids(
         .await
 }
 
+pub async fn delete_message_contents_for_conversations_transaction(
+    txn: &DatabaseTransaction,
+    conversation_ids: &[Uuid],
+) -> Result<(), DbErr> {
+    let message_id_subquery = conversation_message::Entity::find()
+        .filter(conversation_message::Column::ConversationId.is_in(conversation_ids.to_vec()))
+        .select_only()
+        .column(conversation_message::Column::Id)
+        .into_query();
+    conversation_message_content::Entity::delete_many()
+        .filter(
+            conversation_message_content::Column::ConversationMessageId
+                .in_subquery(message_id_subquery),
+        )
+        .exec(txn)
+        .await?;
+    Ok(())
+}
+
 pub async fn delete_message_contents_for_conversation_transaction(
     txn: &DatabaseTransaction,
     conversation_id: Uuid,

@@ -18,6 +18,13 @@ export enum TableType {
 
 export type TableSize = "default" | "compact";
 
+export type TableVariant = "bordered" | "plain";
+
+export const rowHoverClasses = {
+  reveal: styles.rowHoverReveal,
+  hide: styles.rowHoverHide,
+};
+
 export type ColumnConfig<T> = {
   key: string;
   header: string;
@@ -25,6 +32,7 @@ export type ColumnConfig<T> = {
   type: "accessor" | "display";
   cell?: (props: CellContext<T, unknown>) => React.ReactNode;
   accessor?: keyof T;
+  fill?: boolean;
 };
 
 export type PaginationConfig = {
@@ -56,6 +64,9 @@ type SophoTableProps<T> = {
   tableLastHeaderCellStyle?: string;
   paginationConfig?: PaginationConfig;
   onRowClick?: (row: T) => void;
+  variant?: TableVariant;
+  showHeader?: boolean;
+  isRowSelected?: (row: T) => boolean;
 };
 
 function useCreateReactTable<T>(
@@ -105,9 +116,24 @@ export function SophoTable<T>({
   paginationConfig,
   tableContainerStyle,
   onRowClick,
+  variant = "bordered",
+  showHeader = true,
+  isRowSelected,
 }: SophoTableProps<T>) {
   const isCompact = size === "compact";
+  const isPlain = variant === "plain";
   const columnHelper = createColumnHelper<T>();
+
+  const columnConfigMap = new Map<string, ColumnConfig<T>>();
+  columns.forEach((col) => {
+    columnConfigMap.set(col.key, col);
+    if (col.type === "accessor" && col.accessor) {
+      columnConfigMap.set(String(col.accessor), col);
+    }
+  });
+
+  const getColumnWidth = (columnId: string, fallback: number) =>
+    columnConfigMap.get(columnId)?.fill ? "100%" : fallback;
 
   const reactTableColumns: ColumnDef<T, unknown>[] = columns.map((col) => {
     if (col.type === "accessor") {
@@ -148,8 +174,13 @@ export function SophoTable<T>({
     <div
       className={`${styles.overallContainer} ${overallContainerStyle || ""}`}
     >
-      <div className={`${styles.tableContainer} ${tableContainerStyle}`}>
-        <table className={styles.table}>
+      <div
+        className={`${styles.tableContainer} ${tableContainerStyle} ${isPlain ? styles.tableContainerPlain : ""}`}
+      >
+        <table
+          className={`${styles.table} ${isPlain ? styles.tablePlain : ""}`}
+        >
+          {showHeader && (
           <thead className={styles.thead}>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
@@ -160,7 +191,9 @@ export function SophoTable<T>({
                     <th
                       key={header.id}
                       className={`${styles.tableHeaderCell} ${isCompact ? styles.tableHeaderCellCompact : ""} ${tableHeaderCellStyle || ""} ${isFirst && tableFirstHeaderCellStyle ? tableFirstHeaderCellStyle : ""} ${isLast && tableLastHeaderCellStyle ? tableLastHeaderCellStyle : ""}`}
-                      style={{ width: header.getSize() }}
+                      style={{
+                        width: getColumnWidth(header.column.id, header.getSize()),
+                      }}
                     >
                       {header.isPlaceholder
                         ? null
@@ -174,19 +207,25 @@ export function SophoTable<T>({
               </tr>
             ))}
           </thead>
+          )}
           <tbody className={styles.tableBody}>
             {table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                className={styles.tableBodyRow}
+                className={`${styles.tableBodyRow} ${isRowSelected?.(row.original) ? styles.tableBodyRowSelected : ""}`}
                 onClick={() => onRowClick?.(row.original)}
                 style={{ cursor: onRowClick ? "pointer" : "default" }}
               >
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
-                    className={`${styles.tableDataCell} ${isCompact ? styles.tableDataCellCompact : ""} ${tableDataCellStyle}`}
-                    style={{ width: cell.column.getSize() }}
+                    className={`${styles.tableDataCell} ${isCompact ? styles.tableDataCellCompact : ""} ${isPlain ? styles.tableDataCellPlain : ""} ${tableDataCellStyle}`}
+                    style={{
+                      width: getColumnWidth(
+                        cell.column.id,
+                        cell.column.getSize()
+                      ),
+                    }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>

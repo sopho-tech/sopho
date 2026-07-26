@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   QueryClient,
   useMutation,
   useQuery,
@@ -10,6 +11,8 @@ import {
   CreateConversationDto,
   ConversationDto,
   ConversationWithMessagesDto,
+  ListConversationsParams,
+  PaginatedConversationsDto,
 } from "src/components/ConversationalAnalytics/dto";
 import type { AppendUserMessageDto } from "src/components/ConversationalAnalytics/dto";
 
@@ -17,9 +20,12 @@ export type {
   ConversationMessageContentDto,
   CreateConversationDto,
   ConversationDto,
+  ConversationListItemDto,
   ConversationMessageDto,
   ConversationWithMessagesDto,
   AppendUserMessageDto,
+  ListConversationsParams,
+  PaginatedConversationsDto,
   MessageSegment,
 } from "src/components/ConversationalAnalytics/dto";
 
@@ -31,17 +37,44 @@ export {
 export const conversationKeys = {
   all: ["conversations"] as const,
   lists: () => [...conversationKeys.all, "list"] as const,
+  list: (params: ListConversationsParams) =>
+    [...conversationKeys.lists(), params] as const,
   details: () => [...conversationKeys.all, "detail"] as const,
   detail: (id: string) => [...conversationKeys.details(), id] as const,
 };
 
+function buildListConversationsUrl({
+  page,
+  pageSize,
+  search,
+}: ListConversationsParams): string {
+  const searchParams = new URLSearchParams();
+  if (page !== undefined) searchParams.set("page", String(page));
+  if (pageSize !== undefined) searchParams.set("page_size", String(pageSize));
+  if (search?.trim()) searchParams.set("search", search.trim());
+  const query = searchParams.toString();
+  const base = API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.GET_ALL;
+  return query ? `${base}?${query}` : base;
+}
+
 const conversationalAnalyticsApi = {
-  getAllConversations: async (): Promise<ConversationDto[]> => {
+  listConversations: async (
+    params: ListConversationsParams,
+  ): Promise<PaginatedConversationsDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.GET_ALL,
+      url: buildListConversationsUrl(params),
       onlyBody: true,
     });
-    return response as ConversationDto[];
+    return response as PaginatedConversationsDto;
+  },
+
+  bulkDeleteConversations: async (conversationIds: string[]): Promise<void> => {
+    await ApiService.post({
+      url: API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.BULK_DELETE,
+      data: { conversation_ids: conversationIds },
+      headers: { "Content-Type": "application/json" },
+      onlyBody: false,
+    });
   },
 
   getConversation: async (
@@ -133,10 +166,11 @@ const conversationalAnalyticsApi = {
   },
 };
 
-export const useConversations = () => {
+export const useConversations = (params: ListConversationsParams = {}) => {
   return useQuery({
-    queryKey: conversationKeys.lists(),
-    queryFn: () => conversationalAnalyticsApi.getAllConversations(),
+    queryKey: conversationKeys.list(params),
+    queryFn: () => conversationalAnalyticsApi.listConversations(params),
+    placeholderData: keepPreviousData,
   });
 };
 
@@ -172,8 +206,15 @@ function patchConversationCaches(
     conversationKeys.detail(data.id),
     (old) => (old ? { ...old, conversation: data } : undefined),
   );
-  queryClient.setQueryData<ConversationDto[]>(conversationKeys.lists(), (old) =>
-    old?.map((c) => (c.id === data.id ? data : c)),
+  queryClient.setQueriesData<PaginatedConversationsDto>(
+    { queryKey: conversationKeys.lists() },
+    (old) =>
+      old && {
+        ...old,
+        items: old.items.map((item) =>
+          item.id === data.id ? { ...item, ...data } : item,
+        ),
+      },
   );
 }
 
@@ -207,6 +248,24 @@ export const useDeleteConversation = () => {
     onSuccess: (_, conversationId) => {
       queryClient.removeQueries({
         queryKey: conversationKeys.detail(conversationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: conversationKeys.lists(),
+      });
+    },
+  });
+};
+
+export const useBulkDeleteConversations = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: conversationalAnalyticsApi.bulkDeleteConversations,
+    onSuccess: (_, conversationIds) => {
+      conversationIds.forEach((conversationId) => {
+        queryClient.removeQueries({
+          queryKey: conversationKeys.detail(conversationId),
+        });
       });
       queryClient.invalidateQueries({
         queryKey: conversationKeys.lists(),

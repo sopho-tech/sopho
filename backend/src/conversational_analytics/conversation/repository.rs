@@ -1,8 +1,10 @@
 use super::dto;
 use crate::common::time_utils;
 use crate::entity::conversation;
+use sea_orm::sea_query::{Expr, Func};
 use sea_orm::{
-    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait, QueryOrder, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
+    PaginatorTrait, QueryFilter, QueryOrder, Set,
 };
 use uuid::Uuid;
 
@@ -25,14 +27,31 @@ pub async fn get_conversation(
     }
 }
 
-pub async fn get_all_conversations(
+fn escape_like_pattern(term: &str) -> String {
+    term.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+}
+
+pub async fn list_conversations(
     db: &DatabaseConnection,
-) -> Result<Vec<conversation::Model>, DbErr> {
-    let rows = conversation::Entity::find()
+    search: Option<&str>,
+    page: u64,
+    page_size: u64,
+) -> Result<(Vec<conversation::Model>, u64), DbErr> {
+    let mut query = conversation::Entity::find();
+    if let Some(term) = search {
+        let pattern = format!("%{}%", escape_like_pattern(&term.to_lowercase()));
+        query = query.filter(
+            Expr::expr(Func::lower(Expr::col(conversation::Column::Name))).like(pattern),
+        );
+    }
+    let paginator = query
         .order_by(conversation::Column::UpdatedAt, sea_orm::Order::Desc)
-        .all(db)
-        .await?;
-    Ok(rows)
+        .paginate(db, page_size);
+    let total = paginator.num_items().await?;
+    let rows = paginator.fetch_page(page).await?;
+    Ok((rows, total))
 }
 
 pub async fn update_conversation(
@@ -57,4 +76,25 @@ pub async fn delete_conversation_transaction(
         .exec(txn)
         .await?;
     Ok(())
+}
+
+pub async fn delete_conversations_transaction(
+    txn: &DatabaseTransaction,
+    conversation_ids: &[Uuid],
+) -> Result<(), DbErr> {
+    conversation::Entity::delete_many()
+        .filter(conversation::Column::Id.is_in(conversation_ids.to_vec()))
+        .exec(txn)
+        .await?;
+    Ok(())
+}
+
+pub async fn count_conversations_by_ids(
+    db: &DatabaseConnection,
+    conversation_ids: &[Uuid],
+) -> Result<u64, DbErr> {
+    conversation::Entity::find()
+        .filter(conversation::Column::Id.is_in(conversation_ids.to_vec()))
+        .count(db)
+        .await
 }

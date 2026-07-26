@@ -27,6 +27,7 @@ type ButtonProps = Omit<
       | "lightgrey"
       | "grey"
       | "transparent"
+      | "ghost"
       | "white";
     fullWidth?: boolean;
     size: ButtonSize;
@@ -42,10 +43,18 @@ function getTextColor(backgroundColor: string) {
       return "black";
     case "red":
       return "white";
+    case "ghost":
+      return "subtle";
     default:
       return "default";
   }
 }
+
+const buttonSizeToFontSize = {
+  sm: "sm",
+  md: "base",
+  lg: "base",
+} as const;
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
@@ -70,7 +79,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`];
     const fullWidthClassName = fullWidth ? styles.fullWidth : "";
     const textColor = getTextColor(backgroundColor);
-    const iconColor = backgroundColor === "white" ? "grey" : "white";
+    const iconColor =
+      backgroundColor === "white" || backgroundColor === "ghost"
+        ? "grey"
+        : "white";
 
     return (
       <motion.button
@@ -92,7 +104,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {leadingIconName && (
           <Icon type={leadingIconName} color={iconColor}></Icon>
         )}
-        <Text color={textColor}>{label}</Text>
+        <Text color={textColor} fontSize={buttonSizeToFontSize[size]}>
+          {label}
+        </Text>
         {trailingIconName && (
           <Icon type={trailingIconName} color={iconColor}></Icon>
         )}

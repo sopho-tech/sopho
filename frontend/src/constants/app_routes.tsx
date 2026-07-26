@@ -15,5 +15,6 @@ export const APP_ROUTES = {
   CONVERSATIONAL_ANALYTICS_ROUTES: {
     INDEX: "/conversational_analytics/",
     CONVERSATION: "/conversational_analytics/conversation/:id",
+    CONVERSATIONS: "/conversational_analytics/conversations",
   },
 };

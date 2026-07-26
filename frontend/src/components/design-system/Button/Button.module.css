@@ -94,6 +94,22 @@
   background-color: var(--color-grey-700);
 }
 
+.ghost {
+  background-color: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.ghost:hover {
+  background-color: var(--color-grey-200);
+  box-shadow: none;
+}
+
+.ghost:active {
+  background-color: var(--color-grey-300);
+  box-shadow: none;
+}
+
 .transparent {
   background-color: transparent;
   outline: var(--border-default-medium);
