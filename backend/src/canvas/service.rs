@@ -146,6 +146,155 @@ pub async fn execute_create_canvas(
     })
 }
 
+fn chart_content_json(
+    cell_id: Uuid,
+    chart: &crate::ai::dto::CanvasPlanChart,
+) -> Result<String, sea_orm::DbErr> {
+    use crate::cell::constants::{
+        AggregateFunction, AxisMinorTickShow, AxisTickShow, ChartOrientation, ChartType,
+        MetricFormat, SortOrder,
+    };
+    use crate::cell::dto::{
+        AxisChartContent, ChartContent, MetricChartContent, PieChartContent,
+    };
+
+    let aggregate_function = chart
+        .aggregate_function
+        .clone()
+        .unwrap_or(AggregateFunction::Max)
+        .as_str()
+        .to_string();
+
+    let content = match chart.chart_type {
+        ChartType::Bar | ChartType::Line => {
+            let axis = AxisChartContent {
+                cell_id,
+                x_axis: chart.x_axis.clone().unwrap_or_default(),
+                y_axis: chart.y_axis.clone().unwrap_or_default(),
+                orientation: Some(ChartOrientation::Vertical),
+                y_axis_aggregate_function: Some(aggregate_function),
+                y_axis_sort_order: Some(SortOrder::None),
+                x_axis_tick_show: Some(AxisTickShow::Show),
+                y_axis_tick_show: Some(AxisTickShow::Show),
+                axis_minor_tick_show: Some(AxisMinorTickShow::Show),
+            };
+            match chart.chart_type {
+                ChartType::Line => ChartContent::Line(axis),
+                _ => ChartContent::Bar(axis),
+            }
+        }
+        ChartType::Pie => ChartContent::Pie(PieChartContent {
+            cell_id,
+            category: chart.category.clone().unwrap_or_default(),
+            value: chart.value.clone().unwrap_or_default(),
+            aggregate_function: Some(aggregate_function),
+        }),
+        ChartType::Metric => ChartContent::Metric(MetricChartContent {
+            cell_id,
+            decimal_precision: Some(2),
+            suffix: None,
+            format: Some(MetricFormat::Default),
+        }),
+    };
+
+    serde_json::to_string(&content)
+        .map_err(|_| sea_orm::DbErr::Custom("failed to serialize chart content".into()))
+}
+
+pub async fn generate_canvas_from_plan(
+    app_state: &AppState,
+    connection_id: Uuid,
+    plan: crate::ai::dto::CanvasPlan,
+) -> Result<dto::GeneratedCanvasSummary, sea_orm::DbErr> {
+    use crate::cell::constants::CellType;
+    use crate::cell::dto::CreateCellDto;
+    use crate::dashboard::service::{DashboardChartPlacement, DashboardGridPacker};
+
+    let created = execute_create_canvas(
+        app_state,
+        dto::CreateCanvasDto {
+            name: plan.name.clone(),
+            description: plan.description.clone(),
+        },
+    )
+    .await?;
+    let notebook_id = created.notebook.id;
+    let canvas_id = created.canvas.id;
+
+    let mut sql_cell_count = 0;
+    let mut chart_cell_count = 0;
+    let mut placements: Vec<DashboardChartPlacement> = Vec::new();
+    let mut packer = DashboardGridPacker::default();
+    let mut order = 0;
+
+    for plan_cell in plan.cells.iter() {
+        let sql_cell = cell_service::execute_create_cell(
+            app_state,
+            CreateCellDto {
+                notebook_id,
+                connection_id: Some(connection_id),
+                name: Some(plan_cell.title.clone()),
+                content: Some(plan_cell.sql.clone()),
+                display_order: Some(order),
+                cell_type: CellType::Sql,
+            },
+        )
+        .await
+        .map_err(|_| sea_orm::DbErr::Custom("failed to create sql cell".into()))?;
+        sql_cell_count += 1;
+        order += 1;
+
+        if let Some(chart) = &plan_cell.chart {
+            let chart_cell = cell_service::execute_create_cell(
+                app_state,
+                CreateCellDto {
+                    notebook_id,
+                    connection_id: Some(connection_id),
+                    name: Some(plan_cell.title.clone()),
+                    content: Some(chart_content_json(sql_cell.id, chart)?),
+                    display_order: Some(order),
+                    cell_type: CellType::Chart,
+                },
+            )
+            .await
+            .map_err(|_| sea_orm::DbErr::Custom("failed to create chart cell".into()))?;
+            chart_cell_count += 1;
+            order += 1;
+
+            let (x, y, width, height) = packer.place(chart.grid_width, chart.grid_height);
+            placements.push(DashboardChartPlacement {
+                cell_id: chart_cell.id,
+                notebook_id,
+                x,
+                y,
+                width,
+                height,
+            });
+        }
+    }
+
+    let dashboard_charts_count = placements.len() as i32;
+    if !placements.is_empty() {
+        dashboard_service::set_dashboard_layout(
+            app_state,
+            created.dashboard.id,
+            plan.name.clone(),
+            plan.description.clone(),
+            placements,
+        )
+        .await?;
+    }
+
+    Ok(dto::GeneratedCanvasSummary {
+        canvas_id,
+        name: plan.name,
+        description: plan.description,
+        sql_cell_count,
+        chart_cell_count,
+        dashboard_charts_count,
+    })
+}
+
 pub async fn get_last_modified_canvases(
     app_state: &AppState,
     limit: u64,

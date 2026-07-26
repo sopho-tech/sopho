@@ -1,6 +1,13 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+pub const GRID_COLUMN_COUNT: u16 = 12;
+pub const MIN_CHART_WIDTH: u16 = 4;
+pub const MIN_CHART_HEIGHT: u16 = 3;
+pub const MAX_CHART_HEIGHT: u16 = 6;
+pub const DEFAULT_CHART_WIDTH: u16 = 4;
+pub const DEFAULT_CHART_HEIGHT: u16 = 3;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum DashboardStatus {
     Active,

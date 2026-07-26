@@ -10,11 +10,13 @@ import {
 import { rotateToggleTransition } from "src/components/design-system/animation";
 import {
   AgentEventName,
+  extractCanvasGenerated,
   type AgentEvent,
   type ConversationMessageContentDto,
   type GeneratedSqlData,
   type RecommendedVisualizationData,
 } from "src/components/ConversationalAnalytics/dto";
+import { CanvasGeneratedCard } from "src/components/ConversationalAnalytics/CanvasGeneratedCard";
 import {
   parseEvent,
   isCompletedEvent,
@@ -68,6 +70,8 @@ export function AgentTrace({ connectionId, contents }: AgentTraceProps) {
       ? (event.data as RecommendedVisualizationData).visualization
       : null;
   }, [events]);
+
+  const canvas = useMemo(() => extractCanvasGenerated(events), [events]);
 
   if (events.length === 0 && !routerDecision) return null;
 
@@ -141,6 +145,7 @@ export function AgentTrace({ connectionId, contents }: AgentTraceProps) {
           visualization={visualization}
         />
       )}
+      {canvas && <CanvasGeneratedCard data={canvas} />}
     </>
   );
 }

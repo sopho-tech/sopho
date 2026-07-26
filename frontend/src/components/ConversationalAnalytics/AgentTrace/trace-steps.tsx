@@ -69,6 +69,7 @@ export const STEP_LABELS: Record<string, string> = {
   [AgentEventName.ExecutingQuery]: "Executing Query",
   [AgentEventName.RecommendingVisualization]: "Recommending Visualization",
   [AgentEventName.RecommendedVisualization]: "Recommended Visualization",
+  [AgentEventName.GeneratingCanvas]: "Generating canvas…",
 };
 
 export const TRACE_HIDDEN_EVENTS = new Set<string>([
@@ -81,6 +82,7 @@ export const TRACE_HIDDEN_EVENTS = new Set<string>([
   AgentEventName.ExecutedQuery,
   AgentEventName.RecommendedVisualization,
   AgentEventName.SuggestedFollowups,
+  AgentEventName.CanvasGenerated,
 ]);
 
 const OBSERVATION_COLUMNS: ColumnConfig<EmpericalObservationColumn>[] = [
@@ -441,7 +443,12 @@ export function extractRouterDecision(
 }
 
 const ROUTER_DECISION_BADGE: Record<
-  Exclude<RouterCode, typeof RouterCode.TextToSql | typeof RouterCode.Followup>,
+  Exclude<
+    RouterCode,
+    | typeof RouterCode.TextToSql
+    | typeof RouterCode.Followup
+    | typeof RouterCode.GenerateCanvas
+  >,
   { label: string; variant: NonNullable<BadgeProps["variant"]> }
 > = {
   [RouterCode.Clarify]: { label: "Clarification", variant: "yellow" },
@@ -463,10 +470,14 @@ export function RouterDecisionBubble({
   createdAt?: string;
 }) {
   const { code, message } = data.decision;
-  if (code === RouterCode.TextToSql || code === RouterCode.Followup)
-    return null;
+  const badge = ROUTER_DECISION_BADGE[
+    code as keyof typeof ROUTER_DECISION_BADGE
+  ] as
+    | (typeof ROUTER_DECISION_BADGE)[keyof typeof ROUTER_DECISION_BADGE]
+    | undefined;
+  if (!badge) return null;
 
-  const { label, variant } = ROUTER_DECISION_BADGE[code];
+  const { label, variant } = badge;
 
   return (
     <Flex direction="column" className={panelStyles.messageBubbleGroup}>
@@ -605,7 +616,11 @@ export function TraceStep({
           </Box>
         </Flex>
         <Flex gap="2xs" sx={{ minHeight: !isLast ? "16px" : undefined }}>
-          <Flex direction="column" alignItems="center" className={styles.stepLineColumn}>
+          <Flex
+            direction="column"
+            alignItems="center"
+            className={styles.stepLineColumn}
+          >
             {!isLast && <Box className={styles.stepLine} />}
           </Flex>
           {expandable && (

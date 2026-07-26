@@ -474,6 +474,28 @@ pub enum ChartType {
     Metric,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum AggregateFunction {
+    Max,
+    Min,
+    Sum,
+    Count,
+    Avg,
+}
+
+impl AggregateFunction {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            AggregateFunction::Max => "MAX",
+            AggregateFunction::Min => "MIN",
+            AggregateFunction::Sum => "SUM",
+            AggregateFunction::Count => "COUNT",
+            AggregateFunction::Avg => "AVG",
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum CellDisplayOrderMovement {
     Up,

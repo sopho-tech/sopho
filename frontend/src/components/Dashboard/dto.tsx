@@ -1,5 +1,6 @@
 import { Layout } from "react-grid-layout";
 
+export const GRID_COLUMN_COUNT = 12;
 export const DEFAULT_CHART_WIDTH = 4;
 export const DEFAULT_CHART_HEIGHT = 3;
 

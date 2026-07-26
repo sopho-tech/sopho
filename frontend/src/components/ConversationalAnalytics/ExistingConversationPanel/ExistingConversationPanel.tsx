@@ -23,8 +23,14 @@ import {
   useStartStream,
 } from "src/components/ConversationalAnalytics/ConversationStreamContext";
 import type { MessageComposerHandle } from "src/components/ConversationalAnalytics/MessageComposer";
+import type { MessageSegment } from "src/api/conversational_analytics/queries";
 import { extractFollowUpQuestions } from "src/components/ConversationalAnalytics/dto";
 import { SuggestedQuestionList } from "src/components/ConversationalAnalytics/SuggestedQuestionList";
+import {
+  MessageSegments,
+  parseMessageSegments,
+  segmentsToText,
+} from "src/components/ConversationalAnalytics/MessageSegments";
 
 type MessageProps = {
   connectionId: string;
@@ -34,10 +40,12 @@ type MessageProps = {
 const Message = ({ connectionId, message }: MessageProps) => {
   const render = () => {
     if (message.sender == Sender.Human) {
-      const text = [...message.content]
+      const rawContent = [...message.content]
         .sort((a, b) => a.sequence_number - b.sequence_number)
         .map((c) => c.content)
         .join("\n");
+      const segments = parseMessageSegments(rawContent);
+      const text = segments ? segmentsToText(segments) : rawContent;
       return (
         <Flex direction="column" className={styles.messageBubbleGroup}>
           <Flex
@@ -46,7 +54,7 @@ const Message = ({ connectionId, message }: MessageProps) => {
             paddingX="md"
             paddingY="md"
           >
-            {text}
+            {segments ? <MessageSegments segments={segments} /> : rawContent}
           </Flex>
           <MessageHoverFooter
             createdAt={message.created_at}
@@ -93,10 +101,10 @@ export const ExistingConversationPanel = () => {
 
   const connectionId = conversationQuery.data?.conversation.connection_id ?? "";
 
-  const handleSubmit = (text: string) => {
+  const handleSubmit = (segments: MessageSegment[]) => {
     if (!gate.canSend) return;
     appendUserMessage.mutate(
-      { user_message: text },
+      { segments },
       {
         onSuccess: () => {
           startStream(conversationId);

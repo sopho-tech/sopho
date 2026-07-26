@@ -2,12 +2,26 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--border-radius-full);
-  padding: var(--space-2xs) var(--space-xs);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-tight);
   white-space: nowrap;
+}
+
+.sm {
+  padding: var(--space-2xs) var(--space-xs);
+}
+
+.md {
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.pill {
+  border-radius: var(--border-radius-full);
+}
+
+.rounded {
+  border-radius: var(--border-radius-md);
 }
 
 .default {
@@ -33,4 +47,9 @@
 .yellow {
   background-color: var(--color-yellow-200);
   color: var(--color-yellow-900);
+}
+
+.command {
+  background-color: var(--color-primary-100);
+  color: var(--color-primary-600);
 }

@@ -14,6 +14,7 @@ type CardRootProps = {
   className?: string;
   variant?: CardVariant;
   onClick?: () => void;
+  sx?: React.CSSProperties;
 };
 
 type CardContextType = {
@@ -22,7 +23,13 @@ type CardContextType = {
 
 const CardContext = createContext<CardContextType | null>(null);
 
-const CardRoot = ({ children, className, variant, onClick }: CardRootProps) => {
+const CardRoot = ({
+  children,
+  className,
+  variant,
+  onClick,
+  sx,
+}: CardRootProps) => {
   const contextValue = {
     variant: variant,
   };
@@ -36,7 +43,7 @@ const CardRoot = ({ children, className, variant, onClick }: CardRootProps) => {
           duration: Duration.FAST,
           ease: EASE,
         }}
-        sx={{ cursor: "pointer" }}
+        sx={{ cursor: "pointer", ...sx }}
         className={className}
         backgroundColor="default"
         border="default"

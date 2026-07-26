@@ -7,9 +7,8 @@ use super::error::ExecuteCompletionError;
 use super::repository;
 use crate::ai::conversation_name_agent;
 use crate::ai::dto::EventChannels;
-use crate::ai::followup_questions_agent;
-use crate::data_catalog;
 use crate::ai::dto::{ConversationHistoryTerminalStatus, ConversationHistoryTurn, RouterCode};
+use crate::ai::followup_questions_agent;
 use crate::ai::router_agent;
 use crate::ai::text_to_sql_agent;
 use crate::ai::visualization_agent;
@@ -18,10 +17,11 @@ use crate::ai_configuration::service as ai_config_service;
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::connection::service as connection_service;
+use crate::conversational_analytics::command::constants::{self as command_constants, Command};
 use crate::conversational_analytics::conversation::constants::ContentType;
 use crate::conversational_analytics::conversation::constants::MessageStatus;
-use crate::conversational_analytics::conversation::constants::TERMINAL_MESSAGE_STATUSES;
 use crate::conversational_analytics::conversation::constants::CONVERSATION_HISTORY_MESSAGE_LIMIT;
+use crate::conversational_analytics::conversation::constants::TERMINAL_MESSAGE_STATUSES;
 use crate::conversational_analytics::message::constants::Sender;
 use crate::conversational_analytics::message::dto::{
     ConversationMessageDto, ConversationMessageWithContentDto, CreateConversationMessageDto,
@@ -32,6 +32,8 @@ use crate::conversational_analytics::message_content::dto::{
     ConversationMessageContentDto, CreateConversationMessageContentDto,
 };
 use crate::conversational_analytics::message_content::service as message_content_service;
+use crate::conversational_analytics::segment;
+use crate::data_catalog;
 use crate::entity;
 use axum::response::sse::{Event, Sse};
 use sea_orm::TransactionTrait;
@@ -135,21 +137,22 @@ pub async fn create_conversation(
         created_at: now,
         updated_at: now,
     };
+    let segments_json = segment::serialize_segments(&payload.segments);
+    let plain_text = segment::plain_text_from_segments(&payload.segments);
+
     let txn = app_state.database_connection.begin().await?;
 
     let saved_conversation = repository::save_conversation_transaction(&txn, conversation).await?;
 
-    let user_message = CreateConversationMessageDto::initial_user_message(
-        saved_conversation.id,
-        &payload.user_message,
-    );
+    let user_message =
+        CreateConversationMessageDto::initial_user_message(saved_conversation.id, &plain_text);
     let created_message = message_service::create_message(&txn, user_message).await?;
 
     let user_message_content = CreateConversationMessageContentDto {
         conversation_message_id: created_message.id,
         sequence_number: 1,
         content_type: ContentType::Text.to_string(),
-        content: payload.user_message.clone(),
+        content: segments_json,
         status: MessageStatus::Processed.to_string(),
     };
     message_content_service::create_message_content(&txn, user_message_content).await?;
@@ -274,13 +277,24 @@ pub async fn append_user_message(
         return Err(AppendUserMessageError::ConversationBusy);
     }
 
-    let question = validate_question(&payload.user_message).map_err(|e| match e {
-        ExecuteCompletionError::EmptyQuestion => AppendUserMessageError::EmptyQuestion,
-        ExecuteCompletionError::QuestionTooLong => AppendUserMessageError::QuestionTooLong,
-        _ => AppendUserMessageError::Database(sea_orm::DbErr::Custom(
-            "unexpected validation error".to_string(),
-        )),
-    })?;
+    let segments_json = segment::serialize_segments(&payload.segments);
+    let plain_text = segment::plain_text_from_segments(&payload.segments);
+    let commands =
+        command_constants::parse_dedup(&segment::command_names_from_segments(&payload.segments));
+
+    let question: String = if plain_text.trim().is_empty() && !commands.is_empty() {
+        String::new()
+    } else {
+        validate_question(&plain_text)
+            .map_err(|e| match e {
+                ExecuteCompletionError::EmptyQuestion => AppendUserMessageError::EmptyQuestion,
+                ExecuteCompletionError::QuestionTooLong => AppendUserMessageError::QuestionTooLong,
+                _ => AppendUserMessageError::Database(sea_orm::DbErr::Custom(
+                    "unexpected validation error".to_string(),
+                )),
+            })?
+            .to_string()
+    };
 
     let txn = app_state.database_connection.begin().await?;
 
@@ -288,7 +302,7 @@ pub async fn append_user_message(
         conversation_id,
         sequence_number: last_message.sequence_number + 1,
         sender: Sender::Human.to_string(),
-        content: question.to_string(),
+        content: question.clone(),
         status: MessageStatus::Processed.to_string(),
     };
     let created_message = message_service::create_message(&txn, new_message).await?;
@@ -297,7 +311,7 @@ pub async fn append_user_message(
         conversation_message_id: created_message.id,
         sequence_number: 1,
         content_type: ContentType::Text.to_string(),
-        content: question.to_string(),
+        content: segments_json,
         status: MessageStatus::Processed.to_string(),
     };
     message_content_service::create_message_content(&txn, user_message_content).await?;
@@ -321,7 +335,7 @@ fn validate_question(question: &str) -> Result<&str, ExecuteCompletionError> {
 async fn resolve_last_human_question_for_completion(
     app_state: &AppState,
     conversation_id: Uuid,
-) -> Result<(String, i32), ExecuteCompletionError> {
+) -> Result<(String, Vec<Command>, i32), ExecuteCompletionError> {
     let last_message = message_service::get_last_message_for_conversation(
         &app_state.database_connection,
         conversation_id,
@@ -340,10 +354,17 @@ async fn resolve_last_human_question_for_completion(
     if message_contents.len() != 1 {
         return Err(ExecuteCompletionError::InvalidLastMessageContent);
     }
-    let message_content = &message_contents[0];
+    let raw = &message_contents[0].content;
 
-    let question = validate_question(&message_content.content)?;
-    Ok((question.to_string(), last_message.sequence_number))
+    let text = segment::extract_plain_text(raw);
+    let commands = command_constants::parse_dedup(&segment::command_names_from_content(raw));
+
+    let question = if text.trim().is_empty() && !commands.is_empty() {
+        String::new()
+    } else {
+        validate_question(&text)?.to_string()
+    };
+    Ok((question, commands, last_message.sequence_number))
 }
 
 async fn create_conversation_message_for_completion(
@@ -374,9 +395,6 @@ pub async fn execute_completion(
 ) -> Result<Sse<impl futures_util::Stream<Item = Result<Event, Infallible>>>, ExecuteCompletionError>
 {
     ensure_ai_live(&app_state).await?;
-    let (question, last_message_sequence_number) =
-        resolve_last_human_question_for_completion(&app_state, conversation_id).await?;
-
     let conversation =
         repository::get_conversation(&app_state.database_connection, conversation_id)
             .await
@@ -384,7 +402,8 @@ pub async fn execute_completion(
                 sea_orm::DbErr::RecordNotFound(_) => ExecuteCompletionError::ConversationNotFound,
                 _ => ExecuteCompletionError::Database(e),
             })?;
-
+    let (question, commands, last_message_sequence_number) =
+        resolve_last_human_question_for_completion(&app_state, conversation_id).await?;
     let connection =
         connection_service::execute_get_connection(&app_state, conversation.connection_id)
             .await
@@ -392,7 +411,6 @@ pub async fn execute_completion(
                 sea_orm::DbErr::RecordNotFound(_) => ExecuteCompletionError::ConnectionNotFound,
                 _ => ExecuteCompletionError::Database(e),
             })?;
-
     let conversation_message_id = create_conversation_message_for_completion(
         &app_state,
         conversation_id,
@@ -414,6 +432,7 @@ pub async fn execute_completion(
                 &app_state,
                 &connection,
                 &question,
+                &commands,
                 &conversation_history_turns,
                 &channels,
             )
@@ -453,16 +472,49 @@ pub async fn execute_completion(
     ))
 }
 
+fn resolve_command_decision(
+    command: Command,
+    history: &[ConversationHistoryTurn],
+) -> crate::ai::dto::RouterDecision {
+    use crate::ai::dto::{RouterCode, RouterDecision};
+    match command {
+        Command::Canvas => {
+            let has_data = history.iter().any(|t| {
+                matches!(
+                    t.terminal_status,
+                    ConversationHistoryTerminalStatus::Completed
+                ) && t.generated_sql.is_some()
+            });
+            if has_data {
+                RouterDecision {
+                    code: RouterCode::GenerateCanvas,
+                    message: String::new(),
+                }
+            } else {
+                RouterDecision {
+                    code: RouterCode::Clarify,
+                    message: "I can generate a canvas once we've run at least one query in this conversation. Ask a data question first, then use /canvas.".to_string(),
+                }
+            }
+        }
+    }
+}
+
 async fn run_pipeline(
     app_state: &AppState,
     connection: &entity::connection::Model,
     question: &str,
+    commands: &[Command],
     conversation_history_turns: &[ConversationHistoryTurn],
     channels: &EventChannels,
 ) -> anyhow::Result<PipelineOutcome> {
     channels.send(crate::ai::dto::Event::Starting).await?;
     channels.send(crate::ai::dto::Event::Routing).await?;
-    let decision = router_agent::execute(app_state, question, conversation_history_turns).await?;
+    let decision = if let Some(command) = commands.first() {
+        resolve_command_decision(*command, conversation_history_turns)
+    } else {
+        router_agent::execute(app_state, question, conversation_history_turns).await?
+    };
     channels
         .send(crate::ai::dto::Event::Routed {
             decision: decision.clone(),
@@ -493,6 +545,29 @@ async fn run_pipeline(
                 channels,
             )
             .await;
+            channels.send(crate::ai::dto::Event::Completed).await?;
+            Ok(PipelineOutcome::Completed)
+        }
+        RouterCode::GenerateCanvas => {
+            channels
+                .send(crate::ai::dto::Event::GeneratingCanvas)
+                .await?;
+            let plan =
+                crate::ai::canvas_generation_agent::execute(app_state, conversation_history_turns)
+                    .await?;
+            let summary =
+                crate::canvas::service::generate_canvas_from_plan(app_state, connection.id, plan)
+                    .await?;
+            channels
+                .send(crate::ai::dto::Event::CanvasGenerated {
+                    canvas_id: summary.canvas_id,
+                    name: summary.name,
+                    description: summary.description,
+                    sql_cell_count: summary.sql_cell_count,
+                    chart_cell_count: summary.chart_cell_count,
+                    dashboard_charts_count: summary.dashboard_charts_count,
+                })
+                .await?;
             channels.send(crate::ai::dto::Event::Completed).await?;
             Ok(PipelineOutcome::Completed)
         }
@@ -642,7 +717,7 @@ async fn load_message_text(db: &sea_orm::DatabaseConnection, message_id: Uuid) -
         Ok(contents) => contents
             .into_iter()
             .next()
-            .map(|c| c.content)
+            .map(|c| segment::extract_plain_text(&c.content))
             .unwrap_or_default(),
         Err(_) => String::new(),
     }

@@ -1,5 +1,6 @@
 use crate::common::time_utils;
 use crate::common::AppState;
+use crate::dashboard::constants;
 use crate::dashboard::constants::DashboardStatus;
 use crate::dashboard::dto;
 use crate::dashboard::dto::Layout;
@@ -128,6 +129,65 @@ pub async fn execute_update_dashboard(
     dashboard_id: Uuid,
     payload: dto::DashboardDto,
 ) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
+    repository::update_dashboard(&app_state.database_connection, dashboard_id, payload).await
+}
+
+pub struct DashboardChartPlacement {
+    pub cell_id: Uuid,
+    pub notebook_id: Uuid,
+    pub x: u16,
+    pub y: u16,
+    pub width: u16,
+    pub height: u16,
+}
+
+#[derive(Default)]
+pub struct DashboardGridPacker {
+    x: u16,
+    y: u16,
+    row_height: u16,
+}
+
+impl DashboardGridPacker {
+    pub fn place(&mut self, width: Option<u16>, height: Option<u16>) -> (u16, u16, u16, u16) {
+        let width = width
+            .unwrap_or(constants::DEFAULT_CHART_WIDTH)
+            .clamp(constants::MIN_CHART_WIDTH, constants::GRID_COLUMN_COUNT);
+        let height = height
+            .unwrap_or(constants::DEFAULT_CHART_HEIGHT)
+            .clamp(constants::MIN_CHART_HEIGHT, constants::MAX_CHART_HEIGHT);
+
+        if self.x + width > constants::GRID_COLUMN_COUNT {
+            self.y += self.row_height;
+            self.x = 0;
+            self.row_height = 0;
+        }
+
+        let placement = (self.x, self.y, width, height);
+        self.x += width;
+        self.row_height = self.row_height.max(height);
+        placement
+    }
+}
+
+pub async fn set_dashboard_layout(
+    app_state: &AppState,
+    dashboard_id: Uuid,
+    name: String,
+    description: Option<String>,
+    charts: Vec<DashboardChartPlacement>,
+) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
+    let layout: Vec<Layout> = charts
+        .into_iter()
+        .map(|c| Layout::new(c.cell_id, c.notebook_id, c.x, c.y, c.width, c.height))
+        .collect();
+    let payload = dto::DashboardDto {
+        id: dashboard_id,
+        name: Some(name),
+        description,
+        layout: Some(layout),
+        status: DashboardStatus::Active,
+    };
     repository::update_dashboard(&app_state.database_connection, dashboard_id, payload).await
 }
 

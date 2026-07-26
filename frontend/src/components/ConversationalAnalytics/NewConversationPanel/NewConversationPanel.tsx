@@ -6,6 +6,7 @@ import { useConnections } from "src/api/connection/queries";
 import { useAiConfiguration } from "src/api/ai_configuration";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { MessageComposer, type MessageComposerHandle } from "src/components/ConversationalAnalytics/MessageComposer";
+import type { MessageSegment } from "src/api/conversational_analytics/queries";
 import { SuggestedQuestions } from "src/components/ConversationalAnalytics/NewConversationPanel/SuggestedQuestions";
 import styles from "./NewConversationPanel.module.css";
 
@@ -36,10 +37,10 @@ export function NewConversationPanel() {
       ? connectionDisabledTooltip
       : undefined;
 
-  const handleSubmit = (user_message: string) => {
+  const handleSubmit = (segments: MessageSegment[]) => {
     if (!selectedConnectionId) return;
     createConversation(
-      { connection_id: selectedConnectionId, user_message },
+      { connection_id: selectedConnectionId, segments },
       {
         onSuccess: (data) => {
           navigate(

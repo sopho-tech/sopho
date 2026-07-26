@@ -31,6 +31,12 @@ import {
   UndoRedo,
 } from "@tiptap/extensions";
 import { Box, Flex, IconButton } from "src/components/design-system";
+import {
+  EditorNodeName,
+  SlashCommandExtension,
+  isSlashSuggestionActive,
+} from "./SlashCommandExtension";
+import type { MessageSegment } from "src/components/ConversationalAnalytics/dto";
 import styles from "./MessageComposer.module.css";
 
 export type MessageComposerHandle = {
@@ -39,7 +45,7 @@ export type MessageComposerHandle = {
 
 type MessageComposerProps = {
   placeholder: string;
-  onSubmit: (text: string) => void;
+  onSubmit: (segments: MessageSegment[]) => void;
   disabled: boolean;
   disabledTooltip?: string;
   enabledTooltip?: string;
@@ -47,11 +53,21 @@ type MessageComposerProps = {
   ref?: Ref<MessageComposerHandle>;
 };
 
-const extractAndClear = (editor: Editor): string | null => {
-  const text = editor.getText().trim();
-  if (!text) return null;
-  editor.commands.clearContent(true);
-  return text;
+const extractSegments = (editor: Editor): MessageSegment[] => {
+  const segments: MessageSegment[] = [];
+  editor.state.doc.descendants((node) => {
+    if (node.type.name === EditorNodeName.SlashCommand) {
+      segments.push({ type: "COMMAND", name: node.attrs.commandName });
+    } else if (node.isText && node.text) {
+      segments.push({ type: "TEXT", text: node.text });
+    } else if (node.type.name === "paragraph" && segments.length > 0) {
+      const last = segments[segments.length - 1];
+      if (last.type === "TEXT" && !last.text.endsWith("\n")) {
+        last.text += "\n";
+      }
+    }
+  });
+  return segments;
 };
 
 export function MessageComposer({
@@ -87,6 +103,7 @@ export function MessageComposer({
       TrailingNode,
       Underline,
       UndoRedo,
+      SlashCommandExtension,
       Placeholder.configure({
         placeholder,
         emptyEditorClass: "is-editor-empty",
@@ -99,10 +116,15 @@ export function MessageComposer({
       },
       handleKeyDown: (_view, event) => {
         if (event.key === "Enter" && !event.shiftKey) {
+          if (editor && isSlashSuggestionActive(editor)) return false;
           event.preventDefault();
           if (disabled || !editor) return true;
-          const text = extractAndClear(editor);
-          if (text !== null) onSubmit(text);
+          const segments = extractSegments(editor);
+          const text = editor.getText().trim();
+          const hasCommand = segments.some((s) => s.type === "COMMAND");
+          if (!text && !hasCommand) return true;
+          editor.commands.clearContent(true);
+          onSubmit(segments);
           return true;
         }
         return false;
@@ -126,8 +148,12 @@ export function MessageComposer({
 
   const handleClickSend = () => {
     if (disabled || !editor) return;
-    const text = extractAndClear(editor);
-    if (text !== null) onSubmit(text);
+    const segments = extractSegments(editor);
+    const text = editor.getText().trim();
+    const hasCommand = segments.some((s) => s.type === "COMMAND");
+    if (!text && !hasCommand) return;
+    editor.commands.clearContent(true);
+    onSubmit(segments);
   };
 
   return (
@@ -173,5 +199,3 @@ export function MessageComposer({
     </EditorContext.Provider>
   );
 }
-
-MessageComposer.displayName = "MessageComposer";

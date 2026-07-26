@@ -17,6 +17,7 @@ pub enum ModelRole {
 #[derive(Clone, Copy, Debug, strum::IntoStaticStr)]
 #[strum(serialize_all = "snake_case")]
 pub enum AgentName {
+    CanvasGenerationAgent,
     ConversationNameAgent,
     LivenessCheckAgent,
     DataCatalogDeletionAgent,
