@@ -21,6 +21,7 @@ export function ChartCell({ cell_id }: { cell_id: string }) {
 
   return (
     <div
+      id={cell_id}
       className={containerClassName}
       onFocus={handleActivate}
       onClick={handleActivate}

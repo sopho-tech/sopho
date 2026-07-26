@@ -78,4 +78,5 @@ pub struct SearchResultItemDto {
     pub name: Option<String>,
     pub entity_type: String,
     pub updated_at: DateTime<FixedOffset>,
+    pub canvas_id: Option<Uuid>,
 }

@@ -9,6 +9,7 @@ use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use sea_orm::DatabaseTransaction;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 pub async fn does_notebook_exist(app_state: &AppState, id: Uuid) -> bool {
@@ -197,6 +198,18 @@ pub async fn get_notebook_by_canvas_id(
     canvas_id: Uuid,
 ) -> Result<entity::notebook::Model, sea_orm::DbErr> {
     repository::get_notebook_by_canvas_id(&app_state.database_connection, canvas_id).await
+}
+
+pub async fn get_canvas_ids_by_notebook_ids(
+    app_state: &AppState,
+    notebook_ids: Vec<Uuid>,
+) -> Result<HashMap<Uuid, Uuid>, sea_orm::DbErr> {
+    let notebooks =
+        repository::get_notebooks_by_ids(&app_state.database_connection, notebook_ids).await?;
+    Ok(notebooks
+        .into_iter()
+        .map(|notebook| (notebook.id, notebook.canvas_id))
+        .collect())
 }
 
 pub async fn get_notebook_transaction(

@@ -7,7 +7,7 @@ import { Badge } from "src/components/design-system";
 import { Flex } from "src/components/design-system";
 import { SearchResultItemDto, useSearch } from "src/api/search/queries";
 import { EntityType } from "src/api/search";
-import { APP_ROUTES } from "src/constants/app_routes";
+import { APP_ROUTES, SEARCH_PARAMS } from "src/constants/app_routes";
 import {
   KEYBOARD_SHORTCUTS,
   useKeyboardShortcut,
@@ -24,27 +24,27 @@ type CommandMenuProps = {
   onOpenChange?: (open: boolean) => void;
 };
 
+const RECENT_ITEMS_LIMIT = 5;
+
 const PageToDisplayNameMap: Record<Page, string> = {
   home: "Home",
   canvases: "Canvases",
   sql_cells: "SQL Cells",
   chart_cells: "Chart Cells",
+  conversations: "Conversations",
 };
 
-const getFilters = (currentPage: Page) => {
-  if (currentPage === "home") {
-    return [EntityType.Canvas, EntityType.ChartCell, EntityType.SqlCell];
-  }
-  if (currentPage === "canvases") {
-    return [EntityType.Canvas];
-  }
-  if (currentPage === "sql_cells") {
-    return [EntityType.SqlCell];
-  }
-  if (currentPage === "chart_cells") {
-    return [EntityType.ChartCell];
-  }
-  return [];
+const PageToFiltersMap: Record<Page, EntityType[]> = {
+  home: [
+    EntityType.Canvas,
+    EntityType.ChartCell,
+    EntityType.SqlCell,
+    EntityType.Conversation,
+  ],
+  canvases: [EntityType.Canvas],
+  sql_cells: [EntityType.SqlCell],
+  chart_cells: [EntityType.ChartCell],
+  conversations: [EntityType.Conversation],
 };
 
 export const CommandMenu = ({
@@ -61,7 +61,7 @@ export const CommandMenu = ({
   const [pages, setPages] = useState<Page[]>(["home"]);
   const currentPage = pages[pages.length - 1];
   const isHomePage = currentPage === "home";
-  const filters = getFilters(currentPage);
+  const filters = PageToFiltersMap[currentPage];
   const searchQuery = useSearch(debouncedInputValue, filters);
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -129,7 +129,25 @@ export const CommandMenu = ({
     if (item.entity_type === EntityType.Canvas) {
       handleOpenChange(false);
       navigate(APP_ROUTES.CANVAS.replace(":id", item.id));
+      return;
     }
+    if (item.entity_type === EntityType.Conversation) {
+      handleOpenChange(false);
+      navigate(
+        APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION.replace(
+          ":id",
+          item.id
+        )
+      );
+      return;
+    }
+    if (!item.canvas_id) {
+      return;
+    }
+    handleOpenChange(false);
+    navigate(
+      `${APP_ROUTES.CANVAS.replace(":id", item.canvas_id)}?${SEARCH_PARAMS.CELL}=${item.id}`
+    );
   };
 
   const handleCreateCanvas = (value: string) => {
@@ -139,32 +157,41 @@ export const CommandMenu = ({
     return value;
   };
 
+  const handleCreateConversation = (value: string) => {
+    handleOpenChange(false);
+    navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
+    return value;
+  };
+
+  useKeyboardShortcut(
+    () => handleCreateConversation(""),
+    KEYBOARD_SHORTCUTS.NEW_CONVERSATION
+  );
+
   const renderContent = () => {
-    if (inputValue === "" && !isHomePage) {
+    if (inputValue !== "" || !isHomePage) {
       return (
         <CommandMenuSearchResults
           data={searchQuery.data}
+          heading={inputValue === "" ? "Recent" : "Search Results"}
           onItemSelect={handleSearchResultSelect}
         />
       );
     }
-    if (inputValue !== "") {
-      return (
-        <CommandMenuSearchResults
-          data={searchQuery.data}
-          onItemSelect={handleSearchResultSelect}
-        />
-      );
-    }
-    if (isHomePage && inputValue === "") {
-      return (
+    return (
+      <React.Fragment>
         <CommandMenuHomePage
           onSelect={handlePageSelect}
           onCreateCanvas={handleCreateCanvas}
+          onCreateConversation={handleCreateConversation}
         />
-      );
-    }
-    return null;
+        <CommandMenuSearchResults
+          data={searchQuery.data?.slice(0, RECENT_ITEMS_LIMIT)}
+          heading="Recent"
+          onItemSelect={handleSearchResultSelect}
+        />
+      </React.Fragment>
+    );
   };
 
   return (

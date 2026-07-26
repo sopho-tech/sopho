@@ -3,6 +3,7 @@ pub enum EntityType {
     Canvas,
     SqlCell,
     ChartCell,
+    Conversation,
 }
 
 impl EntityType {
@@ -11,6 +12,7 @@ impl EntityType {
             EntityType::Canvas => "canvas",
             EntityType::SqlCell => "sql_cells",
             EntityType::ChartCell => "chart_cells",
+            EntityType::Conversation => "conversations",
         }
     }
 }

@@ -2,13 +2,31 @@ import { Command } from "cmdk";
 import React from "react";
 import { CommandMenuItem } from "./CommandMenuItem";
 import { CommandMenuHomePageProps } from "./CommandMenu.types";
+import { KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
 
 export const CommandMenuHomePage = ({
   onSelect,
   onCreateCanvas,
+  onCreateConversation,
 }: CommandMenuHomePageProps) => {
   return (
     <React.Fragment>
+      <Command.Group heading="Conversations">
+        <CommandMenuItem
+          value="Search Conversations"
+          label="Search Conversations"
+          iconType="search"
+          onSelect={() => onSelect("conversations")}
+        />
+        <CommandMenuItem
+          value="New Conversation"
+          label="New Conversation"
+          iconType="add"
+          shortcut={KEYBOARD_SHORTCUTS.NEW_CONVERSATION}
+          onSelect={onCreateConversation}
+        />
+      </Command.Group>
+      <Command.Separator />
       <Command.Group heading="Canvases">
         <CommandMenuItem
           value="Search Canvases"

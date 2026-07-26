@@ -166,6 +166,16 @@ pub async fn list_conversations(
     })
 }
 
+pub async fn search_conversations_by_name(
+    app_state: &AppState,
+    search_query: Option<&str>,
+    limit: u64,
+) -> Result<Vec<entity::conversation::Model>, sea_orm::DbErr> {
+    repository::list_conversations(&app_state.database_connection, search_query, 0, limit)
+        .await
+        .map(|(conversations, _)| conversations)
+}
+
 /// Sequence number of conversation messages start from `1` not `0`
 pub async fn create_conversation(
     app_state: AppState,

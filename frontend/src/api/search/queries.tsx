@@ -13,6 +13,7 @@ export type SearchResultItemDto = {
   name: string | null;
   entity_type: EntityType;
   updated_at: string;
+  canvas_id: string | null;
 };
 
 export type SearchResponseDto = {

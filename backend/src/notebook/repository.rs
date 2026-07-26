@@ -32,6 +32,20 @@ pub async fn get_notebook(db: &DatabaseConnection, id: Uuid) -> Result<notebook:
     }
 }
 
+pub async fn get_notebooks_by_ids(
+    db: &DatabaseConnection,
+    ids: Vec<Uuid>,
+) -> Result<Vec<notebook::Model>, DbErr> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let notebooks = notebook::Entity::find()
+        .filter(notebook::Column::Id.is_in(ids))
+        .all(db)
+        .await?;
+    Ok(notebooks)
+}
+
 pub async fn get_all_notebooks(db: &DatabaseConnection) -> Result<Vec<notebook::Model>, DbErr> {
     let notebooks = notebook::Entity::find().all(db).await?;
     Ok(notebooks)

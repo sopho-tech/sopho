@@ -1,3 +1,7 @@
+export const SEARCH_PARAMS = {
+  CELL: "cell",
+};
+
 export const APP_ROUTES = {
   INDEX: "/",
   CANVAS: "/canvas/:id",
