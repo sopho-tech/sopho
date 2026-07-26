@@ -167,6 +167,10 @@
   color: var(--color-text);
 }
 
+.shortcut {
+  margin-left: auto;
+}
+
 .timestamp {
   margin-left: auto;
   font-size: var(--font-size-sm);

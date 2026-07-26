@@ -6,6 +6,7 @@ import { useNotebook } from "src/api/notebook/queries";
 import { CellType } from "src/components/Notebook/Cell/dto";
 import { KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
 import { useHandleExecuteCell } from "src/components/Notebook/Cell";
+import { useScrollToCellFromUrl } from "src/components/Notebook/hooks";
 import { useKeyboardShortcut } from "src/utils/keyboard_shortcuts/hooks";
 import { Flex } from "src/components/design-system/Flex/Flex";
 import { useCallback, useRef, useMemo } from "react";
@@ -33,6 +34,8 @@ export function Notebook() {
   const reorderCellMutation = useReorderCell(canvasId || undefined);
 
   const clearCellOutput = useClearCellOutput();
+
+  useScrollToCellFromUrl();
 
   const handleExecute = useCallback(() => {
     const activeCellId = useStore.getState().notebook.activeCellId;

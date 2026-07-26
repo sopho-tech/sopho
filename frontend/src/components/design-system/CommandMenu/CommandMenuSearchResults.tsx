@@ -9,16 +9,22 @@ const EntityNameMap: Record<EntityType, string> = {
   [EntityType.Canvas]: "Canvas",
   [EntityType.SqlCell]: "SQL Cell",
   [EntityType.ChartCell]: "Chart Cell",
+  [EntityType.Conversation]: "Conversation",
 };
 
-const EntityBadgeVariantMap: Record<EntityType, "blue" | "green" | "yellow"> = {
+const EntityBadgeVariantMap: Record<
+  EntityType,
+  "blue" | "green" | "yellow" | "default"
+> = {
   [EntityType.Canvas]: "blue",
   [EntityType.SqlCell]: "green",
   [EntityType.ChartCell]: "yellow",
+  [EntityType.Conversation]: "default",
 };
 
 export const CommandMenuSearchResults = ({
   data,
+  heading,
   onItemSelect,
 }: CommandMenuSearchResultsProps) => {
   if (!data || data.length === 0) {
@@ -26,7 +32,7 @@ export const CommandMenuSearchResults = ({
   }
 
   return (
-    <Command.Group heading="Search Results">
+    <Command.Group heading={heading}>
       {data.map((item) => {
         const entityName = EntityNameMap[item.entity_type];
         const badgeVariant = EntityBadgeVariantMap[item.entity_type];

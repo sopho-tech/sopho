@@ -26,6 +26,12 @@ export const KEYBOARD_SHORTCUTS = {
     description: "Open the command menu",
     preventDefault: true,
   },
+  NEW_CONVERSATION: {
+    key: "o",
+    modifiers: ["meta", "shift"],
+    description: "Start a new conversation",
+    preventDefault: true,
+  },
   ADD_SQL_CELL: {
     key: "l",
     modifiers: ["meta", "shift"],

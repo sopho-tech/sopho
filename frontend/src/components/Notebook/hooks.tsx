@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { PaginationState, Updater } from "@tanstack/react-table";
 import classNames from "classnames";
+import { useSearchParams } from "react-router";
 import { useStore } from "src/store";
+import { SEARCH_PARAMS } from "src/constants/app_routes";
+import { useScrollToElement } from "src/utils/hooks";
 
 const INITIAL_PAGE_SIZE = 20;
 
@@ -12,6 +15,28 @@ export function useCellContainerClassName(
 ) {
   const activeCellId = useStore((state) => state.notebook.activeCellId);
   return classNames(cellId === activeCellId && activeClassName, baseClassName);
+}
+
+export function useScrollToCellFromUrl() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const cellId = searchParams.get(SEARCH_PARAMS.CELL);
+  const setActiveCellId = useStore((state) => state.notebook.setActiveCellId);
+
+  const handleScrolled = useCallback(() => {
+    if (!cellId) {
+      return;
+    }
+    setActiveCellId(cellId);
+    setSearchParams(
+      (params) => {
+        params.delete(SEARCH_PARAMS.CELL);
+        return params;
+      },
+      { replace: true }
+    );
+  }, [cellId, setActiveCellId, setSearchParams]);
+
+  useScrollToElement(cellId, handleScrolled);
 }
 
 const INITIAL_PAGE_INDEX = 0;
