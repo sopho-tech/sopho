@@ -1,7 +1,4 @@
-import {
-  Sender,
-  useConversation,
-} from "src/api/conversational_analytics";
+import { Sender, useConversation } from "src/api/conversational_analytics";
 import { useAiConfiguration } from "src/api/ai_configuration";
 import { useConversationStream } from "src/components/ConversationalAnalytics/ConversationStreamContext";
 

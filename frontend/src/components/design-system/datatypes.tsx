@@ -127,7 +127,7 @@ export type ColorVariant =
 
 export type BorderVariant = "default" | "divider";
 
-export type ShadowVariant = "2xs" | "xs" | "sm" | "md" | "lg" | "xl";
+export type ShadowVariant = "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "scroll";
 
 export type Postition = "sticky" | "absolute" | "relative" | "fixed";
 

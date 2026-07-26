@@ -364,6 +364,8 @@ button {
     0 5px 10px hsla(0, 0%, 0%, 0.05), 0 15px 25px hsla(0, 0%, 0%, 0.15);
   --shadow-xl: 0 20px 40px hsla(0, 0%, 0%, 0.2);
 
+  --shadow-scroll: 0 6px 6px -6px hsla(0, 0%, 0%, 0.18);
+
   --shadow-primary-inset: inset 0 1px 0 var(--color-primary-100);
   --shadow-green-inset: inset 0 1px 0 var(--color-green-300);
 

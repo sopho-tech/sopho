@@ -49,8 +49,7 @@ export const MessageStatus = {
   Rejected: "REJECTED",
 } as const;
 
-export type MessageStatus =
-  (typeof MessageStatus)[keyof typeof MessageStatus];
+export type MessageStatus = (typeof MessageStatus)[keyof typeof MessageStatus];
 
 export type ConversationMessageDto = {
   id: string;
@@ -265,6 +264,18 @@ export type CanvasGeneratedData = {
   dashboard_charts_count: number;
 };
 
+export const ArtifactType = {
+  Canvas: "CANVAS",
+} as const;
+
+export type ArtifactType = (typeof ArtifactType)[keyof typeof ArtifactType];
+
+export type Artifact = {
+  id: string;
+  type: typeof ArtifactType.Canvas;
+  data: CanvasGeneratedData;
+};
+
 export type ChartRenderData = {
   queryData: ExecuteCellResponseDto;
   visualization: RecommendedVisualizationData["visualization"];
@@ -318,4 +329,42 @@ export function extractCanvasGenerated(
     (e) => e.event_name === AgentEventName.CanvasGenerated,
   );
   return event?.data ? (event.data as CanvasGeneratedData) : null;
+}
+
+function toCanvasArtifact(
+  data: CanvasGeneratedData | undefined,
+): Artifact | null {
+  if (!data?.canvas_id) return null;
+  return { id: data.canvas_id, type: ArtifactType.Canvas, data };
+}
+
+function toArtifact(event: AgentEvent): Artifact | null {
+  if (event.event_name !== AgentEventName.CanvasGenerated) return null;
+  return toCanvasArtifact(event.data as CanvasGeneratedData | undefined);
+}
+
+export function extractArtifactsFromEvents(events: AgentEvent[]): Artifact[] {
+  return events
+    .map(toArtifact)
+    .filter((artifact): artifact is Artifact => artifact !== null);
+}
+
+export function extractArtifactsFromMessages(
+  messages: ConversationMessageDto[],
+): Artifact[] {
+  const artifacts: Artifact[] = [];
+
+  for (const message of messages) {
+    if (message.sender !== Sender.Assistant) continue;
+    for (const content of message.content) {
+      try {
+        const artifact = toArtifact(JSON.parse(content.content) as AgentEvent);
+        if (artifact) artifacts.push(artifact);
+      } catch {
+        /* ignore unparseable content */
+      }
+    }
+  }
+
+  return artifacts;
 }

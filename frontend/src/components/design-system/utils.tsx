@@ -226,6 +226,7 @@ function getShadowStyles(
     md: "var(--shadow-md)",
     lg: "var(--shadow-lg)",
     xl: "var(--shadow-xl)",
+    scroll: "var(--shadow-scroll)",
   };
 
   const shadowValue = shadowMapping[shadow];

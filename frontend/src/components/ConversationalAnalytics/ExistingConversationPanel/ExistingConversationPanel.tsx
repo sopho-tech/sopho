@@ -25,12 +25,20 @@ import {
 import type { MessageComposerHandle } from "src/components/ConversationalAnalytics/MessageComposer";
 import type { MessageSegment } from "src/api/conversational_analytics/queries";
 import { extractFollowUpQuestions } from "src/components/ConversationalAnalytics/dto";
+import {
+  ArtifactsButton,
+  ArtifactsPanel,
+  ArtifactsProvider,
+} from "src/components/ConversationalAnalytics/Artifacts";
 import { SuggestedQuestionList } from "src/components/ConversationalAnalytics/SuggestedQuestionList";
 import {
   MessageSegments,
   parseMessageSegments,
   segmentsToText,
 } from "src/components/ConversationalAnalytics/MessageSegments";
+
+const MIN_WIDTH_STYLE = { minWidth: 0 };
+const FLEX_SHRINK_STYLE = { flexShrink: 0 };
 
 type MessageProps = {
   connectionId: string;
@@ -153,58 +161,76 @@ export const ExistingConversationPanel = () => {
   const conversation = conversationQuery.data?.conversation;
 
   return (
-    <Flex direction="column" height="100%" width="100%">
-      <Flex direction="column" flex="grow" overflow="scrollY" paddingTop="lg">
-        {conversation && (
-          <Flex paddingBottom="md" alignItems="center" width="100%">
-            <ConversationActionsMenu conversation={conversation}>
-              <button
-                type="button"
-                className={styles.conversationHeaderTrigger}
-                aria-label="Conversation actions"
-              >
-                <Flex flex="grow" alignItems="center" sx={{ minWidth: 0 }}>
-                  <Text truncate fontSize="lg" color="darkGrey">
-                    {conversation.name}
-                  </Text>
-                </Flex>
-                <Icon type="chevron_down" color="grey" size="md" />
-              </button>
-            </ConversationActionsMenu>
-          </Flex>
-        )}
-        <Flex direction="column" className={styles.messageColumn}>
-          {renderMessages()}
-          {(isStreaming || streamingEvents.length > 0) && (
-            <Flex direction="column" className={styles.messageWrapper}>
-              <StreamingAgentTrace
-                events={streamingEvents}
-                isStreaming={isStreaming}
-              />
+    <ArtifactsProvider conversationId={conversationId}>
+      <Flex direction="row" height="100%" width="100%">
+        <Flex direction="column" flex="grow" height="100%" sx={MIN_WIDTH_STYLE}>
+          {conversation && (
+            <Flex
+              paddingTop="lg"
+              paddingBottom="md"
+              alignItems="center"
+              justifyContent="space-between"
+              gap="sm"
+              width="100%"
+              shadow="scroll"
+              sx={FLEX_SHRINK_STYLE}
+            >
+              <ConversationActionsMenu conversation={conversation}>
+                <button
+                  type="button"
+                  className={styles.conversationHeaderTrigger}
+                  aria-label="Conversation actions"
+                >
+                  <Flex flex="grow" alignItems="center" sx={MIN_WIDTH_STYLE}>
+                    <Text truncate fontSize="lg" color="darkGrey">
+                      {conversation.name}
+                    </Text>
+                  </Flex>
+                  <Icon type="chevron_down" color="grey" size="md" />
+                </button>
+              </ConversationActionsMenu>
+              <ArtifactsButton />
             </Flex>
           )}
-          {gate.canSend && !isStreaming && followUpQuestions.length > 0 && (
-            <SuggestedQuestionList
-              questions={followUpQuestions.map((text) => ({ id: text, text }))}
-              onPick={(text) => composerRef.current?.setText(text)}
+          <Flex direction="column" flex="grow" overflow="scrollY">
+            <Flex direction="column" className={styles.messageColumn}>
+              {renderMessages()}
+              {(isStreaming || streamingEvents.length > 0) && (
+                <Flex direction="column" className={styles.messageWrapper}>
+                  <StreamingAgentTrace
+                    events={streamingEvents}
+                    isStreaming={isStreaming}
+                  />
+                </Flex>
+              )}
+              {gate.canSend && !isStreaming && followUpQuestions.length > 0 && (
+                <SuggestedQuestionList
+                  questions={followUpQuestions.map((text) => ({
+                    id: text,
+                    text,
+                  }))}
+                  onPick={(text) => composerRef.current?.setText(text)}
+                />
+              )}
+            </Flex>
+          </Flex>
+          <Flex
+            direction="column"
+            paddingTop="md"
+            paddingBottom="md"
+            sx={FLEX_SHRINK_STYLE}
+          >
+            <MessageComposer
+              ref={composerRef}
+              placeholder={composerPlaceholder}
+              onSubmit={handleSubmit}
+              disabled={composerDisabled}
+              disabledTooltip={composerDisabledTooltip}
             />
-          )}
+          </Flex>
         </Flex>
+        <ArtifactsPanel />
       </Flex>
-      <Flex
-        direction="column"
-        paddingTop="md"
-        paddingBottom="md"
-        sx={{ flexShrink: 0 }}
-      >
-        <MessageComposer
-          ref={composerRef}
-          placeholder={composerPlaceholder}
-          onSubmit={handleSubmit}
-          disabled={composerDisabled}
-          disabledTooltip={composerDisabledTooltip}
-        />
-      </Flex>
-    </Flex>
+    </ArtifactsProvider>
   );
 };

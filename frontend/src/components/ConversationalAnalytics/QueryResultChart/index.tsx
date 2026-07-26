@@ -1,1 +1,4 @@
-export { QueryResultChart, QueryResultChartContainer } from "./QueryResultChart";
+export {
+  QueryResultChart,
+  QueryResultChartContainer,
+} from "./QueryResultChart";
