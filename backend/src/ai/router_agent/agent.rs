@@ -1,7 +1,7 @@
 use super::system_prompt::SystemPrompt;
 use super::user_prompt::UserPrompt;
 use crate::ai::agent_utils::{AgentName, ModelRole};
-use crate::ai::dto::{ConversationHistoryTurn, RouterDecision};
+use crate::ai::dto::{ConversationHistory, RouterDecision};
 use crate::common::AppState;
 use anyhow::Result;
 use tracing::info;
@@ -9,12 +9,12 @@ use tracing::info;
 pub async fn execute(
     app_state: &AppState,
     question: &str,
-    conversation_history_turns: &[ConversationHistoryTurn],
+    conversation_history: &ConversationHistory,
 ) -> Result<RouterDecision> {
     info!(
         "router_agent: routing question (len={}, history_turns={})",
         question.len(),
-        conversation_history_turns.len()
+        conversation_history.len()
     );
 
     let model_client = app_state.require_model_client().await?;
@@ -28,7 +28,7 @@ pub async fn execute(
 
     let prompt = UserPrompt::Route {
         question,
-        conversation_history_turns,
+        conversation_history,
     }
     .render();
     let decision: RouterDecision = agent.prompt_typed::<RouterDecision>(prompt).await?;

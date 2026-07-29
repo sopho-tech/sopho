@@ -1,9 +1,9 @@
-use crate::ai::dto::ConversationHistoryTurn;
+use crate::ai::dto::ConversationHistory;
 
 pub enum UserPrompt<'a> {
     Route {
         question: &'a str,
-        conversation_history_turns: &'a [ConversationHistoryTurn],
+        conversation_history: &'a ConversationHistory,
     },
 }
 
@@ -12,13 +12,12 @@ impl<'a> UserPrompt<'a> {
         match self {
             UserPrompt::Route {
                 question,
-                conversation_history_turns,
+                conversation_history,
             } => {
-                let history_json = if conversation_history_turns.is_empty() {
+                let history_json = if conversation_history.is_empty() {
                     "[]".to_string()
                 } else {
-                    serde_json::to_string(conversation_history_turns)
-                        .unwrap_or_else(|_| "[]".to_string())
+                    serde_json::to_string(conversation_history).unwrap_or_else(|_| "[]".to_string())
                 };
                 format!(
                     "PRIOR_TURNS_OLDEST_FIRST: {history_json}\n\nCURRENT_USER_MESSAGE: {question}\n\nReturn the JSON object now."

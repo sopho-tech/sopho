@@ -214,7 +214,7 @@ pub struct RouterDecision {
     pub message: String,
 }
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ConversationHistoryTerminalStatus {
     Completed,
@@ -223,12 +223,82 @@ pub enum ConversationHistoryTerminalStatus {
     Failed,
 }
 
+impl ConversationHistoryTerminalStatus {
+    pub fn is_relevant(self, is_latest_turn: bool) -> bool {
+        match self {
+            Self::Completed => true,
+            Self::AwaitingClarification => is_latest_turn,
+            Self::Rejected | Self::Failed => false,
+        }
+    }
+}
+
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ConversationHistoryTurn {
     pub user_question: String,
     pub terminal_status: ConversationHistoryTerminalStatus,
     pub assistant_message: Option<String>,
     pub generated_sql: Option<String>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(transparent)]
+pub struct ConversationHistory {
+    turns: Vec<ConversationHistoryTurn>,
+}
+
+impl ConversationHistory {
+    pub fn select_relevant<T>(
+        turns: Vec<T>,
+        limit: usize,
+        status_of: impl Fn(&T) -> ConversationHistoryTerminalStatus,
+    ) -> Vec<T> {
+        let total = turns.len();
+        let relevant: Vec<T> = turns
+            .into_iter()
+            .enumerate()
+            .filter(|(index, turn)| status_of(turn).is_relevant(index + 1 == total))
+            .map(|(_, turn)| turn)
+            .collect();
+        let skip = relevant.len().saturating_sub(limit);
+        relevant.into_iter().skip(skip).collect()
+    }
+
+    pub fn from_turns(turns: Vec<ConversationHistoryTurn>, limit: usize) -> Self {
+        Self {
+            turns: Self::select_relevant(turns, limit, |turn| turn.terminal_status),
+        }
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<'_, ConversationHistoryTurn> {
+        self.turns.iter()
+    }
+
+    pub fn len(&self) -> usize {
+        self.turns.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.turns.is_empty()
+    }
+
+    pub fn has_completed_query(&self) -> bool {
+        self.turns.iter().any(|turn| {
+            matches!(
+                turn.terminal_status,
+                ConversationHistoryTerminalStatus::Completed
+            ) && turn.generated_sql.is_some()
+        })
+    }
+}
+
+impl<'a> IntoIterator for &'a ConversationHistory {
+    type Item = &'a ConversationHistoryTurn;
+    type IntoIter = std::slice::Iter<'a, ConversationHistoryTurn>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.turns.iter()
+    }
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
