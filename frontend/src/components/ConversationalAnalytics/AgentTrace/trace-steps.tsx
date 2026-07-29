@@ -69,6 +69,7 @@ export const STEP_LABELS: Record<string, string> = {
   [AgentEventName.ExecutingQuery]: "Executing Query",
   [AgentEventName.RecommendingVisualization]: "Recommending Visualization",
   [AgentEventName.RecommendedVisualization]: "Recommended Visualization",
+  [AgentEventName.Narrating]: "Summarizing results…",
   [AgentEventName.GeneratingCanvas]: "Generating canvas…",
 };
 
@@ -81,6 +82,7 @@ export const TRACE_HIDDEN_EVENTS = new Set<string>([
   AgentEventName.Rejected,
   AgentEventName.ExecutedQuery,
   AgentEventName.RecommendedVisualization,
+  AgentEventName.Narrated,
   AgentEventName.SuggestedFollowups,
   AgentEventName.CanvasGenerated,
 ]);

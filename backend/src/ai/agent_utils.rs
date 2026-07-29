@@ -27,6 +27,7 @@ pub enum AgentName {
     FunctionalRoleAnalysisAgent,
     HypothesisGenerationAgent,
     IntegrateCandidatePlanAgent,
+    ResultNarrationAgent,
     RouterAgent,
     SchemaLinkingFinalSynthesisAgent,
     SqlGenerationAgent,
@@ -53,7 +54,9 @@ impl ModelClient {
     }
 
     pub fn openai(api_key: &str) -> Result<Self, Error> {
-        let client = openai::CompletionsClient::builder().api_key(api_key).build()?;
+        let client = openai::CompletionsClient::builder()
+            .api_key(api_key)
+            .build()?;
         Ok(Self::OpenAI(client))
     }
 

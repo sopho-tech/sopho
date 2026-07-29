@@ -261,7 +261,8 @@ pub async fn generate_canvas_from_plan(
             chart_cell_count += 1;
             order += 1;
 
-            let (x, y, width, height) = packer.place(chart.grid_width, chart.grid_height);
+            let (x, y, width, height) =
+                packer.place(chart.grid_width_units(), chart.grid_height_units());
             placements.push(DashboardChartPlacement {
                 cell_id: chart_cell.id,
                 notebook_id,

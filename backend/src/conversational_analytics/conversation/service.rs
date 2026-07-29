@@ -9,6 +9,7 @@ use crate::ai::conversation_name_agent;
 use crate::ai::dto::EventChannels;
 use crate::ai::dto::{ConversationHistoryTerminalStatus, ConversationHistoryTurn, RouterCode};
 use crate::ai::followup_questions_agent;
+use crate::ai::result_narration_agent;
 use crate::ai::router_agent;
 use crate::ai::text_to_sql_agent;
 use crate::ai::visualization_agent;
@@ -34,6 +35,7 @@ use crate::conversational_analytics::message_content::dto::{
 use crate::conversational_analytics::message_content::service as message_content_service;
 use crate::conversational_analytics::segment;
 use crate::data_catalog;
+use crate::database::service::execute_sql_query;
 use crate::entity;
 use axum::response::sse::{Event, Sse};
 use sea_orm::TransactionTrait;
@@ -632,8 +634,35 @@ async fn run_pipeline(
             let sql =
                 text_to_sql_agent::execute(app_state, connection, effective_question, channels)
                     .await?;
-            visualization_agent::execute(app_state, connection, effective_question, &sql, channels)
-                .await?;
+
+            channels
+                .send_sse_only(crate::ai::dto::Event::ExecutingQuery)
+                .await;
+            let query_result = execute_sql_query(connection, &sql).await?;
+            channels
+                .send_sse_only(crate::ai::dto::Event::ExecutedQuery {
+                    columns: query_result.columns.clone(),
+                    data: query_result.data.clone(),
+                })
+                .await;
+
+            let (_, visualization_result) = tokio::join!(
+                result_narration_agent::execute(
+                    app_state,
+                    effective_question,
+                    &sql,
+                    &query_result,
+                    channels
+                ),
+                visualization_agent::execute(
+                    app_state,
+                    effective_question,
+                    &query_result,
+                    channels
+                ),
+            );
+            visualization_result?;
+
             send_followup_questions(
                 app_state,
                 connection,
@@ -721,6 +750,13 @@ async fn send_followup_questions(
         .await;
 }
 
+fn content_type_for_event(event: &crate::ai::dto::Event) -> ContentType {
+    match event {
+        crate::ai::dto::Event::Narrated { .. } => ContentType::Narration,
+        _ => ContentType::DataAnalysisResponse,
+    }
+}
+
 async fn persist_events(
     db: &sea_orm::DatabaseConnection,
     conversation_message_id: Uuid,
@@ -731,7 +767,7 @@ async fn persist_events(
         let create_dto = CreateConversationMessageContentDto {
             conversation_message_id,
             sequence_number,
-            content_type: ContentType::DataAnalysisResponse.to_string(),
+            content_type: content_type_for_event(&event).to_string(),
             content: event.to_json_string(),
             status: ConversationStatus::Active.to_string(),
         };
@@ -838,19 +874,34 @@ async fn load_conversation_history_assistant_message(
         ConversationHistoryTerminalStatus::AwaitingClarification
         | ConversationHistoryTerminalStatus::Rejected => {
             for c in contents.iter() {
-                if let Ok(value) = serde_json::from_str::<serde_json::Value>(&c.content) {
-                    if value["event_name"] == "routed" {
-                        if let Some(msg) = value["data"]["decision"]["message"].as_str() {
-                            return Some(msg.to_string());
-                        }
-                    }
+                if let Some(crate::ai::dto::Event::Routed { decision }) =
+                    parse_persisted_event(&c.content)
+                {
+                    return Some(decision.message);
                 }
             }
             None
         }
-        ConversationHistoryTerminalStatus::Completed => Some("<query executed>".to_string()),
+        ConversationHistoryTerminalStatus::Completed => {
+            Some(load_narration(&contents).unwrap_or_else(|| "<query executed>".to_string()))
+        }
         ConversationHistoryTerminalStatus::Failed => None,
     }
+}
+
+fn parse_persisted_event(content: &str) -> Option<crate::ai::dto::Event> {
+    serde_json::from_str(content).ok()
+}
+
+fn load_narration(contents: &[ConversationMessageContentDto]) -> Option<String> {
+    for c in contents.iter() {
+        if let Some(crate::ai::dto::Event::Narrated { narration }) =
+            parse_persisted_event(&c.content)
+        {
+            return Some(narration);
+        }
+    }
+    None
 }
 
 async fn load_generated_sql(
@@ -874,12 +925,9 @@ async fn load_generated_sql(
         };
     let mut generated_sql: Option<String> = None;
     for c in contents {
-        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&c.content) {
-            if value["event_name"] == "generated_sql" {
-                if let Some(sql) = value["data"]["sql"].as_str() {
-                    generated_sql = Some(sql.to_string());
-                }
-            }
+        if let Some(crate::ai::dto::Event::GeneratedSql { sql }) = parse_persisted_event(&c.content)
+        {
+            generated_sql = Some(sql);
         }
     }
     generated_sql

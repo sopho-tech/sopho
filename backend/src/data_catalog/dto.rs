@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Database {
     pub name: String,
     pub description: String,
@@ -106,7 +106,7 @@ impl Database {
     }
 }
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Schema {
     pub name: String,
     pub description: String,
@@ -147,7 +147,7 @@ impl Schema {
     }
 }
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Table {
     pub name: String,
     pub description: String,
@@ -194,7 +194,7 @@ impl Table {
     }
 }
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Column {
     pub name: String,
     pub data_type: String,

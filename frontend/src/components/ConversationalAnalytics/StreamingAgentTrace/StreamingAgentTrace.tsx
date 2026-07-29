@@ -4,9 +4,11 @@ import {
   IN_PROGRESS_EVENTS,
   extractChartData,
   extractCanvasGenerated,
+  extractNarration,
   type AgentEvent,
 } from "src/components/ConversationalAnalytics/dto";
 import { CanvasGeneratedCard } from "src/components/ConversationalAnalytics/CanvasGeneratedCard";
+import { ResultNarration } from "src/components/ConversationalAnalytics/ResultNarration";
 import {
   STEP_LABELS,
   TRACE_HIDDEN_EVENTS,
@@ -68,6 +70,7 @@ export function StreamingAgentTrace({
   const chartData = useMemo(() => extractChartData(events), [events]);
   const canvas = useMemo(() => extractCanvasGenerated(events), [events]);
   const routerDecision = useMemo(() => extractRouterDecision(events), [events]);
+  const narration = useMemo(() => extractNarration(events), [events]);
 
   if (steps.length === 0 && !isStreaming && !routerDecision) return null;
 
@@ -102,6 +105,7 @@ export function StreamingAgentTrace({
           createdAt={routerDecision.createdAt}
         />
       )}
+      {narration && <ResultNarration text={narration} />}
       {chartData && <QueryResultChart chartData={chartData} />}
       {canvas && <CanvasGeneratedCard data={canvas} />}
     </>
