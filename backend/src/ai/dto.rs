@@ -195,7 +195,6 @@ pub struct VisualizationRecommendation {
     pub y_axis: Option<String>,
     pub category: Option<String>,
     pub value: Option<String>,
-    pub reasoning: String,
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -232,7 +231,7 @@ pub struct ConversationHistoryTurn {
     pub generated_sql: Option<String>,
 }
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "event_name", content = "data", rename_all = "snake_case")]
 pub enum Event {
     Starting,
@@ -276,8 +275,14 @@ pub enum Event {
     RecommendedVisualization {
         visualization: VisualizationRecommendation,
     },
+    Narrating,
+    Narrated {
+        narration: String,
+    },
     Routing,
-    Routed { decision: RouterDecision },
+    Routed {
+        decision: RouterDecision,
+    },
     AwaitingClarification,
     Rejected,
     GeneratingCanvas,
@@ -324,8 +329,22 @@ pub struct CanvasPlanChart {
     pub category: Option<String>,
     pub value: Option<String>,
     pub aggregate_function: Option<crate::cell::constants::AggregateFunction>,
-    pub grid_width: Option<u16>,
-    pub grid_height: Option<u16>,
+    pub grid_width: Option<i32>,
+    pub grid_height: Option<i32>,
+}
+
+impl CanvasPlanChart {
+    pub fn grid_width_units(&self) -> Option<u16> {
+        to_grid_units(self.grid_width)
+    }
+
+    pub fn grid_height_units(&self) -> Option<u16> {
+        to_grid_units(self.grid_height)
+    }
+}
+
+fn to_grid_units(value: Option<i32>) -> Option<u16> {
+    value.map(|v| v.clamp(0, u16::MAX as i32) as u16)
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]

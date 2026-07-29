@@ -175,6 +175,8 @@ export const AgentEventName = {
   ExecutedQuery: "executed_query",
   RecommendingVisualization: "recommending_visualization",
   RecommendedVisualization: "recommended_visualization",
+  Narrating: "narrating",
+  Narrated: "narrated",
   SuggestedFollowups: "suggested_followups",
   GeneratingCanvas: "generating_canvas",
   CanvasGenerated: "canvas_generated",
@@ -194,6 +196,7 @@ export const IN_PROGRESS_EVENTS = new Set<string>([
   AgentEventName.GeneratingSql,
   AgentEventName.ExecutingQuery,
   AgentEventName.RecommendingVisualization,
+  AgentEventName.Narrating,
   AgentEventName.GeneratingCanvas,
 ]);
 
@@ -268,8 +271,11 @@ export type RecommendedVisualizationData = {
     y_axis?: string;
     category?: string;
     value?: string;
-    reasoning: string;
   };
+};
+
+export type NarrationData = {
+  narration: string;
 };
 
 export type SuggestedFollowupsData = {
@@ -341,6 +347,13 @@ export function extractChartData(events: AgentEvent[]): ChartRenderData | null {
     queryData,
     visualization: vizData.visualization,
   };
+}
+
+export function extractNarration(events: AgentEvent[]): string | null {
+  const event = events.find((e) => e.event_name === AgentEventName.Narrated);
+  if (!event?.data) return null;
+  const narration = (event.data as NarrationData).narration?.trim();
+  return narration ? narration : null;
 }
 
 export function extractCanvasGenerated(

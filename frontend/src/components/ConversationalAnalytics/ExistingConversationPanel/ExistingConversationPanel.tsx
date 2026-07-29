@@ -1,11 +1,13 @@
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import {
   ConversationMessageDto,
+  isConversationNotFoundError,
   MessageStatus,
   Sender,
   useAppendUserMessage,
   useConversation,
 } from "src/api/conversational_analytics";
+import { APP_ROUTES } from "src/constants/app_routes";
 import { ConversationActionsMenu } from "src/components/ConversationalAnalytics/ConversationActionsMenu";
 import { Flex, Icon, Text } from "src/components/design-system";
 import { MessageHoverFooter } from "./MessageHoverFooter";
@@ -89,12 +91,22 @@ export const ExistingConversationPanel = () => {
   const { id } = useParams<{ id: string }>();
   const conversationId = id ?? "";
   const conversationQuery = useConversation(conversationId);
+  const navigate = useNavigate();
   const startStream = useStartStream();
   const composerRef = useRef<MessageComposerHandle>(null);
   const { events: streamingEvents, isStreaming } =
     useConversationStream(conversationId);
   const appendUserMessage = useAppendUserMessage(conversationId);
   const gate = useCanSendFollowUp(conversationId);
+
+  const isNotFound = isConversationNotFoundError(conversationQuery.error);
+
+  useEffect(() => {
+    if (!isNotFound) return;
+    navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATIONS, {
+      replace: true,
+    });
+  }, [isNotFound, navigate]);
 
   useEffect(() => {
     if (!conversationId || !conversationQuery.isSuccess) return;
@@ -193,7 +205,11 @@ export const ExistingConversationPanel = () => {
             </Flex>
           )}
           <Flex direction="column" flex="grow" overflow="scrollY">
-            <Flex direction="column" className={styles.messageColumn}>
+            <Flex
+              direction="column"
+              paddingTop="md"
+              className={styles.messageColumn}
+            >
               {renderMessages()}
               {(isStreaming || streamingEvents.length > 0) && (
                 <Flex direction="column" className={styles.messageWrapper}>

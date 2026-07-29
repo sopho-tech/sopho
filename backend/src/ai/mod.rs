@@ -3,6 +3,7 @@ pub(crate) mod canvas_generation_agent;
 pub(crate) mod conversation_name_agent;
 pub(crate) mod dto;
 pub(crate) mod followup_questions_agent;
+pub(crate) mod result_narration_agent;
 pub(crate) mod router_agent;
 pub(crate) mod suggested_questions_agent;
 pub(crate) mod text_to_sql_agent;

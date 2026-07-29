@@ -460,6 +460,14 @@ async fn execute_query_and_format_results(
     }
 }
 
+fn strip_trailing_semicolons(query: &str) -> String {
+    let mut trimmed = query.trim_end();
+    while let Some(stripped) = trimmed.strip_suffix(';') {
+        trimmed = stripped.trim_end();
+    }
+    trimmed.to_string()
+}
+
 fn build_aggregated_query(
     source_query: &str,
     x_axis: &str,
@@ -754,7 +762,7 @@ async fn get_source_cell_for_chart(
     };
 
     let source_query = match get_sql_query_from_cell(&source_cell) {
-        Ok(query) => query,
+        Ok(query) => strip_trailing_semicolons(&query),
         Err(err) => return Err(err),
     };
 

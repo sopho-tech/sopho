@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
+import { ApiError } from "src/api/dto";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import {
   CreateConversationDto,
@@ -174,11 +175,18 @@ export const useConversations = (params: ListConversationsParams = {}) => {
   });
 };
 
+const isClientError = (error: unknown): boolean =>
+  error instanceof ApiError && error.status >= 400 && error.status < 500;
+
+export const isConversationNotFoundError = (error: unknown): boolean =>
+  error instanceof ApiError && error.status === 404;
+
 export const useConversation = (conversationId: string) => {
   return useQuery({
     queryKey: conversationKeys.detail(conversationId),
     queryFn: () => conversationalAnalyticsApi.getConversation(conversationId),
     enabled: !!conversationId,
+    retry: (failureCount, error) => !isClientError(error) && failureCount < 3,
   });
 };
 

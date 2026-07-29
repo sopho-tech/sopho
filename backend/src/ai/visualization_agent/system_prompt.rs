@@ -24,8 +24,7 @@ const RECOMMENDATION: &str = indoc! {r#"
         "x_axis": "column_name or null",
         "y_axis": "column_name or null",
         "category": "column_name or null (for PIE)",
-        "value": "column_name or null (for PIE)",
-        "reasoning": "One sentence explaining the choice"
+        "value": "column_name or null (for PIE)"
     }
 "#};
 

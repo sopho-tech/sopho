@@ -1,0 +1,1 @@
+export { ResultNarration } from "./ResultNarration";

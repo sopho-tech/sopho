@@ -83,14 +83,7 @@ export function QueryResultChart({ chartData }: QueryResultChartProps) {
 
   return (
     <Box className={styles.container}>
-      <Flex direction="column" gap="xs">
-        <Box className={styles.reasoning}>
-          <Text fontSize="xs" color="subtle">
-            {visualization.reasoning}
-          </Text>
-        </Box>
-        <Box className={styles.chartWrapper}>{renderChart()}</Box>
-      </Flex>
+      <Box className={styles.chartWrapper}>{renderChart()}</Box>
     </Box>
   );
 }

@@ -123,6 +123,7 @@ impl ConversationStatus {
 pub enum ContentType {
     Text,
     DataAnalysisResponse,
+    Narration,
 }
 
 impl fmt::Display for ContentType {
@@ -130,6 +131,7 @@ impl fmt::Display for ContentType {
         match self {
             ContentType::Text => write!(f, "TEXT"),
             ContentType::DataAnalysisResponse => write!(f, "DATA_ANALYSIS_RESPONSE"),
+            ContentType::Narration => write!(f, "NARRATION"),
         }
     }
 }
@@ -141,6 +143,7 @@ impl FromStr for ContentType {
         match s {
             "TEXT" => Ok(ContentType::Text),
             "DATA_ANALYSIS_RESPONSE" => Ok(ContentType::DataAnalysisResponse),
+            "NARRATION" => Ok(ContentType::Narration),
             _ => Err(format!("Invalid content type: {}", s)),
         }
     }

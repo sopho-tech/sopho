@@ -4,8 +4,7 @@ mod user_prompt;
 use crate::ai::agent_utils::{AgentName, ModelRole};
 use crate::ai::dto::{Event, EventChannels, VisualizationRecommendation};
 use crate::common::AppState;
-use crate::database::service::execute_sql_query;
-use crate::entity;
+use crate::database::constants::QueryResult;
 use anyhow::Result;
 use tracing::info;
 
@@ -13,20 +12,10 @@ const VISUALIZATION_SAMPLE_ROWS: usize = 5;
 
 pub async fn execute(
     app_state: &AppState,
-    connection: &entity::connection::Model,
     question: &str,
-    sql: &str,
+    query_result: &QueryResult,
     channels: &EventChannels,
 ) -> Result<()> {
-    channels.send_sse_only(Event::ExecutingQuery).await;
-    let query_result = execute_sql_query(connection, sql).await?;
-    channels
-        .send_sse_only(Event::ExecutedQuery {
-            columns: query_result.columns.clone(),
-            data: query_result.data.clone(),
-        })
-        .await;
-
     channels
         .send_sse_only(Event::RecommendingVisualization)
         .await;
