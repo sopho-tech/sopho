@@ -2,7 +2,7 @@ mod system_prompt;
 mod user_prompt;
 
 use crate::ai::agent_utils::{AgentName, ModelRole};
-use crate::ai::dto::{ConversationHistoryTerminalStatus, ConversationHistoryTurn};
+use crate::ai::dto::{ConversationHistory, ConversationHistoryTerminalStatus};
 use crate::common::AppState;
 use crate::data_catalog::dto::Database;
 use crate::entity;
@@ -15,7 +15,7 @@ struct FollowupQuestionsResponse {
     questions: Vec<String>,
 }
 
-fn format_history(history: &[ConversationHistoryTurn]) -> String {
+fn format_history(history: &ConversationHistory) -> String {
     if history.is_empty() {
         return "(none)".to_string();
     }
@@ -39,7 +39,7 @@ pub async fn suggest_followups(
     _connection: &entity::connection::Model,
     question: &str,
     sql: &str,
-    history: &[ConversationHistoryTurn],
+    history: &ConversationHistory,
     catalog: &Database,
 ) -> Result<Vec<String>> {
     let model_client = app_state.require_model_client().await?;

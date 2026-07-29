@@ -15,7 +15,9 @@ pub(super) enum PipelineOutcome {
     Rejected,
 }
 pub const CONVERSATION_HISTORY_TURN_LIMIT: usize = 5;
-pub const CONVERSATION_HISTORY_MESSAGE_LIMIT: usize = 2 * CONVERSATION_HISTORY_TURN_LIMIT + 1;
+pub const CONVERSATION_HISTORY_SCAN_TURN_LIMIT: usize = 25;
+pub const CONVERSATION_HISTORY_SCAN_MESSAGE_LIMIT: usize =
+    2 * (CONVERSATION_HISTORY_SCAN_TURN_LIMIT + 1);
 
 /// Terminal statuses:
 /// 1. Processed - Successfully processed the user or system message.
