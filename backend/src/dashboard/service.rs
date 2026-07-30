@@ -132,13 +132,11 @@ pub async fn execute_update_dashboard(
     repository::update_dashboard(&app_state.database_connection, dashboard_id, payload).await
 }
 
-pub struct DashboardChartPlacement {
+pub struct DashboardChartRequest {
     pub cell_id: Uuid,
     pub notebook_id: Uuid,
-    pub x: u16,
-    pub y: u16,
-    pub width: u16,
-    pub height: u16,
+    pub width: Option<u16>,
+    pub height: Option<u16>,
 }
 
 #[derive(Default)]
@@ -149,6 +147,14 @@ pub struct DashboardGridPacker {
 }
 
 impl DashboardGridPacker {
+    pub fn below(layout: &[Layout]) -> Self {
+        Self {
+            x: 0,
+            y: layout.iter().map(Layout::bottom).max().unwrap_or(0),
+            row_height: 0,
+        }
+    }
+
     pub fn place(&mut self, width: Option<u16>, height: Option<u16>) -> (u16, u16, u16, u16) {
         let width = width
             .unwrap_or(constants::DEFAULT_CHART_WIDTH)
@@ -170,25 +176,33 @@ impl DashboardGridPacker {
     }
 }
 
-pub async fn set_dashboard_layout(
-    app_state: &AppState,
-    dashboard_id: Uuid,
-    name: String,
-    description: Option<String>,
-    charts: Vec<DashboardChartPlacement>,
-) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
-    let layout: Vec<Layout> = charts
-        .into_iter()
-        .map(|c| Layout::new(c.cell_id, c.notebook_id, c.x, c.y, c.width, c.height))
-        .collect();
-    let payload = dto::DashboardDto {
-        id: dashboard_id,
-        name: Some(name),
-        description,
-        layout: Some(layout),
-        status: DashboardStatus::Active,
-    };
-    repository::update_dashboard(&app_state.database_connection, dashboard_id, payload).await
+pub async fn append_dashboard_charts_transaction(
+    txn: &DatabaseTransaction,
+    canvas_id: Uuid,
+    removed_cell_ids: &[Uuid],
+    charts: Vec<DashboardChartRequest>,
+) -> Result<i32, sea_orm::DbErr> {
+    let dashboard = repository::get_dashboard_by_canvas_id_transaction(txn, canvas_id).await?;
+    let mut layout = Layout::from_json(dashboard.layout.clone()).unwrap_or_default();
+    layout.retain(|l| !removed_cell_ids.contains(&l.cell_id()));
+
+    let mut packer = DashboardGridPacker::below(&layout);
+    for chart in charts {
+        let (x, y, width, height) = packer.place(chart.width, chart.height);
+        layout.push(Layout::new(
+            chart.cell_id,
+            chart.notebook_id,
+            x,
+            y,
+            width,
+            height,
+        ));
+    }
+
+    let count = layout.len() as i32;
+    let layout = (!layout.is_empty()).then_some(layout);
+    repository::update_dashboard_layout_transaction(txn, dashboard, layout).await?;
+    Ok(count)
 }
 
 pub async fn delete_dashboard_transaction(

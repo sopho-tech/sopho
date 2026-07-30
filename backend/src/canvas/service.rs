@@ -1,16 +1,25 @@
+use crate::ai::dto::{CanvasCandidate, CanvasCandidateCell, CanvasOp, CanvasPlan, CanvasPlanChart};
 use crate::canvas::constants::CanvasStatus;
 use crate::canvas::dto;
 use crate::canvas::repository;
+use crate::cell::constants::{
+    AggregateFunction, AxisMinorTickShow, AxisTickShow, CellType, ChartOrientation, ChartType,
+    MetricFormat, SortOrder,
+};
+use crate::cell::dto::{
+    AxisChartContent, ChartContent, CreateCellDto, MetricChartContent, PieChartContent,
+};
 use crate::cell::service as cell_service;
 use crate::common::time_utils;
 use crate::common::{AppState, PaginatedResponse, Pagination};
-use crate::dashboard::service as dashboard_service;
+use crate::dashboard::service::{self as dashboard_service, DashboardChartRequest};
 use crate::entity;
 use crate::notebook::service as notebook_service;
 use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use sea_orm::TransactionTrait;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 pub async fn get_canvas(app_state: AppState, id: Uuid) -> impl IntoResponse {
@@ -112,6 +121,15 @@ pub async fn execute_create_canvas(
     payload: dto::CreateCanvasDto,
 ) -> Result<dto::CreateCanvasResult, sea_orm::DbErr> {
     let txn = app_state.database_connection.begin().await?;
+    let created = create_canvas_transaction(&txn, payload).await?;
+    txn.commit().await?;
+    Ok(created)
+}
+
+async fn create_canvas_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    payload: dto::CreateCanvasDto,
+) -> Result<dto::CreateCanvasResult, sea_orm::DbErr> {
     let canvas_id = Uuid::new_v4();
     let now = time_utils::now_utc_into();
     let canvas_entity = entity::canvas::Model {
@@ -122,23 +140,22 @@ pub async fn execute_create_canvas(
         created_at: now,
         updated_at: now,
     };
-    let canvas = repository::save_canvas_transaction(&txn, canvas_entity).await?;
+    let canvas = repository::save_canvas_transaction(txn, canvas_entity).await?;
     let notebook = notebook_service::create_notebook_transaction(
-        &txn,
+        txn,
         canvas_id,
         payload.name.clone(),
         payload.description.clone(),
     )
     .await?;
     let dashboard = dashboard_service::create_dashboard_transaction(
-        &txn,
+        txn,
         canvas_id,
         payload.name.clone(),
         payload.description.clone().unwrap_or_default(),
         None,
     )
     .await?;
-    txn.commit().await?;
     Ok(dto::CreateCanvasResult {
         canvas,
         notebook,
@@ -146,18 +163,7 @@ pub async fn execute_create_canvas(
     })
 }
 
-fn chart_content_json(
-    cell_id: Uuid,
-    chart: &crate::ai::dto::CanvasPlanChart,
-) -> Result<String, sea_orm::DbErr> {
-    use crate::cell::constants::{
-        AggregateFunction, AxisMinorTickShow, AxisTickShow, ChartOrientation, ChartType,
-        MetricFormat, SortOrder,
-    };
-    use crate::cell::dto::{
-        AxisChartContent, ChartContent, MetricChartContent, PieChartContent,
-    };
-
+fn chart_content_json(cell_id: Uuid, chart: &CanvasPlanChart) -> Result<String, sea_orm::DbErr> {
     let aggregate_function = chart
         .aggregate_function
         .clone()
@@ -201,99 +207,352 @@ fn chart_content_json(
         .map_err(|_| sea_orm::DbErr::Custom("failed to serialize chart content".into()))
 }
 
-pub async fn generate_canvas_from_plan(
-    app_state: &AppState,
-    connection_id: Uuid,
-    plan: crate::ai::dto::CanvasPlan,
-) -> Result<dto::GeneratedCanvasSummary, sea_orm::DbErr> {
-    use crate::cell::constants::CellType;
-    use crate::cell::dto::CreateCellDto;
-    use crate::dashboard::service::{DashboardChartPlacement, DashboardGridPacker};
+struct CellPair {
+    sql_cell_id: Uuid,
+    chart_cell_id: Option<Uuid>,
+    title: String,
+    sql: String,
+    chart_type: Option<ChartType>,
+}
 
-    let created = execute_create_canvas(
-        app_state,
-        dto::CreateCanvasDto {
-            name: plan.name.clone(),
-            description: plan.description.clone(),
-        },
-    )
-    .await?;
-    let notebook_id = created.notebook.id;
-    let canvas_id = created.canvas.id;
-
-    let mut sql_cell_count = 0;
-    let mut chart_cell_count = 0;
-    let mut placements: Vec<DashboardChartPlacement> = Vec::new();
-    let mut packer = DashboardGridPacker::default();
-    let mut order = 0;
-
-    for plan_cell in plan.cells.iter() {
-        let sql_cell = cell_service::execute_create_cell(
-            app_state,
-            CreateCellDto {
-                notebook_id,
-                connection_id: Some(connection_id),
-                name: Some(plan_cell.title.clone()),
-                content: Some(plan_cell.sql.clone()),
-                display_order: Some(order),
-                cell_type: CellType::Sql,
-            },
-        )
-        .await
-        .map_err(|_| sea_orm::DbErr::Custom("failed to create sql cell".into()))?;
-        sql_cell_count += 1;
-        order += 1;
-
-        if let Some(chart) = &plan_cell.chart {
-            let chart_cell = cell_service::execute_create_cell(
-                app_state,
-                CreateCellDto {
-                    notebook_id,
-                    connection_id: Some(connection_id),
-                    name: Some(plan_cell.title.clone()),
-                    content: Some(chart_content_json(sql_cell.id, chart)?),
-                    display_order: Some(order),
-                    cell_type: CellType::Chart,
-                },
-            )
-            .await
-            .map_err(|_| sea_orm::DbErr::Custom("failed to create chart cell".into()))?;
-            chart_cell_count += 1;
-            order += 1;
-
-            let (x, y, width, height) =
-                packer.place(chart.grid_width_units(), chart.grid_height_units());
-            placements.push(DashboardChartPlacement {
-                cell_id: chart_cell.id,
-                notebook_id,
-                x,
-                y,
-                width,
-                height,
-            });
+fn pair_cells(cells: Vec<entity::cell::Model>) -> Vec<CellPair> {
+    let mut charts: HashMap<Uuid, (Uuid, ChartType)> = HashMap::new();
+    for cell in cells.iter() {
+        if cell.cell_type != CellType::Chart.to_string() {
+            continue;
+        }
+        let Some(content) = cell.content.as_deref() else {
+            continue;
+        };
+        if let Ok(chart) = serde_json::from_str::<ChartContent>(content) {
+            charts.insert(chart.cell_id(), (cell.id, chart.chart_type()));
         }
     }
 
-    let dashboard_charts_count = placements.len() as i32;
-    if !placements.is_empty() {
-        dashboard_service::set_dashboard_layout(
-            app_state,
-            created.dashboard.id,
-            plan.name.clone(),
-            plan.description.clone(),
-            placements,
-        )
-        .await?;
-    }
+    cells
+        .iter()
+        .filter(|cell| cell.cell_type == CellType::Sql.to_string())
+        .map(|cell| {
+            let chart = charts.get(&cell.id);
+            CellPair {
+                sql_cell_id: cell.id,
+                chart_cell_id: chart.map(|(id, _)| *id),
+                title: cell.name.clone().unwrap_or_default(),
+                sql: cell.content.clone().unwrap_or_default(),
+                chart_type: chart.map(|(_, chart_type)| chart_type.clone()),
+            }
+        })
+        .collect()
+}
 
-    Ok(dto::GeneratedCanvasSummary {
-        canvas_id,
-        name: plan.name,
-        description: plan.description,
+pub async fn list_canvas_candidates(
+    app_state: &AppState,
+    canvas_ids: &[Uuid],
+) -> Vec<CanvasCandidate> {
+    let mut candidates = Vec::new();
+    for canvas_id in canvas_ids {
+        let Ok(canvas) = repository::get_canvas(&app_state.database_connection, *canvas_id).await
+        else {
+            continue;
+        };
+        let Ok(notebook) = notebook_service::get_notebook_by_canvas_id(app_state, *canvas_id).await
+        else {
+            continue;
+        };
+        let Ok(cells) =
+            cell_service::get_cells_by_notebook_id_entities(app_state, notebook.id).await
+        else {
+            continue;
+        };
+        candidates.push(CanvasCandidate {
+            id: canvas.id,
+            name: canvas.name,
+            description: canvas.description,
+            cells: pair_cells(cells)
+                .into_iter()
+                .map(|pair| CanvasCandidateCell {
+                    title: pair.title,
+                    sql: pair.sql,
+                    chart_type: pair.chart_type,
+                })
+                .collect(),
+        });
+    }
+    candidates
+}
+
+async fn resolve_existing_canvas(
+    txn: &sea_orm::DatabaseTransaction,
+    canvas_id: Uuid,
+) -> Option<(entity::canvas::Model, Uuid)> {
+    let canvas = repository::get_canvas_transaction(txn, canvas_id)
+        .await
+        .ok()?;
+    let notebook = notebook_service::get_notebook_by_canvas_id_transaction(txn, canvas_id)
+        .await
+        .ok()?;
+    Some((canvas, notebook.id))
+}
+
+fn non_blank(value: &str) -> Option<String> {
+    let trimmed = value.trim();
+    (!trimmed.is_empty()).then(|| trimmed.to_string())
+}
+
+struct AppliedChanges {
+    added: i32,
+    updated: i32,
+    removed: i32,
+}
+
+pub async fn apply_canvas_plan(
+    app_state: &AppState,
+    connection_id: Uuid,
+    plan: CanvasPlan,
+    target_canvas_id: Option<Uuid>,
+    ops: Vec<CanvasOp>,
+) -> Result<dto::CanvasChangeSummary, sea_orm::DbErr> {
+    let txn = app_state.database_connection.begin().await?;
+
+    let existing = match target_canvas_id {
+        Some(canvas_id) => resolve_existing_canvas(&txn, canvas_id).await,
+        None => None,
+    };
+    let (canvas, notebook_id, reused) = match existing {
+        Some((canvas, notebook_id)) => (canvas, notebook_id, true),
+        None => {
+            let created = create_canvas_transaction(
+                &txn,
+                dto::CreateCanvasDto {
+                    name: plan.name.clone(),
+                    description: non_blank(&plan.description),
+                },
+            )
+            .await?;
+            (created.canvas, created.notebook.id, false)
+        }
+    };
+
+    let changes = apply_ops(&txn, connection_id, notebook_id, canvas.id, ops).await?;
+    if !reused && changes.added == 0 {
+        return Err(sea_orm::DbErr::Custom(
+            "the canvas plan produced no cells".into(),
+        ));
+    }
+    let name = non_blank(&plan.name).unwrap_or_else(|| canvas.name.clone());
+    let description = non_blank(&plan.description).or_else(|| canvas.description.clone());
+    let canvas =
+        repository::update_canvas_transaction(&txn, canvas, name, description).await?;
+
+    txn.commit().await?;
+
+    let (sql_cell_count, chart_cell_count) =
+        cell_service::get_cell_counts_by_canvas_id(app_state, canvas.id)
+            .await
+            .unwrap_or((0, 0));
+    let dashboard_charts_count =
+        dashboard_service::get_dashboard_charts_count_by_canvas_id(app_state, canvas.id)
+            .await
+            .unwrap_or(0);
+
+    Ok(dto::CanvasChangeSummary {
+        canvas_id: canvas.id,
+        name: canvas.name,
+        description: canvas.description,
+        reused,
+        reasoning: plan.reasoning,
+        cells_added: changes.added,
+        cells_updated: changes.updated,
+        cells_removed: changes.removed,
         sql_cell_count,
         chart_cell_count,
         dashboard_charts_count,
     })
+}
+
+async fn apply_ops(
+    txn: &sea_orm::DatabaseTransaction,
+    connection_id: Uuid,
+    notebook_id: Uuid,
+    canvas_id: Uuid,
+    ops: Vec<CanvasOp>,
+) -> Result<AppliedChanges, sea_orm::DbErr> {
+    let cells = cell_service::get_cells_by_notebook_id_transaction(txn, notebook_id).await?;
+    let mut order = cells.iter().map(|c| c.display_order).max().unwrap_or(-1) + 1;
+    let pairs = pair_cells(cells);
+
+    let mut changes = AppliedChanges {
+        added: 0,
+        updated: 0,
+        removed: 0,
+    };
+    let mut queued: Vec<DashboardChartRequest> = Vec::new();
+    let mut removed_cell_ids: Vec<Uuid> = Vec::new();
+    let mut deleted_indices: std::collections::HashSet<usize> = std::collections::HashSet::new();
+
+    for op in ops {
+        if let CanvasOp::Update { index, .. } | CanvasOp::Delete { index } = &op {
+            if deleted_indices.contains(index) {
+                continue;
+            }
+        }
+        match op {
+            CanvasOp::Create { title, sql, chart } => {
+                let created = create_pair(
+                    txn,
+                    connection_id,
+                    notebook_id,
+                    &mut order,
+                    title,
+                    sql,
+                    chart.as_ref(),
+                )
+                .await?;
+                if let Some(request) = created {
+                    queued.push(request);
+                }
+                changes.added += 1;
+            }
+            CanvasOp::Update {
+                index,
+                title,
+                sql,
+                chart,
+            } => {
+                let Some(pair) = pairs.get(index) else {
+                    continue;
+                };
+                if title.is_some() || sql.is_some() {
+                    cell_service::update_cell_content_transaction(
+                        txn,
+                        pair.sql_cell_id,
+                        title.clone(),
+                        sql,
+                    )
+                    .await?;
+                }
+                if let Some(chart) = chart.as_ref() {
+                    let content = chart_content_json(pair.sql_cell_id, chart)?;
+                    match pair.chart_cell_id {
+                        Some(chart_cell_id) => {
+                            cell_service::update_cell_content_transaction(
+                                txn,
+                                chart_cell_id,
+                                title,
+                                Some(content),
+                            )
+                            .await?;
+                        }
+                        None => {
+                            let chart_cell = create_chart_cell(
+                                txn,
+                                connection_id,
+                                notebook_id,
+                                &mut order,
+                                title.or_else(|| Some(pair.title.clone())),
+                                content,
+                            )
+                            .await?;
+                            queued.push(DashboardChartRequest {
+                                cell_id: chart_cell.id,
+                                notebook_id,
+                                width: chart.grid_width_units(),
+                                height: chart.grid_height_units(),
+                            });
+                        }
+                    }
+                }
+                changes.updated += 1;
+            }
+            CanvasOp::Delete { index } => {
+                let Some(pair) = pairs.get(index) else {
+                    continue;
+                };
+                if let Some(chart_cell_id) = pair.chart_cell_id {
+                    cell_service::delete_cell_transaction(txn, chart_cell_id).await?;
+                    removed_cell_ids.push(chart_cell_id);
+                }
+                cell_service::delete_cell_transaction(txn, pair.sql_cell_id).await?;
+                deleted_indices.insert(index);
+                changes.removed += 1;
+            }
+        }
+    }
+
+    if !queued.is_empty() || !removed_cell_ids.is_empty() {
+        dashboard_service::append_dashboard_charts_transaction(
+            txn,
+            canvas_id,
+            &removed_cell_ids,
+            queued,
+        )
+        .await?;
+    }
+
+    Ok(changes)
+}
+
+async fn create_pair(
+    txn: &sea_orm::DatabaseTransaction,
+    connection_id: Uuid,
+    notebook_id: Uuid,
+    order: &mut i32,
+    title: Option<String>,
+    sql: String,
+    chart: Option<&CanvasPlanChart>,
+) -> Result<Option<DashboardChartRequest>, sea_orm::DbErr> {
+    let sql_cell = cell_service::execute_create_cell_transaction(
+        txn,
+        CreateCellDto {
+            notebook_id,
+            connection_id: Some(connection_id),
+            name: title.clone(),
+            content: Some(sql),
+            display_order: None,
+            cell_type: CellType::Sql,
+        },
+        *order,
+    )
+    .await?;
+    *order += 1;
+
+    let Some(chart) = chart else {
+        return Ok(None);
+    };
+    let content = chart_content_json(sql_cell.id, chart)?;
+    let chart_cell =
+        create_chart_cell(txn, connection_id, notebook_id, order, title, content).await?;
+    Ok(Some(DashboardChartRequest {
+        cell_id: chart_cell.id,
+        notebook_id,
+        width: chart.grid_width_units(),
+        height: chart.grid_height_units(),
+    }))
+}
+
+async fn create_chart_cell(
+    txn: &sea_orm::DatabaseTransaction,
+    connection_id: Uuid,
+    notebook_id: Uuid,
+    order: &mut i32,
+    title: Option<String>,
+    content: String,
+) -> Result<entity::cell::Model, sea_orm::DbErr> {
+    let cell = cell_service::execute_create_cell_transaction(
+        txn,
+        CreateCellDto {
+            notebook_id,
+            connection_id: Some(connection_id),
+            name: title,
+            content: Some(content),
+            display_order: None,
+            cell_type: CellType::Chart,
+        },
+        *order,
+    )
+    .await?;
+    *order += 1;
+    Ok(cell)
 }
 
 pub async fn get_last_modified_canvases(

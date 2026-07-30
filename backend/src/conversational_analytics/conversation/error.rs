@@ -48,6 +48,8 @@ pub enum AppendUserMessageError {
     EmptyQuestion,
     #[error("Question exceeds maximum length")]
     QuestionTooLong,
+    #[error("This conversation has reached its message limit; start a new conversation")]
+    UserMessageLimitReached,
     #[error("AI provider is not configured or not live")]
     AiNotLive,
 }

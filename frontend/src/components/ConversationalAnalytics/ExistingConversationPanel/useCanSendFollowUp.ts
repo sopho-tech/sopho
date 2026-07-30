@@ -6,11 +6,12 @@ export type FollowUpGateReason =
   | "ai_not_ready"
   | "streaming"
   | "awaiting_response"
-  | "loading";
+  | "loading"
+  | "conversation_full";
 
 export type FollowUpGate =
   | { canSend: true }
-  | { canSend: false; reason: FollowUpGateReason };
+  | { canSend: false; reason: FollowUpGateReason; terminal: boolean };
 
 export function useCanSendFollowUp(conversationId: string): FollowUpGate {
   const conversationQuery = useConversation(conversationId);
@@ -18,18 +19,21 @@ export function useCanSendFollowUp(conversationId: string): FollowUpGate {
   const { isStreaming } = useConversationStream(conversationId);
 
   if (conversationQuery.isLoading || !conversationQuery.data) {
-    return { canSend: false, reason: "loading" };
+    return { canSend: false, reason: "loading", terminal: false };
+  }
+  if (conversationQuery.data.user_message_limit_reached) {
+    return { canSend: false, reason: "conversation_full", terminal: true };
   }
   if (aiConfiguration?.status !== "live") {
-    return { canSend: false, reason: "ai_not_ready" };
+    return { canSend: false, reason: "ai_not_ready", terminal: false };
   }
   if (isStreaming) {
-    return { canSend: false, reason: "streaming" };
+    return { canSend: false, reason: "streaming", terminal: false };
   }
   const messages = conversationQuery.data.messages;
   const lastMessage = messages[messages.length - 1];
   if (lastMessage && lastMessage.sender === Sender.Human) {
-    return { canSend: false, reason: "awaiting_response" };
+    return { canSend: false, reason: "awaiting_response", terminal: false };
   }
   return { canSend: true };
 }
@@ -44,5 +48,7 @@ export function getFollowUpDisabledTooltip(reason: FollowUpGateReason): string {
       return "Wait for the current response to finish.";
     case "loading":
       return "Loading conversation…";
+    case "conversation_full":
+      return "This conversation has reached its message limit.";
   }
 }

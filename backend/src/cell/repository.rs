@@ -49,6 +49,36 @@ pub async fn get_cells_by_notebook_id(
     Ok(cells)
 }
 
+pub async fn get_cells_by_notebook_id_transaction(
+    txn: &DatabaseTransaction,
+    notebook_id: Uuid,
+) -> Result<Vec<cell::Model>, DbErr> {
+    let cells = cell::Entity::find()
+        .filter(cell::Column::NotebookId.eq(notebook_id))
+        .order_by_asc(cell::Column::DisplayOrder)
+        .all(txn)
+        .await?;
+    Ok(cells)
+}
+
+pub async fn update_cell_content_transaction(
+    txn: &DatabaseTransaction,
+    cell_id: Uuid,
+    name: Option<String>,
+    content: Option<String>,
+) -> Result<cell::Model, DbErr> {
+    let cell = get_cell_transaction(txn, cell_id).await?;
+    let mut cell_entity: cell::ActiveModel = cell.into();
+    if let Some(name) = name {
+        cell_entity.name = Set(Some(name));
+    }
+    if let Some(content) = content {
+        cell_entity.content = Set(Some(content));
+    }
+    cell_entity.updated_at = Set(time_utils::now_utc_into());
+    cell_entity.update(txn).await
+}
+
 pub async fn update_cell_display_order(
     db: &DatabaseConnection,
     cell_id: Uuid,

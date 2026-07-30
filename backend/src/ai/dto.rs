@@ -360,6 +360,11 @@ pub enum Event {
         canvas_id: uuid::Uuid,
         name: String,
         description: Option<String>,
+        reused: bool,
+        reasoning: String,
+        cells_added: i32,
+        cells_updated: i32,
+        cells_removed: i32,
         sql_cell_count: i32,
         chart_cell_count: i32,
         dashboard_charts_count: i32,
@@ -411,24 +416,197 @@ impl CanvasPlanChart {
     pub fn grid_height_units(&self) -> Option<u16> {
         to_grid_units(self.grid_height)
     }
+
+    /// Accepts axis/category as synonyms, since agents mix the two vocabularies.
+    fn normalized(&self) -> Option<Self> {
+        use crate::cell::constants::ChartType;
+
+        let mut chart = self.clone();
+        match chart.chart_type {
+            ChartType::Pie => {
+                chart.category = non_empty(&self.category).or_else(|| non_empty(&self.x_axis));
+                chart.value = non_empty(&self.value).or_else(|| non_empty(&self.y_axis));
+                chart.category.as_ref()?;
+                chart.value.as_ref()?;
+            }
+            ChartType::Bar | ChartType::Line => {
+                chart.x_axis = non_empty(&self.x_axis).or_else(|| non_empty(&self.category));
+                chart.y_axis = non_empty(&self.y_axis).or_else(|| non_empty(&self.value));
+                chart.x_axis.as_ref()?;
+                chart.y_axis.as_ref()?;
+            }
+            ChartType::Metric => {}
+        }
+        Some(chart)
+    }
+}
+
+fn resolve_chart(
+    chart: Option<&CanvasPlanChart>,
+    title: &Option<String>,
+) -> Option<CanvasPlanChart> {
+    let chart = chart?;
+    let normalized = chart.normalized();
+    if normalized.is_none() {
+        tracing::warn!(
+            "canvas plan: dropped {} chart for {:?} because its axis or category fields were missing",
+            chart.chart_type.as_str(),
+            title.as_deref().unwrap_or("<untitled>")
+        );
+    }
+    normalized
 }
 
 fn to_grid_units(value: Option<i32>) -> Option<u16> {
     value.map(|v| v.clamp(0, u16::MAX as i32) as u16)
 }
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub struct CanvasPlanCell {
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct CanvasCandidateCell {
     pub title: String,
     pub sql: String,
+    pub chart_type: Option<crate::cell::constants::ChartType>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct CanvasCandidate {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub cells: Vec<CanvasCandidateCell>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CanvasCellAction {
+    Create,
+    Update,
+    Delete,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct CanvasPlanCell {
+    pub action: CanvasCellAction,
+    pub target_cell_index: Option<i32>,
+    pub title: Option<String>,
+    pub sql: Option<String>,
     pub chart: Option<CanvasPlanChart>,
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct CanvasPlan {
+    pub target_canvas_index: Option<i32>,
+    pub reasoning: String,
     pub name: String,
-    pub description: Option<String>,
+    pub description: String,
     pub cells: Vec<CanvasPlanCell>,
+}
+
+#[derive(Clone, Debug)]
+pub enum CanvasOp {
+    Create {
+        title: Option<String>,
+        sql: String,
+        chart: Option<CanvasPlanChart>,
+    },
+    Update {
+        index: usize,
+        title: Option<String>,
+        sql: Option<String>,
+        chart: Option<CanvasPlanChart>,
+    },
+    Delete {
+        index: usize,
+    },
+}
+
+fn to_zero_based(index: Option<i32>, len: usize) -> Option<usize> {
+    let index = usize::try_from(index?).ok()?.checked_sub(1)?;
+    (index < len).then_some(index)
+}
+
+fn non_empty(value: &Option<String>) -> Option<String> {
+    let trimmed = value.as_deref()?.trim();
+    (!trimmed.is_empty()).then(|| trimmed.to_string())
+}
+
+fn normalize_sql(sql: &str) -> String {
+    sql.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
+}
+
+impl CanvasPlan {
+    pub fn resolve_target_canvas(&self, candidates: &[CanvasCandidate]) -> Option<uuid::Uuid> {
+        to_zero_based(self.target_canvas_index, candidates.len()).map(|i| candidates[i].id)
+    }
+
+    pub fn resolve_ops(&self, target: Option<&CanvasCandidate>) -> Vec<CanvasOp> {
+        let cell_count = target.map(|c| c.cells.len()).unwrap_or(0);
+        let mut present: std::collections::HashSet<String> = target
+            .map(|c| {
+                c.cells
+                    .iter()
+                    .map(|cell| normalize_sql(&cell.sql))
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        let mut ops = Vec::new();
+        for cell in self.cells.iter() {
+            let Some(op) = Self::resolve_op(cell, cell_count) else {
+                continue;
+            };
+            match &op {
+                CanvasOp::Create { title, sql, .. } => {
+                    if !present.insert(normalize_sql(sql)) {
+                        tracing::warn!(
+                            "canvas plan: dropped create of {:?} because its query is already in the target canvas",
+                            title.as_deref().unwrap_or("<untitled>")
+                        );
+                        continue;
+                    }
+                }
+                CanvasOp::Delete { index } => {
+                    if let Some(cell) = target.and_then(|c| c.cells.get(*index)) {
+                        present.remove(&normalize_sql(&cell.sql));
+                    }
+                }
+                CanvasOp::Update { .. } => {}
+            }
+            ops.push(op);
+        }
+        ops
+    }
+
+    fn resolve_op(cell: &CanvasPlanCell, cell_count: usize) -> Option<CanvasOp> {
+        match cell.action {
+            CanvasCellAction::Create => Some(CanvasOp::Create {
+                title: non_empty(&cell.title),
+                sql: non_empty(&cell.sql)?,
+                chart: resolve_chart(cell.chart.as_ref(), &cell.title),
+            }),
+            CanvasCellAction::Update => {
+                let index = to_zero_based(cell.target_cell_index, cell_count)?;
+                let title = non_empty(&cell.title);
+                let sql = non_empty(&cell.sql);
+                let chart = resolve_chart(cell.chart.as_ref(), &cell.title);
+                if title.is_none() && sql.is_none() && chart.is_none() {
+                    return None;
+                }
+                Some(CanvasOp::Update {
+                    index,
+                    title,
+                    sql,
+                    chart,
+                })
+            }
+            CanvasCellAction::Delete => Some(CanvasOp::Delete {
+                index: to_zero_based(cell.target_cell_index, cell_count)?,
+            }),
+        }
+    }
 }
 
 #[cfg(test)]

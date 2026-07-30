@@ -87,6 +87,7 @@ export type ConversationWithMessagesDto = {
   conversation: ConversationDto;
   messages: ConversationMessageDto[];
   should_execute_completion: boolean;
+  user_message_limit_reached: boolean;
 };
 
 export type SchemaLinkingRelevantColumn = {
@@ -286,6 +287,11 @@ export type CanvasGeneratedData = {
   canvas_id: string;
   name: string;
   description: string | null;
+  reused?: boolean;
+  reasoning?: string;
+  cells_added?: number;
+  cells_updated?: number;
+  cells_removed?: number;
   sql_cell_count: number;
   chart_cell_count: number;
   dashboard_charts_count: number;

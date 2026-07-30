@@ -1,6 +1,7 @@
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::conversational_analytics::conversation::error::ConversationError;
+use crate::conversational_analytics::message::constants::Sender;
 use crate::conversational_analytics::message::dto;
 use crate::conversational_analytics::message::repository;
 use crate::entity;
@@ -65,6 +66,19 @@ pub async fn list_messages_for_conversation(
         .collect())
 }
 
+pub async fn count_user_messages_for_conversation(
+    db: &DatabaseConnection,
+    conversation_id: Uuid,
+) -> Result<i64, ConversationError> {
+    let counts = count_messages_by_sender_for_conversations(
+        db,
+        &[conversation_id],
+        &Sender::Human.to_string(),
+    )
+    .await?;
+    Ok(counts.get(&conversation_id).copied().unwrap_or(0))
+}
+
 pub async fn count_messages_by_sender_for_conversations(
     db: &DatabaseConnection,
     conversation_ids: &[Uuid],
@@ -73,8 +87,8 @@ pub async fn count_messages_by_sender_for_conversations(
     if conversation_ids.is_empty() {
         return Ok(HashMap::new());
     }
-    let rows =
-        repository::count_messages_by_sender_for_conversations(db, conversation_ids, sender).await?;
+    let rows = repository::count_messages_by_sender_for_conversations(db, conversation_ids, sender)
+        .await?;
     Ok(rows.into_iter().collect())
 }
 

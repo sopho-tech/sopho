@@ -18,6 +18,7 @@ import {
   type RecommendedVisualizationData,
 } from "src/components/ConversationalAnalytics/dto";
 import { CanvasGeneratedCard } from "src/components/ConversationalAnalytics/CanvasGeneratedCard";
+import { CanvasGenerationNote } from "src/components/ConversationalAnalytics/CanvasGenerationNote";
 import { ResultNarration } from "src/components/ConversationalAnalytics/ResultNarration";
 import {
   parseEvent,
@@ -150,7 +151,12 @@ export function AgentTrace({ connectionId, contents }: AgentTraceProps) {
           visualization={visualization}
         />
       )}
-      {canvas && <CanvasGeneratedCard data={canvas} />}
+      {canvas && (
+        <>
+          <CanvasGenerationNote data={canvas} />
+          <CanvasGeneratedCard data={canvas} />
+        </>
+      )}
     </>
   );
 }

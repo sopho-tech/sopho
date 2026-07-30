@@ -10,6 +10,7 @@ pub enum ErrorCode {
     SyntaxError,
     AiNotLive,
     ConversationBusy,
+    UserMessageLimitReached,
 }
 
 impl ErrorCode {
@@ -24,6 +25,7 @@ impl ErrorCode {
             ErrorCode::SyntaxError => "SYNTAX_ERROR",
             ErrorCode::AiNotLive => "AI_NOT_LIVE",
             ErrorCode::ConversationBusy => "CONVERSATION_BUSY",
+            ErrorCode::UserMessageLimitReached => "USER_MESSAGE_LIMIT_REACHED",
         }
     }
 }
@@ -46,4 +48,5 @@ pub mod codes {
     pub const SYNTAX_ERROR: ErrorCode = ErrorCode::SyntaxError;
     pub const AI_NOT_LIVE: ErrorCode = ErrorCode::AiNotLive;
     pub const CONVERSATION_BUSY: ErrorCode = ErrorCode::ConversationBusy;
+    pub const USER_MESSAGE_LIMIT_REACHED: ErrorCode = ErrorCode::UserMessageLimitReached;
 }

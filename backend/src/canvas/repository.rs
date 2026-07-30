@@ -16,6 +16,30 @@ pub async fn get_canvas(db: &DatabaseConnection, id: Uuid) -> Result<canvas::Mod
     }
 }
 
+pub async fn get_canvas_transaction(
+    txn: &DatabaseTransaction,
+    id: Uuid,
+) -> Result<canvas::Model, DbErr> {
+    let canvas = canvas::Entity::find_by_id(id).one(txn).await?;
+    match canvas {
+        Some(model) => Ok(model),
+        None => Err(DbErr::RecordNotFound("Canvas not found".into())),
+    }
+}
+
+pub async fn update_canvas_transaction(
+    txn: &DatabaseTransaction,
+    canvas: canvas::Model,
+    name: String,
+    description: Option<String>,
+) -> Result<canvas::Model, DbErr> {
+    let mut canvas_active: canvas::ActiveModel = canvas.into();
+    canvas_active.name = Set(name);
+    canvas_active.description = Set(description);
+    canvas_active.updated_at = Set(time_utils::now_utc_into());
+    canvas_active.update(txn).await
+}
+
 pub async fn get_paginated_canvases(
     db: &DatabaseConnection,
     page: u64,

@@ -3,7 +3,7 @@ use crate::ai::dto::{
 };
 use crate::common::AppState;
 use crate::conversational_analytics::conversation::constants::{
-    MessageStatus, CONVERSATION_HISTORY_SCAN_MESSAGE_LIMIT, CONVERSATION_HISTORY_TURN_LIMIT,
+    MessageStatus, CONVERSATION_HISTORY_SCAN_MESSAGE_LIMIT, MAX_USER_MESSAGES_PER_CONVERSATION,
 };
 use crate::conversational_analytics::message::constants::Sender;
 use crate::conversational_analytics::message::dto::ConversationMessageDto;
@@ -41,14 +41,14 @@ pub async fn load(
     let candidates = pair_turns(messages, current_assistant_message_id);
     let selected = ConversationHistory::select_relevant(
         candidates,
-        CONVERSATION_HISTORY_TURN_LIMIT,
+        MAX_USER_MESSAGES_PER_CONVERSATION,
         |candidate| candidate.terminal_status,
     );
     let turns = hydrate(&app_state.database_connection, selected).await;
 
     Ok(ConversationHistory::from_turns(
         turns,
-        CONVERSATION_HISTORY_TURN_LIMIT,
+        MAX_USER_MESSAGES_PER_CONVERSATION,
     ))
 }
 
