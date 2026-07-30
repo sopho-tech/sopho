@@ -1,3 +1,4 @@
+use super::canvas;
 use super::constants;
 use super::constants::{ConversationStatus, PipelineOutcome};
 use super::dto;
@@ -101,15 +102,20 @@ pub async fn get_conversation(
             ConversationMessageWithContentDto::new(m, content)
         })
         .collect();
-    let should_execute_completion = messages
-        .last()
-        .map(|m| m.message.sender == Sender::Human.to_string())
-        .unwrap_or(false);
+    let should_execute_completion = messages.last().is_some_and(is_human_message);
+    let user_message_limit_reached = constants::user_message_limit_reached(
+        messages.iter().filter(|m| is_human_message(m)).count(),
+    );
     Ok(dto::ConversationWithMessagesDto {
         conversation,
         messages,
         should_execute_completion,
+        user_message_limit_reached,
     })
+}
+
+fn is_human_message(message: &ConversationMessageWithContentDto) -> bool {
+    matches!(message.message.sender.parse::<Sender>(), Ok(Sender::Human))
 }
 
 fn normalize_search(search: Option<String>) -> Option<String> {
@@ -377,6 +383,15 @@ pub async fn append_user_message(
         return Err(AppendUserMessageError::ConversationBusy);
     }
 
+    let user_message_count = message_service::count_user_messages_for_conversation(
+        &app_state.database_connection,
+        conversation_id,
+    )
+    .await?;
+    if constants::user_message_limit_reached(user_message_count as usize) {
+        return Err(AppendUserMessageError::UserMessageLimitReached);
+    }
+
     let segments_json = segment::serialize_segments(&payload.segments);
     let plain_text = segment::plain_text_from_segments(&payload.segments);
     let commands =
@@ -530,6 +545,7 @@ pub async fn execute_completion(
             run_pipeline(
                 &app_state,
                 &connection,
+                conversation_id,
                 &question,
                 &commands,
                 &conversation_history,
@@ -596,6 +612,7 @@ fn resolve_command_decision(
 async fn run_pipeline(
     app_state: &AppState,
     connection: &entity::connection::Model,
+    conversation_id: Uuid,
     question: &str,
     commands: &[Command],
     conversation_history: &ConversationHistory,
@@ -669,24 +686,14 @@ async fn run_pipeline(
             Ok(PipelineOutcome::Completed)
         }
         RouterCode::GenerateCanvas => {
-            channels
-                .send(crate::ai::dto::Event::GeneratingCanvas)
-                .await?;
-            let plan = crate::ai::canvas_generation_agent::execute(app_state, conversation_history)
-                .await?;
-            let summary =
-                crate::canvas::service::generate_canvas_from_plan(app_state, connection.id, plan)
-                    .await?;
-            channels
-                .send(crate::ai::dto::Event::CanvasGenerated {
-                    canvas_id: summary.canvas_id,
-                    name: summary.name,
-                    description: summary.description,
-                    sql_cell_count: summary.sql_cell_count,
-                    chart_cell_count: summary.chart_cell_count,
-                    dashboard_charts_count: summary.dashboard_charts_count,
-                })
-                .await?;
+            canvas::generate(
+                app_state,
+                conversation_id,
+                connection.id,
+                conversation_history,
+                channels,
+            )
+            .await?;
             channels.send(crate::ai::dto::Event::Completed).await?;
             Ok(PipelineOutcome::Completed)
         }

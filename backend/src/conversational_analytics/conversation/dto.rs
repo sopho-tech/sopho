@@ -79,4 +79,5 @@ pub struct ConversationWithMessagesDto {
     pub conversation: ConversationDto,
     pub messages: Vec<ConversationMessageWithContentDto>,
     pub should_execute_completion: bool,
+    pub user_message_limit_reached: bool,
 }

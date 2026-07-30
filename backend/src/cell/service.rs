@@ -176,6 +176,57 @@ pub async fn execute_create_cell(
     Ok(cell)
 }
 
+pub async fn execute_create_cell_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    payload: dto::CreateCellDto,
+    display_order: i32,
+) -> Result<entity::cell::Model, sea_orm::DbErr> {
+    let cell_entity = entity::cell::Model {
+        id: Uuid::new_v4(),
+        name: payload.name,
+        content: payload.content,
+        cell_type: payload.cell_type.to_string(),
+        status: CellStatus::Active.to_string(),
+        notebook_id: payload.notebook_id,
+        connection_id: payload.connection_id,
+        display_order,
+        created_at: time_utils::now_utc_into(),
+        updated_at: time_utils::now_utc_into(),
+    };
+    repository::save_cell_transaction(txn, cell_entity).await
+}
+
+pub async fn get_cells_by_notebook_id_entities(
+    app_state: &AppState,
+    notebook_id: Uuid,
+) -> Result<Vec<entity::cell::Model>, sea_orm::DbErr> {
+    repository::get_cells_by_notebook_id(&app_state.database_connection, notebook_id).await
+}
+
+pub async fn get_cells_by_notebook_id_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    notebook_id: Uuid,
+) -> Result<Vec<entity::cell::Model>, sea_orm::DbErr> {
+    repository::get_cells_by_notebook_id_transaction(txn, notebook_id).await
+}
+
+pub async fn update_cell_content_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    cell_id: Uuid,
+    name: Option<String>,
+    content: Option<String>,
+) -> Result<entity::cell::Model, sea_orm::DbErr> {
+    repository::update_cell_content_transaction(txn, cell_id, name, content).await
+}
+
+pub async fn delete_cell_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    cell_id: Uuid,
+) -> Result<(), sea_orm::DbErr> {
+    repository::delete_cell_transaction(txn, cell_id).await?;
+    Ok(())
+}
+
 pub async fn create_cell(app_state: AppState, payload: dto::CreateCellDto) -> impl IntoResponse {
     match execute_create_cell(&app_state, payload).await {
         Ok(cell) => {

@@ -474,6 +474,17 @@ pub enum ChartType {
     Metric,
 }
 
+impl ChartType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ChartType::Bar => "BAR",
+            ChartType::Line => "LINE",
+            ChartType::Pie => "PIE",
+            ChartType::Metric => "METRIC",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AggregateFunction {

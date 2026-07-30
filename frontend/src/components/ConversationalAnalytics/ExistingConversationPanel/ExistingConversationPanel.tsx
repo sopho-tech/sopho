@@ -10,6 +10,7 @@ import {
 import { APP_ROUTES } from "src/constants/app_routes";
 import { ConversationActionsMenu } from "src/components/ConversationalAnalytics/ConversationActionsMenu";
 import { Flex, Icon, Text } from "src/components/design-system";
+import { ConversationLimitNotice } from "src/components/ConversationalAnalytics/ExistingConversationPanel/ConversationLimitNotice";
 import { MessageHoverFooter } from "./MessageHoverFooter";
 import {
   getFollowUpDisabledTooltip,
@@ -133,6 +134,7 @@ export const ExistingConversationPanel = () => {
     );
   };
 
+  const conversationFull = !gate.canSend && gate.terminal;
   const composerDisabled = !gate.canSend || appendUserMessage.isPending;
   const composerDisabledTooltip = gate.canSend
     ? undefined
@@ -236,13 +238,17 @@ export const ExistingConversationPanel = () => {
             paddingBottom="md"
             sx={FLEX_SHRINK_STYLE}
           >
-            <MessageComposer
-              ref={composerRef}
-              placeholder={composerPlaceholder}
-              onSubmit={handleSubmit}
-              disabled={composerDisabled}
-              disabledTooltip={composerDisabledTooltip}
-            />
+            {conversationFull ? (
+              <ConversationLimitNotice />
+            ) : (
+              <MessageComposer
+                ref={composerRef}
+                placeholder={composerPlaceholder}
+                onSubmit={handleSubmit}
+                disabled={composerDisabled}
+                disabledTooltip={composerDisabledTooltip}
+              />
+            )}
           </Flex>
         </Flex>
         <ArtifactsPanel />

@@ -8,6 +8,7 @@ import {
   type AgentEvent,
 } from "src/components/ConversationalAnalytics/dto";
 import { CanvasGeneratedCard } from "src/components/ConversationalAnalytics/CanvasGeneratedCard";
+import { CanvasGenerationNote } from "src/components/ConversationalAnalytics/CanvasGenerationNote";
 import { ResultNarration } from "src/components/ConversationalAnalytics/ResultNarration";
 import {
   STEP_LABELS,
@@ -107,7 +108,12 @@ export function StreamingAgentTrace({
       )}
       {narration && <ResultNarration text={narration} />}
       {chartData && <QueryResultChart chartData={chartData} />}
-      {canvas && <CanvasGeneratedCard data={canvas} />}
+      {canvas && (
+        <>
+          <CanvasGenerationNote data={canvas} />
+          <CanvasGeneratedCard data={canvas} />
+        </>
+      )}
     </>
   );
 }

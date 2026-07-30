@@ -118,9 +118,11 @@ async fn execute_completion(
                 | ExecuteCompletionError::QuestionTooLong => {
                     (StatusCode::BAD_REQUEST, e.to_string(), None)
                 }
-                ExecuteCompletionError::AiNotLive => {
-                    (StatusCode::FORBIDDEN, e.to_string(), Some(codes::AI_NOT_LIVE.as_str()))
-                }
+                ExecuteCompletionError::AiNotLive => (
+                    StatusCode::FORBIDDEN,
+                    e.to_string(),
+                    Some(codes::AI_NOT_LIVE.as_str()),
+                ),
             };
             let body = match code {
                 Some(c) => serde_json::json!({ "error": error, "code": c }),
@@ -147,7 +149,9 @@ async fn append_user_message(
     Json(payload): Json<dto::AppendUserMessageDto>,
 ) -> impl IntoResponse {
     match service::append_user_message(app_state, conversation_id, payload).await {
-        Ok(response_dto) => (StatusCode::OK, axum::Json(serde_json::json!(response_dto))).into_response(),
+        Ok(response_dto) => {
+            (StatusCode::OK, axum::Json(serde_json::json!(response_dto))).into_response()
+        }
         Err(e) => {
             let (status, error, code) = match &e {
                 AppendUserMessageError::Database(_) => {
@@ -159,13 +163,19 @@ async fn append_user_message(
                     e.to_string(),
                     Some(codes::CONVERSATION_BUSY.as_str()),
                 ),
-                AppendUserMessageError::EmptyQuestion
-                | AppendUserMessageError::QuestionTooLong => {
+                AppendUserMessageError::EmptyQuestion | AppendUserMessageError::QuestionTooLong => {
                     (StatusCode::BAD_REQUEST, e.to_string(), None)
                 }
-                AppendUserMessageError::AiNotLive => {
-                    (StatusCode::FORBIDDEN, e.to_string(), Some(codes::AI_NOT_LIVE.as_str()))
-                }
+                AppendUserMessageError::UserMessageLimitReached => (
+                    StatusCode::CONFLICT,
+                    e.to_string(),
+                    Some(codes::USER_MESSAGE_LIMIT_REACHED.as_str()),
+                ),
+                AppendUserMessageError::AiNotLive => (
+                    StatusCode::FORBIDDEN,
+                    e.to_string(),
+                    Some(codes::AI_NOT_LIVE.as_str()),
+                ),
             };
             let body = match code {
                 Some(c) => serde_json::json!({ "error": error, "code": c }),

@@ -4,6 +4,7 @@ use crate::cell::constants::CellDisplayOrderMovement;
 use crate::cell::constants::CellStatus;
 use crate::cell::constants::CellType;
 use crate::cell::constants::ChartOrientation;
+use crate::cell::constants::ChartType;
 use crate::cell::constants::MetricFormat;
 use crate::cell::constants::SortOrder;
 use crate::common::errors::SophoError;
@@ -23,6 +24,25 @@ pub enum ChartContent {
     Pie(PieChartContent),
     #[serde(rename = "METRIC")]
     Metric(MetricChartContent),
+}
+
+impl ChartContent {
+    pub fn cell_id(&self) -> Uuid {
+        match self {
+            ChartContent::Bar(c) | ChartContent::Line(c) => c.cell_id,
+            ChartContent::Pie(c) => c.cell_id,
+            ChartContent::Metric(c) => c.cell_id,
+        }
+    }
+
+    pub fn chart_type(&self) -> ChartType {
+        match self {
+            ChartContent::Bar(_) => ChartType::Bar,
+            ChartContent::Line(_) => ChartType::Line,
+            ChartContent::Pie(_) => ChartType::Pie,
+            ChartContent::Metric(_) => ChartType::Metric,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

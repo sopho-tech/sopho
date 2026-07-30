@@ -12,10 +12,15 @@ pub struct CreateCanvasResult {
 }
 
 #[derive(Debug)]
-pub struct GeneratedCanvasSummary {
+pub struct CanvasChangeSummary {
     pub canvas_id: Uuid,
     pub name: String,
     pub description: Option<String>,
+    pub reused: bool,
+    pub reasoning: String,
+    pub cells_added: i32,
+    pub cells_updated: i32,
+    pub cells_removed: i32,
     pub sql_cell_count: i32,
     pub chart_cell_count: i32,
     pub dashboard_charts_count: i32,

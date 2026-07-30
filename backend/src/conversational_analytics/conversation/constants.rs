@@ -14,10 +14,13 @@ pub(super) enum PipelineOutcome {
     AwaitingClarification,
     Rejected,
 }
-pub const CONVERSATION_HISTORY_TURN_LIMIT: usize = 5;
-pub const CONVERSATION_HISTORY_SCAN_TURN_LIMIT: usize = 25;
+pub const MAX_USER_MESSAGES_PER_CONVERSATION: usize = 10;
+
+pub fn user_message_limit_reached(user_message_count: usize) -> bool {
+    user_message_count >= MAX_USER_MESSAGES_PER_CONVERSATION
+}
 pub const CONVERSATION_HISTORY_SCAN_MESSAGE_LIMIT: usize =
-    2 * (CONVERSATION_HISTORY_SCAN_TURN_LIMIT + 1);
+    2 * (MAX_USER_MESSAGES_PER_CONVERSATION + 1);
 
 /// Terminal statuses:
 /// 1. Processed - Successfully processed the user or system message.

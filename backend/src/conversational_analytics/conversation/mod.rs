@@ -1,3 +1,4 @@
+mod canvas;
 pub mod constants;
 mod controller;
 pub mod dto;
