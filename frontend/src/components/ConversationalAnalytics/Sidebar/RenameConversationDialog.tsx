@@ -1,5 +1,5 @@
 import { ConversationDto } from "src/api/conversational_analytics";
-import { SophoDialog } from "src/components/SophoDialog";
+import { Dialog } from "src/components/Dialog";
 import { Form } from "src/components/design-system/Form/Form";
 import styles from "src/components/ConversationalAnalytics/Sidebar/Sidebar.module.css";
 
@@ -18,7 +18,7 @@ export const RenameConversationDialog = ({
   onClose,
   onSubmit,
 }: RenameConversationDialogProps) => (
-  <SophoDialog
+  <Dialog
     shouldOpenDialog={open}
     handleOnOpenChange={onOpenChange}
     handleDialogClose={onClose}

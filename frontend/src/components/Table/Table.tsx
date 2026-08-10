@@ -8,7 +8,7 @@ import {
   OnChangeFn,
   CellContext,
 } from "@tanstack/react-table";
-import styles from "src/components/SophoTable/SophoTable.module.css";
+import styles from "src/components/Table/Table.module.css";
 import { Pagination } from "src/components/design-system/Pagination";
 
 export enum TableType {
@@ -47,7 +47,7 @@ export type PaginationConfig = {
   paginationContainerClassName?: string;
 };
 
-type SophoTableProps<T> = {
+type TableProps<T> = {
   tableType?: TableType;
   size?: TableSize;
   columns: ColumnConfig<T>[];
@@ -99,7 +99,7 @@ function useCreateReactTable<T>(
   });
 }
 
-export function SophoTable<T>({
+export function Table<T>({
   tableType = TableType.FULL,
   size = "default",
   columns,
@@ -119,7 +119,7 @@ export function SophoTable<T>({
   variant = "bordered",
   showHeader = true,
   isRowSelected,
-}: SophoTableProps<T>) {
+}: TableProps<T>) {
   const isCompact = size === "compact";
   const isPlain = variant === "plain";
   const columnHelper = createColumnHelper<T>();

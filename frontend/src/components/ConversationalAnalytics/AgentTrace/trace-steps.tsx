@@ -16,9 +16,9 @@ import type {
   IconColor,
 } from "src/components/design-system/datatypes";
 import {
-  SophoTable,
+  Table,
   type ColumnConfig,
-} from "src/components/SophoTable/SophoTable";
+} from "src/components/Table/Table";
 import {
   AgentEventName,
   IN_PROGRESS_EVENTS,
@@ -332,7 +332,7 @@ function ObservationCard({
         </Box>
       )}
       {observation.relevant_columns.length > 0 && (
-        <SophoTable
+        <Table
           size="compact"
           columns={OBSERVATION_COLUMNS}
           data={observation.relevant_columns}
@@ -382,7 +382,7 @@ function SchemaLinkingContent({
           <Text fontSize="xs" color="subtle">
             <span className={styles.rejectedLabel}>Rejected Candidates</span>
           </Text>
-          <SophoTable
+          <Table
             size="compact"
             columns={REJECTED_CANDIDATE_COLUMNS}
             data={data.rejected_candidates}

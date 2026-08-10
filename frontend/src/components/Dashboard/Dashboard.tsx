@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import RGL, { WidthProvider, Layout } from "react-grid-layout";
 import { useDashboardByCanvasId } from "src/api/dashboard/queries";
 import { useCellsByNotebookId } from "src/api/notebook/queries";
@@ -19,15 +19,13 @@ import "react-grid-layout/css/styles.css";
 import { EmptyState } from "src/components/EmptyState";
 import { Flex } from "src/components/design-system";
 import { useStore, DashboardMode } from "src/store";
+import { APP_ROUTES } from "src/constants/app_routes";
 
 const ReactGridLayout = WidthProvider(RGL);
 
-type DashboardProps = {
-  onNavigateToNotebook: () => void;
-};
-
-export function Dashboard({ onNavigateToNotebook }: DashboardProps) {
+export function Dashboard() {
   const params = useParams();
+  const navigate = useNavigate();
   const canvasId = params.id || "";
   const mode = useStore((state) => state.dashboard.mode);
   const setLayout = useStore((state) => state.dashboard.setLayout);
@@ -37,8 +35,28 @@ export function Dashboard({ onNavigateToNotebook }: DashboardProps) {
   const cellsQuery = useCellsByNotebookId(activeNotebookId, CellType.CHART);
   const isEditing = mode === DashboardMode.EDITING;
   const { handleEditSaveClick } = useDashboardReset(canvasId, true);
+  const setMode = useStore((state) => state.dashboard.setMode);
+  const setShowChartBrowser = useStore(
+    (state) => state.dashboard.setShowChartBrowser
+  );
 
   useDashboardSave(dashboardQuery.data);
+
+  useEffect(
+    () => () => {
+      setMode(DashboardMode.VIEWING);
+      setShowChartBrowser(false);
+    },
+    [setMode, setShowChartBrowser]
+  );
+
+  const handleNavigateToNotebook = useCallback(
+    () =>
+      navigate(
+        `${APP_ROUTES.CANVAS.replace(":id", canvasId)}/${APP_ROUTES.CANVAS_ROUTES.NOTEBOOK}`
+      ),
+    [navigate, canvasId]
+  );
 
   const chartCellCount = cellsQuery.data?.cells?.length ?? 0;
   const hasNoChartCells = chartCellCount === 0;
@@ -116,7 +134,7 @@ export function Dashboard({ onNavigateToNotebook }: DashboardProps) {
           heading="No chart cells yet"
           description="Create chart cells in the notebook to add them to your dashboard"
           buttonLabel="Go to Notebook"
-          onButtonClick={onNavigateToNotebook}
+          onButtonClick={handleNavigateToNotebook}
         />
       );
     }

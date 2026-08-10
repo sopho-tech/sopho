@@ -1,0 +1,79 @@
+.skeleton {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border: var(--border-width-medium) var(--border-style-solid)
+    var(--border-color-light);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.headerRow,
+.row {
+  display: flex;
+}
+
+.headerRow {
+  background-color: var(--color-grey-200);
+}
+
+.row {
+  border-top: var(--border-width-medium) var(--border-style-solid)
+    var(--border-color-light);
+}
+
+.cell {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-sm);
+}
+
+.bar {
+  height: 10px;
+  border-radius: var(--border-radius-md);
+  background-image: linear-gradient(
+    90deg,
+    var(--color-grey-300) 25%,
+    var(--color-grey-200) 50%,
+    var(--color-grey-300) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.headerRow .bar {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-grey-400) 25%,
+    var(--color-grey-300) 50%,
+    var(--color-grey-400) 75%
+  );
+  background-size: 200% 100%;
+}
+
+.widthWide {
+  width: 85%;
+}
+
+.widthMedium {
+  width: 62%;
+}
+
+.widthNarrow {
+  width: 44%;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    animation: none;
+  }
+}

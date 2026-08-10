@@ -1,4 +1,11 @@
-import { useCell, useExecuteCell, useCellExecutionResult } from "src/api/cell";
+import { useCell, useCellExecutionResult } from "src/api/cell";
+import { useHandleExecuteCell } from "src/components/Notebook/Cell";
+import {
+  useExecutionPhase,
+  ExecutionPhase,
+  isAtLeast,
+} from "src/components/Notebook/Cell/useExecutionPhase";
+import { ChartSkeleton } from "src/components/Notebook/ExecutionIndicator";
 import {
   BarChart,
   ChartType,
@@ -40,6 +47,13 @@ const REFRESH_TOOLTIP = {
   text: "refresh chart",
   direction: "top",
 } as const;
+
+const STALE_OUTPUT_STYLE: React.CSSProperties = {
+  opacity: 0.4,
+  pointerEvents: "none",
+  transition:
+    "opacity var(--transition-duration-short) var(--transition-easing-standard-decelerate)",
+};
 
 type DashboardChartProps = {
   cellId: string;
@@ -135,7 +149,8 @@ function ChartRenderer({
 
 function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
   const cellQuery = useCell(cellId);
-  const executeCellMutation = useExecuteCell();
+  const handleExecuteCell = useHandleExecuteCell();
+  const { isRunning, phase } = useExecutionPhase(cellId);
   const { data: output } = useCellExecutionResult(cellId);
   const chartContent =
     cellQuery && cellQuery.data ? getChartContent(cellQuery.data) : null;
@@ -162,8 +177,8 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
   }, [cellId, isSummarizing, generateSummary]);
 
   useEffect(() => {
-    executeCellMutation.mutate(cellId);
-  }, [cellId, executeCellMutation.mutate]);
+    handleExecuteCell(cellId);
+  }, [cellId, handleExecuteCell]);
 
   const isLoading =
     cellQuery == null ||
@@ -179,10 +194,11 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
   }, [cellId, getLayout, setLayout]);
 
   const handleRefresh = useCallback(() => {
-    executeCellMutation.mutate(cellId);
-  }, [cellId, executeCellMutation.mutate]);
+    handleExecuteCell(cellId);
+  }, [cellId, handleExecuteCell]);
 
-  const revealChrome = !isSummarizing && !isEditing;
+  const revealChrome = !isSummarizing && !isEditing && !isRunning;
+  const showSkeleton = isLoading && isAtLeast(phase, ExecutionPhase.VISIBLE);
 
   return (
     <Flex
@@ -240,6 +256,8 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
             iconColor="grey"
             onClick={handleRefresh}
             iconSize="md"
+            busy={isRunning}
+            busyAnimation="spin"
             tooltip={REFRESH_TOOLTIP}
           />
           {isEditing && (
@@ -259,6 +277,8 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
         </Flex>
       </Flex>
 
+      {showSkeleton && <ChartSkeleton />}
+
       {output && output.status === "error" && (
         <Flex
           alignItems="center"
@@ -266,6 +286,8 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
           paddingX="lg"
           paddingY="lg"
           height="100%"
+          aria-busy={isRunning}
+          sx={isRunning ? STALE_OUTPUT_STYLE : undefined}
         >
           <BannerSlim
             type="error"
@@ -275,7 +297,14 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
       )}
 
       {!isLoading && output?.status === "success" && output.data && (
-        <ChartRenderer chartContent={chartContent} output={output.data} />
+        <Box
+          flex="grow"
+          overflow="hidden"
+          aria-busy={isRunning}
+          sx={isRunning ? STALE_OUTPUT_STYLE : undefined}
+        >
+          <ChartRenderer chartContent={chartContent} output={output.data} />
+        </Box>
       )}
     </Flex>
   );

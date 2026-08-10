@@ -12,7 +12,7 @@ import {
   useConnections,
   useDeleteConnection,
 } from "src/api/connection/queries";
-import { SophoTable, ColumnConfig } from "src/components/SophoTable/SophoTable";
+import { Table, ColumnConfig } from "src/components/Table/Table";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 import { ConnectionsEmptyState } from "src/components/Home/components/EmptyState";
 import { useNavigate, generatePath } from "react-router";
@@ -131,7 +131,7 @@ export function ConnectionsTable() {
   const render = () => {
     if (tableData && tableData.length > 0) {
       return (
-        <SophoTable
+        <Table
           columns={columns}
           data={tableData}
           isLoading={isLoading}

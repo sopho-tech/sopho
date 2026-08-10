@@ -91,7 +91,7 @@ export type IconType =
 
 export type IconSize = "sm" | "md" | "lg" | "2xl";
 
-export type IconAnimation = "pulse";
+export type IconAnimation = "pulse" | "spin";
 
 export type FlexValue = "grow" | "shrink" | "none" | NumberString;
 

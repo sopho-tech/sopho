@@ -46,25 +46,25 @@ export const KEYBOARD_SHORTCUTS = {
   },
   MOVE_CELL_UP: {
     key: "ArrowUp",
-    modifiers: ["meta"],
+    modifiers: ["meta", "alt"],
     description: "Move cell up",
     preventDefault: true,
   },
   MOVE_CELL_TOP: {
     key: "ArrowUp",
-    modifiers: ["meta", "shift"],
+    modifiers: ["meta", "alt", "shift"],
     description: "Move cell to top",
     preventDefault: true,
   },
   MOVE_CELL_DOWN: {
     key: "ArrowDown",
-    modifiers: ["meta"],
+    modifiers: ["meta", "alt"],
     description: "Move cell down",
     preventDefault: true,
   },
   MOVE_CELL_BOTTOM: {
     key: "ArrowDown",
-    modifiers: ["meta", "shift"],
+    modifiers: ["meta", "alt", "shift"],
     description: "Move cell to bottom",
     preventDefault: true,
   },
@@ -145,13 +145,13 @@ export function handleKeyboardShortcut(
   enabled = true
 ) {
   const handleKeyDown = (event: KeyboardEvent) => {
-    event.stopPropagation();
     if (!enabled) return;
 
     if (matchesShortcut(event, shortcut)) {
       if (shortcut.preventDefault) {
         event.preventDefault();
       }
+      event.stopPropagation();
       callback(event);
     }
   };

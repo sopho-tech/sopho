@@ -6,7 +6,7 @@ import { CanvasDto } from "src/components/Canvases/dto";
 import { useNavigate } from "react-router";
 import { useCreateCanvas } from "src/api/canvas/queries";
 import { Form } from "src/components/design-system/Form/Form";
-import { SophoDialog } from "src/components/SophoDialog";
+import { Dialog } from "src/components/Dialog";
 import styles from "src/components/Canvases/CanvasCreateDialog/CanvasCreateDialog.module.css";
 
 const DEFAULT_FORM_VALUES = { name: "", description: "" };
@@ -102,7 +102,7 @@ export function CanvasCreateDialog() {
     </Form>
   );
   return (
-    <SophoDialog
+    <Dialog
       shouldOpenDialog={shouldOpenDialog}
       handleOnOpenChange={handleOnOpenChange}
       handleDialogClose={handleDialogClose}

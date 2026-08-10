@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { Flex } from "src/components/design-system";
-import { SophoTable, TableType } from "src/components/SophoTable/SophoTable";
+import { Table, TableType } from "src/components/Table/Table";
 import { useAllCanvases } from "src/api/canvas/queries";
 import {
   useCanvasesPagination,
@@ -91,7 +91,7 @@ export function CanvasesTable() {
 
   return (
     <Flex direction="column" flex="grow" marginTop="lg" overflow="hidden">
-      <SophoTable
+      <Table
         tableType={TableType.PAGINATED}
         columns={columns}
         data={tableData}

@@ -1,6 +1,6 @@
 import "src/css/index.css";
 import { useState } from "react";
-import styles from "src/components/SophoNavigationMenu/SophoTabs.module.css";
+import styles from "src/components/NavigationMenu/Tabs.module.css";
 import * as NavigationMenu from "@radix-ui/react-navigation-menu";
 
 export type TabItem = {
@@ -9,19 +9,19 @@ export type TabItem = {
   content: React.ReactNode;
 };
 
-export type SophoTabsProps = {
+export type TabsProps = {
   items: TabItem[];
   defaultActiveItem?: string;
   className?: string;
   onTabChange?: (activeItem: string) => void;
 };
 
-export function SophoTabs({
+export function Tabs({
   items,
   defaultActiveItem,
   className = "",
   onTabChange,
-}: SophoTabsProps) {
+}: TabsProps) {
   const [activeTab, setActiveTab] = useState(
     defaultActiveItem || items[0]?.id || ""
   );

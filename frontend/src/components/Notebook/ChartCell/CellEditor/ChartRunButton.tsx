@@ -9,6 +9,7 @@ import { ChartType } from "src/components/Chart";
 import { extractChartFormData } from "src/components/Notebook/ChartCell/CellEditor/utils";
 import { useCallback } from "react";
 import { Button } from "src/components/design-system/Button";
+import { useExecutionPhase } from "src/components/Notebook/Cell/useExecutionPhase";
 import { useStore } from "src/store";
 
 export function ChartRunButton({
@@ -21,6 +22,7 @@ export function ChartRunButton({
   const { form } = useFormCompoundContext();
   const handleExecuteCellPreview = useHandleExecuteCellPreview();
   const setChartContent = useStore((state) => state.cell.setChartContent);
+  const { isRunning } = useExecutionPhase(cellId);
 
   const handleRun = useCallback(() => {
     if (!chartType) return;
@@ -41,8 +43,9 @@ export function ChartRunButton({
   return (
     <Button
       key="run"
-      label="Run"
+      label={isRunning ? "Running…" : "Run"}
       onClick={handleRun}
+      disabled={isRunning}
       backgroundColor="transparent"
       size="sm"
       shape="rectangle"

@@ -7,7 +7,7 @@ import {
 
 export function useHandleExecuteChartCell() {
   const setOutput = useStore((state) => state.chartCell.setOutput);
-  const setExecutionState = useStore((state) => state.chartCell.setExecutionState);
+  const setExecutionState = useStore((state) => state.cell.setExecutionState);
   const setOutputState = useStore((state) => state.chartCell.setOutputState);
   const executeCellMutation = useExecuteCell();
 

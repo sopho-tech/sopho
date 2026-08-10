@@ -19,6 +19,9 @@ import { ConversationalAnalytics } from "src/components/ConversationalAnalytics"
 import { NewConversationPanel } from "./components/ConversationalAnalytics/NewConversationPanel";
 import { ExistingConversationPanel } from "./components/ConversationalAnalytics/ExistingConversationPanel";
 import { ConversationList } from "src/components/ConversationalAnalytics/ConversationList";
+import { Notebook } from "src/components/Notebook";
+import { Dashboard } from "src/components/Dashboard";
+import { CanvasIndexRedirect } from "src/components/Canvases/Canvas";
 
 const router = createBrowserRouter([
   {
@@ -88,6 +91,20 @@ const router = createBrowserRouter([
       {
         path: APP_ROUTES.CANVAS,
         element: <Canvas />,
+        children: [
+          {
+            index: true,
+            element: <CanvasIndexRedirect />,
+          },
+          {
+            path: APP_ROUTES.CANVAS_ROUTES.NOTEBOOK,
+            element: <Notebook />,
+          },
+          {
+            path: APP_ROUTES.CANVAS_ROUTES.DASHBOARD,
+            element: <Dashboard />,
+          },
+        ],
       },
     ],
   },

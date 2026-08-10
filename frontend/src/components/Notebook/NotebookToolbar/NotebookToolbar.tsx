@@ -8,7 +8,7 @@ import {
   KEYBOARD_SHORTCUTS,
   getShortcutDisplayString,
 } from "src/utils/keyboard_shortcuts";
-import { useCreateCell, useDeleteCell, useReorderCell } from "src/api/cell";
+import { useCreateCell, useReorderCell } from "src/api/cell";
 import { Icon } from "src/components/design-system/Icon";
 import { useStore } from "src/store";
 import { Flex } from "src/components/design-system/Flex";
@@ -19,10 +19,6 @@ export function NotebookToolbar() {
   const canvasId = params.id || "";
   const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);
   const createCellMutation = useCreateCell();
-  const deleteCellMutation = useDeleteCell(
-    activeNotebookId ?? undefined,
-    canvasId || undefined
-  );
   const reorderCellMutation = useReorderCell(canvasId || undefined);
 
   const handleCreateNewCell = useCallback(
@@ -40,13 +36,9 @@ export function NotebookToolbar() {
   const handleDeleteActiveCell = useCallback(() => {
     const activeCellId = useStore.getState().notebook.activeCellId;
     if (activeCellId) {
-      deleteCellMutation.mutate(activeCellId, {
-        onSuccess: () => {
-          useStore.getState().notebook.setActiveCellId("");
-        },
-      });
+      useStore.getState().notebook.setCellPendingDeletion(activeCellId);
     }
-  }, [deleteCellMutation]);
+  }, []);
 
   const handleReorderCell = useCallback(
     (movementType: "UP" | "DOWN" | "TOP" | "BOTTOM") => {
