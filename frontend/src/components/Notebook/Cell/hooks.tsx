@@ -1,48 +1,65 @@
+import { useCallback } from "react";
 import { useExecuteCell, useExecuteCellPreview } from "src/api/cell";
+import { ExecutionState } from "src/components/Notebook/Cell/dto";
+import { useStore } from "src/store";
 
 export function useHandleExecuteCell() {
-  const executeCellMutation = useExecuteCell();
+  const { mutate } = useExecuteCell();
+  const setExecutionState = useStore((state) => state.cell.setExecutionState);
 
-  return (
-    cellId: string,
-    onSuccessCallback: (() => void) | null = null,
-    onErrorCallback: (() => void) | null = null
-  ) => {
-    executeCellMutation.mutate(cellId, {
-      onSuccess: () => {
-        if (onSuccessCallback) {
-          onSuccessCallback();
-        }
-      },
-      onError: () => {
-        if (onErrorCallback) {
-          onErrorCallback();
-        }
-      },
-    });
-  };
+  return useCallback(
+    (
+      cellId: string,
+      onSuccessCallback: (() => void) | null = null,
+      onErrorCallback: (() => void) | null = null
+    ) => {
+      setExecutionState(cellId, ExecutionState.RUNNING);
+      mutate(cellId, {
+        onSuccess: () => {
+          setExecutionState(cellId, ExecutionState.COMPLETED);
+          if (onSuccessCallback) {
+            onSuccessCallback();
+          }
+        },
+        onError: () => {
+          setExecutionState(cellId, ExecutionState.FAILED);
+          if (onErrorCallback) {
+            onErrorCallback();
+          }
+        },
+      });
+    },
+    [mutate, setExecutionState]
+  );
 }
 
 export function useHandleExecuteCellPreview() {
-  const executeCellPreviewMutation = useExecuteCellPreview();
+  const { mutate } = useExecuteCellPreview();
+  const setExecutionState = useStore((state) => state.cell.setExecutionState);
 
-  return (
-    cellId: string,
-    content: string,
-    cellType: string,
-    onSuccessCallback?: () => void,
-    onErrorCallback?: () => void
-  ) => {
-    executeCellPreviewMutation.mutate(
-      { cellId, content, cellType },
-      {
-        onSuccess: () => {
-          onSuccessCallback?.();
-        },
-        onError: () => {
-          onErrorCallback?.();
-        },
-      }
-    );
-  };
+  return useCallback(
+    (
+      cellId: string,
+      content: string,
+      cellType: string,
+      onSuccessCallback?: () => void,
+      onErrorCallback?: () => void
+    ) => {
+      setExecutionState(cellId, ExecutionState.RUNNING);
+      mutate(
+        { cellId, content, cellType },
+        {
+          onSuccess: () => {
+            setExecutionState(cellId, ExecutionState.COMPLETED);
+            onSuccessCallback?.();
+          },
+          onError: () => {
+            setExecutionState(cellId, ExecutionState.FAILED);
+            onErrorCallback?.();
+          },
+        }
+      );
+    },
+    [mutate, setExecutionState]
+  );
 }

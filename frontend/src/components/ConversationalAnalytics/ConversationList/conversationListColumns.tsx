@@ -1,4 +1,4 @@
-import { ColumnConfig } from "src/components/SophoTable";
+import { ColumnConfig } from "src/components/Table";
 import { Flex, Icon, Text } from "src/components/design-system";
 import { ConversationListItemDto } from "src/api/conversational_analytics";
 import { ConversationRowActions } from "src/components/ConversationalAnalytics/ConversationList/ConversationRowActions";

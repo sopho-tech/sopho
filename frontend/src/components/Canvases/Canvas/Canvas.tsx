@@ -1,29 +1,28 @@
-import { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { useCallback, useEffect } from "react";
+import { Outlet, useLocation, useNavigate, useParams } from "react-router";
 import { useCanvas, useUpdateCanvas } from "src/api/canvas/queries";
 import { useDashboardByCanvasId } from "src/api/dashboard/queries";
 import { useNotebooksByCanvasId } from "src/api/notebook/queries";
 import { Flex, InlineEdit } from "src/components/design-system";
-import { Notebook } from "src/components/Notebook";
 import { useStore } from "src/store";
-import { Dashboard } from "src/components/Dashboard";
 import { AiSummaryRow } from "src/components/Dashboard/AiSummaryRow";
 import { CanvasButtons } from "src/components/Canvases/CanvasButtons";
-
-enum ViewType {
-  NOTEBOOK = "NOTEBOOK",
-  DASHBOARD = "DASHBOARD",
-}
+import { APP_ROUTES } from "src/constants/app_routes";
 
 export function Canvas() {
   const params = useParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const query = useCanvas(params.id!);
   const dashboardQuery = useDashboardByCanvasId(params.id!);
   const notebooksQuery = useNotebooksByCanvasId(params.id!);
   const updateCanvas = useUpdateCanvas();
-  const [viewType, setViewType] = useState<ViewType>(ViewType.NOTEBOOK);
   const setActiveNotebookId = useStore(
     (state) => state.canvas.setActiveNotebookId
+  );
+
+  const isDashboardView = pathname.endsWith(
+    `/${APP_ROUTES.CANVAS_ROUTES.DASHBOARD}`
   );
 
   useEffect(() => {
@@ -54,24 +53,15 @@ export function Canvas() {
     [params.id, query.data, updateCanvas]
   );
 
-  const handleViewTypeChange = useCallback((v: string) => {
-    setViewType(ViewType[v.toUpperCase() as keyof typeof ViewType]);
-  }, []);
-
-  const handleNavigateToNotebook = useCallback(() => {
-    setViewType(ViewType.NOTEBOOK);
-  }, []);
+  const handleViewTypeChange = useCallback(
+    (view: string) =>
+      navigate(`${APP_ROUTES.CANVAS.replace(":id", params.id!)}/${view}`),
+    [navigate, params.id]
+  );
 
   if (!query.data) {
     return <span>No data available</span>;
   }
-
-  const renderView = () => {
-    if (viewType == ViewType.DASHBOARD) {
-      return <Dashboard onNavigateToNotebook={handleNavigateToNotebook} />;
-    }
-    return <Notebook />;
-  };
 
   return (
     <Flex
@@ -92,7 +82,11 @@ export function Canvas() {
             defaultValue="Default Canvas Title"
           />
           <CanvasButtons
-            viewType={viewType.toLowerCase()}
+            viewType={
+              isDashboardView
+                ? APP_ROUTES.CANVAS_ROUTES.DASHBOARD
+                : APP_ROUTES.CANVAS_ROUTES.NOTEBOOK
+            }
             onViewTypeChange={handleViewTypeChange}
           />
         </Flex>
@@ -103,13 +97,13 @@ export function Canvas() {
           defaultValue="Default description"
           textColor="subtle"
         />
-        {viewType === ViewType.DASHBOARD &&
+        {isDashboardView &&
           dashboardQuery.data?.id &&
           (dashboardQuery.data.layout?.length ?? 0) > 0 && (
             <AiSummaryRow dashboardId={dashboardQuery.data.id} />
           )}
       </Flex>
-      {renderView()}
+      <Outlet />
     </Flex>
   );
 }

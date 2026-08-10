@@ -8,7 +8,9 @@ import CellEditorStyle from "src/components/Notebook/ChartCell/CellEditor/CellEd
 import {
   useSourceCellExecution,
   useFormOptions,
+  useChartCellAutoLoad,
 } from "src/components/Notebook/ChartCell/CellEditor/hooks";
+import { useExecutionPhase } from "src/components/Notebook/Cell/useExecutionPhase";
 import { Form } from "src/components/design-system";
 import { getChartType } from "../../Cell/dto";
 import {
@@ -22,7 +24,7 @@ import { PieChartFields } from "./PieChartFields";
 import { MetricChartFields } from "./MetricChartFields";
 import { ChartRunButton } from "./ChartRunButton";
 import { ChartType } from "src/components/Chart";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 /**
  * Component for editing a chart cell.
@@ -35,13 +37,16 @@ import { useCallback, useState } from "react";
  */
 export function CellEditor({ cellId }: { cellId: string }) {
   const cellQuery = useCell(cellId);
-  const initialChartContent = cellQuery.data
-    ? getChartContent(cellQuery.data)
-    : null;
+  const initialChartContent = useMemo(
+    () => (cellQuery.data ? getChartContent(cellQuery.data) : null),
+    [cellQuery.data]
+  );
   const { setSourceCellId, sourceCellId } = useSourceCellExecution(
     cellId,
     initialChartContent
   );
+  useChartCellAutoLoad(cellId, initialChartContent);
+  const { isRunning: isSourceRunning } = useExecutionPhase(sourceCellId ?? "");
   const updateCellMutation = useUpdateCell();
   const formOptions = useFormOptions(sourceCellId);
   const chartTypeFromContent = getChartType(initialChartContent);
@@ -83,6 +88,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
       defaultValues={defaultValues}
       onSubmit={handleSubmit}
       onChange={handleChange}
+      readonly={isSourceRunning || formOptions.isAwaitingSourceColumns}
       className={CellEditorStyle.chartControlContainer}
     >
       <Form.ErrorBanner />

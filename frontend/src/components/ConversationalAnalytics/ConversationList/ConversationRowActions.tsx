@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Flex, Icon, Text } from "src/components/design-system";
-import { rowHoverClasses } from "src/components/SophoTable";
+import { rowHoverClasses } from "src/components/Table";
 import { ConversationListItemDto } from "src/api/conversational_analytics";
 import { ConversationActionsMenu } from "src/components/ConversationalAnalytics/ConversationActionsMenu";
 import { formatDate } from "src/utils/timestamp_utils";

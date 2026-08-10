@@ -1,8 +1,8 @@
-import * as Dialog from "@radix-ui/react-dialog";
-import DialogStyles from "./SophoDialog.module.css";
+import * as RadixDialog from "@radix-ui/react-dialog";
+import DialogStyles from "src/components/Dialog/Dialog.module.css";
 import { IconButton } from "src/components/design-system/IconButton/IconButton";
 
-interface SophoDialogProps {
+interface DialogProps {
   shouldOpenDialog: boolean;
   handleOnOpenChange: (open: boolean) => void;
   handleDialogClose: () => void;
@@ -15,7 +15,7 @@ interface SophoDialogProps {
   size?: "sm" | "md";
 }
 
-export function SophoDialog({
+export function Dialog({
   shouldOpenDialog,
   handleOnOpenChange,
   handleDialogClose,
@@ -26,26 +26,26 @@ export function SophoDialog({
   dialogContentStyleClass,
   modal = true,
   size = "md",
-}: SophoDialogProps) {
+}: DialogProps) {
   return (
-    <Dialog.Root
+    <RadixDialog.Root
       modal={modal}
       open={shouldOpenDialog}
       onOpenChange={handleOnOpenChange}
     >
-      <Dialog.Portal>
-        <Dialog.Overlay className={DialogStyles.dialogOverlay} />
-        <Dialog.Content
+      <RadixDialog.Portal>
+        <RadixDialog.Overlay className={DialogStyles.dialogOverlay} />
+        <RadixDialog.Content
           className={`${DialogStyles.dialogContent} ${size === "sm" ? DialogStyles.dialogContentSm : ""} ${dialogContentStyleClass || ""}`}
           onClick={(event) => event.stopPropagation()}
         >
           <div className={DialogStyles.dialogHeadersContainer}>
-            <Dialog.Title asChild>
+            <RadixDialog.Title asChild>
               <div className={DialogStyles.dialogTitle}>
                 <div className={DialogStyles.dialogTitleHeading}>{title}</div>
                 <div className={DialogStyles.dialogHeadersRightContainer}>
                   {titleAccessory}
-                  <Dialog.Close asChild>
+                  <RadixDialog.Close asChild>
                     <IconButton
                       type="close"
                       backgroundColor="transparent"
@@ -53,19 +53,21 @@ export function SophoDialog({
                       onClick={handleDialogClose}
                       aria-label="Close"
                     />
-                  </Dialog.Close>
+                  </RadixDialog.Close>
                 </div>
               </div>
-            </Dialog.Title>
+            </RadixDialog.Title>
             {description && (
-              <Dialog.Description className={DialogStyles.dialogDescription}>
+              <RadixDialog.Description
+                className={DialogStyles.dialogDescription}
+              >
                 {description}
-              </Dialog.Description>
+              </RadixDialog.Description>
             )}
           </div>
           <div className={DialogStyles.dialogInfo}>{info}</div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </RadixDialog.Content>
+      </RadixDialog.Portal>
+    </RadixDialog.Root>
   );
 }

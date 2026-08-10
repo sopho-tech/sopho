@@ -7,7 +7,13 @@ import { Select } from "src/components/design-system/Select";
 import { useUpdateCell, useCell, useClearCellOutput } from "src/api/cell";
 import { useCallback, useEffect, useState } from "react";
 import { useHandleExecuteCell } from "src/components/Notebook/Cell";
-import { Flex, Kbd } from "src/components/design-system";
+import {
+  useExecutionPhase,
+  ExecutionPhase,
+  isAtLeast,
+} from "src/components/Notebook/Cell/useExecutionPhase";
+import { ElapsedTime } from "src/components/Notebook/ExecutionIndicator";
+import { Flex, Kbd, Spinner } from "src/components/design-system";
 import {
   KEYBOARD_SHORTCUTS,
   getShortcutDisplayString,
@@ -25,6 +31,8 @@ export function CellToolbar({ cellId }: { cellId: string }) {
     { label: string; value: string } | undefined
   >(undefined);
   const handleExecuteCell = useHandleExecuteCell();
+  const { isRunning, phase, startedAt } = useExecutionPhase(cellId);
+  const showElapsed = isAtLeast(phase, ExecutionPhase.EXTENDED);
 
   useEffect(() => {
     if (!query.data || !getCellQuery.data) return;
@@ -101,7 +109,13 @@ export function CellToolbar({ cellId }: { cellId: string }) {
           className={CellToolbarStyles["toolbar__inlineEdit"]}
         />
       </div>
-      <Flex direction="row" alignItems="center" gap="md">
+      <Flex
+        direction="row"
+        alignItems="center"
+        gap="md"
+        revealOnHover={!isRunning}
+      >
+        {showElapsed && startedAt && <ElapsedTime startedAt={startedAt} />}
         <Select
           value={initialValue?.value ?? ""}
           onValueChange={handleSelectChange}
@@ -124,12 +138,13 @@ export function CellToolbar({ cellId }: { cellId: string }) {
           </Select.Content>
         </Select>
         <Toolbar.Button asChild>
-          <Flex gap="2xs">
+          <Flex gap="xs" alignItems="center">
             <IconButton
               type="clear"
               backgroundColor="transparent"
               iconColor="red"
               onClick={handleClearOutput}
+              disabled={isRunning}
               tooltip={{
                 content: (
                   <Flex direction="row" alignItems="center" gap="md">
@@ -143,24 +158,28 @@ export function CellToolbar({ cellId }: { cellId: string }) {
                 ),
               }}
             />
-            <IconButton
-              type="play"
-              backgroundColor="transparent"
-              iconColor="green"
-              onClick={handleExecute}
-              tooltip={{
-                content: (
-                  <Flex direction="row" alignItems="center" gap="md">
-                    <span>Execute cell</span>
-                    <Kbd>
-                      {getShortcutDisplayString(
-                        KEYBOARD_SHORTCUTS.EXECUTE_NOTEBOOK_CELL
-                      )}
-                    </Kbd>
-                  </Flex>
-                ),
-              }}
-            />
+            {isRunning ? (
+              <Spinner size="md" color="green" />
+            ) : (
+              <IconButton
+                type="play"
+                backgroundColor="transparent"
+                iconColor="green"
+                onClick={handleExecute}
+                tooltip={{
+                  content: (
+                    <Flex direction="row" alignItems="center" gap="md">
+                      <span>Execute cell</span>
+                      <Kbd>
+                        {getShortcutDisplayString(
+                          KEYBOARD_SHORTCUTS.EXECUTE_NOTEBOOK_CELL
+                        )}
+                      </Kbd>
+                    </Flex>
+                  ),
+                }}
+              />
+            )}
           </Flex>
         </Toolbar.Button>
       </Flex>

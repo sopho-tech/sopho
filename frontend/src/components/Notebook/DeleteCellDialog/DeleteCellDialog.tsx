@@ -1,8 +1,7 @@
 import { Dialog } from "src/components/Dialog";
 import { Button, Flex } from "src/components/design-system";
 
-type BulkDeleteConversationsDialogProps = {
-  count: number;
+type DeleteCellDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onClose: () => void;
@@ -10,21 +9,20 @@ type BulkDeleteConversationsDialogProps = {
   isPending: boolean;
 };
 
-export const BulkDeleteConversationsDialog = ({
-  count,
+export const DeleteCellDialog = ({
   open,
   onOpenChange,
   onClose,
   onConfirm,
   isPending,
-}: BulkDeleteConversationsDialogProps) => (
+}: DeleteCellDialogProps) => (
   <Dialog
     shouldOpenDialog={open}
     handleOnOpenChange={onOpenChange}
     handleDialogClose={onClose}
     size="sm"
-    title={`Delete ${count} ${count === 1 ? "conversation" : "conversations"}?`}
-    description="This also removes all of their messages and cannot be undone."
+    title="Delete cell?"
+    description="This removes the cell and its results. This cannot be undone."
     info={
       <Flex gap="sm" justifyContent="flex-end">
         <Button

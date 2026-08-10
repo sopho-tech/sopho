@@ -25,13 +25,27 @@ import {
   Text,
 } from "src/components/design-system";
 import { validateMetricChartData } from "src/components/Chart/MetricChart/utils";
+import {
+  useExecutionPhase,
+  ExecutionPhase,
+  isAtLeast,
+} from "src/components/Notebook/Cell/useExecutionPhase";
+import { ChartSkeleton } from "src/components/Notebook/ExecutionIndicator";
 
 interface ChartCellOutputProps {
   cellId: string;
 }
 
+const STALE_OUTPUT_STYLE: React.CSSProperties = {
+  opacity: 0.4,
+  pointerEvents: "none",
+  transition:
+    "opacity var(--transition-duration-short) var(--transition-easing-standard-decelerate)",
+};
+
 export function CellOutput({ cellId }: ChartCellOutputProps) {
   const { data: output } = useCellExecutionResult(cellId);
+  const { isRunning, phase } = useExecutionPhase(cellId);
   const chartContent = useStore((state) => state.cell.chartContents[cellId]);
   const chartType = getChartType(chartContent);
   const cellQuery = useCell(chartContent?.cell_id ?? "");
@@ -67,6 +81,10 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
       output.status !== "success" ||
       executionData == null
     ) {
+      if (isAtLeast(phase, ExecutionPhase.VISIBLE)) {
+        return <ChartSkeleton />;
+      }
+
       return (
         <Flex
           as="section"
@@ -168,8 +186,14 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
     }
   }
 
+  const hasRenderedOutput = output != null;
+
   return (
-    <div className={`${styles.container} ${cellStyles.outputContainer}`}>
+    <div
+      className={`${styles.container} ${cellStyles.outputContainer}`}
+      style={isRunning && hasRenderedOutput ? STALE_OUTPUT_STYLE : undefined}
+      aria-busy={isRunning}
+    >
       {render()}
     </div>
   );

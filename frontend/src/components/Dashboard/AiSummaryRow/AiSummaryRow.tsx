@@ -11,12 +11,23 @@ type AiSummaryRowProps = {
 function StatusNote({
   iconColor,
   message,
+  highlighted = false,
 }: {
   iconColor: "warning" | "error";
   message: string;
+  highlighted?: boolean;
 }) {
   return (
-    <Flex direction="row" gap="2xs" alignItems="center">
+    <Flex
+      direction="row"
+      gap="2xs"
+      alignItems="center"
+      alignSelf="flex-start"
+      backgroundColor={highlighted ? "warning" : "default"}
+      borderRadius="md"
+      paddingX={highlighted ? "xs" : undefined}
+      paddingY={highlighted ? "2xs" : undefined}
+    >
       <Icon type="triangle_alert" color={iconColor} size="sm" />
       <Text as="span" fontSize="xs" color="subtle">
         {message}
@@ -46,13 +57,7 @@ export function AiSummaryRow({ dashboardId }: AiSummaryRowProps) {
   }
 
   return (
-    <Flex
-      direction="column"
-      gap="2xs"
-      borderRadius="lg"
-      backgroundColor={isGenerating ? "warning" : "default"}
-      revealChildrenOnHover
-    >
+    <Flex direction="column" gap="2xs" borderRadius="lg" revealChildrenOnHover>
       <Box revealOnHover>
         <Text as="span" fontSize="xs" color="subtle">
           AI summary
@@ -63,6 +68,7 @@ export function AiSummaryRow({ dashboardId }: AiSummaryRowProps) {
         <StatusNote
           iconColor="warning"
           message="Generating a new summary. Showing the previous one until it is ready."
+          highlighted
         />
       )}
 

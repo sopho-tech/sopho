@@ -20,8 +20,27 @@
   }
 }
 
+.spin {
+  transform-origin: center;
+  animation: iconSpin 0.9s linear infinite;
+}
+
+@keyframes iconSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pulse {
+    animation: none;
+    opacity: 0.55;
+  }
+
+  .spin {
     animation: none;
     opacity: 0.55;
   }
@@ -110,6 +129,42 @@
 
 .interactive.red:active {
   color: var(--color-red-400);
+}
+
+.warning {
+  color: var(--color-yellow-600);
+}
+
+.interactive.warning:hover {
+  color: var(--color-yellow-700);
+}
+
+.interactive.warning:active {
+  color: var(--color-yellow-500);
+}
+
+.error {
+  color: var(--color-red-500);
+}
+
+.interactive.error:hover {
+  color: var(--color-red-600);
+}
+
+.interactive.error:active {
+  color: var(--color-red-400);
+}
+
+.info {
+  color: var(--color-blue-500);
+}
+
+.interactive.info:hover {
+  color: var(--color-blue-600);
+}
+
+.interactive.info:active {
+  color: var(--color-blue-400);
 }
 
 .filled {

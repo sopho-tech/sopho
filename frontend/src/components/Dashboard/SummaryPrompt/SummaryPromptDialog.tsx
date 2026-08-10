@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { SophoDialog } from "src/components/SophoDialog";
+import { Dialog } from "src/components/Dialog";
 import { Button, Flex, Text, TextArea } from "src/components/design-system";
 
 const MAX_PROMPT_LENGTH = 500;
@@ -51,7 +51,7 @@ export function SummaryPromptDialog({
   }, [isTooLong, trimmed, onSave]);
 
   return (
-    <SophoDialog
+    <Dialog
       shouldOpenDialog={open}
       handleOnOpenChange={onOpenChange}
       handleDialogClose={onClose}

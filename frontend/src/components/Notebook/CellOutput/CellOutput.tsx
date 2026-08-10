@@ -8,13 +8,40 @@ import {
 import CellOutputStyles from "src/components/Notebook/CellOutput/CellOutput.module.css";
 import CellStyles from "src/css/cell.module.css";
 import { TableType } from "src/components/design-system/DataTable";
+import {
+  useExecutionPhase,
+  ExecutionPhase,
+  isAtLeast,
+} from "src/components/Notebook/Cell/useExecutionPhase";
+import { CellOutputSkeleton } from "src/components/Notebook/ExecutionIndicator";
 
 interface CellOutputProps {
   cellId: string;
 }
 
+const STALE_OUTPUT_STYLE: React.CSSProperties = {
+  opacity: 0.4,
+  pointerEvents: "none",
+  transition:
+    "opacity var(--transition-duration-short) var(--transition-easing-standard-decelerate)",
+};
+
+const CURRENT_OUTPUT_STYLE: React.CSSProperties = {
+  transition:
+    "opacity var(--transition-duration-short) var(--transition-easing-standard-decelerate)",
+};
+
 export function CellOutput({ cellId }: CellOutputProps) {
   const { data: result } = useCellExecutionResult(cellId);
+  const { isRunning, phase } = useExecutionPhase(cellId);
+
+  if (!result && isAtLeast(phase, ExecutionPhase.VISIBLE)) {
+    return (
+      <Flex paddingX="lg" paddingY="lg">
+        <CellOutputSkeleton />
+      </Flex>
+    );
+  }
 
   if (!result) return null;
 
@@ -25,6 +52,8 @@ export function CellOutput({ cellId }: CellOutputProps) {
         justifyContent="center"
         paddingX="lg"
         paddingY="lg"
+        aria-busy={isRunning}
+        sx={isRunning ? STALE_OUTPUT_STYLE : CURRENT_OUTPUT_STYLE}
       >
         <BannerSlim type="error" message={result.error.message} />
       </Flex>
@@ -49,6 +78,8 @@ export function CellOutput({ cellId }: CellOutputProps) {
       justifyContent="center"
       paddingX="lg"
       paddingY="lg"
+      aria-busy={isRunning}
+      sx={isRunning ? STALE_OUTPUT_STYLE : CURRENT_OUTPUT_STYLE}
     >
       <DataTable
         tableType={TableType.CLIENT_SIDE_PAGINATED}

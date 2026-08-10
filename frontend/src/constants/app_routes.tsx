@@ -6,6 +6,10 @@ export const APP_ROUTES = {
   INDEX: "/",
   CANVAS: "/canvas/:id",
   CANVASES: "/canvas",
+  CANVAS_ROUTES: {
+    NOTEBOOK: "notebook",
+    DASHBOARD: "dashboard",
+  },
   SETTINGS: "/settings",
   SETTINGS_ROUTES: {
     CONNECTIONS: "/settings/connections",

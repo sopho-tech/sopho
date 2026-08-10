@@ -35,7 +35,9 @@
   }
 
   .revealChildrenOnHover:hover .revealOnHover,
-  .revealChildrenOnHover:focus-within .revealOnHover {
+  .revealChildrenOnHover:focus-within .revealOnHover,
+  .revealChildrenOnHover:has(.revealOnHover [data-state="open"])
+    .revealOnHover {
     opacity: 1;
   }
 }

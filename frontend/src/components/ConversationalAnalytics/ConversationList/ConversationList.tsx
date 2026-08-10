@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { generatePath, useNavigate } from "react-router";
 import { PaginationState } from "@tanstack/react-table";
 import { Flex, Spinner, Text } from "src/components/design-system";
-import { SophoTable, TableType } from "src/components/SophoTable";
+import { Table, TableType } from "src/components/Table";
 import {
   ConversationListItemDto,
   useBulkDeleteConversations,
@@ -140,7 +140,7 @@ export const ConversationList = () => {
           </Text>
         </Flex>
       ) : (
-        <SophoTable
+        <Table
           tableType={TableType.PAGINATED}
           variant="plain"
           showHeader={false}

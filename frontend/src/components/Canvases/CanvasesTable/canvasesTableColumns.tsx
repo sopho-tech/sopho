@@ -1,4 +1,4 @@
-import { ColumnConfig } from "src/components/SophoTable/SophoTable";
+import { ColumnConfig } from "src/components/Table/Table";
 import { CanvasDto } from "src/components/Canvases/dto";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 import { ActionButtons } from "src/components/ActionButtons";

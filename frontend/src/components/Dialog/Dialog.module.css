@@ -14,11 +14,11 @@
   left: 50%;
   transform: translate(-50%, -50%);
   width: 50%;
-  padding: var(--space-sm);
+  padding: var(--space-lg);
   border-radius: var(--border-radius-lg);
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-lg);
 }
 
 .dialogTitle {
@@ -35,12 +35,16 @@
 .dialogDescription {
   font-size: var(--font-size-sm);
   color: var(--color-grey-700);
+  line-height: 1.5;
 }
 
 .dialogInfo {
 }
 
 .dialogHeadersContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .dialogHeadersRightContainer {
@@ -52,6 +56,6 @@
 }
 
 .dialogContentSm {
-  width: min(420px, 90vw);
-  gap: var(--space-xs);
+  width: min(440px, 90vw);
+  gap: var(--space-md);
 }

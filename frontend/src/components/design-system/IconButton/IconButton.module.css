@@ -27,6 +27,15 @@
   transform: scale(0.9);
 }
 
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.button:disabled:active {
+  transform: none;
+}
+
 .accent {
   background-color: var(--color-primary-500);
 }

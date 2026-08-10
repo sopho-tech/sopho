@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import {
   useUpdateDashboard,
   useDashboardByCanvasId,
@@ -6,6 +6,8 @@ import {
 import { useStore, DashboardMode } from "src/store";
 import { convertRGLayoutToDto } from "src/components/Dashboard/dto";
 import { DashboardDto } from "src/components/Dashboard/dto";
+import { useHandleExecuteCell } from "src/components/Notebook/Cell";
+import { ExecutionState } from "src/components/Notebook/Cell/dto";
 
 export function useDashboardSave(dashboardData: DashboardDto | undefined) {
   const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);
@@ -57,6 +59,31 @@ export function useDashboardSave(dashboardData: DashboardDto | undefined) {
   return {
     isSaving: updateDashboardMutation.isPending,
   };
+}
+
+export function useRefreshDashboardCharts() {
+  const layout = useStore((state) => state.dashboard.layout);
+  const handleExecuteCell = useHandleExecuteCell();
+
+  const chartCellIds = useMemo(
+    () => layout.map((item) => item.i).filter((id) => !id.startsWith("_")),
+    [layout]
+  );
+
+  const isRefreshing = useStore((state) =>
+    chartCellIds.some(
+      (cellId) => state.cell.executionStates[cellId] === ExecutionState.RUNNING
+    )
+  );
+
+  const refreshAll = useCallback(() => {
+    if (isRefreshing) {
+      return;
+    }
+    chartCellIds.forEach((cellId) => handleExecuteCell(cellId));
+  }, [chartCellIds, handleExecuteCell, isRefreshing]);
+
+  return { refreshAll, isRefreshing, chartCount: chartCellIds.length };
 }
 
 export function useDashboardReset(canvasId: string, isDashboardView: boolean) {

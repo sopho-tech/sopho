@@ -1,5 +1,5 @@
 import { ConversationDto } from "src/api/conversational_analytics";
-import { SophoDialog } from "src/components/SophoDialog";
+import { Dialog } from "src/components/Dialog";
 import { Button, Flex, Text } from "src/components/design-system";
 import styles from "src/components/ConversationalAnalytics/Sidebar/Sidebar.module.css";
 
@@ -20,7 +20,7 @@ export const DeleteConversationDialog = ({
   onConfirm,
   isPending,
 }: DeleteConversationDialogProps) => (
-  <SophoDialog
+  <Dialog
     shouldOpenDialog={open}
     handleOnOpenChange={onOpenChange}
     handleDialogClose={onClose}

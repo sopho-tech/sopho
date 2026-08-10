@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useHandleExecuteCell } from "src/components/Notebook/Cell";
 import { useStore } from "src/store";
 import type { ChartContent } from "src/components/Notebook/Cell/dto";
@@ -19,16 +19,15 @@ export function useSourceCellExecution(
     chartContent?.cell_id || null
   );
 
-  const executeSourceCell = () => {
+  const executeSourceCell = useCallback(() => {
     if (sourceCellId) {
       handleExecuteCell(sourceCellId);
     }
-  };
+  }, [sourceCellId, handleExecuteCell]);
 
   useEffect(() => {
     if (chartContent?.cell_id) {
-      handleExecuteCell(chartContent?.cell_id);
-      setSourceCellId(chartContent?.cell_id);
+      setSourceCellId(chartContent.cell_id);
     }
   }, [chartContent?.cell_id]);
 
@@ -36,13 +35,37 @@ export function useSourceCellExecution(
     if (sourceCellId) {
       handleExecuteCell(sourceCellId);
     }
-  }, [sourceCellId]);
+  }, [sourceCellId, handleExecuteCell]);
 
   return {
     sourceCellId,
     setSourceCellId,
     executeSourceCell,
   };
+}
+
+export function useChartCellAutoLoad(
+  cellId: string,
+  initialChartContent: ChartContent | null
+) {
+  const handleExecuteCell = useHandleExecuteCell();
+  const setChartContent = useStore((state) => state.cell.setChartContent);
+
+  useEffect(() => {
+    if (!initialChartContent) {
+      return;
+    }
+    if (useStore.getState().cell.chartContents[cellId] == null) {
+      setChartContent(cellId, initialChartContent);
+    }
+  }, [cellId, initialChartContent, setChartContent]);
+
+  useEffect(() => {
+    if (!initialChartContent?.cell_id) {
+      return;
+    }
+    handleExecuteCell(cellId);
+  }, [cellId, initialChartContent?.cell_id, handleExecuteCell]);
 }
 
 export function useFormOptions(sourceCellId: string | null) {
@@ -133,5 +156,6 @@ export function useFormOptions(sourceCellId: string | null) {
     xAxisColumnOptions,
     yAxisColumnOptions,
     yAxisAggregateFunctionsOptions,
+    isAwaitingSourceColumns: sourceCellId != null && sourceCellOutput == null,
   };
 }

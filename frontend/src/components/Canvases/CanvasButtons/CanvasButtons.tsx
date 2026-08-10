@@ -17,7 +17,10 @@ import {
   useUpdateDashboardPrompt,
 } from "src/api/ai_summary";
 import { SummaryPromptControl } from "src/components/Dashboard/SummaryPrompt";
-import { useDashboardReset } from "src/components/Dashboard/hooks";
+import {
+  useDashboardReset,
+  useRefreshDashboardCharts,
+} from "src/components/Dashboard/hooks";
 
 const SEGMENTED_OPTIONS: {
   value: string;
@@ -35,6 +38,11 @@ const SUMMARIZE_ALL_CHARTS_TOOLTIP = {
 
 const EDIT_DASHBOARD_TOOLTIP = {
   text: "edit dashboard",
+  direction: "bottom",
+} as const;
+
+const REFRESH_DASHBOARD_TOOLTIP = {
+  text: "refresh all charts",
   direction: "bottom",
 } as const;
 
@@ -99,6 +107,22 @@ function SummarizeAllChartsButton({ dashboardId }: { dashboardId: string }) {
   );
 }
 
+function RefreshAllChartsButton() {
+  const { refreshAll, isRefreshing } = useRefreshDashboardCharts();
+
+  return (
+    <IconButton
+      type="refresh"
+      onClick={refreshAll}
+      busy={isRefreshing}
+      busyAnimation="spin"
+      backgroundColor="default"
+      iconColor="grey"
+      tooltip={REFRESH_DASHBOARD_TOOLTIP}
+    />
+  );
+}
+
 export function CanvasButtons({
   viewType,
   onViewTypeChange,
@@ -144,6 +168,7 @@ export function CanvasButtons({
             iconColor="red"
           />
         )}
+        {isDashboardView && hasSavedCharts && <RefreshAllChartsButton />}
         {canSummarize && <SummarizeAllChartsButton dashboardId={dashboardId} />}
         {canSummarize && <SummarizeButton dashboardId={dashboardId} />}
       </Flex>

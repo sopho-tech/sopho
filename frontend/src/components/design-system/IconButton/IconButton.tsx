@@ -3,6 +3,7 @@ import {
   IconSize,
   IconType,
   IconButtonSize,
+  IconAnimation,
 } from "src/components/design-system/datatypes";
 import styles from "src/components/design-system/IconButton/IconButton.module.css";
 import { Icon } from "src/components/design-system/Icon";
@@ -24,6 +25,7 @@ type IconButtonProps = {
   className?: string;
   disabled?: boolean;
   busy?: boolean;
+  busyAnimation?: IconAnimation;
   ref?: React.Ref<HTMLButtonElement>;
 } & Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -42,6 +44,7 @@ export function IconButton({
   className: customClassName,
   disabled = false,
   busy = false,
+  busyAnimation = "pulse",
   ref,
   ...buttonProps
 }: IconButtonProps) {
@@ -67,7 +70,7 @@ export function IconButton({
         color={iconColor}
         type={type}
         size={iconSize}
-        animation={busy ? "pulse" : undefined}
+        animation={busy ? busyAnimation : undefined}
       ></Icon>
     </button>
   );

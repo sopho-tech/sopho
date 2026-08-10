@@ -1,9 +1,10 @@
 import { Cell } from "src/components/Notebook/Cell";
 import { ChartCell } from "src/components/Notebook/ChartCell";
 import { NotebookToolbar } from "src/components/Notebook/NotebookToolbar";
+import { DeleteCellDialog } from "src/components/Notebook/DeleteCellDialog";
 import { useStore } from "src/store";
 import { useNotebook } from "src/api/notebook/queries";
-import { CellType } from "src/components/Notebook/Cell/dto";
+import { CellType, ExecutionState } from "src/components/Notebook/Cell/dto";
 import { KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
 import { useHandleExecuteCell } from "src/components/Notebook/Cell";
 import { useScrollToCellFromUrl } from "src/components/Notebook/hooks";
@@ -32,6 +33,9 @@ export function Notebook() {
     canvasId || undefined
   );
   const reorderCellMutation = useReorderCell(canvasId || undefined);
+  const cellPendingDeletion = useStore(
+    (state) => state.notebook.cellPendingDeletion
+  );
 
   const clearCellOutput = useClearCellOutput();
 
@@ -44,7 +48,14 @@ export function Notebook() {
 
   const handleClearOutput = useCallback(() => {
     const activeCellId = useStore.getState().notebook.activeCellId;
-    if (activeCellId) clearCellOutput(activeCellId);
+    if (!activeCellId) return;
+
+    const isRunning =
+      useStore.getState().cell.executionStates[activeCellId] ===
+      ExecutionState.RUNNING;
+    if (isRunning) return;
+
+    clearCellOutput(activeCellId);
   }, [clearCellOutput]);
 
   const handleReorderCell = (
@@ -56,16 +67,33 @@ export function Notebook() {
     }
   };
 
-  const handleDeleteCell = useCallback(() => {
+  const handleRequestDeleteCell = useCallback(() => {
     const activeCellId = useStore.getState().notebook.activeCellId;
     if (activeCellId) {
-      deleteCellMutation.mutate(activeCellId, {
-        onSuccess: () => {
-          useStore.getState().notebook.setActiveCellId("");
-        },
-      });
+      useStore.getState().notebook.setCellPendingDeletion(activeCellId);
     }
-  }, [deleteCellMutation]);
+  }, []);
+
+  const handleCancelDeleteCell = useCallback(() => {
+    useStore.getState().notebook.setCellPendingDeletion("");
+  }, []);
+
+  const handleDeleteDialogOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      useStore.getState().notebook.setCellPendingDeletion("");
+    }
+  }, []);
+
+  const handleConfirmDeleteCell = useCallback(() => {
+    if (!cellPendingDeletion) return;
+    deleteCellMutation.mutate(cellPendingDeletion, {
+      onSuccess: () => {
+        useStore.getState().cell.clearExecutionState(cellPendingDeletion);
+        useStore.getState().notebook.setActiveCellId("");
+        useStore.getState().notebook.setCellPendingDeletion("");
+      },
+    });
+  }, [cellPendingDeletion, deleteCellMutation]);
 
   const handleCreateCell = useCallback(
     (cellType: CellType) => {
@@ -127,7 +155,7 @@ export function Notebook() {
   );
 
   useKeyboardShortcut(
-    handleDeleteCell,
+    handleRequestDeleteCell,
     KEYBOARD_SHORTCUTS.DELETE_CELL,
     notebookRef
   );
@@ -182,6 +210,13 @@ export function Notebook() {
         {render()}
       </Flex>
       <Flex height={"100px"} />
+      <DeleteCellDialog
+        open={Boolean(cellPendingDeletion)}
+        onOpenChange={handleDeleteDialogOpenChange}
+        onClose={handleCancelDeleteCell}
+        onConfirm={handleConfirmDeleteCell}
+        isPending={deleteCellMutation.isPending}
+      />
     </Flex>
   );
 }

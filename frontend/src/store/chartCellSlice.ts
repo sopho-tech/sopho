@@ -2,19 +2,15 @@ import { StateCreator } from "zustand";
 import type {
   CellOutputState,
   ExecuteCellResponseDto,
-  ExecutionState,
 } from "src/components/Notebook/Cell/dto";
 
 export type ChartCellSlice = {
   chartCell: {
     forms: Record<string, unknown>;
     outputs: Record<string, ExecuteCellResponseDto>;
-    executionStates: Record<string, ExecutionState>;
     outputStates: Record<string, CellOutputState>;
     setForm: (cellId: string, form: unknown) => void;
     getForm: (cellId: string) => unknown;
-    setExecutionState: (cellId: string, executionState: ExecutionState) => void;
-    getExecutionState: (cellId: string) => ExecutionState | undefined;
     setOutputState: (cellId: string, outputState: CellOutputState) => void;
     getOutputState: (cellId: string) => CellOutputState | undefined;
     setOutput: (cellId: string, output: ExecuteCellResponseDto) => void;
@@ -28,7 +24,6 @@ export const createChartCellSlice: StateCreator<ChartCellSlice> = (set, get) => 
   chartCell: {
     forms: {},
     outputs: {},
-    executionStates: {},
     outputStates: {},
     setForm: (cellId: string, form: unknown) =>
       set((state) => ({
@@ -38,17 +33,6 @@ export const createChartCellSlice: StateCreator<ChartCellSlice> = (set, get) => 
         },
       })),
     getForm: (cellId: string) => get().chartCell.forms[cellId],
-    setExecutionState: (cellId, executionState) =>
-      set((state) => ({
-        chartCell: {
-          ...state.chartCell,
-          executionStates: {
-            ...state.chartCell.executionStates,
-            [cellId]: executionState,
-          },
-        },
-      })),
-    getExecutionState: (cellId) => get().chartCell.executionStates[cellId],
     setOutputState: (cellId, outputState) =>
       set((state) => ({
         chartCell: {

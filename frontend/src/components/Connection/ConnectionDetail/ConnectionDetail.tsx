@@ -3,7 +3,7 @@ import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 import { useStore } from "src/store";
 import { StatusBadge } from "src/components/StatusBadge/StatusBadge";
 import { useConnection } from "src/api/connection/queries";
-import { SophoDialog } from "src/components/SophoDialog/SophoDialog";
+import { Dialog } from "src/components/Dialog/Dialog";
 import { Form } from "src/components/design-system/Form/Form";
 import { Grid, GridItem } from "src/components/design-system/Grid";
 import { formatTimestamp } from "src/utils/timestamp_utils";
@@ -155,7 +155,7 @@ export function ConnectionDetail() {
   );
 
   return (
-    <SophoDialog
+    <Dialog
       shouldOpenDialog={
         connectionDetailsPageState === ConnectionDetailsPageStateEnum.DETAIL
       }
