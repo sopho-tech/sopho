@@ -69,5 +69,24 @@ export type {
   CollapsibleTriggerProps,
   CollapsibleContentProps,
 } from "src/components/design-system/Collapsible";
+export { HoverCard } from "src/components/design-system/HoverCard";
+export type {
+  HoverCardRootProps,
+  HoverCardTriggerProps,
+  HoverCardContentProps,
+} from "src/components/design-system/HoverCard";
+export { SplitIconButton } from "src/components/design-system/SplitIconButton";
+export type {
+  SplitIconButtonProps,
+  SplitIconButtonSize,
+} from "src/components/design-system/SplitIconButton";
+export { TextArea } from "src/components/design-system/TextArea";
+export type { TextAreaProps } from "src/components/design-system/TextArea";
+export { Popover } from "src/components/design-system/Popover";
+export type {
+  PopoverRootProps,
+  PopoverTriggerProps,
+  PopoverContentProps,
+} from "src/components/design-system/Popover";
 export { Spinner } from "src/components/design-system/Spinner";
 export { ShimmeringText } from "src/components/design-system/ShimmeringText";

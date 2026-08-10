@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { useCanvas, useUpdateCanvas } from "src/api/canvas/queries";
+import { useDashboardByCanvasId } from "src/api/dashboard/queries";
 import { useNotebooksByCanvasId } from "src/api/notebook/queries";
 import { Flex, InlineEdit } from "src/components/design-system";
 import { Notebook } from "src/components/Notebook";
 import { useStore } from "src/store";
 import { Dashboard } from "src/components/Dashboard";
+import { AiSummaryRow } from "src/components/Dashboard/AiSummaryRow";
 import { CanvasButtons } from "src/components/Canvases/CanvasButtons";
 
 enum ViewType {
@@ -16,6 +18,7 @@ enum ViewType {
 export function Canvas() {
   const params = useParams();
   const query = useCanvas(params.id!);
+  const dashboardQuery = useDashboardByCanvasId(params.id!);
   const notebooksQuery = useNotebooksByCanvasId(params.id!);
   const updateCanvas = useUpdateCanvas();
   const [viewType, setViewType] = useState<ViewType>(ViewType.NOTEBOOK);
@@ -100,6 +103,11 @@ export function Canvas() {
           defaultValue="Default description"
           textColor="subtle"
         />
+        {viewType === ViewType.DASHBOARD &&
+          dashboardQuery.data?.id &&
+          (dashboardQuery.data.layout?.length ?? 0) > 0 && (
+            <AiSummaryRow dashboardId={dashboardQuery.data.id} />
+          )}
       </Flex>
       {renderView()}
     </Flex>

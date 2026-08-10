@@ -1,0 +1,30 @@
+.textArea {
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  padding: var(--space-xs);
+  border-radius: var(--border-radius-lg);
+  border: var(--border-dark-medium);
+  transition: border-color 0.2s;
+  color: var(--color-text);
+  background-color: var(--input-background);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.textArea::placeholder {
+  color: var(--color-grey-500);
+}
+
+.textArea:focus {
+  outline: none;
+  border: var(--border-focus-medium);
+  box-shadow: var(--shadow-2xs);
+}
+
+.textArea:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

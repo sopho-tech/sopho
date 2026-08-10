@@ -1,0 +1,46 @@
+.content {
+  border-radius: var(--border-radius-lg);
+  border: var(--border-default-medium);
+  background-color: var(--color-grey-100);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-sm);
+  max-width: 20rem;
+  z-index: 40;
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.content:focus-visible {
+  outline: none;
+}
+
+.content[data-state="open"][data-side="top"] {
+  animation-name: hoverCardSlideDown;
+}
+
+.content[data-state="open"][data-side="bottom"] {
+  animation-name: hoverCardSlideUp;
+}
+
+@keyframes hoverCardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hoverCardSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

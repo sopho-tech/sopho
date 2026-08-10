@@ -1,13 +1,17 @@
 use crate::cell::constants::CellDisplayOrderMovement;
 use crate::cell::constants::CellStatus;
+use crate::cell::constants::MAX_CELLS_PER_NOTEBOOK;
 use crate::cell::constants::CellType;
 use crate::cell::constants::SortOrder;
 use crate::cell::dto;
 use crate::cell::dto::CellContent;
+use crate::ai_summary::service as ai_summary_service;
 use crate::cell::repository;
 use crate::common::error_codes::codes;
 use crate::common::errors::CreateCellError;
+use crate::common::errors::ExecuteChartError;
 use crate::common::errors::ExecuteQueryError;
+use crate::common::errors::ExecuteSqlError;
 use crate::common::errors::GetDatabaseConnectionError;
 use crate::common::errors::SophoError;
 use crate::common::time_utils;
@@ -15,14 +19,17 @@ use crate::common::AppState;
 use crate::connection::service as connection_service;
 use crate::dashboard::service as dashboard_service;
 use crate::database::constants::DatabaseConnection;
+use crate::database::constants::QueryResult;
 use crate::database::service as database_service;
 use crate::entity;
 use crate::notebook::does_notebook_exist;
 use crate::notebook::service as notebook_service;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use futures_util::stream::{self, StreamExt};
 use sea_orm::TransactionTrait;
 use sqlx::types::JsonValue;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 pub async fn does_cell_exist(app_state: &AppState, id: Uuid) -> bool {
@@ -139,6 +146,14 @@ pub async fn execute_create_cell(
         return Err(CreateCellError::NotebookNotFound);
     }
 
+    let cell_count =
+        repository::count_cells_by_notebook_id(&app_state.database_connection, payload.notebook_id)
+            .await
+            .map_err(CreateCellError::Repository)?;
+    if cell_count as usize >= MAX_CELLS_PER_NOTEBOOK {
+        return Err(CreateCellError::NotebookFull(MAX_CELLS_PER_NOTEBOOK));
+    }
+
     let display_order = match payload.display_order {
         Some(order) => order,
         None => {
@@ -181,6 +196,13 @@ pub async fn execute_create_cell_transaction(
     payload: dto::CreateCellDto,
     display_order: i32,
 ) -> Result<entity::cell::Model, sea_orm::DbErr> {
+    let cell_count = repository::count_cells_by_notebook_id(txn, payload.notebook_id).await?;
+    if cell_count as usize >= MAX_CELLS_PER_NOTEBOOK {
+        return Err(sea_orm::DbErr::Custom(format!(
+            "notebook already holds the maximum of {MAX_CELLS_PER_NOTEBOOK} cells"
+        )));
+    }
+
     let cell_entity = entity::cell::Model {
         id: Uuid::new_v4(),
         name: payload.name,
@@ -240,6 +262,10 @@ pub async fn create_cell(app_state: AppState, payload: dto::CreateCellDto) -> im
             StatusCode::BAD_REQUEST,
             axum::Json(serde_json::json!({ "error": "Notebook not found" })),
         ),
+        Err(e @ CreateCellError::NotebookFull(_)) => (
+            StatusCode::PRECONDITION_FAILED,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": e.to_string() })),
@@ -294,6 +320,13 @@ pub async fn delete_cell(app_state: AppState, id: Uuid) -> impl IntoResponse {
         );
     }
     if let Err(e) = repository::delete_cell_transaction(&txn, id).await {
+        let _ = txn.rollback().await;
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        );
+    }
+    if let Err(e) = ai_summary_service::delete_chart_summary(&txn, id).await {
         let _ = txn.rollback().await;
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -483,14 +516,26 @@ async fn execute_query_and_format_results(
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
     let result = database_service::execute_query(database_connection, query).await;
     match result {
-        Ok(result) => (
-            StatusCode::OK,
-            axum::Json(serde_json::json!({
-                "columns": result.columns,
-                "data": result.data,
-            })),
-        ),
-        Err(ExecuteQueryError::Database(sqlx::Error::Database(e))) => (
+        Ok(result) => query_result_response(&result),
+        Err(e) => execute_query_error_response(e),
+    }
+}
+
+fn query_result_response(result: &QueryResult) -> (http::StatusCode, axum::Json<JsonValue>) {
+    (
+        StatusCode::OK,
+        axum::Json(serde_json::json!({
+            "columns": result.columns,
+            "data": result.data,
+        })),
+    )
+}
+
+fn execute_query_error_response(
+    err: ExecuteQueryError,
+) -> (http::StatusCode, axum::Json<JsonValue>) {
+    match err {
+        ExecuteQueryError::Database(sqlx::Error::Database(e)) => (
             StatusCode::BAD_REQUEST,
             axum::Json(serde_json::json!({
                 "status": StatusCode::BAD_REQUEST.as_u16(),
@@ -498,15 +543,60 @@ async fn execute_query_and_format_results(
                 "message": e.to_string()
             })),
         ),
-        Err(ExecuteQueryError::Database(e)) => (
+        ExecuteQueryError::Database(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
-        Err(ExecuteQueryError::UnhandledDataType(type_name)) => (
+        ExecuteQueryError::UnhandledDataType(type_name) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({
                 "error": format!("data type '{}' not handled", type_name)
             })),
+        ),
+    }
+}
+
+fn execute_sql_error_response(err: ExecuteSqlError) -> (http::StatusCode, axum::Json<JsonValue>) {
+    match err {
+        ExecuteSqlError::GetConnection(e) => get_database_connection_error_response(e),
+        ExecuteSqlError::ExecuteQuery(e) => execute_query_error_response(e),
+    }
+}
+
+fn execute_chart_error_response(
+    err: ExecuteChartError,
+) -> (http::StatusCode, axum::Json<JsonValue>) {
+    match err {
+        ExecuteChartError::CellNotFound => (
+            StatusCode::NOT_FOUND,
+            axum::Json(serde_json::json!({ "error": "Cell not found" })),
+        ),
+        ExecuteChartError::MissingContent => (
+            StatusCode::PRECONDITION_FAILED,
+            axum::Json(serde_json::json!({ "error": "Cell has no content" })),
+        ),
+        ExecuteChartError::InvalidChartContent => (
+            StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({ "error": "Invalid chart content format" })),
+        ),
+        ExecuteChartError::SourceNotSql => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": "Cell content is not SQL" })),
+        ),
+        ExecuteChartError::MissingConnection => (
+            StatusCode::PRECONDITION_FAILED,
+            axum::Json(serde_json::json!({ "error": "Source cell has no connection assigned" })),
+        ),
+        ExecuteChartError::MissingChartSetting(setting) => (
+            StatusCode::PRECONDITION_FAILED,
+            axum::Json(serde_json::json!({
+                "message": format!("ChartCell has no {} specified", setting)
+            })),
+        ),
+        ExecuteChartError::ExecuteSql(e) => execute_sql_error_response(e),
+        ExecuteChartError::Repository(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
     }
 }
@@ -565,23 +655,22 @@ fn get_sql_query_from_content_inner(
     }
 }
 
+fn get_sql_query_from_cell_data(cell: &entity::cell::Model) -> Result<String, ExecuteChartError> {
+    let content = cell
+        .content
+        .as_ref()
+        .ok_or(ExecuteChartError::MissingContent)?;
+    match CellContent::parse(content, &CellType::Sql) {
+        Ok(CellContent::Sql(sql_content)) => Ok(sql_content.query),
+        Ok(_) => Err(ExecuteChartError::SourceNotSql),
+        Err(_) => Ok(content.to_string()),
+    }
+}
+
 fn get_sql_query_from_cell(
     cell: &entity::cell::Model,
 ) -> Result<String, (http::StatusCode, axum::Json<JsonValue>)> {
-    let content = match &cell.content {
-        Some(c) => c,
-        None => {
-            return Err((
-                StatusCode::PRECONDITION_FAILED,
-                axum::Json(serde_json::json!({ "error": "Cell has no content" })),
-            ));
-        }
-    };
-    get_sql_query_from_content_inner(
-        content,
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Cell content is not SQL",
-    )
+    get_sql_query_from_cell_data(cell).map_err(execute_chart_error_response)
 }
 
 fn get_sql_query_from_content(
@@ -594,38 +683,15 @@ fn get_sql_query_from_content(
     )
 }
 
-fn parse_chart_content_inner(
-    content: &str,
-    parse_error_status: StatusCode,
-    parse_error_msg: &str,
-) -> Result<dto::ChartContent, (http::StatusCode, axum::Json<JsonValue>)> {
-    let cell_content = match CellContent::parse(content, &CellType::Chart) {
-        Ok(c) => c,
+fn parse_chart_content(content: &str) -> Result<dto::ChartContent, ExecuteChartError> {
+    match CellContent::parse(content, &CellType::Chart) {
+        Ok(CellContent::Chart(c)) => Ok(c),
+        Ok(_) => Err(ExecuteChartError::InvalidChartContent),
         Err(e) => {
             tracing::error!("Error when parsing chart content: {}", e);
-            return Err((
-                parse_error_status,
-                axum::Json(serde_json::json!({ "error": parse_error_msg })),
-            ));
+            Err(ExecuteChartError::InvalidChartContent)
         }
-    };
-    match cell_content {
-        CellContent::Chart(c) => Ok(c),
-        _ => Err((
-            parse_error_status,
-            axum::Json(serde_json::json!({ "error": parse_error_msg })),
-        )),
     }
-}
-
-fn parse_chart_content_from_string(
-    content: &str,
-) -> Result<dto::ChartContent, (http::StatusCode, axum::Json<JsonValue>)> {
-    parse_chart_content_inner(
-        content,
-        StatusCode::BAD_REQUEST,
-        "Invalid chart content format",
-    )
 }
 
 pub async fn execute_cell_preview(
@@ -674,11 +740,14 @@ pub async fn execute_cell_preview(
             execute_sql_with_query(&connection, &query).await
         }
         CellType::Chart => {
-            let chart_content = match parse_chart_content_from_string(&payload.content) {
+            let chart_content = match parse_chart_content(&payload.content) {
                 Ok(c) => c,
-                Err(err) => return err,
+                Err(err) => return execute_chart_error_response(err),
             };
-            execute_chart_with_content(&app_state, chart_content).await
+            match execute_chart_content_data(&app_state, &chart_content).await {
+                Ok(result) => query_result_response(&result),
+                Err(err) => execute_chart_error_response(err),
+            }
         }
         _ => (
             StatusCode::BAD_REQUEST,
@@ -748,23 +817,11 @@ async fn execute_sql_cell(
     execute_sql_with_query(&connection, &query).await
 }
 
-fn parse_chart_content_from_cell(
-    cell: &entity::cell::Model,
-) -> Result<dto::ChartContent, (http::StatusCode, axum::Json<JsonValue>)> {
-    let content = match &cell.content {
-        Some(c) => c,
-        None => {
-            return Err((
-                StatusCode::PRECONDITION_FAILED,
-                axum::Json(serde_json::json!({ "error": "Cell has no content" })),
-            ));
-        }
-    };
-    parse_chart_content_inner(
-        content,
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Cell has non serializable content",
-    )
+fn map_cell_lookup_error(err: sea_orm::DbErr) -> ExecuteChartError {
+    match err {
+        sea_orm::DbErr::RecordNotFound(_) => ExecuteChartError::CellNotFound,
+        other => ExecuteChartError::Repository(other),
+    }
 }
 
 fn get_source_cell_id(chart_content: &dto::ChartContent) -> Uuid {
@@ -780,75 +837,40 @@ fn get_source_cell_id(chart_content: &dto::ChartContent) -> Uuid {
 async fn get_source_cell_for_chart(
     app_state: &AppState,
     source_cell_id: Uuid,
-) -> Result<
-    (entity::cell::Model, entity::connection::Model, String),
-    (http::StatusCode, axum::Json<JsonValue>),
-> {
-    let source_cell = execute_get_cell(app_state, source_cell_id).await;
-    let source_cell = match source_cell {
-        Ok(source_cell) => source_cell,
-        Err(e) => {
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            ));
-        }
-    };
+) -> Result<(entity::connection::Model, String), ExecuteChartError> {
+    let source_cell = execute_get_cell(app_state, source_cell_id)
+        .await
+        .map_err(map_cell_lookup_error)?;
 
-    let connection_id = match source_cell.connection_id {
-        Some(connection_id) => connection_id,
-        None => {
-            return Err((
-                StatusCode::PRECONDITION_FAILED,
-                axum::Json(
-                    serde_json::json!({ "error": "Source cell has no connection assigned" }),
-                ),
-            ));
-        }
-    };
+    let connection_id = source_cell
+        .connection_id
+        .ok_or(ExecuteChartError::MissingConnection)?;
 
-    let connection = match fetch_connection(app_state, connection_id).await {
-        Ok(conn) => conn,
-        Err(err) => return Err(get_database_connection_error_response(err)),
-    };
+    let connection = fetch_connection(app_state, connection_id)
+        .await
+        .map_err(|e| ExecuteChartError::ExecuteSql(e.into()))?;
 
-    let source_query = match get_sql_query_from_cell(&source_cell) {
-        Ok(query) => strip_trailing_semicolons(&query),
-        Err(err) => return Err(err),
-    };
+    let source_query = strip_trailing_semicolons(&get_sql_query_from_cell_data(&source_cell)?);
 
-    Ok((source_cell, connection, source_query))
+    Ok((connection, source_query))
 }
 
 fn build_chart_aggregated_query(
-    chart_content: dto::ChartContent,
+    chart_content: &dto::ChartContent,
     source_query: &str,
-) -> Result<String, (http::StatusCode, axum::Json<JsonValue>)> {
+) -> Result<String, ExecuteChartError> {
     match chart_content {
         dto::ChartContent::Bar(axis_content) | dto::ChartContent::Line(axis_content) => {
-            let aggregate_fn = match &axis_content.y_axis_aggregate_function {
-                Some(fn_name) => fn_name.as_str(),
-                None => {
-                    return Err((
-                        StatusCode::PRECONDITION_FAILED,
-                        axum::Json(serde_json::json!({
-                            "message": "ChartCell has no aggregate function specified"
-                        })),
-                    ));
-                }
-            };
+            let aggregate_fn = axis_content
+                .y_axis_aggregate_function
+                .as_deref()
+                .ok_or(ExecuteChartError::MissingChartSetting("aggregate function"))?;
 
-            let y_axis_sort_order = match &axis_content.y_axis_sort_order {
-                Some(y_axis_sort_order) => y_axis_sort_order.as_str(),
-                None => {
-                    return Err((
-                        StatusCode::PRECONDITION_FAILED,
-                        axum::Json(serde_json::json!({
-                            "message": "ChartCell has no y-axis sort order specified"
-                        })),
-                    ));
-                }
-            };
+            let y_axis_sort_order = axis_content
+                .y_axis_sort_order
+                .as_ref()
+                .ok_or(ExecuteChartError::MissingChartSetting("y-axis sort order"))?
+                .as_str();
 
             Ok(build_aggregated_query(
                 source_query,
@@ -859,17 +881,10 @@ fn build_chart_aggregated_query(
             ))
         }
         dto::ChartContent::Pie(pie_content) => {
-            let aggregate_fn = match &pie_content.aggregate_function {
-                Some(fn_name) => fn_name.as_str(),
-                None => {
-                    return Err((
-                        StatusCode::PRECONDITION_FAILED,
-                        axum::Json(serde_json::json!({
-                            "error": "ChartCell has no aggregate function specified"
-                        })),
-                    ));
-                }
-            };
+            let aggregate_fn = pie_content
+                .aggregate_function
+                .as_deref()
+                .ok_or(ExecuteChartError::MissingChartSetting("aggregate function"))?;
 
             Ok(build_pie_chart_aggregated_query(
                 source_query,
@@ -882,32 +897,89 @@ fn build_chart_aggregated_query(
     }
 }
 
-async fn execute_chart_with_content(
+async fn execute_chart_content_data(
     app_state: &AppState,
-    chart_content: dto::ChartContent,
-) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let source_cell_id = get_source_cell_id(&chart_content);
-    let (_, connection, source_query) =
-        match get_source_cell_for_chart(app_state, source_cell_id).await {
-            Ok(result) => result,
-            Err(err) => return err,
-        };
-    let aggregated_query = match build_chart_aggregated_query(chart_content, &source_query) {
-        Ok(query) => query,
-        Err(err) => return err,
-    };
-    execute_sql_with_query(&connection, &aggregated_query).await
+    chart_content: &dto::ChartContent,
+) -> Result<QueryResult, ExecuteChartError> {
+    let source_cell_id = get_source_cell_id(chart_content);
+    let (connection, source_query) = get_source_cell_for_chart(app_state, source_cell_id).await?;
+    let aggregated_query = build_chart_aggregated_query(chart_content, &source_query)?;
+    Ok(database_service::execute_sql_query(&connection, &aggregated_query).await?)
+}
+
+async fn execute_chart_for_cell(
+    app_state: &AppState,
+    cell: &entity::cell::Model,
+) -> Result<dto::ChartExecution, ExecuteChartError> {
+    let content = cell
+        .content
+        .as_ref()
+        .ok_or(ExecuteChartError::MissingContent)?;
+    let chart_content = parse_chart_content(content)?;
+    let result = execute_chart_content_data(app_state, &chart_content).await?;
+    Ok(dto::ChartExecution {
+        cell_id: cell.id,
+        chart_name: cell.name.clone().unwrap_or_default(),
+        chart_type: chart_content.chart_type().as_str().to_string(),
+        field_names: chart_content.field_names(),
+        result,
+    })
+}
+
+pub async fn execute_chart_cell_data(
+    app_state: &AppState,
+    cell_id: Uuid,
+) -> Result<dto::ChartExecution, ExecuteChartError> {
+    let cell = execute_get_cell(app_state, cell_id)
+        .await
+        .map_err(map_cell_lookup_error)?;
+    execute_chart_for_cell(app_state, &cell).await
+}
+
+pub async fn execute_chart_cells_data(
+    app_state: &AppState,
+    cell_ids: &[Uuid],
+    concurrency: usize,
+) -> Result<Vec<dto::ChartExecutionOutcome>, sea_orm::DbErr> {
+    let cells = repository::get_cells_by_ids(&app_state.database_connection, cell_ids).await?;
+    let cells_by_id: HashMap<Uuid, entity::cell::Model> =
+        cells.into_iter().map(|cell| (cell.id, cell)).collect();
+
+    let results = stream::iter(cell_ids.iter().copied().map(|cell_id| {
+        let cells_by_id = &cells_by_id;
+        async move {
+            let cell = cells_by_id.get(&cell_id);
+            dto::ChartExecutionOutcome {
+                cell_id,
+                chart_name: cell
+                    .and_then(|cell| cell.name.clone())
+                    .unwrap_or_default(),
+                result: match cell {
+                    Some(cell) => execute_chart_for_cell(app_state, cell).await,
+                    None => Err(ExecuteChartError::CellNotFound),
+                },
+            }
+        }
+    }))
+    .buffered(concurrency.max(1))
+    .collect::<Vec<_>>()
+    .await;
+
+    Ok(results)
 }
 
 async fn execute_chart_cell(
     app_state: &AppState,
     cell: entity::cell::Model,
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let chart_content = match parse_chart_content_from_cell(&cell) {
-        Ok(c) => c,
-        Err(err) => return err,
-    };
-    execute_chart_with_content(app_state, chart_content).await
+    match execute_chart_for_cell(app_state, &cell).await {
+        Ok(execution) => query_result_response(&execution.result),
+        Err(ExecuteChartError::InvalidChartContent) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": "Cell has non serializable content" })),
+        ),
+        Err(e) => execute_chart_error_response(e),
+    }
 }
 
 pub async fn get_last_modified_cells_by_type(
@@ -937,7 +1009,13 @@ pub async fn delete_cells_by_notebook_id_transaction(
     txn: &sea_orm::DatabaseTransaction,
     notebook_id: Uuid,
 ) -> Result<(), sea_orm::DbErr> {
-    repository::delete_cells_by_notebook_id_transaction(txn, notebook_id).await
+    let cell_ids: Vec<Uuid> = repository::get_cells_by_notebook_id_transaction(txn, notebook_id)
+        .await?
+        .into_iter()
+        .map(|cell| cell.id)
+        .collect();
+    repository::delete_cells_by_notebook_id_transaction(txn, notebook_id).await?;
+    ai_summary_service::delete_chart_summaries(txn, &cell_ids).await
 }
 
 pub async fn get_cell_counts_by_canvas_id(

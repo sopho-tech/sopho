@@ -1,6 +1,8 @@
 pub(crate) mod agent_utils;
 pub(crate) mod canvas_generation_agent;
+pub(crate) mod chart_summary_agent;
 pub(crate) mod conversation_name_agent;
+pub(crate) mod dashboard_summary_agent;
 pub(crate) mod dto;
 pub(crate) mod followup_questions_agent;
 pub(crate) mod result_narration_agent;

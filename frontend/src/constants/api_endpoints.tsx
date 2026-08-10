@@ -68,4 +68,12 @@ export const API_ENDPOINTS = {
   SUGGESTED_QUESTION: {
     GET_BY_CONNECTION: "/api/v1/suggested_question/connection/:connection_id",
   },
+  AI_SUMMARY: {
+    GET_BY_DASHBOARD: "/api/v1/ai_summary/dashboard/:dashboard_id",
+    GENERATE_DASHBOARD: "/api/v1/ai_summary/dashboard/:dashboard_id",
+    GENERATE_ALL_CHARTS: "/api/v1/ai_summary/dashboard/:dashboard_id/charts",
+    GENERATE_CHART: "/api/v1/ai_summary/chart/:cell_id",
+    SET_DASHBOARD_PROMPT: "/api/v1/ai_summary/dashboard/:dashboard_id/prompt",
+    SET_CHART_PROMPT: "/api/v1/ai_summary/chart/:cell_id/prompt",
+  },
 };

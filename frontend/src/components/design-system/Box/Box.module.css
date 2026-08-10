@@ -9,6 +9,43 @@
   background-color: var(--color-red-200);
 }
 
+.warning {
+  background-color: var(--color-yellow-100);
+}
+
+/*
+ * Progressive disclosure. `revealChildrenOnHover` marks the host; `revealOnHover`
+ * marks the chrome inside it.
+ *
+ * - Gated on `hover: hover` so touch devices, which can never hover, keep every
+ *   control visible.
+ * - Reveals on focus-within as well as hover, so keyboard users reach the chrome.
+ *   This is why it uses opacity and not visibility: visibility removes an element
+ *   from the tab order, so focus-within could never fire.
+ * - Opacity leaves layout untouched, so revealing never reflows the page.
+ *
+ * Caveat: the selector is a descendant match, so a host nested inside another
+ * host reveals its chrome when either is hovered.
+ */
+@media (hover: hover) {
+  .revealOnHover {
+    opacity: 0;
+    transition: opacity var(--transition-duration-short)
+      var(--transition-easing-standard-decelerate);
+  }
+
+  .revealChildrenOnHover:hover .revealOnHover,
+  .revealChildrenOnHover:focus-within .revealOnHover {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revealOnHover {
+    transition: none;
+  }
+}
+
 .grey {
   background-color: var(--color-grey-200);
 }

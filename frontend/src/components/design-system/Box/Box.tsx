@@ -17,6 +17,10 @@ export type BoxProps = SharedLayoutProps & {
   display?: Display;
   children?: React.ReactNode;
   sx?: React.CSSProperties;
+  /** Marks this element as the host whose hover or focus reveals its chrome. */
+  revealChildrenOnHover?: boolean;
+  /** Hides this element until an ancestor host is hovered or focused within. */
+  revealOnHover?: boolean;
 } & Omit<React.HTMLAttributes<HTMLElement>, keyof SharedLayoutProps | "style">;
 
 export function Box({
@@ -26,6 +30,8 @@ export function Box({
   ref,
   children,
   sx,
+  revealChildrenOnHover = false,
+  revealOnHover = false,
   ...props
 }: BoxProps) {
   const Component = as;
@@ -42,6 +48,8 @@ export function Box({
 
   const mergedClassName = mergeBoxClassName(
     backgroundColorClassName,
+    revealChildrenOnHover && styles.revealChildrenOnHover,
+    revealOnHover && styles.revealOnHover,
     className,
   );
 

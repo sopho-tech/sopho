@@ -86,12 +86,9 @@ export function mergeBoxStyles(
 }
 
 export function mergeBoxClassName(
-  backgroundColorClassName: string,
-  htmlClassName?: string,
+  ...classNames: (string | undefined | false)[]
 ): string {
-  return htmlClassName
-    ? `${backgroundColorClassName} ${htmlClassName}`.trim()
-    : backgroundColorClassName;
+  return classNames.filter(Boolean).join(" ").trim();
 }
 
 export function getFlexStyles(
@@ -180,6 +177,7 @@ function getBorderRadius(borderRadius: string) {
 const borderValueByVariant: Record<BorderVariant, string> = {
   default: "var(--border-default-medium)",
   divider: "var(--border-divider)",
+  warning: "var(--border-warning)",
 };
 
 function getBorderStyles(props: {

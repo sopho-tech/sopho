@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+pub const MAX_CELLS_PER_NOTEBOOK: usize = 60;
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum CellType {
     Text,

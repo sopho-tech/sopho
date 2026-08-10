@@ -19,11 +19,16 @@ type IconButtonProps = {
     content?: React.ReactNode;
     direction?: "top" | "right" | "bottom" | "left";
   };
-  onClick: () => void;
+  onClick?: () => void;
   tabIndex?: number;
   className?: string;
   disabled?: boolean;
-};
+  busy?: boolean;
+  ref?: React.Ref<HTMLButtonElement>;
+} & Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  "type" | "onClick" | "className" | "disabled" | "tabIndex"
+>;
 
 export function IconButton({
   type,
@@ -36,6 +41,9 @@ export function IconButton({
   tabIndex,
   className: customClassName,
   disabled = false,
+  busy = false,
+  ref,
+  ...buttonProps
 }: IconButtonProps) {
   const backgroundColorClassName = styles[backgroundColor];
   const sizeClassNames: Record<IconButtonSize, string> = {
@@ -47,12 +55,20 @@ export function IconButton({
   const sizeClassName = sizeClassNames[size];
   const button = (
     <button
+      ref={ref}
       className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${customClassName ?? ""}`.trim()}
       onClick={onClick}
       tabIndex={tabIndex}
-      disabled={disabled}
+      disabled={disabled || busy}
+      aria-busy={busy || undefined}
+      {...buttonProps}
     >
-      <Icon color={iconColor} type={type} size={iconSize}></Icon>
+      <Icon
+        color={iconColor}
+        type={type}
+        size={iconSize}
+        animation={busy ? "pulse" : undefined}
+      ></Icon>
     </button>
   );
 

@@ -1,4 +1,5 @@
 import {
+  IconAnimation,
   IconColor,
   IconSize,
   IconType,
@@ -14,7 +15,6 @@ import {
   ArrowUpDown,
   Eye,
   EyeOff,
-  Pencil,
   Trash2,
   Play,
   Minus,
@@ -65,6 +65,9 @@ import {
   Workflow,
   CircleCheck,
   CircleDot,
+  FileText,
+  WandSparkles,
+  SquarePen,
 } from "lucide-react";
 
 const iconMap: Record<IconType, LucideIcon> = {
@@ -78,7 +81,7 @@ const iconMap: Record<IconType, LucideIcon> = {
   swap_vert: ArrowUpDown,
   visibility: Eye,
   visibility_off: EyeOff,
-  edit: Pencil,
+  edit: SquarePen,
   delete: Trash2,
   clear: CircleX,
   play: Play,
@@ -128,6 +131,8 @@ const iconMap: Record<IconType, LucideIcon> = {
   workflow: Workflow,
   circle_check: CircleCheck,
   circle_dot: CircleDot,
+  file_text: FileText,
+  wand_sparkles: WandSparkles,
 };
 
 const sizeMap: Record<IconSize, number> = {
@@ -143,6 +148,7 @@ type IconProps = {
   strokeWidth?: number;
   size?: IconSize;
   interactive?: boolean;
+  animation?: IconAnimation;
 };
 
 export function Icon({
@@ -151,14 +157,22 @@ export function Icon({
   strokeWidth = 2.25,
   size = "md",
   interactive = true,
+  animation,
 }: IconProps) {
-  const className = styles[color];
   const IconComponent = iconMap[type];
   const iconSize = sizeMap[size];
+  const className = [
+    styles.icon,
+    styles[color],
+    interactive && styles.interactive,
+    animation && styles[animation],
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <IconComponent
       size={iconSize}
-      className={`${styles.icon} ${className}${interactive ? ` ${styles.interactive}` : ""}`}
+      className={className}
       strokeWidth={strokeWidth}
     />
   );

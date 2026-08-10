@@ -22,7 +22,7 @@ export function TextField({
     <>
       <Input
         type="text"
-        value={field.state.value}
+        value={field.state.value ?? ""}
         onChange={(e) => field.handleChange(e.target.value)}
         placeholder={placeholder}
         leadingIcon={icon}

@@ -85,9 +85,13 @@ export type IconType =
   | "telescope"
   | "workflow"
   | "circle_check"
-  | "circle_dot";
+  | "circle_dot"
+  | "file_text"
+  | "wand_sparkles";
 
 export type IconSize = "sm" | "md" | "lg" | "2xl";
+
+export type IconAnimation = "pulse";
 
 export type FlexValue = "grow" | "shrink" | "none" | NumberString;
 
@@ -127,7 +131,7 @@ export type ColorVariant =
   | "white"
   | "grey";
 
-export type BorderVariant = "default" | "divider";
+export type BorderVariant = "default" | "divider" | "warning";
 
 export type ShadowVariant = "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "scroll";
 

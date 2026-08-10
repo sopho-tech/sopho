@@ -33,6 +33,17 @@ pub async fn get_dashboard(db: &DatabaseConnection, id: Uuid) -> Result<dashboar
     }
 }
 
+pub async fn get_dashboard_transaction(
+    txn: &DatabaseTransaction,
+    id: Uuid,
+) -> Result<dashboard::Model, DbErr> {
+    let dashboard = dashboard::Entity::find_by_id(id).one(txn).await?;
+    match dashboard {
+        Some(model) => Ok(model),
+        None => Err(DbErr::RecordNotFound("Dashboard not found".into())),
+    }
+}
+
 pub async fn get_dashboard_by_canvas_id(
     db: &DatabaseConnection,
     canvas_id: Uuid,
