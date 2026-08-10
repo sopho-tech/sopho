@@ -1,5 +1,47 @@
 use crate::data_catalog::dto::Database;
 
+#[derive(Clone, Debug)]
+pub struct ChartSummaryInput {
+    pub chart_name: String,
+    pub chart_type: String,
+    pub field_names: Vec<String>,
+    pub columns: Vec<serde_json::Value>,
+    pub rows: Vec<serde_json::Value>,
+    pub total_row_count: usize,
+}
+
+impl ChartSummaryInput {
+    pub fn columns_json(&self) -> String {
+        serde_json::to_string_pretty(&self.columns).unwrap_or_else(|_| "[]".to_string())
+    }
+
+    pub fn rows_json(&self) -> String {
+        serde_json::to_string_pretty(&self.rows).unwrap_or_else(|_| "[]".to_string())
+    }
+
+    pub fn row_count_note(&self) -> String {
+        if self.rows.len() < self.total_row_count {
+            format!(
+                "Showing the first {} of {} rows.",
+                self.rows.len(),
+                self.total_row_count
+            )
+        } else {
+            format!(
+                "{} rows in total. This is the complete result.",
+                self.total_row_count
+            )
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct DashboardSummaryInput {
+    pub charts: Vec<ChartSummaryInput>,
+    pub skipped_chart_names: Vec<String>,
+    pub user_prompt: Option<String>,
+}
+
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TableRef {
     pub database: String,

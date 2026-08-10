@@ -9,8 +9,8 @@ use sea_orm::QueryFilter;
 use sea_orm::QueryOrder;
 use sea_orm::Set;
 use sea_orm::{
-    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait, Order,
-    PaginatorTrait,
+    ActiveModelTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
+    Order, PaginatorTrait,
 };
 use uuid::Uuid;
 
@@ -35,6 +35,29 @@ pub async fn get_cell(db: &DatabaseConnection, id: Uuid) -> Result<cell::Model, 
         Some(model) => Ok(model),
         None => Err(DbErr::RecordNotFound("Cell not found".into())),
     }
+}
+
+pub async fn count_cells_by_notebook_id(
+    db: &impl ConnectionTrait,
+    notebook_id: Uuid,
+) -> Result<u64, DbErr> {
+    cell::Entity::find()
+        .filter(cell::Column::NotebookId.eq(notebook_id))
+        .count(db)
+        .await
+}
+
+pub async fn get_cells_by_ids(
+    db: &DatabaseConnection,
+    ids: &[Uuid],
+) -> Result<Vec<cell::Model>, DbErr> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    cell::Entity::find()
+        .filter(cell::Column::Id.is_in(ids.iter().copied()))
+        .all(db)
+        .await
 }
 
 pub async fn get_cells_by_notebook_id(

@@ -26,6 +26,8 @@ pub enum CreateConnectionError {
 pub enum CreateCellError {
     #[error("Notebook not found")]
     NotebookNotFound,
+    #[error("Notebook already holds the maximum of {0} cells")]
+    NotebookFull(usize),
     #[error("Failed to generate cell name: {0}")]
     Sopho(#[from] SophoError),
     #[error("Failed to save cell: {0}")]
@@ -64,6 +66,34 @@ pub enum GetDataCatalogError {
 pub enum TextToSqlError {
     #[error("Tables in pruned data catalog missing from functional role analysis: {0}")]
     MissingTablesInFunctionalRoleAnalysis(String),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum UpdateDashboardError {
+    #[error("Dashboard can hold at most {0} charts")]
+    TooManyCharts(usize),
+    #[error("{0}")]
+    Repository(#[from] sea_orm::DbErr),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ExecuteChartError {
+    #[error("Cell not found")]
+    CellNotFound,
+    #[error("Cell has no content")]
+    MissingContent,
+    #[error("Invalid chart content format")]
+    InvalidChartContent,
+    #[error("Source cell content is not SQL")]
+    SourceNotSql,
+    #[error("Source cell has no connection assigned")]
+    MissingConnection,
+    #[error("Chart has no {0} specified")]
+    MissingChartSetting(&'static str),
+    #[error("{0}")]
+    ExecuteSql(#[from] ExecuteSqlError),
+    #[error("Database error: {0}")]
+    Repository(#[from] sea_orm::DbErr),
 }
 
 #[derive(Error, Debug)]

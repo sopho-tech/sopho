@@ -323,6 +323,8 @@ button {
     var(--border-color-light);
   --border-primary-medium: var(--border-width-medium) var(--border-style-solid)
     var(--color-primary-200);
+  --border-warning: var(--border-width-medium) var(--border-style-solid)
+    var(--color-yellow-400);
   --border-background-thin: var(--border-width-thin) var(--border-style-solid)
     var(--border-color-background);
   --border-dark-thin: var(--border-width-thin) var(--border-style-solid)

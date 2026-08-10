@@ -17,6 +17,7 @@ pub async fn run_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
     assert!(schema_manager.has_table("user").await?);
     assert!(schema_manager.has_table("notebook").await?);
     assert!(schema_manager.has_table("cell").await?);
+    assert!(schema_manager.has_table("ai_summary").await?);
     Ok(())
 }
 

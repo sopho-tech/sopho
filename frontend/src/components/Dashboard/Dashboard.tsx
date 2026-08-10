@@ -155,7 +155,10 @@ export function Dashboard({ onNavigateToNotebook }: DashboardProps) {
       >
         {layout.map((layoutItem) => (
           <div key={layoutItem.i} className={styles.gridItem}>
-            <DashboardChart cellId={layoutItem.i} />
+            <DashboardChart
+              cellId={layoutItem.i}
+              dashboardId={dashboardQuery.data?.id ?? ""}
+            />
           </div>
         ))}
       </ReactGridLayout>

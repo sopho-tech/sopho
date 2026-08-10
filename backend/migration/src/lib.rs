@@ -15,6 +15,7 @@ mod m20250510_000001_create_cell_table;
 mod m20251210_000001_create_canvas_table;
 mod m20260516_000001_create_ai_configuration_table;
 mod m20260520_000001_create_suggested_question_table;
+mod m20260810_000001_create_ai_summary_table;
 
 pub struct Migrator;
 
@@ -36,6 +37,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250317_000002_create_conversation_message_content_table::Migration),
             Box::new(m20260516_000001_create_ai_configuration_table::Migration),
             Box::new(m20260520_000001_create_suggested_question_table::Migration),
+            Box::new(m20260810_000001_create_ai_summary_table::Migration),
         ]
     }
 }

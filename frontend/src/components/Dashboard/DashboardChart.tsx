@@ -18,6 +18,7 @@ import {
 } from "../Notebook/Cell/dto";
 import {
   BannerSlim,
+  Box,
   Flex,
   Heading,
   Icon,
@@ -25,10 +26,24 @@ import {
 } from "src/components/design-system";
 import { validateMetricChartData } from "src/components/Chart/MetricChart/utils";
 import { useStore, DashboardMode } from "src/store";
+import { useAiConfiguration } from "src/api/ai_configuration";
+import {
+  useChartSummary,
+  useGenerateChartSummary,
+  useUpdateChartPrompt,
+} from "src/api/ai_summary";
+import { ChartSummary } from "src/components/Dashboard/ChartSummary";
+import { SummaryPromptControl } from "src/components/Dashboard/SummaryPrompt";
 import styles from "src/components/Dashboard/Dashboard.module.css";
+
+const REFRESH_TOOLTIP = {
+  text: "refresh chart",
+  direction: "top",
+} as const;
 
 type DashboardChartProps = {
   cellId: string;
+  dashboardId: string;
 };
 
 function ChartRenderer({
@@ -118,7 +133,7 @@ function ChartRenderer({
   return null;
 }
 
-function DashboardChartWithQuery({ cellId }: DashboardChartProps) {
+function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
   const cellQuery = useCell(cellId);
   const executeCellMutation = useExecuteCell();
   const { data: output } = useCellExecutionResult(cellId);
@@ -128,6 +143,23 @@ function DashboardChartWithQuery({ cellId }: DashboardChartProps) {
   const getLayout = useStore((state) => state.dashboard.getLayout);
   const setLayout = useStore((state) => state.dashboard.setLayout);
   const isEditing = mode === DashboardMode.EDITING;
+  const { data: aiConfiguration } = useAiConfiguration();
+  const { data: summary } = useChartSummary(dashboardId, cellId);
+  const { mutate: generateSummary, isPending } =
+    useGenerateChartSummary(dashboardId);
+  const { mutate: savePrompt, isPending: isSavingPrompt } = useUpdateChartPrompt(
+    dashboardId,
+    cellId
+  );
+  const isAiConfigured = aiConfiguration?.status === "live";
+  const isSummarizing = summary?.status === "GENERATING" || isPending;
+
+  const handleSummarize = useCallback(() => {
+    if (isSummarizing) {
+      return;
+    }
+    generateSummary(cellId);
+  }, [cellId, isSummarizing, generateSummary]);
 
   useEffect(() => {
     executeCellMutation.mutate(cellId);
@@ -150,6 +182,8 @@ function DashboardChartWithQuery({ cellId }: DashboardChartProps) {
     executeCellMutation.mutate(cellId);
   }, [cellId, executeCellMutation.mutate]);
 
+  const revealChrome = !isSummarizing && !isEditing;
+
   return (
     <Flex
       height="100%"
@@ -162,23 +196,51 @@ function DashboardChartWithQuery({ cellId }: DashboardChartProps) {
       paddingY="md"
       gap="sm"
       overflow="hidden"
+      revealChildrenOnHover
     >
-      <Flex direction="row" justifyContent="space-between">
-        <Heading
-          accessbilityLevel={3}
-          weight="semibold"
-          size="sm"
-          textColor="subtle"
+      <Flex direction="row" justifyContent="space-between" gap="sm">
+        <Flex direction="row" gap="xs" alignItems="center" overflow="hidden">
+          <Heading
+            accessbilityLevel={3}
+            weight="semibold"
+            size="sm"
+            textColor="subtle"
+          >
+            {cellQuery?.data?.name}
+          </Heading>
+          {isAiConfigured && summary && (
+            <Box display="flex" revealOnHover={revealChrome}>
+              <ChartSummary summary={summary} />
+            </Box>
+          )}
+        </Flex>
+        <Flex
+          direction="row"
+          gap="xs"
+          alignItems="center"
+          revealOnHover={revealChrome}
         >
-          {cellQuery?.data?.name}
-        </Heading>
-        <Flex direction="row" gap="xs">
+          {isAiConfigured && (
+            <SummaryPromptControl
+              iconType="sparkles"
+              actionLabel="Summarise chart"
+              dialogTitle="Chart summary prompt"
+              dialogDescription="Shape how this chart is described. Leave it empty to use the default style."
+              userPrompt={summary?.user_prompt ?? null}
+              busy={isSummarizing}
+              isSaving={isSavingPrompt}
+              size="sm"
+              onGenerate={handleSummarize}
+              onSavePrompt={savePrompt}
+            />
+          )}
           <IconButton
             type="refresh"
             backgroundColor="default"
             iconColor="grey"
             onClick={handleRefresh}
             iconSize="md"
+            tooltip={REFRESH_TOOLTIP}
           />
           {isEditing && (
             <>
@@ -219,9 +281,9 @@ function DashboardChartWithQuery({ cellId }: DashboardChartProps) {
   );
 }
 
-export function DashboardChart({ cellId }: DashboardChartProps) {
+export function DashboardChart({ cellId, dashboardId }: DashboardChartProps) {
   if (cellId.startsWith("_")) {
     return null;
   }
-  return <DashboardChartWithQuery cellId={cellId} />;
+  return <DashboardChartWithQuery cellId={cellId} dashboardId={dashboardId} />;
 }

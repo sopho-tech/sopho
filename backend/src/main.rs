@@ -2,6 +2,7 @@
 
 mod ai;
 mod ai_configuration;
+mod ai_summary;
 mod authentication;
 mod canvas;
 mod cell;
@@ -145,6 +146,13 @@ async fn main() {
                     middlewares::auth_middleware_fn,
                 ),
             ),
+        )
+        .nest(
+            "/api/v1/ai_summary",
+            ai_summary::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
+                app_state.clone(),
+                middlewares::auth_middleware_fn,
+            )),
         )
         .fallback_service(static_files_service)
         .layer(middleware::from_fn(move |req: Request, next: Next| {

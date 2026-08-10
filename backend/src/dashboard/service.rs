@@ -1,3 +1,5 @@
+use crate::ai_summary::service as ai_summary_service;
+use crate::common::errors::UpdateDashboardError;
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::dashboard::constants;
@@ -110,6 +112,21 @@ pub async fn create_dashboard_transaction(
     repository::save_dashboard_transaction(txn, dashboard_entity).await
 }
 
+pub async fn get_dashboard_entity(
+    app_state: &AppState,
+    id: Uuid,
+) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
+    repository::get_dashboard(&app_state.database_connection, id).await
+}
+
+pub fn dashboard_chart_cell_ids(dashboard: &entity::dashboard::Model) -> Vec<Uuid> {
+    Layout::from_json(dashboard.layout.clone())
+        .unwrap_or_default()
+        .iter()
+        .map(Layout::cell_id)
+        .collect()
+}
+
 pub async fn get_dashboard_by_canvas_id_entity(
     app_state: &AppState,
     canvas_id: Uuid,
@@ -128,8 +145,16 @@ pub async fn execute_update_dashboard(
     app_state: &AppState,
     dashboard_id: Uuid,
     payload: dto::DashboardDto,
-) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
-    repository::update_dashboard(&app_state.database_connection, dashboard_id, payload).await
+) -> Result<entity::dashboard::Model, UpdateDashboardError> {
+    let chart_count = payload.layout.as_ref().map_or(0, Vec::len);
+    if chart_count > constants::MAX_CHARTS_PER_DASHBOARD {
+        return Err(UpdateDashboardError::TooManyCharts(
+            constants::MAX_CHARTS_PER_DASHBOARD,
+        ));
+    }
+    repository::update_dashboard(&app_state.database_connection, dashboard_id, payload)
+        .await
+        .map_err(UpdateDashboardError::Repository)
 }
 
 pub struct DashboardChartRequest {
@@ -199,6 +224,13 @@ pub async fn append_dashboard_charts_transaction(
         ));
     }
 
+    if layout.len() > constants::MAX_CHARTS_PER_DASHBOARD {
+        return Err(sea_orm::DbErr::Custom(format!(
+            "dashboard can hold at most {} charts",
+            constants::MAX_CHARTS_PER_DASHBOARD
+        )));
+    }
+
     let count = layout.len() as i32;
     let layout = (!layout.is_empty()).then_some(layout);
     repository::update_dashboard_layout_transaction(txn, dashboard, layout).await?;
@@ -209,7 +241,13 @@ pub async fn delete_dashboard_transaction(
     txn: &DatabaseTransaction,
     id: Uuid,
 ) -> Result<(), sea_orm::DbErr> {
-    repository::delete_dashboard_transaction(txn, id).await
+    let chart_cell_ids = match repository::get_dashboard_transaction(txn, id).await {
+        Ok(dashboard) => dashboard_chart_cell_ids(&dashboard),
+        Err(_) => Vec::new(),
+    };
+    repository::delete_dashboard_transaction(txn, id).await?;
+    ai_summary_service::delete_dashboard_summary(txn, id).await?;
+    ai_summary_service::delete_chart_summaries(txn, &chart_cell_ids).await
 }
 
 pub async fn update_dashboard(
@@ -223,16 +261,20 @@ pub async fn update_dashboard(
             let response_dto = dto::DashboardDto::from(dashboard);
             (StatusCode::OK, axum::Json(serde_json::json!(response_dto)))
         }
-        Err(e) => match e {
-            sea_orm::DbErr::RecordNotFound(_) => (
-                StatusCode::NOT_FOUND,
-                axum::Json(serde_json::json!({ "error": "Dashboard not found" })),
-            ),
-            _ => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            ),
-        },
+        Err(UpdateDashboardError::TooManyCharts(max)) => (
+            StatusCode::PRECONDITION_FAILED,
+            axum::Json(serde_json::json!({
+                "error": format!("Dashboard can hold at most {} charts", max)
+            })),
+        ),
+        Err(UpdateDashboardError::Repository(sea_orm::DbErr::RecordNotFound(_))) => (
+            StatusCode::NOT_FOUND,
+            axum::Json(serde_json::json!({ "error": "Dashboard not found" })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        ),
     }
 }
 

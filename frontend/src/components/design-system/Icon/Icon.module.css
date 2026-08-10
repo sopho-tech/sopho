@@ -3,6 +3,30 @@
   max-width: none;
 }
 
+.pulse {
+  transform-origin: center;
+  animation: iconPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+    opacity: 0.55;
+  }
+}
+
 .accent {
   color: var(--color-primary-500);
 }

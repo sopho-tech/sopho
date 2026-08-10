@@ -7,7 +7,9 @@ use crate::cell::constants::ChartOrientation;
 use crate::cell::constants::ChartType;
 use crate::cell::constants::MetricFormat;
 use crate::cell::constants::SortOrder;
+use crate::common::errors::ExecuteChartError;
 use crate::common::errors::SophoError;
+use crate::database::constants::QueryResult;
 use crate::entity;
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
@@ -43,6 +45,32 @@ impl ChartContent {
             ChartContent::Metric(_) => ChartType::Metric,
         }
     }
+
+    pub fn field_names(&self) -> Vec<String> {
+        match self {
+            ChartContent::Bar(c) | ChartContent::Line(c) => {
+                vec![c.x_axis.clone(), c.y_axis.clone()]
+            }
+            ChartContent::Pie(c) => vec![c.category.clone(), c.value.clone()],
+            ChartContent::Metric(_) => Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ChartExecution {
+    pub cell_id: Uuid,
+    pub chart_name: String,
+    pub chart_type: String,
+    pub field_names: Vec<String>,
+    pub result: QueryResult,
+}
+
+#[derive(Debug)]
+pub struct ChartExecutionOutcome {
+    pub cell_id: Uuid,
+    pub chart_name: String,
+    pub result: Result<ChartExecution, ExecuteChartError>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

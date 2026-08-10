@@ -18,7 +18,9 @@ pub enum ModelRole {
 #[strum(serialize_all = "snake_case")]
 pub enum AgentName {
     CanvasGenerationAgent,
+    ChartSummaryAgent,
     ConversationNameAgent,
+    DashboardSummaryAgent,
     LivenessCheckAgent,
     DataCatalogDeletionAgent,
     DataCatalogSelectionAgent,

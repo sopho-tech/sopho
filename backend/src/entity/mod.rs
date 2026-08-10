@@ -3,9 +3,9 @@
 pub mod prelude;
 
 pub mod ai_configuration;
+pub mod ai_summary;
 pub mod canvas;
 pub mod cell;
-pub mod chart;
 pub mod configuration;
 pub mod connection;
 pub mod conversation;
