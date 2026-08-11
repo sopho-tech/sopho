@@ -6,7 +6,8 @@ import { useConnections } from "src/api/connection";
 import { Select } from "src/components/design-system/Select";
 import { useUpdateCell, useCell, useClearCellOutput } from "src/api/cell";
 import { useCallback, useEffect, useState } from "react";
-import { useHandleExecuteCell } from "src/components/Notebook/Cell";
+import { useHandleRunCell } from "src/components/Notebook/Cell";
+import { getSelectedText } from "src/components/Notebook/CellEditor/editorRegistry";
 import {
   useExecutionPhase,
   ExecutionPhase,
@@ -19,6 +20,17 @@ import {
   getShortcutDisplayString,
 } from "src/utils/keyboard_shortcuts";
 
+function ExecuteTooltipContent({ cellId }: { cellId: string }) {
+  return (
+    <Flex direction="row" alignItems="center" gap="md">
+      <span>{getSelectedText(cellId) ? "Run selection" : "Execute cell"}</span>
+      <Kbd>
+        {getShortcutDisplayString(KEYBOARD_SHORTCUTS.EXECUTE_NOTEBOOK_CELL)}
+      </Kbd>
+    </Flex>
+  );
+}
+
 export function CellToolbar({ cellId }: { cellId: string }) {
   const clearCellOutput = useClearCellOutput();
   const query = useConnections();
@@ -30,7 +42,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
   const [initialValue, setInitialValue] = useState<
     { label: string; value: string } | undefined
   >(undefined);
-  const handleExecuteCell = useHandleExecuteCell();
+  const handleRunCell = useHandleRunCell();
   const { isRunning, phase, startedAt } = useExecutionPhase(cellId);
   const showElapsed = isAtLeast(phase, ExecutionPhase.EXTENDED);
 
@@ -86,8 +98,8 @@ export function CellToolbar({ cellId }: { cellId: string }) {
   );
 
   const handleExecute = useCallback(() => {
-    handleExecuteCell(cellId);
-  }, [cellId, handleExecuteCell]);
+    handleRunCell(cellId);
+  }, [cellId, handleRunCell]);
 
   const handleClearOutput = useCallback(() => {
     clearCellOutput(cellId);
@@ -167,16 +179,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
                 iconColor="green"
                 onClick={handleExecute}
                 tooltip={{
-                  content: (
-                    <Flex direction="row" alignItems="center" gap="md">
-                      <span>Execute cell</span>
-                      <Kbd>
-                        {getShortcutDisplayString(
-                          KEYBOARD_SHORTCUTS.EXECUTE_NOTEBOOK_CELL
-                        )}
-                      </Kbd>
-                    </Flex>
-                  ),
+                  content: <ExecuteTooltipContent cellId={cellId} />,
                 }}
               />
             )}

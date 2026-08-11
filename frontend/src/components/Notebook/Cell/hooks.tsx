@@ -1,65 +1,100 @@
 import { useCallback } from "react";
 import { useExecuteCell, useExecuteCellPreview } from "src/api/cell";
-import { ExecutionState } from "src/components/Notebook/Cell/dto";
+import { CellType, ExecutionState } from "src/components/Notebook/Cell/dto";
+import { getSelectedText } from "src/components/Notebook/CellEditor/editorRegistry";
 import { useStore } from "src/store";
 
-export function useHandleExecuteCell() {
-  const { mutate } = useExecuteCell();
+type ExecutionCallback = (() => void) | null | undefined;
+
+function useStartCellExecution() {
   const setExecutionState = useStore((state) => state.cell.setExecutionState);
 
   return useCallback(
     (
       cellId: string,
-      onSuccessCallback: (() => void) | null = null,
-      onErrorCallback: (() => void) | null = null
+      onSuccessCallback: ExecutionCallback,
+      onErrorCallback: ExecutionCallback
     ) => {
       setExecutionState(cellId, ExecutionState.RUNNING);
-      mutate(cellId, {
+      return {
         onSuccess: () => {
           setExecutionState(cellId, ExecutionState.COMPLETED);
-          if (onSuccessCallback) {
-            onSuccessCallback();
-          }
+          onSuccessCallback?.();
         },
         onError: () => {
           setExecutionState(cellId, ExecutionState.FAILED);
-          if (onErrorCallback) {
-            onErrorCallback();
-          }
+          onErrorCallback?.();
         },
-      });
+      };
     },
-    [mutate, setExecutionState]
+    [setExecutionState]
+  );
+}
+
+export function useHandleExecuteCell() {
+  const { mutate } = useExecuteCell();
+  const startCellExecution = useStartCellExecution();
+
+  return useCallback(
+    (
+      cellId: string,
+      onSuccessCallback: ExecutionCallback = null,
+      onErrorCallback: ExecutionCallback = null
+    ) => {
+      mutate(
+        cellId,
+        startCellExecution(cellId, onSuccessCallback, onErrorCallback)
+      );
+    },
+    [mutate, startCellExecution]
   );
 }
 
 export function useHandleExecuteCellPreview() {
   const { mutate } = useExecuteCellPreview();
-  const setExecutionState = useStore((state) => state.cell.setExecutionState);
+  const startCellExecution = useStartCellExecution();
 
   return useCallback(
     (
       cellId: string,
       content: string,
       cellType: string,
-      onSuccessCallback?: () => void,
-      onErrorCallback?: () => void
+      onSuccessCallback?: ExecutionCallback,
+      onErrorCallback?: ExecutionCallback
     ) => {
-      setExecutionState(cellId, ExecutionState.RUNNING);
       mutate(
         { cellId, content, cellType },
-        {
-          onSuccess: () => {
-            setExecutionState(cellId, ExecutionState.COMPLETED);
-            onSuccessCallback?.();
-          },
-          onError: () => {
-            setExecutionState(cellId, ExecutionState.FAILED);
-            onErrorCallback?.();
-          },
-        }
+        startCellExecution(cellId, onSuccessCallback, onErrorCallback)
       );
     },
-    [mutate, setExecutionState]
+    [mutate, startCellExecution]
+  );
+}
+
+export function useHandleRunCell() {
+  const handleExecuteCell = useHandleExecuteCell();
+  const handleExecuteCellPreview = useHandleExecuteCellPreview();
+
+  return useCallback(
+    (
+      cellId: string,
+      onSuccessCallback: ExecutionCallback = null,
+      onErrorCallback: ExecutionCallback = null
+    ) => {
+      const selectedText = getSelectedText(cellId);
+      if (!selectedText) {
+        handleExecuteCell(cellId, onSuccessCallback, onErrorCallback);
+        return;
+      }
+
+      handleExecuteCellPreview(
+        cellId,
+        selectedText,
+        CellType.SQL,
+        onSuccessCallback,
+        onErrorCallback
+      );
+    },
+    [handleExecuteCell, handleExecuteCellPreview]
   );
 }

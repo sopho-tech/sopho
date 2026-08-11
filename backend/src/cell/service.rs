@@ -720,14 +720,7 @@ pub async fn execute_cell_preview(
         CellType::Sql => {
             let connection_id = match cell.connection_id {
                 Some(id) => id,
-                None => {
-                    return (
-                        StatusCode::PRECONDITION_FAILED,
-                        axum::Json(
-                            serde_json::json!({ "error": "Cell has no connection assigned" }),
-                        ),
-                    );
-                }
+                None => return missing_connection_response(),
             };
             let connection = match fetch_connection(&app_state, connection_id).await {
                 Ok(conn) => conn,
@@ -777,6 +770,17 @@ fn get_database_connection_error_response(
     }
 }
 
+fn missing_connection_response() -> (http::StatusCode, axum::Json<JsonValue>) {
+    (
+        StatusCode::PRECONDITION_FAILED,
+        axum::Json(serde_json::json!({
+            "status": StatusCode::PRECONDITION_FAILED.as_u16(),
+            "code": codes::MISSING_PREREQUISITES.as_str(),
+            "message": "Choose a connection"
+        })),
+    )
+}
+
 async fn execute_sql_with_query(
     connection: &entity::connection::Model,
     query: &str,
@@ -795,16 +799,7 @@ async fn execute_sql_cell(
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
     let connection_id = match cell.connection_id {
         Some(id) => id,
-        None => {
-            return (
-                StatusCode::PRECONDITION_FAILED,
-                axum::Json(serde_json::json!({
-                    "status": StatusCode::PRECONDITION_FAILED.as_u16(),
-                    "code": codes::MISSING_PREREQUISITES.as_str(),
-                    "message": "Choose a connection"
-                })),
-            );
-        }
+        None => return missing_connection_response(),
     };
     let connection = match fetch_connection(app_state, connection_id).await {
         Ok(conn) => conn,
