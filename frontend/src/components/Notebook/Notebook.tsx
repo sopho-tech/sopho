@@ -6,7 +6,7 @@ import { useStore } from "src/store";
 import { useNotebook } from "src/api/notebook/queries";
 import { CellType, ExecutionState } from "src/components/Notebook/Cell/dto";
 import { KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
-import { useHandleExecuteCell } from "src/components/Notebook/Cell";
+import { useHandleRunCell } from "src/components/Notebook/Cell";
 import { useScrollToCellFromUrl } from "src/components/Notebook/hooks";
 import { useKeyboardShortcut } from "src/utils/keyboard_shortcuts/hooks";
 import { Flex } from "src/components/design-system/Flex/Flex";
@@ -25,7 +25,7 @@ export function Notebook() {
   const canvasId = params.id || "";
   const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);
   const query = useNotebook(activeNotebookId);
-  const handleExecuteCell = useHandleExecuteCell();
+  const handleRunCell = useHandleRunCell();
   const notebookRef = useRef<HTMLDivElement>(null);
   const createCellMutation = useCreateCell();
   const deleteCellMutation = useDeleteCell(
@@ -43,8 +43,8 @@ export function Notebook() {
 
   const handleExecute = useCallback(() => {
     const activeCellId = useStore.getState().notebook.activeCellId;
-    handleExecuteCell(activeCellId);
-  }, [handleExecuteCell]);
+    handleRunCell(activeCellId);
+  }, [handleRunCell]);
 
   const handleClearOutput = useCallback(() => {
     const activeCellId = useStore.getState().notebook.activeCellId;

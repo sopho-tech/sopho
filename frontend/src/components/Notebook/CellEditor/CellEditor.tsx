@@ -34,6 +34,10 @@ import CellEditorStyles from "src/components/Notebook/CellEditor/CellEditor.modu
 import { NOTEBOOK_CELL_KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
 import { KeyBinding } from "@codemirror/view";
 import { lintKeymap } from "@codemirror/lint";
+import {
+  registerEditorView,
+  unregisterEditorView,
+} from "src/components/Notebook/CellEditor/editorRegistry";
 import { theme } from "./theme";
 
 /**
@@ -141,10 +145,12 @@ export function CellEditor({ cellId }: { cellId: string }) {
         state: state,
       });
       viewRef.current = view;
+      registerEditorView(cellId, view);
     }
 
     return () => {
       if (viewRef.current) {
+        unregisterEditorView(cellId, viewRef.current);
         viewRef.current.destroy();
         viewRef.current = null;
       }

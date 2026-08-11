@@ -14,4 +14,5 @@ export {
 export {
   useHandleExecuteCell,
   useHandleExecuteCellPreview,
+  useHandleRunCell,
 } from "src/components/Notebook/Cell/hooks";
