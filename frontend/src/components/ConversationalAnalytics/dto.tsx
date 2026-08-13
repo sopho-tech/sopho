@@ -265,14 +265,24 @@ export type RouterDecisionData = {
   decision: RouterDecision;
 };
 
+export type VisualizationSeries = {
+  data_key: string;
+  name: string;
+  color_index: number;
+};
+
+export type Visualization =
+  | { chart_type: ChartType.BAR; x_axis: string; series: VisualizationSeries[] }
+  | {
+      chart_type: ChartType.LINE;
+      x_axis: string;
+      series: VisualizationSeries[];
+    }
+  | { chart_type: ChartType.PIE; category: string; value: string }
+  | { chart_type: ChartType.METRIC };
+
 export type RecommendedVisualizationData = {
-  visualization: {
-    chart_type: ChartType;
-    x_axis?: string;
-    y_axis?: string;
-    category?: string;
-    value?: string;
-  };
+  visualization: Visualization;
 };
 
 export type NarrationData = {
@@ -311,7 +321,7 @@ export type Artifact = {
 
 export type ChartRenderData = {
   queryData: ExecuteCellResponseDto;
-  visualization: RecommendedVisualizationData["visualization"];
+  visualization: Visualization;
 };
 
 export function extractFollowUpQuestions(

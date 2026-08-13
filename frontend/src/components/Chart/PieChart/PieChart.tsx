@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { PieChart as RechartsPieChart, Pie, Label } from "recharts";
 import {
-  getPrimaryColorShades,
+  getSeriesColor,
   ChartLegend,
   ChartTooltip,
   ChartContainer,
@@ -10,7 +10,6 @@ import {
 export type PieChartProps = {
   category: string;
   value: string;
-  dimensions: string[];
   data: object[];
   sortOrder?: string;
 };
@@ -37,11 +36,9 @@ function calculateTotal(data: object[], valueKey: string): number {
 }
 
 export const PieChart = ({ category, value, data }: PieChartProps) => {
-  const colors = getPrimaryColorShades(data.length);
-
   const dataWithColors = data.map((item, index) => ({
     ...item,
-    fill: colors[index],
+    fill: getSeriesColor(index),
   }));
 
   const totalCategoryValue = useMemo(
@@ -99,7 +96,7 @@ export const PieChart = ({ category, value, data }: PieChartProps) => {
           nameKey={category}
           paddingAngle={1}
         >
-          <Label position="center" fill="#666" content={renderLabelContent} />
+          <Label position="center" content={renderLabelContent} />
         </Pie>
         <ChartLegend position="right" />
         <ChartTooltip />

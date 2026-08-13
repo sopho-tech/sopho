@@ -1,8 +1,9 @@
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum CookieName {
     AccessToken,
     RefreshToken,
@@ -22,21 +23,6 @@ impl CookieName {
             "REFRESH_TOKEN" => Ok(CookieName::RefreshToken),
             _ => Err(format!("Invalid cookie type: {}", s)),
         }
-    }
-
-    pub fn deserialize_from_str<'de, D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Self::from_str(&s).map_err(serde::de::Error::custom)
-    }
-
-    pub fn serialize_to_str<S>(value: &Self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(value.as_str())
     }
 }
 

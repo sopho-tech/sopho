@@ -17,6 +17,7 @@ pub fn rows_per_chart(chart_count: usize) -> usize {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SummaryEntityType {
     Dashboard,
     ChartCell,
@@ -39,16 +40,10 @@ impl SummaryEntityType {
             _ => Err(format!("Invalid summary entity type: {}", s)),
         }
     }
-
-    pub fn serialize_to_str<S>(value: &Self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(&value.to_string())
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SummaryStatus {
     Idle,
     Generating,
@@ -76,12 +71,5 @@ impl SummaryStatus {
             "FAILED" => Ok(SummaryStatus::Failed),
             _ => Err(format!("Invalid summary status: {}", s)),
         }
-    }
-
-    pub fn serialize_to_str<S>(value: &Self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(&value.to_string())
     }
 }

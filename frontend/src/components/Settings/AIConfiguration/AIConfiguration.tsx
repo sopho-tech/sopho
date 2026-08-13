@@ -180,9 +180,9 @@ export function AIConfiguration() {
   );
 
   const handleSubmit = useCallback(
-    (formData: FormData) => {
-      const api_key = formData.get("api_key");
-      const provider = formData.get("provider");
+    (values: Record<string, unknown>) => {
+      const api_key = values.api_key;
+      const provider = values.provider;
       if (typeof api_key !== "string" || typeof provider !== "string") return;
       updateMutation.mutate(
         { provider: provider as Provider, api_key },

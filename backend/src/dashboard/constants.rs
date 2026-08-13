@@ -10,6 +10,7 @@ pub const DEFAULT_CHART_WIDTH: u16 = 4;
 pub const DEFAULT_CHART_HEIGHT: u16 = 3;
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DashboardStatus {
     Active,
     Inactive,
@@ -22,22 +23,6 @@ impl DashboardStatus {
             "INACTIVE" => Ok(DashboardStatus::Inactive),
             _ => Err(format!("Invalid dashboard status: {}", s)),
         }
-    }
-
-    pub fn deserialize_from_str<'de, D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Self::from_str(&s).map_err(serde::de::Error::custom)
-    }
-
-    pub fn serialize_to_str<S>(value: &Self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let s = value.to_string();
-        serializer.serialize_str(&s)
     }
 }
 

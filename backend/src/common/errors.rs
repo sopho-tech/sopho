@@ -90,6 +90,12 @@ pub enum ExecuteChartError {
     MissingConnection,
     #[error("Chart has no {0} specified")]
     MissingChartSetting(&'static str),
+    #[error("Chart has {count} series, more than the maximum of {max}")]
+    TooManySeries { count: usize, max: usize },
+    #[error("Chart has two series with the same output name: {0}")]
+    DuplicateSeriesAlias(String),
+    #[error("Chart references an invalid column name: {0}")]
+    InvalidIdentifier(String),
     #[error("{0}")]
     ExecuteSql(#[from] ExecuteSqlError),
     #[error("Database error: {0}")]

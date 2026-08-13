@@ -49,20 +49,31 @@ export function ChartCartesianGrid() {
   );
 }
 
-export type ChartXAxisProps = {
+export type ChartAxisType = "number" | "category";
+
+export type ChartSeriesSpec = {
   dataKey: string;
+  name: string;
+  colorIndex: number;
+};
+
+export type ChartXAxisProps = {
+  dataKey?: string;
   label?: string;
   showTicks?: boolean;
+  type?: ChartAxisType;
 };
 
 export function ChartXAxis({
   dataKey,
   label,
   showTicks = true,
+  type = "category",
 }: ChartXAxisProps) {
   return (
     <XAxis
       dataKey={dataKey}
+      type={type}
       stroke={getCSSVariable("--color-grey-600")}
       minTickGap={20}
       tick={showTicks}
@@ -74,13 +85,22 @@ export function ChartXAxis({
 }
 
 export type ChartYAxisProps = {
+  dataKey?: string;
   label?: string;
   showTicks?: boolean;
+  type?: ChartAxisType;
 };
 
-export function ChartYAxis({ label, showTicks = true }: ChartYAxisProps) {
+export function ChartYAxis({
+  dataKey,
+  label,
+  showTicks = true,
+  type = "number",
+}: ChartYAxisProps) {
   return (
     <YAxis
+      dataKey={dataKey}
+      type={type}
       stroke={getCSSVariable("--color-grey-600")}
       tick={showTicks}
       tickLine={showTicks}
@@ -90,12 +110,27 @@ export function ChartYAxis({ label, showTicks = true }: ChartYAxisProps) {
   );
 }
 
-export const CHART_MARGINS = {
+export const HORIZONTAL_CHART_MARGINS = {
   top: 10,
   right: 60,
   bottom: 50,
   left: 20,
 };
+
+export const VERTICAL_CHART_MARGINS = {
+  top: 10,
+  right: 60,
+  bottom: 50,
+  left: 60,
+};
+
+export type ChartOrientation = "HORIZONTAL" | "VERTICAL";
+
+export const getChartMargins = (orientation?: ChartOrientation) =>
+  orientation === "VERTICAL" ? VERTICAL_CHART_MARGINS : HORIZONTAL_CHART_MARGINS;
+
+export const getRechartsLayout = (orientation?: ChartOrientation) =>
+  orientation === "VERTICAL" ? ("vertical" as const) : ("horizontal" as const);
 
 export const TOOLTIP_STYLE = {
   border: "var(--border-default-medium)",
@@ -185,22 +220,20 @@ export const renderYAxisLabel = (yAxisTitle?: string): React.ReactNode => {
   );
 };
 
-export const getPrimaryColorShades = (count: number): string[] => {
-  const shades = [
-    "--color-primary-200",
-    "--color-primary-400",
-    "--color-primary-600",
-    "--color-primary-800",
-  ];
+const SERIES_COLOR_TOKENS = [
+  "--color-chart-1",
+  "--color-chart-2",
+  "--color-chart-3",
+  "--color-chart-4",
+  "--color-chart-5",
+  "--color-chart-6",
+];
 
-  const colors: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const shadeIndex = i % shades.length;
-    colors.push(getCSSVariable(shades[shadeIndex]));
-  }
+export const SERIES_COLOR_SLOTS = SERIES_COLOR_TOKENS.length;
 
-  return colors;
-};
+// Keyed by the series' own stored slot, so removing a series never repaints the rest.
+export const getSeriesColor = (colorIndex: number): string =>
+  getCSSVariable(SERIES_COLOR_TOKENS[colorIndex % SERIES_COLOR_SLOTS]);
 
 const CHART_TOOLTIP_PROPS: Partial<TooltipProps<ValueType, NameType>> = {
   content: renderToolTipContent,

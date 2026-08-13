@@ -6,10 +6,12 @@ import {
   PieChart,
   MetricChart,
   ChartType,
+  type ChartSeriesSpec,
 } from "src/components/Chart";
 import {
   type ChartRenderData,
-  type RecommendedVisualizationData,
+  type Visualization,
+  type VisualizationSeries,
 } from "src/components/ConversationalAnalytics/dto";
 import {
   useExecuteQuery,
@@ -21,14 +23,47 @@ type QueryResultChartProps = {
   chartData: ChartRenderData;
 };
 
+function toSeriesSpecs(series: VisualizationSeries[]): ChartSeriesSpec[] {
+  return series.map((entry) => ({
+    dataKey: entry.data_key,
+    name: entry.name,
+    colorIndex: entry.color_index,
+  }));
+}
+
+function renderChart(visualization: Visualization, data: object[]) {
+  switch (visualization.chart_type) {
+    case ChartType.BAR:
+      return (
+        <BarChart
+          xAxis={visualization.x_axis}
+          series={toSeriesSpecs(visualization.series)}
+          data={data}
+        />
+      );
+    case ChartType.LINE:
+      return (
+        <LineChart
+          xAxis={visualization.x_axis}
+          series={toSeriesSpecs(visualization.series)}
+          data={data}
+        />
+      );
+    case ChartType.PIE:
+      return (
+        <PieChart
+          category={visualization.category}
+          value={visualization.value}
+          data={data}
+        />
+      );
+    case ChartType.METRIC:
+      return <MetricChart data={data} />;
+  }
+}
+
 export function QueryResultChart({ chartData }: QueryResultChartProps) {
   const { queryData, visualization } = chartData;
-  const chartType = visualization.chart_type;
-
-  const dimensions = useMemo(
-    () => (queryData.columns ?? []).map((col) => col.column_name),
-    [queryData.columns],
-  );
 
   if (!queryData.data?.length) {
     return (
@@ -45,45 +80,11 @@ export function QueryResultChart({ chartData }: QueryResultChartProps) {
     );
   }
 
-  const data = queryData.data!;
-
-  const renderChart = () => {
-    switch (chartType) {
-      case ChartType.BAR:
-        return (
-          <BarChart
-            xAxis={visualization.x_axis ?? dimensions[0]}
-            yAxis={visualization.y_axis ?? dimensions[1]}
-            data={data}
-          />
-        );
-      case ChartType.LINE:
-        return (
-          <LineChart
-            xAxis={visualization.x_axis ?? dimensions[0]}
-            yAxis={visualization.y_axis ?? dimensions[1]}
-            data={data}
-          />
-        );
-      case ChartType.PIE:
-        return (
-          <PieChart
-            category={visualization.category ?? dimensions[0]}
-            value={visualization.value ?? dimensions[1]}
-            dimensions={dimensions}
-            data={data}
-          />
-        );
-      case ChartType.METRIC:
-        return <MetricChart data={data} />;
-      default:
-        return null;
-    }
-  };
-
   return (
     <Box className={styles.container}>
-      <Box className={styles.chartWrapper}>{renderChart()}</Box>
+      <Box className={styles.chartWrapper}>
+        {renderChart(visualization, queryData.data)}
+      </Box>
     </Box>
   );
 }
@@ -91,7 +92,7 @@ export function QueryResultChart({ chartData }: QueryResultChartProps) {
 type QueryResultChartContainerProps = {
   connectionId: string;
   sql: string;
-  visualization: RecommendedVisualizationData["visualization"];
+  visualization: Visualization;
 };
 
 export function QueryResultChartContainer({

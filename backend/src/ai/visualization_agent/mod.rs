@@ -19,13 +19,14 @@ pub async fn execute(
     channels
         .send_sse_only(Event::RecommendingVisualization)
         .await;
-    let visualization = recommend_visualization(
+    let recommendation = recommend_visualization(
         app_state,
         question,
         &query_result.columns,
         &query_result.data,
     )
     .await?;
+    let visualization = recommendation.resolved()?;
     info!(
         "visualization: {}",
         serde_json::to_string_pretty(&visualization).unwrap_or_default()

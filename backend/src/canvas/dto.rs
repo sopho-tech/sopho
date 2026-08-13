@@ -37,7 +37,6 @@ pub struct CanvasDto {
     pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
-    #[serde(serialize_with = "CanvasStatus::serialize_to_str")]
     pub status: CanvasStatus,
     pub created_at: DateTime<FixedOffset>,
     pub updated_at: DateTime<FixedOffset>,

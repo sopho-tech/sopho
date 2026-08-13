@@ -7,7 +7,6 @@ import { TextField } from "./TextField";
 import { SelectField } from "./SelectField";
 import { PasswordField } from "./PasswordField";
 import { FormLabel } from "./FormLabel";
-import { convertValuesToFormData } from "./utils/values";
 import { BannerSlim } from "../BannerSlim";
 import { revalidateLogic, useStore } from "@tanstack/react-form";
 import { getErrorSummary } from "./utils/errorSummary";
@@ -33,8 +32,12 @@ export const useFormCompoundContext = () => {
 type FormRootProps = {
   children: React.ReactNode;
   defaultValues?: Record<string, unknown>;
-  onSubmit: (formData: FormData) => void;
-  onChange?: (formData: FormData, fieldName: string, value: string) => void;
+  onSubmit?: (values: Record<string, unknown>) => void;
+  onChange?: (
+    fieldName: string,
+    value: string,
+    values: Record<string, unknown>
+  ) => void;
   className?: string;
   readonly?: boolean;
   submitOnEnter?: boolean;
@@ -52,10 +55,7 @@ const FormRoot = ({
   const form = useAppForm({
     defaultValues,
     onSubmit: ({ value }: { value: unknown }) => {
-      const formData = convertValuesToFormData(
-        value as Record<string, unknown>
-      );
-      onSubmit(formData);
+      onSubmit?.(value as Record<string, unknown>);
     },
     validationLogic: revalidateLogic({
       mode: "submit",
@@ -64,14 +64,15 @@ const FormRoot = ({
     ...(onChange && {
       listeners: {
         onChange: ({ formApi, fieldApi }) => {
-          const fieldName = fieldApi.name;
-          const fieldValue = fieldApi.state.value;
           const currentValues = (formApi.state.values || {}) as Record<
             string,
             unknown
           >;
-          const formData = convertValuesToFormData(currentValues);
-          onChange(formData, fieldName, String(fieldValue || ""));
+          onChange(
+            fieldApi.name,
+            String(fieldApi.state.value || ""),
+            currentValues
+          );
         },
       },
     }),
@@ -221,6 +222,41 @@ const FormField = ({
 
 FormField.displayName = "Form.Field";
 
+type FormFieldArrayApi = {
+  items: unknown[];
+  push: () => void;
+  remove: (index: number) => void;
+};
+
+type FormFieldArrayProps = {
+  name: string;
+  newItem: (items: unknown[]) => Record<string, unknown>;
+  children: (api: FormFieldArrayApi) => React.ReactNode;
+};
+
+const FormFieldArray = ({ name, newItem, children }: FormFieldArrayProps) => {
+  const { form } = useFormCompoundContext();
+
+  return (
+    <form.Field name={name as any} mode="array">
+      {(field: any) => {
+        const items = (field.state.value as unknown[]) ?? [];
+        return (
+          <>
+            {children({
+              items,
+              push: () => field.pushValue(newItem(items)),
+              remove: (index: number) => field.removeValue(index),
+            })}
+          </>
+        );
+      }}
+    </form.Field>
+  );
+};
+
+FormFieldArray.displayName = "Form.FieldArray";
+
 type FormSelectProps = {
   groupName?: string;
   placeholder?: string;
@@ -326,6 +362,7 @@ export const Form = Object.assign(FormRoot, {
   Input: FormInput,
   Label: FormLabelComponent,
   Field: FormField,
+  FieldArray: FormFieldArray,
   Select: FormSelect,
   Password: FormPassword,
   Actions: FormActions,

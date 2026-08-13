@@ -28,7 +28,7 @@ export function ConnectionEdit() {
     error: queryError,
   } = useConnection(id ?? "");
 
-  const onSubmitHandler = (formData: FormData) => {
+  const onSubmitHandler = (values: Record<string, unknown>) => {
     if (!connection) return;
     const payload = {
       id: connection.id,
@@ -36,14 +36,14 @@ export function ConnectionEdit() {
       created_at: connection.created_at,
       updated_at: connection.updated_at,
       status: connection.status,
-      name: formData.get("name") as string,
-      host: formData.get("host") as string,
-      port: formData.get("port") ? Number(formData.get("port")) : null,
-      database: formData.get("database") as string,
-      schema: (formData.get("schema") as string) || null,
-      username: formData.get("username") as string,
-      password: formData.get("password") as string,
-      description: (formData.get("description") as string) || null,
+      name: values.name as string,
+      host: values.host as string,
+      port: values.port ? Number(values.port) : null,
+      database: values.database as string,
+      schema: (values.schema as string) || null,
+      username: values.username as string,
+      password: values.password as string,
+      description: (values.description as string) || null,
     };
     updateMutation.mutate({ connectionId: connection.id, payload });
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);

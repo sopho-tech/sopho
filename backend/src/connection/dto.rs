@@ -49,7 +49,6 @@ pub struct CreateConnectionDto {
     pub database: String,
     pub schema: Option<String>,
     pub description: Option<String>,
-    #[serde(deserialize_with = "SourceType::deserialize_from_str")]
     pub source_type: SourceType,
 }
 
@@ -58,8 +57,6 @@ pub struct ConnectionDto {
     pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
-    #[serde(deserialize_with = "SourceType::deserialize_from_str")]
-    #[serde(serialize_with = "SourceType::serialize_to_str")]
     pub source_type: SourceType,
     pub database: String,
     pub host: String,
@@ -70,8 +67,6 @@ pub struct ConnectionDto {
     pub password: String,
     pub created_at: DateTime<FixedOffset>,
     pub updated_at: DateTime<FixedOffset>,
-    #[serde(deserialize_with = "ConnectionStatus::deserialize_from_str")]
-    #[serde(serialize_with = "ConnectionStatus::serialize_to_str")]
     pub status: ConnectionStatus,
 }
 

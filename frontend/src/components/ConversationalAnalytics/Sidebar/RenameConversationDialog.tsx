@@ -8,7 +8,7 @@ type RenameConversationDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onClose: () => void;
-  onSubmit: (formData: FormData) => void;
+  onSubmit: (values: Record<string, unknown>) => void;
 };
 
 export const RenameConversationDialog = ({

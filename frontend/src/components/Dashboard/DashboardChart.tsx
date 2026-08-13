@@ -12,7 +12,9 @@ import {
   LineChart,
   MetricChart,
   PieChart,
-} from "../Chart";
+  findMissingSeriesColumns,
+  toAxisChartProps,
+} from "src/components/Chart";
 import { getChartContent } from "../Notebook/Cell";
 import { useCallback, useEffect } from "react";
 import {
@@ -74,33 +76,37 @@ function ChartRenderer({
   const chartType = getChartType(chartContent);
   const dimensions = output.columns?.map((column) => column.column_name) ?? [];
 
-  if (chartType === ChartType.BAR) {
-    const barContent = chartContent as BarChartContent;
-    return (
+  if (chartType === ChartType.BAR || chartType === ChartType.LINE) {
+    const axisContent = chartContent as BarChartContent | LineChartContent;
+    const axisProps = toAxisChartProps(axisContent);
+    const missing = findMissingSeriesColumns(axisProps.series, dimensions);
+    if (missing.length > 0) {
+      return (
+        <Flex
+          alignItems="center"
+          justifyContent="center"
+          paddingX="lg"
+          paddingY="lg"
+          height="100%"
+        >
+          <BannerSlim
+            type="error"
+            message={`These series are not in the query result: ${missing.join(", ")}. Re-run the source cell or update the chart.`}
+          />
+        </Flex>
+      );
+    }
+    return chartType === ChartType.BAR ? (
       <BarChart
-        xAxis={barContent.x_axis}
-        yAxis={barContent.y_axis}
+        {...axisProps}
         data={output.data as object[]}
-        xAxisTitle={barContent.x_axis_title}
-        yAxisTitle={barContent.y_axis_title}
-        xAxisTickShow={barContent.x_axis_tick_show}
-        yAxisTickShow={barContent.y_axis_tick_show}
+        stacked={axisContent.bar_layout === "STACKED"}
       />
-    );
-  }
-
-  if (chartType === ChartType.LINE) {
-    const lineContent = chartContent as LineChartContent;
-    return (
+    ) : (
       <LineChart
-        xAxis={lineContent.x_axis}
-        yAxis={lineContent.y_axis}
+        {...axisProps}
         data={output.data as object[]}
-        xAxisTitle={lineContent.x_axis_title}
-        yAxisTitle={lineContent.y_axis_title}
-        showDots={lineContent.show_dots !== "HIDE"}
-        xAxisTickShow={lineContent.x_axis_tick_show}
-        yAxisTickShow={lineContent.y_axis_tick_show}
+        showDots={(axisContent as LineChartContent).show_dots !== "HIDE"}
       />
     );
   }
@@ -111,7 +117,6 @@ function ChartRenderer({
       <PieChart
         category={pieContent.category}
         value={pieContent.value}
-        dimensions={dimensions}
         data={output.data as object[]}
       />
     );

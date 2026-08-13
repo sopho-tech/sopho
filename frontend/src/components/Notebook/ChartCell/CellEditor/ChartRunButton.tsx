@@ -2,11 +2,10 @@ import {
   useHandleExecuteCellPreview,
   serializeChartContent,
 } from "src/components/Notebook/Cell";
-import { convertValuesToFormData } from "src/components/design-system/Form/utils/values";
 import { useFormCompoundContext } from "src/components/design-system/Form";
 import { CellType } from "src/components/Notebook/Cell/dto";
 import { ChartType } from "src/components/Chart";
-import { extractChartFormData } from "src/components/Notebook/ChartCell/CellEditor/utils";
+import { extractChartData } from "src/components/Notebook/ChartCell/CellEditor/utils";
 import { useCallback } from "react";
 import { Button } from "src/components/design-system/Button";
 import { useExecutionPhase } from "src/components/Notebook/Cell/useExecutionPhase";
@@ -27,8 +26,7 @@ export function ChartRunButton({
   const handleRun = useCallback(() => {
     if (!chartType) return;
     const values = (form.state.values ?? {}) as Record<string, unknown>;
-    const formData = convertValuesToFormData(values ?? {});
-    const content = extractChartFormData(chartType, formData);
+    const content = extractChartData(chartType, values);
     const serialized = serializeChartContent(content);
     handleExecuteCellPreview(cellId, serialized, CellType.CHART);
     setChartContent(cellId, content);

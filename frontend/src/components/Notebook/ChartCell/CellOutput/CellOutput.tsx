@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useCell, useCellExecutionResult } from "src/api/cell";
 import { useStore } from "src/store";
 import styles from "src/components/Notebook/ChartCell/CellOutput/CellOutput.module.css";
@@ -8,6 +7,8 @@ import {
   LineChart,
   MetricChart,
   PieChart,
+  findMissingSeriesColumns,
+  toAxisChartProps,
 } from "src/components/Chart";
 import cellStyles from "src/css/cell.module.css";
 import {
@@ -51,13 +52,6 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
   const cellQuery = useCell(chartContent?.cell_id ?? "");
 
   const executionData = output?.status === "success" ? output.data : null;
-  const pieDimensions = useMemo(
-    () =>
-      executionData?.columns?.map(
-        (col: { column_name: string }) => col.column_name
-      ) ?? [],
-    [executionData?.columns]
-  );
 
   function render() {
     if (output && output.status === "error") {
@@ -118,32 +112,40 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
       );
     }
     const chartData = executionData.data ?? [];
-    if (chartType === ChartType.BAR) {
-      const barChartContent = chartContent as BarChartContent;
-      return (
-        <BarChart
-          xAxis={barChartContent.x_axis}
-          yAxis={barChartContent.y_axis}
-          data={chartData}
-          xAxisTitle={barChartContent.x_axis_title}
-          yAxisTitle={barChartContent.y_axis_title}
-          xAxisTickShow={barChartContent.x_axis_tick_show}
-          yAxisTickShow={barChartContent.y_axis_tick_show}
-        />
+    if (chartType === ChartType.BAR || chartType === ChartType.LINE) {
+      const axisContent = chartContent as BarChartContent | LineChartContent;
+      const axisProps = toAxisChartProps(axisContent);
+      const missing = findMissingSeriesColumns(
+        axisProps.series,
+        executionData.columns?.map((column) => column.column_name) ?? []
       );
-    }
-    if (chartType === ChartType.LINE) {
-      const lineChartContent = chartContent as LineChartContent;
-      return (
-        <LineChart
-          xAxis={lineChartContent.x_axis}
-          yAxis={lineChartContent.y_axis}
+      if (missing.length > 0) {
+        return (
+          <Flex
+            alignItems="center"
+            justifyContent="center"
+            paddingX="lg"
+            paddingY="lg"
+            height="100%"
+          >
+            <BannerSlim
+              type="error"
+              message={`These series are not in the query result: ${missing.join(", ")}. Re-run the source cell or update the chart.`}
+            />
+          </Flex>
+        );
+      }
+      return chartType === ChartType.BAR ? (
+        <BarChart
+          {...axisProps}
           data={chartData}
-          xAxisTitle={lineChartContent.x_axis_title}
-          yAxisTitle={lineChartContent.y_axis_title}
-          showDots={lineChartContent.show_dots !== "HIDE"}
-          xAxisTickShow={lineChartContent.x_axis_tick_show}
-          yAxisTickShow={lineChartContent.y_axis_tick_show}
+          stacked={axisContent.bar_layout === "STACKED"}
+        />
+      ) : (
+        <LineChart
+          {...axisProps}
+          data={chartData}
+          showDots={(axisContent as LineChartContent).show_dots !== "HIDE"}
         />
       );
     }
@@ -153,7 +155,6 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
         <PieChart
           category={pieChartContent.category}
           value={pieChartContent.value}
-          dimensions={pieDimensions}
           data={chartData}
         />
       );

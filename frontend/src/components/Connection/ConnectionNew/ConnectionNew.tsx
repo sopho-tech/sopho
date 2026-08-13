@@ -29,17 +29,17 @@ export function ConnectionNew() {
     label: type.charAt(0) + type.slice(1).toLowerCase(),
   }));
 
-  const onSubmitHandler = (formData: FormData) => {
+  const onSubmitHandler = (values: Record<string, unknown>) => {
     const payload: CreateConnectionDto = {
-      name: formData.get("name") as string,
-      source_type: formData.get("source_type") as string,
-      host: formData.get("host") as string,
-      port: formData.get("port") ? Number(formData.get("port")) : null,
-      database: formData.get("database") as string,
-      schema: (formData.get("schema") as string) || null,
-      username: formData.get("username") as string,
-      password: formData.get("password") as string,
-      description: (formData.get("description") as string) || null,
+      name: values.name as string,
+      source_type: values.source_type as string,
+      host: values.host as string,
+      port: values.port ? Number(values.port) : null,
+      database: values.database as string,
+      schema: (values.schema as string) || null,
+      username: values.username as string,
+      password: values.password as string,
+      description: (values.description as string) || null,
       status: StatusType.Active,
     };
     createMutation.mutate(payload);
@@ -47,7 +47,7 @@ export function ConnectionNew() {
     navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
   };
 
-  const onChangeHandler = (_: FormData, fieldName: string, value: string) => {
+  const onChangeHandler = (fieldName: string, value: string) => {
     if (fieldName === "source_type") {
       setSourceType(value);
     }

@@ -17,10 +17,6 @@ pub struct ConversationDto {
     pub id: Uuid,
     pub connection_id: Uuid,
     pub name: String,
-    #[serde(
-        deserialize_with = "ConversationStatus::deserialize_from_str",
-        serialize_with = "ConversationStatus::serialize_to_str"
-    )]
     pub status: ConversationStatus,
     pub created_at: DateTime<FixedOffset>,
     pub updated_at: DateTime<FixedOffset>,

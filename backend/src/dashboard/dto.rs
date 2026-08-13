@@ -65,8 +65,6 @@ pub struct DashboardDto {
     pub name: Option<String>,
     pub description: Option<String>,
     pub layout: Option<Vec<Layout>>,
-    #[serde(deserialize_with = "DashboardStatus::deserialize_from_str")]
-    #[serde(serialize_with = "DashboardStatus::serialize_to_str")]
     pub status: DashboardStatus,
 }
 

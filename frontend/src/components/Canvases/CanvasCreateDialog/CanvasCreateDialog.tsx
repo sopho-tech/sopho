@@ -54,10 +54,10 @@ export function CanvasCreateDialog() {
   });
 
   const onSubmitCallback = useCallback(
-    (formData: FormData) => {
+    (values: Record<string, unknown>) => {
       const canvas: Omit<CanvasDto, "id"> = {
-        name: formData.get("name") as string,
-        description: formData.get("description") as string,
+        name: values.name as string,
+        description: values.description as string,
         status: null,
         created_at: null,
         updated_at: null,

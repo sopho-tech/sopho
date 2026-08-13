@@ -53,9 +53,9 @@ export function useRenameDialog() {
   }, []);
 
   const submit = useCallback(
-    (formData: FormData) => {
+    (values: Record<string, unknown>) => {
       if (!renameTarget) return;
-      const name = (formData.get("name") as string)?.trim() ?? "";
+      const name = (values.name as string)?.trim() ?? "";
       updateConversation.mutate(
         { ...renameTarget, name },
         { onSuccess: () => setOpen(false) },

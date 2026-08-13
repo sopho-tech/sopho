@@ -12,11 +12,11 @@ import { getIconForDataType } from "src/utils/column_utils";
 
 export function useSourceCellExecution(
   _cellId: string,
-  chartContent: ChartContent | null
+  chartContent: ChartContent | null,
 ) {
   const handleExecuteCell = useHandleExecuteCell();
   const [sourceCellId, setSourceCellId] = useState<string | null>(
-    chartContent?.cell_id || null
+    chartContent?.cell_id || null,
   );
 
   const executeSourceCell = useCallback(() => {
@@ -46,7 +46,7 @@ export function useSourceCellExecution(
 
 export function useChartCellAutoLoad(
   cellId: string,
-  initialChartContent: ChartContent | null
+  initialChartContent: ChartContent | null,
 ) {
   const handleExecuteCell = useHandleExecuteCell();
   const setChartContent = useStore((state) => state.cell.setChartContent);
@@ -68,7 +68,10 @@ export function useChartCellAutoLoad(
   }, [cellId, initialChartContent?.cell_id, handleExecuteCell]);
 }
 
-export function useFormOptions(sourceCellId: string | null) {
+export function useFormOptions(
+  sourceCellId: string | null,
+  series: Array<{ column?: string; label?: string }> = [],
+) {
   const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);
   const notebookQuery = useNotebook(activeNotebookId);
   const { data: sourceCellOutput } = useCellExecutionResult(sourceCellId ?? "");
@@ -85,7 +88,7 @@ export function useFormOptions(sourceCellId: string | null) {
           value: cell.id,
           label: cell.name || `Cell ${cell.display_order}`,
         })) || [],
-    [notebookQuery.data?.cells]
+    [notebookQuery.data?.cells],
   );
 
   const chartOptions = useMemo(
@@ -94,7 +97,7 @@ export function useFormOptions(sourceCellId: string | null) {
         value,
         label: key.charAt(0) + key.slice(1).toLowerCase(),
       })),
-    []
+    [],
   );
 
   const yAxisAggregateFunctionsOptions = useMemo(
@@ -103,7 +106,7 @@ export function useFormOptions(sourceCellId: string | null) {
         value,
         label: key.charAt(0) + key.slice(1).toLowerCase(),
       })),
-    []
+    [],
   );
 
   const xAxisColumnOptions = useMemo(
@@ -125,7 +128,7 @@ export function useFormOptions(sourceCellId: string | null) {
             textValue: column.column_name,
           }))
         : [],
-    [columns]
+    [columns],
   );
 
   const yAxisColumnOptions = useMemo(
@@ -147,7 +150,18 @@ export function useFormOptions(sourceCellId: string | null) {
             textValue: column.column_name,
           }))
         : [],
-    [columns]
+    [columns],
+  );
+
+  const seriesSortOptions = useMemo(
+    () =>
+      series
+        .filter((entry) => Boolean(entry.column))
+        .map((entry) => ({
+          value: entry.column as string,
+          label: entry.label || (entry.column as string),
+        })),
+    [series],
   );
 
   return {
@@ -156,6 +170,7 @@ export function useFormOptions(sourceCellId: string | null) {
     xAxisColumnOptions,
     yAxisColumnOptions,
     yAxisAggregateFunctionsOptions,
+    seriesSortOptions,
     isAwaitingSourceColumns: sourceCellId != null && sourceCellOutput == null,
   };
 }

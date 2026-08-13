@@ -45,10 +45,11 @@ When creating a NEW canvas, every entry must be `create`, you must return at lea
 
 CHART SPEC (for any `create` or `update` that sets `chart`):
 - `chart_type` must be one of: BAR, LINE, PIE, METRIC.
-- BAR and LINE REQUIRE both `x_axis` and `y_axis`. PIE REQUIRES both `category` and `value` — `category` is the slice label, `value` is the slice size, and PIE uses neither `x_axis` nor `y_axis`. METRIC needs none of them and renders the first value of the first row.
-- Setting only one of the required pair is the most common mistake. A chart missing either of its two required fields is discarded and the cell is created without a chart, so fill in both.
-- All axis and category/value names MUST be column aliases produced by that cell's SQL.
-- For BAR, LINE and PIE you MUST also set `aggregate_function`, one of: MAX, MIN, SUM, COUNT, AVG. It is applied when grouping rows by `x_axis` (or `category`), so when the SQL already returns one row per group use MAX.
+- BAR and LINE REQUIRE `x_axis` plus `series`, a list of 1 to 6 entries, each with a `column` and optionally its own `aggregate_function` and a `label` for the legend. PIE REQUIRES both `category` and `value` — `category` is the slice label, `value` is the slice size, and PIE uses neither `x_axis` nor `series`. METRIC needs none of them and renders the first value of the first row.
+- Setting only one of the required pair is the most common mistake. A chart missing either of its required fields is discarded and the cell is created without a chart, so fill in both.
+- Add a second series ONLY when the columns share a unit AND a comparable scale, e.g. revenue vs profit. Never combine different units or wildly different magnitudes — the smaller series flattens onto the axis and reads as a bug. Never use the same column twice in one chart. Default to ONE series when unsure.
+- All axis, series and category/value names MUST be column aliases produced by that cell's SQL.
+- An aggregate function is one of: MAX, MIN, SUM, COUNT, AVG. It is applied when grouping rows by `x_axis` (or `category`), so when the SQL already returns one row per group use MAX. For BAR and LINE, EVERY entry in `series` MUST set its own `aggregate_function` — there is no chart-level default, and a series without one discards the whole chart. For PIE, set `aggregate_function` on the chart.
 
 DASHBOARD LAYOUT. Charts you add are appended to the canvas's dashboard, below whatever is already on it, on a 12-column grid where one row is 100px tall. Set `grid_width` (4-12 columns) and `grid_height` (3-6 rows) per chart. The charts you add are packed left to right in the order you list them and wrap to the next row when they no longer fit, so choose widths that add up to exactly 12 per row and avoid leaving gaps.
 
