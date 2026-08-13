@@ -31,6 +31,7 @@ export function DataTable<T>({
   showRowsPerPage = true,
   enableColumnResizing = true,
   enableRowDragging = false,
+  showRowNumbers = false,
   getRowId,
   emptyMessage = "No data",
   emptySearchMessage = "No results match your search",
@@ -42,6 +43,7 @@ export function DataTable<T>({
     paginationConfig,
     enableColumnResizing,
     enableRowDragging,
+    showRowNumbers,
     getRowId,
   });
 

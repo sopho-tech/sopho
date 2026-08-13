@@ -50,6 +50,7 @@ export type DataTableProps<T> = {
   showRowsPerPage?: boolean;
   enableColumnResizing?: boolean;
   enableRowDragging?: boolean;
+  showRowNumbers?: boolean;
   getRowId?: (row: T) => string;
   emptyMessage?: string;
   emptySearchMessage?: string;
