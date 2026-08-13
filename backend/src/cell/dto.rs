@@ -1,5 +1,7 @@
+use crate::cell::constants::AggregateFunction;
 use crate::cell::constants::AxisMinorTickShow;
 use crate::cell::constants::AxisTickShow;
+use crate::cell::constants::BarLayout;
 use crate::cell::constants::CellDisplayOrderMovement;
 use crate::cell::constants::CellStatus;
 use crate::cell::constants::CellType;
@@ -49,7 +51,9 @@ impl ChartContent {
     pub fn field_names(&self) -> Vec<String> {
         match self {
             ChartContent::Bar(c) | ChartContent::Line(c) => {
-                vec![c.x_axis.clone(), c.y_axis.clone()]
+                let mut names = vec![c.x_axis.clone()];
+                names.extend(c.series.iter().map(|s| s.column.clone()));
+                names
             }
             ChartContent::Pie(c) => vec![c.category.clone(), c.value.clone()],
             ChartContent::Metric(_) => Vec::new(),
@@ -78,31 +82,36 @@ pub struct MetricChartContent {
     pub cell_id: Uuid,
     pub decimal_precision: Option<u32>,
     pub suffix: Option<String>,
-    #[serde(deserialize_with = "MetricFormat::deserialize_option_from_str")]
-    #[serde(serialize_with = "MetricFormat::serialize_option_to_str")]
     pub format: Option<MetricFormat>,
+}
+
+pub fn series_alias(column: &str, aggregate_function: &AggregateFunction) -> String {
+    format!("{}_{}", column, aggregate_function.as_str().to_lowercase())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChartSeries {
+    pub column: String,
+    pub aggregate_function: Option<AggregateFunction>,
+    pub label: Option<String>,
+    pub alias: String,
+    pub color_index: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AxisChartContent {
     pub cell_id: Uuid,
     pub x_axis: String,
-    pub y_axis: String,
-    #[serde(deserialize_with = "ChartOrientation::deserialize_option_from_str")]
-    #[serde(serialize_with = "ChartOrientation::serialize_option_to_str")]
+    pub x_axis_alias: String,
+    #[serde(default)]
+    pub series: Vec<ChartSeries>,
+    pub y_axis_sort_by: Option<String>,
+    #[serde(default)]
+    pub bar_layout: Option<BarLayout>,
     pub orientation: Option<ChartOrientation>,
-    pub y_axis_aggregate_function: Option<String>,
-    #[serde(deserialize_with = "SortOrder::deserialize_option_from_str")]
-    #[serde(serialize_with = "SortOrder::serialize_option_to_str")]
     pub y_axis_sort_order: Option<SortOrder>,
-    #[serde(deserialize_with = "AxisTickShow::deserialize_option_from_str")]
-    #[serde(serialize_with = "AxisTickShow::serialize_option_to_str")]
     pub x_axis_tick_show: Option<AxisTickShow>,
-    #[serde(deserialize_with = "AxisTickShow::deserialize_option_from_str")]
-    #[serde(serialize_with = "AxisTickShow::serialize_option_to_str")]
     pub y_axis_tick_show: Option<AxisTickShow>,
-    #[serde(deserialize_with = "AxisMinorTickShow::deserialize_option_from_str")]
-    #[serde(serialize_with = "AxisMinorTickShow::serialize_option_to_str")]
     pub axis_minor_tick_show: Option<AxisMinorTickShow>,
 }
 
@@ -150,14 +159,11 @@ impl CellContent {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExecuteCellPreviewDto {
     pub content: String,
-    #[serde(deserialize_with = "CellType::deserialize_from_str")]
     pub cell_type: CellType,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReorderCellDto {
-    #[serde(deserialize_with = "CellDisplayOrderMovement::deserialize_from_str")]
-    #[serde(serialize_with = "CellDisplayOrderMovement::serialize_to_str")]
     pub movement_type: CellDisplayOrderMovement,
 }
 
@@ -168,7 +174,6 @@ pub struct CreateCellDto {
     pub name: Option<String>,
     pub content: Option<String>,
     pub display_order: Option<i32>,
-    #[serde(deserialize_with = "CellType::deserialize_from_str")]
     pub cell_type: CellType,
 }
 
@@ -177,14 +182,10 @@ pub struct CellDto {
     pub id: Uuid,
     pub name: Option<String>,
     pub content: Option<String>,
-    #[serde(deserialize_with = "CellType::deserialize_from_str")]
-    #[serde(serialize_with = "CellType::serialize_to_str")]
     pub cell_type: CellType,
     pub notebook_id: Uuid,
     pub connection_id: Option<Uuid>,
     pub display_order: i32,
-    #[serde(deserialize_with = "CellStatus::deserialize_from_str")]
-    #[serde(serialize_with = "CellStatus::serialize_to_str")]
     pub status: CellStatus,
     pub created_at: DateTime<FixedOffset>,
     pub updated_at: DateTime<FixedOffset>,

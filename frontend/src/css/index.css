@@ -150,6 +150,13 @@ button {
   --color-yellow-200: hsla(48, 70%, 85%, 1);
   --color-yellow-100: hsla(48, 65%, 95%, 1);
 
+  --color-chart-1: var(--color-primary-500);
+  --color-chart-2: var(--color-primary-800);
+  --color-chart-3: var(--color-primary-400);
+  --color-chart-4: var(--color-primary-700);
+  --color-chart-5: var(--color-primary-300);
+  --color-chart-6: var(--color-primary-600);
+
   /* Semantic Variables */
   --color-background: var(--color-grey-100);
   --color-hover: var(--color-grey-200);

@@ -33,9 +33,9 @@ export default function SignIn() {
   const defaultFormValues = { email: "", password: "" };
 
   const handleSubmit = useCallback(
-    async (formData: FormData) => {
-      const email = formData.get("email");
-      const password = formData.get("password");
+    async (values: Record<string, unknown>) => {
+      const email = values.email;
+      const password = values.password;
 
       if (typeof email !== "string" || typeof password !== "string") {
         console.error("Invalid form data");

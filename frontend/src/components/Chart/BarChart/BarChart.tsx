@@ -1,48 +1,78 @@
 import { Bar, BarChart as RechartsBarChart } from "recharts";
-import { getCSSVariable } from "src/utils/css_util";
 import {
-  CHART_MARGINS,
   ChartCartesianGrid,
   ChartContainer,
   ChartLegend,
   ChartTooltip,
   ChartXAxis,
   ChartYAxis,
-} from "../ChartCommon";
+  getChartMargins,
+  getRechartsLayout,
+  getSeriesColor,
+  type ChartOrientation,
+  type ChartSeriesSpec,
+} from "src/components/Chart/ChartCommon";
+
+const SERIES_STACK_ID = "series";
 
 export type BarChartProps = {
   xAxis: string;
-  yAxis: string;
+  series: ChartSeriesSpec[];
   data: object[];
   xAxisTitle?: string;
   yAxisTitle?: string;
   showDots?: boolean;
   xAxisTickShow?: string;
   yAxisTickShow?: string;
+  orientation?: ChartOrientation;
+  stacked?: boolean;
 };
 
 export function BarChart({
   xAxis,
-  yAxis,
+  series,
   data,
   xAxisTitle,
   yAxisTitle,
   xAxisTickShow,
   yAxisTickShow,
+  orientation,
+  stacked = false,
 }: BarChartProps) {
   const showXTicks = xAxisTickShow !== "HIDE";
   const showYTicks = yAxisTickShow !== "HIDE";
+  const isVertical = orientation === "VERTICAL";
+
   return (
     <ChartContainer>
-      <RechartsBarChart responsive data={data} margin={CHART_MARGINS}>
+      <RechartsBarChart
+        responsive
+        data={data}
+        margin={getChartMargins(orientation)}
+        layout={getRechartsLayout(orientation)}
+      >
         <ChartCartesianGrid />
-        <Bar
-          dataKey={yAxis}
-          fill={getCSSVariable("--color-primary-500")}
-          name={yAxis}
+        {series.map((entry) => (
+          <Bar
+            key={entry.dataKey}
+            dataKey={entry.dataKey}
+            name={entry.name}
+            fill={getSeriesColor(entry.colorIndex)}
+            stackId={stacked ? SERIES_STACK_ID : undefined}
+          />
+        ))}
+        <ChartXAxis
+          dataKey={isVertical ? undefined : xAxis}
+          type={isVertical ? "number" : "category"}
+          label={xAxisTitle}
+          showTicks={showXTicks}
         />
-        <ChartXAxis dataKey={xAxis} label={xAxisTitle} showTicks={showXTicks} />
-        <ChartYAxis label={yAxisTitle} showTicks={showYTicks} />
+        <ChartYAxis
+          dataKey={isVertical ? xAxis : undefined}
+          type={isVertical ? "category" : "number"}
+          label={yAxisTitle}
+          showTicks={showYTicks}
+        />
         <ChartLegend position="top" />
         <ChartTooltip />
       </RechartsBarChart>

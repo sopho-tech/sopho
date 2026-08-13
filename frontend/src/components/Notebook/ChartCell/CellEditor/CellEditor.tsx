@@ -15,7 +15,7 @@ import { Form } from "src/components/design-system";
 import { getChartType } from "../../Cell/dto";
 import {
   getDefaultValuesForChart,
-  extractChartFormData,
+  extractChartData,
   InfoTooltip,
 } from "./utils";
 import { BarChartAccordion } from "./BarChartAccordion";
@@ -39,48 +39,58 @@ export function CellEditor({ cellId }: { cellId: string }) {
   const cellQuery = useCell(cellId);
   const initialChartContent = useMemo(
     () => (cellQuery.data ? getChartContent(cellQuery.data) : null),
-    [cellQuery.data]
+    [cellQuery.data],
   );
   const { setSourceCellId, sourceCellId } = useSourceCellExecution(
     cellId,
-    initialChartContent
+    initialChartContent,
   );
   useChartCellAutoLoad(cellId, initialChartContent);
   const { isRunning: isSourceRunning } = useExecutionPhase(sourceCellId ?? "");
   const updateCellMutation = useUpdateCell();
-  const formOptions = useFormOptions(sourceCellId);
   const chartTypeFromContent = getChartType(initialChartContent);
-  const [chartTypeOverride, setChartTypeOverride] = useState<ChartType | null>(null);
+  const [chartTypeOverride, setChartTypeOverride] = useState<ChartType | null>(
+    null,
+  );
   const chartType = chartTypeOverride ?? chartTypeFromContent;
   const [accordionValues, setAccordionValues] = useState<string[]>([]);
   const defaultValues = getDefaultValuesForChart(
     chartType,
-    initialChartContent
+    initialChartContent,
   );
+  const [series, setSeries] = useState<
+    Array<{ column?: string; label?: string }>
+  >((defaultValues.series as Array<{ column?: string; label?: string }>) ?? []);
+  const formOptions = useFormOptions(sourceCellId, series);
 
   const handleSubmit = useCallback(
-    (formData: FormData) => {
+    (values: Record<string, unknown>) => {
       if (!cellQuery.data) throw Error("Cell query data is empty");
       if (!chartType) throw Error("Cell chart type is empty");
-      const content = extractChartFormData(chartType, formData);
+      const content = extractChartData(chartType, values);
       const cellDto: CellDto = {
         ...cellQuery.data,
         content: serializeChartContent(content),
       };
       updateCellMutation.mutate({ cellId, payload: cellDto });
     },
-    [cellId, cellQuery.data, chartType, updateCellMutation]
+    [cellId, cellQuery.data, chartType, updateCellMutation],
   );
 
   const handleChange = useCallback(
-    (_: FormData, fieldName: string, value: string) => {
+    (fieldName: string, value: string, values: Record<string, unknown>) => {
       if (fieldName === "cell_id") {
         setSourceCellId(value);
       } else if (fieldName === "chart_type") {
-        setChartTypeOverride(ChartType[value as keyof typeof ChartType] ?? null);
+        setChartTypeOverride(
+          ChartType[value as keyof typeof ChartType] ?? null,
+        );
       }
+      setSeries(
+        (values.series as Array<{ column?: string; label?: string }>) ?? [],
+      );
     },
-    [setSourceCellId]
+    [setSourceCellId],
   );
 
   return (

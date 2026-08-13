@@ -87,7 +87,7 @@ export function ChartSummary({ summary }: ChartSummaryProps) {
 
           {summary.generated_at && (
             <Text as="span" fontSize="xs" color="subtle">
-              {`Generated ${formatTimestamp(summary.generated_at)} · ${formatRelativeTime(summary.generated_at)}`}
+              {`${formatTimestamp(summary.generated_at)} · ${formatRelativeTime(summary.generated_at)}`}
             </Text>
           )}
         </Flex>

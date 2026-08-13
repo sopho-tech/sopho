@@ -31,14 +31,24 @@ export enum AxisMinorTickShow {
   HIDE = "HIDE",
 }
 
+export type ChartSeriesContent = {
+  column: string;
+  aggregate_function?: string;
+  label?: string | null;
+  alias: string;
+  color_index?: number;
+};
+
 export type BarChartContent = {
   cell_id?: string;
   x_axis: string;
-  y_axis: string;
+  x_axis_alias: string;
+  series: ChartSeriesContent[];
   chart_type?: string;
   orientation?: string;
-  y_axis_aggregate_function?: string;
+  y_axis_sort_by?: string;
   y_axis_sort_order?: string;
+  bar_layout?: string;
   x_axis_tick_show?: string;
   y_axis_tick_show?: string;
   axis_minor_tick_show?: string;
@@ -54,20 +64,8 @@ export type PieChartContent = {
   aggregate_function: string;
 };
 
-export type LineChartContent = {
-  cell_id?: string;
-  x_axis: string;
-  y_axis: string;
-  chart_type?: string;
-  orientation?: string;
-  y_axis_aggregate_function?: string;
-  y_axis_sort_order?: string;
-  x_axis_tick_show?: string;
-  y_axis_tick_show?: string;
-  axis_minor_tick_show?: string;
+export type LineChartContent = BarChartContent & {
   show_dots?: string;
-  x_axis_title?: string;
-  y_axis_title?: string;
 };
 
 export type MetricChartContent = {

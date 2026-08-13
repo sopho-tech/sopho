@@ -11,33 +11,9 @@
   gap: var(--space-md);
 }
 
-.formField {
-  display: flex;
-  flex-direction: row;
-  gap: var(--space-md);
-  align-items: center;
-  width: 100%;
-}
-
-.accordionTriggerHeading {
-  display: flex;
-  flex-direction: row;
-  gap: var(--space-2xs);
-  justify-content: center;
-}
-
 .infoTooltipMessage {
   line-height: var(--line-height-relaxed);
   width: 200px;
-}
-
-.inputContainer {
-  display: flex;
-  flex-direction: row;
-}
-
-.textInputContainer {
-  width: 140px;
 }
 
 .actionsButtonContainer {

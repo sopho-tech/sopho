@@ -5,10 +5,8 @@ use uuid::Uuid;
 
 #[derive(Debug, Serialize)]
 pub struct AiSummaryDto {
-    #[serde(serialize_with = "SummaryEntityType::serialize_to_str")]
     pub entity_type: SummaryEntityType,
     pub entity_id: Uuid,
-    #[serde(serialize_with = "SummaryStatus::serialize_to_str")]
     pub status: SummaryStatus,
     pub summary_text: Option<String>,
     pub error_message: Option<String>,

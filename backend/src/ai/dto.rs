@@ -235,8 +235,101 @@ pub struct VisualizationRecommendation {
     pub chart_type: crate::cell::constants::ChartType,
     pub x_axis: Option<String>,
     pub y_axis: Option<String>,
+    pub series: Option<Vec<String>>,
     pub category: Option<String>,
     pub value: Option<String>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct VisualizationSeries {
+    pub data_key: String,
+    pub name: String,
+    pub color_index: usize,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "chart_type", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ResolvedVisualization {
+    Bar {
+        x_axis: String,
+        series: Vec<VisualizationSeries>,
+    },
+    Line {
+        x_axis: String,
+        series: Vec<VisualizationSeries>,
+    },
+    Pie {
+        category: String,
+        value: String,
+    },
+    Metric,
+}
+
+impl VisualizationRecommendation {
+    pub fn resolved(&self) -> anyhow::Result<ResolvedVisualization> {
+        use crate::cell::constants::ChartType;
+
+        Ok(match self.chart_type {
+            ChartType::Bar => {
+                let (x_axis, series) = self.resolved_axis_chart()?;
+                ResolvedVisualization::Bar { x_axis, series }
+            }
+            ChartType::Line => {
+                let (x_axis, series) = self.resolved_axis_chart()?;
+                ResolvedVisualization::Line { x_axis, series }
+            }
+            ChartType::Pie => ResolvedVisualization::Pie {
+                category: non_empty(&self.category).ok_or_else(|| {
+                    anyhow::anyhow!("visualization recommendation for PIE is missing category")
+                })?,
+                value: non_empty(&self.value).ok_or_else(|| {
+                    anyhow::anyhow!("visualization recommendation for PIE is missing value")
+                })?,
+            },
+            ChartType::Metric => ResolvedVisualization::Metric,
+        })
+    }
+
+    fn resolved_axis_chart(&self) -> anyhow::Result<(String, Vec<VisualizationSeries>)> {
+        let x_axis = non_empty(&self.x_axis).ok_or_else(|| {
+            anyhow::anyhow!(
+                "visualization recommendation for {} is missing x_axis",
+                self.chart_type.as_str()
+            )
+        })?;
+
+        let mut seen = std::collections::HashSet::new();
+        let mut columns: Vec<String> = self
+            .series
+            .clone()
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|column| non_empty(&Some(column)))
+            .filter(|column| seen.insert(column.clone()))
+            .collect();
+        if columns.is_empty() {
+            columns.extend(non_empty(&self.y_axis));
+        }
+        if columns.is_empty() {
+            anyhow::bail!(
+                "visualization recommendation for {} has neither series nor y_axis",
+                self.chart_type.as_str()
+            );
+        }
+        columns.truncate(crate::cell::constants::MAX_CHART_SERIES);
+
+        let series = columns
+            .into_iter()
+            .enumerate()
+            .map(|(index, column)| VisualizationSeries {
+                data_key: column.clone(),
+                name: column,
+                color_index: index,
+            })
+            .collect();
+
+        Ok((x_axis, series))
+    }
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -385,7 +478,7 @@ pub enum Event {
     },
     RecommendingVisualization,
     RecommendedVisualization {
-        visualization: VisualizationRecommendation,
+        visualization: ResolvedVisualization,
     },
     Narrating,
     Narrated {
@@ -439,18 +532,62 @@ impl Event {
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct AiChartSeries {
+    pub column: String,
+    pub aggregate_function: Option<crate::cell::constants::AggregateFunction>,
+    pub label: Option<String>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct CanvasPlanChart {
     pub chart_type: crate::cell::constants::ChartType,
     pub x_axis: Option<String>,
     pub y_axis: Option<String>,
+    pub series: Option<Vec<AiChartSeries>>,
     pub category: Option<String>,
     pub value: Option<String>,
+    /// PIE only — BAR and LINE carry an aggregate function per series.
     pub aggregate_function: Option<crate::cell::constants::AggregateFunction>,
     pub grid_width: Option<i32>,
     pub grid_height: Option<i32>,
 }
 
-impl CanvasPlanChart {
+#[derive(Clone, Debug)]
+pub struct PlannedSeries {
+    pub column: String,
+    pub aggregate_function: crate::cell::constants::AggregateFunction,
+    pub label: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct PlannedAxisChart {
+    pub x_axis: String,
+    pub series: Vec<PlannedSeries>,
+}
+
+#[derive(Clone, Debug)]
+pub struct PlannedPieChart {
+    pub category: String,
+    pub value: String,
+    pub aggregate_function: crate::cell::constants::AggregateFunction,
+}
+
+#[derive(Clone, Debug)]
+pub enum PlannedChartSpec {
+    Bar(PlannedAxisChart),
+    Line(PlannedAxisChart),
+    Pie(PlannedPieChart),
+    Metric,
+}
+
+#[derive(Clone, Debug)]
+pub struct PlannedChart {
+    pub spec: PlannedChartSpec,
+    pub grid_width: Option<i32>,
+    pub grid_height: Option<i32>,
+}
+
+impl PlannedChart {
     pub fn grid_width_units(&self) -> Option<u16> {
         to_grid_units(self.grid_width)
     }
@@ -458,45 +595,72 @@ impl CanvasPlanChart {
     pub fn grid_height_units(&self) -> Option<u16> {
         to_grid_units(self.grid_height)
     }
+}
+
+impl CanvasPlanChart {
+    fn planned_axis_chart(&self) -> Option<PlannedAxisChart> {
+        let x_axis = non_empty(&self.x_axis).or_else(|| non_empty(&self.category))?;
+
+        let mut seen = std::collections::HashSet::new();
+        let mut series: Vec<PlannedSeries> = self
+            .series
+            .clone()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|entry| !entry.column.trim().is_empty())
+            .filter(|entry| seen.insert(entry.column.clone()))
+            .map(|entry| {
+                Some(PlannedSeries {
+                    column: entry.column,
+                    aggregate_function: entry.aggregate_function?,
+                    label: entry.label,
+                })
+            })
+            .collect::<Option<Vec<_>>>()?;
+        if series.is_empty() {
+            return None;
+        }
+        series.truncate(crate::cell::constants::MAX_CHART_SERIES);
+        Some(PlannedAxisChart { x_axis, series })
+    }
+
+    fn planned_pie_chart(&self) -> Option<PlannedPieChart> {
+        Some(PlannedPieChart {
+            category: non_empty(&self.category).or_else(|| non_empty(&self.x_axis))?,
+            value: non_empty(&self.value).or_else(|| non_empty(&self.y_axis))?,
+            aggregate_function: self.aggregate_function.clone()?,
+        })
+    }
 
     /// Accepts axis/category as synonyms, since agents mix the two vocabularies.
-    fn normalized(&self) -> Option<Self> {
+    fn planned(&self) -> Option<PlannedChart> {
         use crate::cell::constants::ChartType;
 
-        let mut chart = self.clone();
-        match chart.chart_type {
-            ChartType::Pie => {
-                chart.category = non_empty(&self.category).or_else(|| non_empty(&self.x_axis));
-                chart.value = non_empty(&self.value).or_else(|| non_empty(&self.y_axis));
-                chart.category.as_ref()?;
-                chart.value.as_ref()?;
-            }
-            ChartType::Bar | ChartType::Line => {
-                chart.x_axis = non_empty(&self.x_axis).or_else(|| non_empty(&self.category));
-                chart.y_axis = non_empty(&self.y_axis).or_else(|| non_empty(&self.value));
-                chart.x_axis.as_ref()?;
-                chart.y_axis.as_ref()?;
-            }
-            ChartType::Metric => {}
-        }
-        Some(chart)
+        let spec = match self.chart_type {
+            ChartType::Bar => PlannedChartSpec::Bar(self.planned_axis_chart()?),
+            ChartType::Line => PlannedChartSpec::Line(self.planned_axis_chart()?),
+            ChartType::Pie => PlannedChartSpec::Pie(self.planned_pie_chart()?),
+            ChartType::Metric => PlannedChartSpec::Metric,
+        };
+        Some(PlannedChart {
+            spec,
+            grid_width: self.grid_width,
+            grid_height: self.grid_height,
+        })
     }
 }
 
-fn resolve_chart(
-    chart: Option<&CanvasPlanChart>,
-    title: &Option<String>,
-) -> Option<CanvasPlanChart> {
+fn resolve_chart(chart: Option<&CanvasPlanChart>, title: &Option<String>) -> Option<PlannedChart> {
     let chart = chart?;
-    let normalized = chart.normalized();
-    if normalized.is_none() {
+    let planned = chart.planned();
+    if planned.is_none() {
         tracing::warn!(
-            "canvas plan: dropped {} chart for {:?} because its axis or category fields were missing",
+            "canvas plan: dropped {} chart for {:?} because its axis, series or category fields were missing",
             chart.chart_type.as_str(),
             title.as_deref().unwrap_or("<untitled>")
         );
     }
-    normalized
+    planned
 }
 
 fn to_grid_units(value: Option<i32>) -> Option<u16> {
@@ -549,13 +713,13 @@ pub enum CanvasOp {
     Create {
         title: Option<String>,
         sql: String,
-        chart: Option<CanvasPlanChart>,
+        chart: Option<PlannedChart>,
     },
     Update {
         index: usize,
         title: Option<String>,
         sql: Option<String>,
-        chart: Option<CanvasPlanChart>,
+        chart: Option<PlannedChart>,
     },
     Delete {
         index: usize,

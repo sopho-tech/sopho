@@ -1,6 +1,9 @@
+use crate::cell::constants::AggregateFunction;
 use crate::cell::constants::CellDisplayOrderMovement;
 use crate::cell::constants::CellStatus;
 use crate::cell::constants::MAX_CELLS_PER_NOTEBOOK;
+use crate::cell::constants::MAX_CHART_SERIES;
+use crate::cell::constants::MAX_IDENTIFIER_LEN;
 use crate::cell::constants::CellType;
 use crate::cell::constants::SortOrder;
 use crate::cell::dto;
@@ -30,6 +33,7 @@ use futures_util::stream::{self, StreamExt};
 use sea_orm::TransactionTrait;
 use sqlx::types::JsonValue;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use uuid::Uuid;
 
 pub async fn does_cell_exist(app_state: &AppState, id: Uuid) -> bool {
@@ -593,6 +597,12 @@ fn execute_chart_error_response(
                 "message": format!("ChartCell has no {} specified", setting)
             })),
         ),
+        ExecuteChartError::TooManySeries { .. }
+        | ExecuteChartError::DuplicateSeriesAlias(_)
+        | ExecuteChartError::InvalidIdentifier(_) => (
+            StatusCode::PRECONDITION_FAILED,
+            axum::Json(serde_json::json!({ "message": err.to_string() })),
+        ),
         ExecuteChartError::ExecuteSql(e) => execute_sql_error_response(e),
         ExecuteChartError::Repository(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -609,35 +619,72 @@ fn strip_trailing_semicolons(query: &str) -> String {
     trimmed.to_string()
 }
 
+fn validate_identifier(value: &str) -> Result<&str, ExecuteChartError> {
+    let invalid = value.is_empty()
+        || value.len() > MAX_IDENTIFIER_LEN
+        || value.chars().any(|c| c == '"' || c.is_control());
+    if invalid {
+        return Err(ExecuteChartError::InvalidIdentifier(value.to_string()));
+    }
+    Ok(value)
+}
+
 fn build_aggregated_query(
     source_query: &str,
     x_axis: &str,
-    y_axis: &str,
-    aggregate_fn: &str,
+    x_alias: &str,
+    series: &[dto::ChartSeries],
+    sort_by: &str,
     y_axis_sort_order: &str,
-) -> String {
-    if y_axis_sort_order != SortOrder::None.as_str() {
-        return format!(
-            "SELECT \"{}\", {}(\"{}\") AS \"{}\" FROM ({}) AS subquery GROUP BY \"{}\" ORDER BY \"{}\" {}",
-            x_axis, aggregate_fn, y_axis, y_axis, source_query, x_axis, y_axis, y_axis_sort_order
-        );
+) -> Result<String, ExecuteChartError> {
+    validate_identifier(x_axis)?;
+    validate_identifier(x_alias)?;
+    let x_projection = format!("\"{}\" AS \"{}\"", x_axis, x_alias);
+    let mut y_projections = Vec::with_capacity(series.len());
+    for entry in series {
+        let aggregate_fn = entry
+            .aggregate_function
+            .as_ref()
+            .ok_or(ExecuteChartError::MissingChartSetting("aggregate function"))?;
+        validate_identifier(&entry.column)?;
+        let alias = validate_identifier(entry.alias.as_str())?;
+        y_projections.push(format!(
+            "{}(\"{}\") AS \"{}\"",
+            aggregate_fn.as_str(),
+            entry.column,
+            alias
+        ));
     }
-    format!(
-        "SELECT \"{}\", {}(\"{}\") AS \"{}\" FROM ({}) AS subquery GROUP BY \"{}\"",
-        x_axis, aggregate_fn, y_axis, y_axis, source_query, x_axis
-    )
+    let projection = format!("{}, {}", x_projection, y_projections.join(", "));
+    if y_axis_sort_order != SortOrder::None.as_str() {
+        return Ok(format!(
+            "SELECT {} FROM ({}) AS subquery GROUP BY \"{}\" ORDER BY \"{}\" {}",
+            projection, source_query, x_axis, sort_by, y_axis_sort_order
+        ));
+    }
+    Ok(format!(
+        "SELECT {} FROM ({}) AS subquery GROUP BY \"{}\"",
+        projection, source_query, x_axis
+    ))
 }
 
 fn build_pie_chart_aggregated_query(
     source_query: &str,
     category: &str,
     value: &str,
-    aggregate_fn: &str,
-) -> String {
-    format!(
-        "SELECT {}, {}({}) AS {} FROM ({}) AS subquery GROUP BY {}",
-        category, aggregate_fn, value, value, source_query, category
-    )
+    aggregate_fn: &AggregateFunction,
+) -> Result<String, ExecuteChartError> {
+    validate_identifier(category)?;
+    validate_identifier(value)?;
+    Ok(format!(
+        "SELECT \"{}\", {}(\"{}\") AS \"{}\" FROM ({}) AS subquery GROUP BY \"{}\"",
+        category,
+        aggregate_fn.as_str(),
+        value,
+        value,
+        source_query,
+        category
+    ))
 }
 
 fn get_sql_query_from_content_inner(
@@ -850,44 +897,89 @@ async fn get_source_cell_for_chart(
     Ok((connection, source_query))
 }
 
+fn validated_output_names<'a>(
+    x_alias: &'a str,
+    series: &'a [dto::ChartSeries],
+) -> Result<HashSet<&'a str>, ExecuteChartError> {
+    if series.is_empty() {
+        return Err(ExecuteChartError::MissingChartSetting("series"));
+    }
+    if series.len() > MAX_CHART_SERIES {
+        return Err(ExecuteChartError::TooManySeries {
+            count: series.len(),
+            max: MAX_CHART_SERIES,
+        });
+    }
+
+    let mut names = HashSet::with_capacity(series.len() + 1);
+    names.insert(x_alias);
+    for entry in series {
+        if !names.insert(entry.alias.as_str()) {
+            return Err(ExecuteChartError::DuplicateSeriesAlias(
+                entry.alias.as_str().to_string(),
+            ));
+        }
+    }
+    Ok(names)
+}
+
+fn build_axis_chart_query(
+    axis_content: &dto::AxisChartContent,
+    source_query: &str,
+) -> Result<String, ExecuteChartError> {
+    let x_alias = axis_content.x_axis_alias.as_str();
+    let names = validated_output_names(x_alias, &axis_content.series)?;
+
+    let y_axis_sort_order = axis_content
+        .y_axis_sort_order
+        .as_ref()
+        .ok_or(ExecuteChartError::MissingChartSetting("y-axis sort order"))?
+        .as_str();
+
+    let sort_by = axis_content
+        .y_axis_sort_by
+        .as_deref()
+        .filter(|name| names.contains(name))
+        .unwrap_or_else(|| axis_content.series[0].alias.as_str());
+
+    build_aggregated_query(
+        source_query,
+        &axis_content.x_axis,
+        x_alias,
+        &axis_content.series,
+        sort_by,
+        y_axis_sort_order,
+    )
+}
+
+fn build_pie_query(
+    pie_content: &dto::PieChartContent,
+    source_query: &str,
+) -> Result<String, ExecuteChartError> {
+    let aggregate_fn = pie_content
+        .aggregate_function
+        .as_deref()
+        .ok_or(ExecuteChartError::MissingChartSetting("aggregate function"))?;
+    let aggregate_fn = AggregateFunction::from_str(aggregate_fn)
+        .map_err(|_| ExecuteChartError::InvalidIdentifier(aggregate_fn.to_string()))?;
+
+    build_pie_chart_aggregated_query(
+        source_query,
+        &pie_content.category,
+        &pie_content.value,
+        &aggregate_fn,
+    )
+}
+
 fn build_chart_aggregated_query(
     chart_content: &dto::ChartContent,
     source_query: &str,
 ) -> Result<String, ExecuteChartError> {
     match chart_content {
         dto::ChartContent::Bar(axis_content) | dto::ChartContent::Line(axis_content) => {
-            let aggregate_fn = axis_content
-                .y_axis_aggregate_function
-                .as_deref()
-                .ok_or(ExecuteChartError::MissingChartSetting("aggregate function"))?;
-
-            let y_axis_sort_order = axis_content
-                .y_axis_sort_order
-                .as_ref()
-                .ok_or(ExecuteChartError::MissingChartSetting("y-axis sort order"))?
-                .as_str();
-
-            Ok(build_aggregated_query(
-                source_query,
-                &axis_content.x_axis,
-                &axis_content.y_axis,
-                aggregate_fn,
-                y_axis_sort_order,
-            ))
+            build_axis_chart_query(axis_content, source_query)
         }
-        dto::ChartContent::Pie(pie_content) => {
-            let aggregate_fn = pie_content
-                .aggregate_function
-                .as_deref()
-                .ok_or(ExecuteChartError::MissingChartSetting("aggregate function"))?;
-
-            Ok(build_pie_chart_aggregated_query(
-                source_query,
-                &pie_content.category,
-                &pie_content.value,
-                aggregate_fn,
-            ))
-        }
+        dto::ChartContent::Pie(pie_content) => build_pie_query(pie_content, source_query),
         dto::ChartContent::Metric(_) => Ok(source_query.to_string()),
     }
 }

@@ -4,6 +4,7 @@ use std::fmt;
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum SqlDialect {
     Postgresql,
+    #[serde(rename = "MYSQL")]
     MySql,
     Sqlite,
 }
@@ -19,6 +20,7 @@ impl fmt::Display for SqlDialect {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SourceType {
     Postgresql,
     Supabase,
@@ -26,6 +28,7 @@ pub enum SourceType {
     Sqlite,
     MsSql,
     Oracle,
+    #[serde(rename = "MONGODB")]
     MongoDb,
     Redis,
     Elasticsearch,
@@ -57,21 +60,7 @@ impl SourceType {
         }
     }
 
-    pub fn deserialize_from_str<'de, D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Self::from_str(&s).map_err(serde::de::Error::custom)
-    }
 
-    pub fn serialize_to_str<S>(value: &Self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let s = value.to_string();
-        serializer.serialize_str(&s)
-    }
 
     pub fn to_sql_dialect(&self) -> Option<SqlDialect> {
         match self {
@@ -114,6 +103,7 @@ impl fmt::Display for SourceType {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ConnectionStatus {
     Active,
     Inactive,
@@ -128,22 +118,6 @@ impl ConnectionStatus {
             "FAILED" => Ok(ConnectionStatus::Failed),
             _ => Err(format!("Invalid connection status: {}", s)),
         }
-    }
-
-    pub fn deserialize_from_str<'de, D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Self::from_str(&s).map_err(serde::de::Error::custom)
-    }
-
-    pub fn serialize_to_str<S>(value: &Self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let s = value.to_string();
-        serializer.serialize_str(&s)
     }
 }
 

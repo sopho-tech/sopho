@@ -1,13 +1,17 @@
-use crate::ai::dto::{CanvasCandidate, CanvasCandidateCell, CanvasOp, CanvasPlan, CanvasPlanChart};
+use crate::ai::dto::{
+    CanvasCandidate, CanvasCandidateCell, CanvasOp, CanvasPlan, PlannedAxisChart, PlannedChart,
+    PlannedChartSpec,
+};
 use crate::canvas::constants::CanvasStatus;
 use crate::canvas::dto;
 use crate::canvas::repository;
 use crate::cell::constants::{
-    AggregateFunction, AxisMinorTickShow, AxisTickShow, CellType, ChartOrientation, ChartType,
-    MetricFormat, SortOrder,
+    AxisMinorTickShow, AxisTickShow, BarLayout, CellType, ChartOrientation, ChartType, MetricFormat,
+    SortOrder,
 };
 use crate::cell::dto::{
-    AxisChartContent, ChartContent, CreateCellDto, MetricChartContent, PieChartContent,
+    series_alias, AxisChartContent, ChartContent, ChartSeries, CreateCellDto, MetricChartContent,
+    PieChartContent,
 };
 use crate::cell::service as cell_service;
 use crate::common::time_utils;
@@ -163,39 +167,44 @@ async fn create_canvas_transaction(
     })
 }
 
-fn chart_content_json(cell_id: Uuid, chart: &CanvasPlanChart) -> Result<String, sea_orm::DbErr> {
-    let aggregate_function = chart
-        .aggregate_function
-        .clone()
-        .unwrap_or(AggregateFunction::Max)
-        .as_str()
-        .to_string();
+fn axis_chart_content(cell_id: Uuid, axis: &PlannedAxisChart) -> AxisChartContent {
+    AxisChartContent {
+        cell_id,
+        x_axis: axis.x_axis.clone(),
+        x_axis_alias: axis.x_axis.clone(),
+        series: axis
+            .series
+            .iter()
+            .enumerate()
+            .map(|(index, entry)| ChartSeries {
+                alias: series_alias(&entry.column, &entry.aggregate_function),
+                column: entry.column.clone(),
+                aggregate_function: Some(entry.aggregate_function.clone()),
+                label: entry.label.clone(),
+                color_index: Some(index as u32),
+            })
+            .collect(),
+        y_axis_sort_by: None,
+        bar_layout: Some(BarLayout::Grouped),
+        orientation: Some(ChartOrientation::Horizontal),
+        y_axis_sort_order: Some(SortOrder::None),
+        x_axis_tick_show: Some(AxisTickShow::Show),
+        y_axis_tick_show: Some(AxisTickShow::Show),
+        axis_minor_tick_show: Some(AxisMinorTickShow::Show),
+    }
+}
 
-    let content = match chart.chart_type {
-        ChartType::Bar | ChartType::Line => {
-            let axis = AxisChartContent {
-                cell_id,
-                x_axis: chart.x_axis.clone().unwrap_or_default(),
-                y_axis: chart.y_axis.clone().unwrap_or_default(),
-                orientation: Some(ChartOrientation::Vertical),
-                y_axis_aggregate_function: Some(aggregate_function),
-                y_axis_sort_order: Some(SortOrder::None),
-                x_axis_tick_show: Some(AxisTickShow::Show),
-                y_axis_tick_show: Some(AxisTickShow::Show),
-                axis_minor_tick_show: Some(AxisMinorTickShow::Show),
-            };
-            match chart.chart_type {
-                ChartType::Line => ChartContent::Line(axis),
-                _ => ChartContent::Bar(axis),
-            }
-        }
-        ChartType::Pie => ChartContent::Pie(PieChartContent {
+fn chart_content_json(cell_id: Uuid, chart: &PlannedChart) -> Result<String, sea_orm::DbErr> {
+    let content = match &chart.spec {
+        PlannedChartSpec::Bar(axis) => ChartContent::Bar(axis_chart_content(cell_id, axis)),
+        PlannedChartSpec::Line(axis) => ChartContent::Line(axis_chart_content(cell_id, axis)),
+        PlannedChartSpec::Pie(pie) => ChartContent::Pie(PieChartContent {
             cell_id,
-            category: chart.category.clone().unwrap_or_default(),
-            value: chart.value.clone().unwrap_or_default(),
-            aggregate_function: Some(aggregate_function),
+            category: pie.category.clone(),
+            value: pie.value.clone(),
+            aggregate_function: Some(pie.aggregate_function.as_str().to_string()),
         }),
-        ChartType::Metric => ChartContent::Metric(MetricChartContent {
+        PlannedChartSpec::Metric => ChartContent::Metric(MetricChartContent {
             cell_id,
             decimal_precision: Some(2),
             suffix: None,
@@ -499,7 +508,7 @@ async fn create_pair(
     order: &mut i32,
     title: Option<String>,
     sql: String,
-    chart: Option<&CanvasPlanChart>,
+    chart: Option<&PlannedChart>,
 ) -> Result<Option<DashboardChartRequest>, sea_orm::DbErr> {
     let sql_cell = cell_service::execute_create_cell_transaction(
         txn,

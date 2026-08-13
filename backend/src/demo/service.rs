@@ -129,7 +129,7 @@ pub async fn seed_demo_data(app_state: &AppState) {
             3,
             8,
             "Monthly Revenue",
-            r#"{"x_axis":"order_month","y_axis":"revenue","chart_type":"LINE","cell_id":"PLACEHOLDER","orientation":"VERTICAL","y_axis_aggregate_function":"MAX","y_axis_sort_order":"NONE","x_axis_tick_show":"SHOW","y_axis_tick_show":"SHOW","axis_minor_tick_show":"SHOW","show_dots":"SHOW"}"#,
+            r#"{"x_axis":"order_month","x_axis_alias":"order_month","series":[{"column":"revenue","aggregate_function":"MAX","label":null,"alias":"revenue"}],"y_axis_sort_by":"revenue","bar_layout":"GROUPED","chart_type":"LINE","cell_id":"PLACEHOLDER","orientation":"HORIZONTAL","y_axis_sort_order":"NONE","x_axis_tick_show":"SHOW","y_axis_tick_show":"SHOW","axis_minor_tick_show":"SHOW","show_dots":"SHOW"}"#,
         ),
         (
             4,
@@ -141,19 +141,19 @@ pub async fn seed_demo_data(app_state: &AppState) {
             5,
             12,
             "Avg Order Value",
-            r#"{"x_axis":"order_month","y_axis":"avg_order_value","chart_type":"LINE","cell_id":"PLACEHOLDER","orientation":"VERTICAL","y_axis_aggregate_function":"MAX","y_axis_sort_order":"NONE","x_axis_tick_show":"SHOW","y_axis_tick_show":"SHOW","axis_minor_tick_show":"SHOW","show_dots":"SHOW"}"#,
+            r#"{"x_axis":"order_month","x_axis_alias":"order_month","series":[{"column":"avg_order_value","aggregate_function":"MAX","label":null,"alias":"avg_order_value"}],"y_axis_sort_by":"avg_order_value","bar_layout":"GROUPED","chart_type":"LINE","cell_id":"PLACEHOLDER","orientation":"HORIZONTAL","y_axis_sort_order":"NONE","x_axis_tick_show":"SHOW","y_axis_tick_show":"SHOW","axis_minor_tick_show":"SHOW","show_dots":"SHOW"}"#,
         ),
         (
             6,
             14,
             "Top Products",
-            r#"{"x_axis":"product_id","y_axis":"total_revenue","chart_type":"BAR","cell_id":"PLACEHOLDER","orientation":"VERTICAL","y_axis_aggregate_function":"MAX","y_axis_sort_order":"DESC","x_axis_tick_show":"HIDE","y_axis_tick_show":"SHOW","axis_minor_tick_show":"SHOW"}"#,
+            r#"{"x_axis":"product_id","x_axis_alias":"product_id","series":[{"column":"total_revenue","aggregate_function":"MAX","label":null,"alias":"total_revenue"}],"y_axis_sort_by":"total_revenue","bar_layout":"GROUPED","chart_type":"BAR","cell_id":"PLACEHOLDER","orientation":"HORIZONTAL","y_axis_sort_order":"DESC","x_axis_tick_show":"HIDE","y_axis_tick_show":"SHOW","axis_minor_tick_show":"SHOW"}"#,
         ),
         (
             7,
             16,
             "Top Sellers GMV",
-            r#"{"x_axis":"seller_id","y_axis":"gmv","chart_type":"BAR","cell_id":"PLACEHOLDER","orientation":"VERTICAL","y_axis_aggregate_function":"MAX","y_axis_sort_order":"DESC","x_axis_tick_show":"HIDE","y_axis_tick_show":"SHOW","axis_minor_tick_show":"SHOW"}"#,
+            r#"{"x_axis":"seller_id","x_axis_alias":"seller_id","series":[{"column":"gmv","aggregate_function":"MAX","label":null,"alias":"gmv"}],"y_axis_sort_by":"gmv","bar_layout":"GROUPED","chart_type":"BAR","cell_id":"PLACEHOLDER","orientation":"HORIZONTAL","y_axis_sort_order":"DESC","x_axis_tick_show":"HIDE","y_axis_tick_show":"SHOW","axis_minor_tick_show":"SHOW"}"#,
         ),
         (
             8,
@@ -165,13 +165,13 @@ pub async fn seed_demo_data(app_state: &AppState) {
             9,
             20,
             "Review Score Distribution",
-            r#"{"x_axis":"review_score","y_axis":"number_of_reviews","chart_type":"BAR","cell_id":"PLACEHOLDER","orientation":"VERTICAL","y_axis_aggregate_function":"MAX","y_axis_sort_order":"DESC","x_axis_tick_show":"SHOW","y_axis_tick_show":"SHOW","axis_minor_tick_show":"SHOW"}"#,
+            r#"{"x_axis":"review_score","x_axis_alias":"review_score","series":[{"column":"number_of_reviews","aggregate_function":"MAX","label":null,"alias":"number_of_reviews"}],"y_axis_sort_by":"number_of_reviews","bar_layout":"GROUPED","chart_type":"BAR","cell_id":"PLACEHOLDER","orientation":"HORIZONTAL","y_axis_sort_order":"DESC","x_axis_tick_show":"SHOW","y_axis_tick_show":"SHOW","axis_minor_tick_show":"SHOW"}"#,
         ),
         (
             10,
             22,
             "Review Score Trend With Time",
-            r#"{"x_axis":"review_month","y_axis":"avg_review_score","chart_type":"LINE","cell_id":"PLACEHOLDER","orientation":"VERTICAL","y_axis_aggregate_function":"MAX","y_axis_sort_order":"NONE","x_axis_tick_show":"SHOW","y_axis_tick_show":"SHOW","axis_minor_tick_show":"SHOW","show_dots":"SHOW"}"#,
+            r#"{"x_axis":"review_month","x_axis_alias":"review_month","series":[{"column":"avg_review_score","aggregate_function":"MAX","label":null,"alias":"avg_review_score"}],"y_axis_sort_by":"avg_review_score","bar_layout":"GROUPED","chart_type":"LINE","cell_id":"PLACEHOLDER","orientation":"HORIZONTAL","y_axis_sort_order":"NONE","x_axis_tick_show":"SHOW","y_axis_tick_show":"SHOW","axis_minor_tick_show":"SHOW","show_dots":"SHOW"}"#,
         ),
     ];
 

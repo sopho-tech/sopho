@@ -1,14 +1,15 @@
 import { Accordion } from "src/components/design-system";
 import { Form } from "src/components/design-system";
 import { Icon, Text, Flex } from "src/components/design-system";
-import CellEditorStyle from "src/components/Notebook/ChartCell/CellEditor/CellEditor.module.css";
 import type { FormOptions } from "src/components/Notebook/ChartCell/CellEditor/types";
 import {
   InfoTooltip,
   SORT_ORDER_OPTIONS,
   ORIENTATION_OPTIONS,
   VISIBILITY_OPTIONS,
+  BAR_LAYOUT_OPTIONS,
 } from "src/components/Notebook/ChartCell/CellEditor/utils";
+import { SeriesFields } from "src/components/Notebook/ChartCell/CellEditor/SeriesFields";
 
 export function BarChartAccordion({
   formOptions,
@@ -19,11 +20,7 @@ export function BarChartAccordion({
   accordionValues: string[];
   onAccordionChange: (v: string[]) => void;
 }) {
-  const {
-    xAxisColumnOptions,
-    yAxisColumnOptions,
-    yAxisAggregateFunctionsOptions,
-  } = formOptions;
+  const { xAxisColumnOptions } = formOptions;
   return (
     <Accordion value={accordionValues} onValueChange={onAccordionChange}>
       <Accordion.Item value="x_axis_settings">
@@ -48,12 +45,9 @@ export function BarChartAccordion({
             </Form.Label>
             <Form.Select options={xAxisColumnOptions} groupName="Column" />
           </Form.Field>
-          <Form.Field name="x_axis_title" className={CellEditorStyle.formField}>
+          <Form.Field name="x_axis_title">
             <Form.Label>Title</Form.Label>
-            <Form.Input
-              placeholder="x-axis title"
-              inputContainerClassName={CellEditorStyle.textInputContainer}
-            />
+            <Form.Input placeholder="x-axis title" />
           </Form.Field>
         </Accordion.Content>
       </Accordion.Item>
@@ -65,35 +59,17 @@ export function BarChartAccordion({
           </Flex>
         </Accordion.Trigger>
         <Accordion.Content>
-          <Form.Field
-            name="y_axis"
-            required
-            errorMessage="Please select the column for y-axis"
-          >
+          <Form.Field name="y_axis_sort_by">
             <Form.Label
               infoIconToolTipMessage={
-                <InfoTooltip message="Select the column from the SQL query's output for y-axis" />
+                <InfoTooltip message="Choose which series the chart is sorted by" />
               }
             >
-              Column
-            </Form.Label>
-            <Form.Select options={yAxisColumnOptions} groupName="Column" />
-          </Form.Field>
-          <Form.Field
-            name="y_axis_aggregate_function"
-            required
-            errorMessage="Please select the aggregate function for y-axis column"
-          >
-            <Form.Label
-              infoIconToolTipMessage={
-                <InfoTooltip message="Select the function to aggregate the y-axis column" />
-              }
-            >
-              Aggregate by
+              Sort By
             </Form.Label>
             <Form.Select
-              options={yAxisAggregateFunctionsOptions}
-              groupName="Aggregate"
+              options={formOptions.seriesSortOptions}
+              groupName="Series"
             />
           </Form.Field>
           <Form.Field name="y_axis_sort_order">
@@ -106,13 +82,11 @@ export function BarChartAccordion({
             </Form.Label>
             <Form.Select options={SORT_ORDER_OPTIONS} groupName="Sort" />
           </Form.Field>
-          <Form.Field name="y_axis_title" className={CellEditorStyle.formField}>
+          <Form.Field name="y_axis_title">
             <Form.Label>Title</Form.Label>
-            <Form.Input
-              placeholder="y-axis title"
-              inputContainerClassName={CellEditorStyle.textInputContainer}
-            />
+            <Form.Input placeholder="y-axis title" />
           </Form.Field>
+          <SeriesFields formOptions={formOptions} />
         </Accordion.Content>
       </Accordion.Item>
       <Accordion.Item value="display_settings">
@@ -132,6 +106,16 @@ export function BarChartAccordion({
               Orientation
             </Form.Label>
             <Form.Select options={ORIENTATION_OPTIONS} groupName="Layout" />
+          </Form.Field>
+          <Form.Field name="bar_layout">
+            <Form.Label
+              infoIconToolTipMessage={
+                <InfoTooltip message="Grouped puts bars side by side; stacked puts them on top of each other" />
+              }
+            >
+              Bar Layout
+            </Form.Label>
+            <Form.Select options={BAR_LAYOUT_OPTIONS} groupName="Bars" />
           </Form.Field>
           <Form.Field name="x_axis_tick_show">
             <Form.Label
