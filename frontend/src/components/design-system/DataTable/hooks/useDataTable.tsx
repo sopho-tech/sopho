@@ -12,11 +12,17 @@ import {
   ColumnConfig,
   PaginationConfig,
 } from "src/components/design-system/DataTable/types";
-import { useCreateReactTable } from "src/components/design-system/DataTable/utils";
+import {
+  useCreateReactTable,
+  getDisplayRowNumber,
+} from "src/components/design-system/DataTable/utils";
 import { Icon } from "src/components/design-system/Icon/Icon";
 import { Flex } from "src/components/design-system/Flex";
 import { Text } from "src/components/design-system/Text";
 import { getIconForDataType } from "src/utils/column_utils";
+
+const ROW_NUMBER_COLUMN_KEY = "row_number";
+const ROW_NUMBER_COLUMN_WIDTH = 64;
 
 type UseDataTableReturn<T> = {
   table: Table<T>;
@@ -38,6 +44,7 @@ export function useDataTable<T>({
   paginationConfig,
   enableColumnResizing,
   enableRowDragging,
+  showRowNumbers,
   getRowId,
 }: {
   tableType: TableType;
@@ -46,6 +53,7 @@ export function useDataTable<T>({
   paginationConfig?: PaginationConfig;
   enableColumnResizing?: boolean;
   enableRowDragging?: boolean;
+  showRowNumbers?: boolean;
   getRowId?: (row: T) => string;
 }): UseDataTableReturn<T> {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -64,33 +72,50 @@ export function useDataTable<T>({
 
   const columnHelper = createColumnHelper<T>();
 
-  const columnsWithDrag = useMemo(() => {
+  const columnsWithLeadingUtilityColumns = useMemo(() => {
+    const leadingUtilityColumns: ColumnConfig<T>[] = [];
+
     if (enableRowDragging) {
-      const dragColumn: ColumnConfig<T> = {
+      leadingUtilityColumns.push({
         key: "drag",
         header: "",
         type: "display",
         cell: () => <Icon type="grip_vertical" color="grey" size="sm" />,
         size: 10,
-      };
-      return [dragColumn, ...columns];
+      });
     }
-    return columns;
-  }, [columns, enableRowDragging]);
+
+    if (showRowNumbers) {
+      leadingUtilityColumns.push({
+        key: ROW_NUMBER_COLUMN_KEY,
+        header: "",
+        type: "display",
+        cell: ({ table, row }) => (
+          <Flex justifyContent="flex-end">
+            <Text color="darkGrey">{getDisplayRowNumber(table, row)}</Text>
+          </Flex>
+        ),
+        size: ROW_NUMBER_COLUMN_WIDTH,
+        minSize: ROW_NUMBER_COLUMN_WIDTH,
+      });
+    }
+
+    return [...leadingUtilityColumns, ...columns];
+  }, [columns, enableRowDragging, showRowNumbers]);
 
   const columnConfigMap = useMemo(() => {
     const map = new Map<string, ColumnConfig<T>>();
-    columnsWithDrag.forEach((col) => {
+    columnsWithLeadingUtilityColumns.forEach((col) => {
       map.set(col.key, col);
       if (col.type === "accessor" && col.accessor) {
         map.set(String(col.accessor), col);
       }
     });
     return map;
-  }, [columnsWithDrag]);
+  }, [columnsWithLeadingUtilityColumns]);
 
   const reactTableColumns: ColumnDef<T, unknown>[] = useMemo(() => {
-    return columnsWithDrag.map((col) => {
+    return columnsWithLeadingUtilityColumns.map((col) => {
       const headerContent = col.dataType
         ? () => {
             const dataType = col.dataType!;
@@ -136,7 +161,7 @@ export function useDataTable<T>({
         });
       }
     });
-  }, [columnsWithDrag, columnHelper]);
+  }, [columnsWithLeadingUtilityColumns, columnHelper]);
 
   const onPaginationChange: OnChangeFn<PaginationState> = (updaterOrValue) => {
     setPagination(

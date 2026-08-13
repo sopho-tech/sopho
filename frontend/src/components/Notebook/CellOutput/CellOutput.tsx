@@ -85,6 +85,7 @@ export function CellOutput({ cellId }: CellOutputProps) {
         tableType={TableType.CLIENT_SIDE_PAGINATED}
         columns={columns}
         data={data.data ?? []}
+        showRowNumbers
         emptyMessage="No rows match the query"
         overallContainerStyle={`${CellStyles.outputContainerSql} ${CellOutputStyles.outputContainer}`}
         tableContainerStyle={CellOutputStyles.tableContainer}

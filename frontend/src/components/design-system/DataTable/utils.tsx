@@ -9,6 +9,7 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   Table,
+  Row,
 } from "@tanstack/react-table";
 import { ColumnDataType } from "src/constants/database_types";
 import { Pagination } from "src/components/design-system/Pagination";
@@ -95,6 +96,19 @@ export function getFontClass(dataType: ColumnDataType | undefined): string {
   }
 
   return "";
+}
+
+export function getDisplayRowNumber<T>(table: Table<T>, row: Row<T>): number {
+  const { pageIndex, pageSize } = table.getState().pagination;
+  const positionInCurrentPage = table
+    .getRowModel()
+    .rows.findIndex((rowInCurrentPage) => rowInCurrentPage.id === row.id);
+
+  if (positionInCurrentPage === -1) {
+    throw Error(`Row ${row.id} is not part of the rendered rows`);
+  }
+
+  return pageIndex * pageSize + positionInCurrentPage + 1;
 }
 
 export function useCreateReactTable<T>(
