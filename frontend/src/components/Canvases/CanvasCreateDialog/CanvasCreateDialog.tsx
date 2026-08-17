@@ -76,7 +76,7 @@ export function CanvasCreateDialog() {
   const dialogContent = (
     <Form defaultValues={DEFAULT_FORM_VALUES} onSubmit={onSubmitCallback}>
       <Form.ErrorBanner />
-      <Form.Fields>
+      <Form.Fields className={styles.formFieldsSingleColumn}>
         <Form.Field
           name="name"
           required
