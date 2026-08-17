@@ -8,6 +8,10 @@
   width: 30%;
 }
 
+.formFieldsSingleColumn {
+  grid-template-columns: 1fr;
+}
+
 .formFieldContainer {
   display: flex;
   flex-direction: row;
