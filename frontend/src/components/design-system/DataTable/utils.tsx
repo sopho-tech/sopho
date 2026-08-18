@@ -16,6 +16,7 @@ import { Pagination } from "src/components/design-system/Pagination";
 import {
   TableType,
   PaginationConfig,
+  ColumnConfig,
 } from "src/components/design-system/DataTable/types";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
 
@@ -96,6 +97,20 @@ export function getFontClass(dataType: ColumnDataType | undefined): string {
   }
 
   return "";
+}
+
+export function getColumnWidthStyle<T>(
+  columnConfig: ColumnConfig<T> | undefined,
+  resolvedColumnSize: number
+): React.CSSProperties {
+  if (columnConfig?.fixedWidth === undefined) {
+    return { width: resolvedColumnSize };
+  }
+
+  return {
+    minWidth: columnConfig.fixedWidth,
+    maxWidth: columnConfig.fixedWidth,
+  };
 }
 
 export function getDisplayRowNumber<T>(table: Table<T>, row: Row<T>): number {

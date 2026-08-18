@@ -13,6 +13,7 @@ export type ColumnConfig<T> = {
   size?: number;
   minSize?: number;
   maxSize?: number;
+  fixedWidth?: number;
   type: "accessor" | "display";
   cell?: (props: CellContext<T, unknown>) => React.ReactNode;
   accessor?: keyof T;
