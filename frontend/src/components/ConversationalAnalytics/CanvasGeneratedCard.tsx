@@ -6,7 +6,6 @@ import {
   Badge,
   Icon,
   ToolTip,
-  Text,
 } from "src/components/design-system";
 import type { IconType } from "src/components/design-system/datatypes";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -20,7 +19,7 @@ type CanvasStatProps = {
 
 function CanvasStat({ iconType, count, tooltipText }: CanvasStatProps) {
   return (
-    <ToolTip messageElement={<Text>{tooltipText}</Text>} tooltipSide="top">
+    <ToolTip messageElement={tooltipText} tooltipSide="top">
       <Flex gap="xs" alignItems="center">
         <Icon type={iconType} color="grey" />
         <Badge variant="subtle">{count}</Badge>
