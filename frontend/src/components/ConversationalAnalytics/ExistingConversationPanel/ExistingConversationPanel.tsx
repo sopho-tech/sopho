@@ -26,6 +26,7 @@ import {
   useStartStream,
 } from "src/components/ConversationalAnalytics/ConversationStreamContext";
 import type { MessageComposerHandle } from "src/components/ConversationalAnalytics/MessageComposer";
+import { SLASH_COMMANDS } from "src/constants/slash_commands";
 import type { MessageSegment } from "src/api/conversational_analytics/queries";
 import { extractFollowUpQuestions } from "src/components/ConversationalAnalytics/dto";
 import {
@@ -151,7 +152,7 @@ export const ExistingConversationPanel = () => {
   const composerPlaceholder =
     lastAssistantStatus === MessageStatus.AwaitingClarification
       ? "Answer the clarifying question…"
-      : "Ask something else...";
+      : "Ask a follow-up, or type / for commands";
 
   const messagesToRender = useMemo(() => {
     const all = conversationQuery.data?.messages ?? [];
@@ -247,6 +248,7 @@ export const ExistingConversationPanel = () => {
                 onSubmit={handleSubmit}
                 disabled={composerDisabled}
                 disabledTooltip={composerDisabledTooltip}
+                availableCommands={SLASH_COMMANDS}
               />
             )}
           </Flex>

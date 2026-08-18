@@ -11,6 +11,8 @@ import {
 } from "src/components/ConversationalAnalytics/MessageComposer";
 import type { MessageSegment } from "src/api/conversational_analytics/queries";
 import { SuggestedQuestions } from "src/components/ConversationalAnalytics/NewConversationPanel/SuggestedQuestions";
+import { SlashCommandSuggestionList } from "src/components/ConversationalAnalytics/SlashCommandSuggestionList";
+import { SLASH_COMMANDS_FOR_FIRST_MESSAGE } from "src/constants/slash_commands";
 import styles from "./NewConversationPanel.module.css";
 
 export function NewConversationPanel() {
@@ -69,10 +71,15 @@ export function NewConversationPanel() {
         </Heading>
         <MessageComposer
           ref={composerRef}
-          placeholder="Hi, how can I help you today ?"
+          placeholder={
+            SLASH_COMMANDS_FOR_FIRST_MESSAGE.length > 0
+              ? "Ask anything, or type / for commands"
+              : "Ask anything about your data"
+          }
           onSubmit={handleSubmit}
           disabled={disabled}
           disabledTooltip={disabledTooltip}
+          availableCommands={SLASH_COMMANDS_FOR_FIRST_MESSAGE}
           slotLeft={
             <Select
               value={selectedConnectionId}
@@ -90,6 +97,12 @@ export function NewConversationPanel() {
                 ))}
               </Select.Content>
             </Select>
+          }
+        />
+        <SlashCommandSuggestionList
+          commands={SLASH_COMMANDS_FOR_FIRST_MESSAGE}
+          onPick={(commandName) =>
+            composerRef.current?.insertCommand(commandName)
           }
         />
         <SuggestedQuestions
