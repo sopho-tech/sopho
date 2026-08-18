@@ -1,6 +1,7 @@
 use super::dto::{Column, Database, Schema, Table};
 use crate::{
     ai::dto::{DeletionSet, SelectionSet},
+    common::AppState,
     common::errors::GetDataCatalogError,
     data_catalog::service::get_data_catalog_of_connection,
     entity,
@@ -148,10 +149,11 @@ pub fn prune_data_catalog_batch(
 }
 
 pub async fn get_data_catalog_batches(
+    app_state: &AppState,
     connection: &entity::connection::Model,
     batch_size: u32,
 ) -> Result<Vec<Database>, GetDataCatalogError> {
-    let catalog = get_data_catalog_of_connection(connection).await?;
+    let catalog = get_data_catalog_of_connection(app_state, connection).await?;
     let mut table_entries: Vec<(String, String, bool, bool, String, Table)> = Vec::new();
     for (_, schema) in catalog.schemas.iter() {
         for (table_name, table) in schema.tables.iter() {

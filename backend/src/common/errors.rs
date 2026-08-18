@@ -42,6 +42,12 @@ pub enum GetDatabaseConnectionError {
     Connection(sea_orm::DbErr),
     #[error("Failed to connect to database: {0}")]
     DatabaseConnection(#[from] sqlx::Error),
+    #[error("Failed to parse source type: {0}")]
+    SourceTypeParse(String),
+    #[error("Unsupported source type: {0}")]
+    UnsupportedSourceType(String),
+    #[error("Database pool unavailable: {0}")]
+    PoolUnavailable(String),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -60,6 +66,8 @@ pub enum GetDataCatalogError {
     SourceTypeParse(String),
     #[error("Failed to fetch data catalog: {0}")]
     DatabaseConnection(#[from] sqlx::Error),
+    #[error("{0}")]
+    GetConnection(#[from] GetDatabaseConnectionError),
 }
 
 #[derive(Debug, thiserror::Error)]

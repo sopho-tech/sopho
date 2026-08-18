@@ -248,5 +248,5 @@ pub async fn execute_query(
                     other => GetDatabaseConnectionError::Connection(other).into(),
                 }
             })?;
-    database_service::execute_sql_query(&connection, &payload.query).await
+    database_service::execute_sql_query(app_state, &connection, &payload.query).await
 }

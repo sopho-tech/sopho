@@ -15,6 +15,8 @@ use crate::connection::constants::SourceType;
 use crate::connection::dto::CreateConnectionDto;
 use crate::connection::service::{execute_create_connection, execute_delete_connection};
 use crate::data_catalog::dto::{Column, Database, Schema, Table};
+use crate::data_catalog::get_data_catalog_batches;
+use crate::database::pool::new_database_pool_registry;
 use crate::{db, entity};
 use std::path::Path;
 use std::sync::Arc;
@@ -63,6 +65,7 @@ async fn init_app_state() -> AppState {
                     .unwrap(),
                 reqwest::Client::new(),
                 Arc::new(RwLock::new(None)),
+                new_database_pool_registry(),
             );
         }
     };
@@ -78,7 +81,13 @@ async fn init_app_state() -> AppState {
     let client = reqwest::Client::new();
     let model_client = ModelClient::anthropic(anthropic_api_key.as_ref()).unwrap();
     let model_client = Arc::new(RwLock::new(Some(model_client)));
-    AppState::new(database_connection, config, client, model_client)
+    AppState::new(
+        database_connection,
+        config,
+        client,
+        model_client,
+        new_database_pool_registry(),
+    )
 }
 
 async fn create_test_connection(app_state: &AppState) -> entity::connection::Model {
@@ -392,11 +401,15 @@ async fn execute_works() {
 async fn execute_search_space_reduction_works() {
     init_tracing();
     let (app_state, connection) = setup_test_env().await;
+    let data_catalog_batches = get_data_catalog_batches(&app_state, &connection, 5)
+        .await
+        .unwrap();
     let _pruned_data_catalog = execute_search_space_reduction(
         &app_state,
         &connection,
         "What are the top 5 customers by revenue?",
         MASTER_PLAN_TOP_5_CUSTOMERS,
+        data_catalog_batches,
     )
     .await
     .unwrap();
@@ -468,7 +481,15 @@ fn sample_functional_role_analysis_result() -> FunctionalRoleAnalysisResult {
     }
 }
 
-fn sample_emperical_observations() -> Vec<EmpericalObservation> {
+fn sample_emperical_observations() -> Vec<(TableFunction, EmpericalObservation)> {
+    sample_functional_role_analysis_result()
+        .table_functions
+        .into_iter()
+        .zip(sample_emperical_observation_values())
+        .collect()
+}
+
+fn sample_emperical_observation_values() -> Vec<EmpericalObservation> {
     vec![
         EmpericalObservation {
             relevant: true,

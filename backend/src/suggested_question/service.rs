@@ -85,7 +85,7 @@ async fn regenerate(
     app_state: &AppState,
     connection: &entity::connection::Model,
 ) -> anyhow::Result<()> {
-    let catalog = data_catalog::get_data_catalog_of_connection(connection).await?;
+    let catalog = data_catalog::get_data_catalog_of_connection(app_state, connection).await?;
     let questions = suggested_questions_agent::suggest_questions(app_state, connection, &catalog).await?;
     if questions.is_empty() {
         anyhow::bail!("no questions generated");

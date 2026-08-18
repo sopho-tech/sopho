@@ -3,6 +3,7 @@ use crate::ai_configuration;
 use crate::common::cryptography_utils::{
     generate_and_store_encryption_key, get_encryption_key_from_path,
 };
+use crate::database::pool::{new_database_pool_registry, DatabasePoolRegistry};
 use crate::db;
 use anyhow::bail;
 use sea_orm::DatabaseConnection;
@@ -214,6 +215,7 @@ pub struct AppState {
     pub config: Configurations,
     pub client: reqwest::Client,
     pub model_client: Arc<RwLock<Option<ModelClient>>>,
+    pub database_pools: DatabasePoolRegistry,
 }
 
 impl AppState {
@@ -222,12 +224,14 @@ impl AppState {
         config: Configurations,
         client: reqwest::Client,
         model_client: Arc<RwLock<Option<ModelClient>>>,
+        database_pools: DatabasePoolRegistry,
     ) -> Self {
         Self {
             database_connection,
             config,
             client,
             model_client,
+            database_pools,
         }
     }
 
@@ -246,7 +250,14 @@ impl AppState {
         let database_connection = db::get_db(&config.database_url).await.unwrap();
         let client = reqwest::Client::new();
         let model_client: Arc<RwLock<Option<ModelClient>>> = Arc::new(RwLock::new(None));
-        Ok(Self::new(database_connection, config, client, model_client))
+        let database_pools = new_database_pool_registry();
+        Ok(Self::new(
+            database_connection,
+            config,
+            client,
+            model_client,
+            database_pools,
+        ))
     }
 
     pub async fn load_ai_configuration(&self) {

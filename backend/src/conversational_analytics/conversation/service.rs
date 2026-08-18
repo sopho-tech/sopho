@@ -645,10 +645,28 @@ async fn run_pipeline(
                 text_to_sql_agent::execute(app_state, connection, effective_question, channels)
                     .await?;
 
+            let followup_questions_handle = {
+                let app_state = app_state.clone();
+                let connection = connection.clone();
+                let followup_question = effective_question.to_string();
+                let followup_sql = sql.clone();
+                let conversation_history = conversation_history.clone();
+                tokio::spawn(async move {
+                    compute_followup_questions(
+                        &app_state,
+                        &connection,
+                        &followup_question,
+                        &followup_sql,
+                        &conversation_history,
+                    )
+                    .await
+                })
+            };
+
             channels
                 .send_sse_only(crate::ai::dto::Event::ExecutingQuery)
                 .await;
-            let query_result = execute_sql_query(connection, &sql).await?;
+            let query_result = execute_sql_query(app_state, connection, &sql).await?;
             channels
                 .send_sse_only(crate::ai::dto::Event::ExecutedQuery {
                     columns: query_result.columns.clone(),
@@ -673,15 +691,14 @@ async fn run_pipeline(
             );
             visualization_result?;
 
-            send_followup_questions(
-                app_state,
-                connection,
-                effective_question,
-                &sql,
-                conversation_history,
-                channels,
-            )
-            .await;
+            let followup_questions = followup_questions_handle.await.unwrap_or_default();
+            if !followup_questions.is_empty() {
+                let _ = channels
+                    .send(crate::ai::dto::Event::SuggestedFollowups {
+                        questions: followup_questions,
+                    })
+                    .await;
+            }
             channels.send(crate::ai::dto::Event::Completed).await?;
             Ok(PipelineOutcome::Completed)
         }
@@ -710,22 +727,21 @@ async fn run_pipeline(
     }
 }
 
-async fn send_followup_questions(
+async fn compute_followup_questions(
     app_state: &AppState,
     connection: &entity::connection::Model,
     question: &str,
     sql: &str,
     conversation_history: &ConversationHistory,
-    channels: &EventChannels,
-) {
-    let catalog = match data_catalog::get_data_catalog_of_connection(connection).await {
-        Ok(c) => c,
-        Err(e) => {
-            tracing::error!("followup questions: failed to load catalog: {e}");
-            return;
+) -> Vec<String> {
+    let catalog = match data_catalog::get_data_catalog_of_connection(app_state, connection).await {
+        Ok(catalog) => catalog,
+        Err(error) => {
+            tracing::error!("followup questions: failed to load catalog: {error}");
+            return Vec::new();
         }
     };
-    let questions = match followup_questions_agent::suggest_followups(
+    match followup_questions_agent::suggest_followups(
         app_state,
         connection,
         question,
@@ -735,18 +751,12 @@ async fn send_followup_questions(
     )
     .await
     {
-        Ok(q) => q,
-        Err(e) => {
-            tracing::error!("followup questions: generation failed: {e}");
-            return;
+        Ok(questions) => questions,
+        Err(error) => {
+            tracing::error!("followup questions: generation failed: {error}");
+            Vec::new()
         }
-    };
-    if questions.is_empty() {
-        return;
     }
-    let _ = channels
-        .send(crate::ai::dto::Event::SuggestedFollowups { questions })
-        .await;
 }
 
 fn content_type_for_event(event: &crate::ai::dto::Event) -> ContentType {

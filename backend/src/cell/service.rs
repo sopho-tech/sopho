@@ -21,7 +21,6 @@ use crate::common::time_utils;
 use crate::common::AppState;
 use crate::connection::service as connection_service;
 use crate::dashboard::service as dashboard_service;
-use crate::database::constants::DatabaseConnection;
 use crate::database::constants::QueryResult;
 use crate::database::service as database_service;
 use crate::entity;
@@ -514,17 +513,6 @@ async fn fetch_connection(
         })
 }
 
-async fn execute_query_and_format_results(
-    database_connection: &mut DatabaseConnection,
-    query: &str,
-) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let result = database_service::execute_query(database_connection, query).await;
-    match result {
-        Ok(result) => query_result_response(&result),
-        Err(e) => execute_query_error_response(e),
-    }
-}
-
 fn query_result_response(result: &QueryResult) -> (http::StatusCode, axum::Json<JsonValue>) {
     (
         StatusCode::OK,
@@ -777,7 +765,7 @@ pub async fn execute_cell_preview(
                 Ok(q) => q,
                 Err(err) => return err,
             };
-            execute_sql_with_query(&connection, &query).await
+            execute_sql_with_query(&app_state, &connection, &query).await
         }
         CellType::Chart => {
             let chart_content = match parse_chart_content(&payload.content) {
@@ -814,6 +802,20 @@ fn get_database_connection_error_response(
             StatusCode::BAD_REQUEST,
             axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
+        GetDatabaseConnectionError::SourceTypeParse(message) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": message })),
+        ),
+        GetDatabaseConnectionError::UnsupportedSourceType(source_type) => (
+            StatusCode::BAD_REQUEST,
+            axum::Json(
+                serde_json::json!({ "error": format!("Unsupported source type: {source_type}") }),
+            ),
+        ),
+        GetDatabaseConnectionError::PoolUnavailable(message) => (
+            StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({ "error": message })),
+        ),
     }
 }
 
@@ -829,15 +831,14 @@ fn missing_connection_response() -> (http::StatusCode, axum::Json<JsonValue>) {
 }
 
 async fn execute_sql_with_query(
+    app_state: &AppState,
     connection: &entity::connection::Model,
     query: &str,
 ) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let mut database_connection = match database_service::get_database_connection(connection).await
-    {
-        Ok(conn) => conn,
-        Err(err) => return get_database_connection_error_response(err),
-    };
-    execute_query_and_format_results(&mut database_connection, query).await
+    match database_service::execute_sql_query(app_state, connection, query).await {
+        Ok(result) => query_result_response(&result),
+        Err(err) => execute_sql_error_response(err),
+    }
 }
 
 async fn execute_sql_cell(
@@ -856,7 +857,7 @@ async fn execute_sql_cell(
         Ok(q) => q,
         Err(err) => return err,
     };
-    execute_sql_with_query(&connection, &query).await
+    execute_sql_with_query(app_state, &connection, &query).await
 }
 
 fn map_cell_lookup_error(err: sea_orm::DbErr) -> ExecuteChartError {
@@ -991,7 +992,7 @@ async fn execute_chart_content_data(
     let source_cell_id = get_source_cell_id(chart_content);
     let (connection, source_query) = get_source_cell_for_chart(app_state, source_cell_id).await?;
     let aggregated_query = build_chart_aggregated_query(chart_content, &source_query)?;
-    Ok(database_service::execute_sql_query(&connection, &aggregated_query).await?)
+    Ok(database_service::execute_sql_query(app_state, &connection, &aggregated_query).await?)
 }
 
 async fn execute_chart_for_cell(
