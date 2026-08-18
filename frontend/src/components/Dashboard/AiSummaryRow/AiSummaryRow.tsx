@@ -1,8 +1,20 @@
+import { useState } from "react";
 import { AiSummaryDto, useDashboardSummary } from "src/api/ai_summary";
-import { Box, Flex, Icon, Text } from "src/components/design-system";
+import {
+  Box,
+  Collapsible,
+  Flex,
+  Icon,
+  MotionFlex,
+  Text,
+} from "src/components/design-system";
+import { rotateToggleTransition } from "src/components/design-system/animation";
 import { formatRelativeTime, formatTimestamp } from "src/utils/timestamp_utils";
 
 const SUMMARY_STYLE = { lineHeight: "var(--line-height-relaxed)" };
+
+const CHEVRON_COLLAPSED = { rotate: 0 };
+const CHEVRON_EXPANDED = { rotate: 90 };
 
 type AiSummaryRowProps = {
   dashboardId: string;
@@ -44,6 +56,7 @@ function failureMessage(summary: AiSummaryDto) {
 
 export function AiSummaryRow({ dashboardId }: AiSummaryRowProps) {
   const { data: summary } = useDashboardSummary(dashboardId);
+  const [expanded, setExpanded] = useState(false);
 
   if (!summary) {
     return null;
@@ -57,47 +70,69 @@ export function AiSummaryRow({ dashboardId }: AiSummaryRowProps) {
   }
 
   return (
-    <Flex direction="column" gap="2xs" borderRadius="lg" revealChildrenOnHover>
-      <Box revealOnHover>
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <Collapsible.Trigger asChild={false}>
+        <MotionFlex
+          alignItems="center"
+          justifyContent="center"
+          flex="none"
+          animate={expanded ? CHEVRON_EXPANDED : CHEVRON_COLLAPSED}
+          transition={rotateToggleTransition}
+        >
+          <Icon
+            type="chevron_right"
+            color="grey"
+            size="sm"
+            interactive={false}
+          />
+        </MotionFlex>
         <Text as="span" fontSize="xs" color="subtle">
           AI summary
         </Text>
-      </Box>
+      </Collapsible.Trigger>
 
-      {isGenerating && (
-        <StatusNote
-          iconColor="warning"
-          message="Generating a new summary. Showing the previous one until it is ready."
-          highlighted
-        />
-      )}
+      <Collapsible.Content>
+        <Flex
+          direction="column"
+          gap="2xs"
+          paddingTop="2xs"
+          paddingLeft="md"
+          borderRadius="lg"
+        >
+          {isGenerating && (
+            <StatusNote
+              iconColor="warning"
+              message="Generating a new summary. Showing the previous one until it is ready."
+              highlighted
+            />
+          )}
 
-      {hasFailed && (
-        <StatusNote iconColor="error" message={failureMessage(summary)} />
-      )}
+          {hasFailed && (
+            <StatusNote iconColor="error" message={failureMessage(summary)} />
+          )}
 
-      {summary.is_prompt_stale && !isGenerating && (
-        <StatusNote
-          iconColor="warning"
-          message="Prompt changed since this summary was generated."
-        />
-      )}
+          {summary.is_prompt_stale && !isGenerating && (
+            <StatusNote
+              iconColor="warning"
+              message="Prompt changed since this summary was generated."
+            />
+          )}
 
-      {summary.summary_text && (
-        <Box sx={SUMMARY_STYLE}>
-          <Text as="p" fontSize="base">
-            {summary.summary_text}
-          </Text>
-        </Box>
-      )}
+          {summary.summary_text && (
+            <Box sx={SUMMARY_STYLE}>
+              <Text as="p" fontSize="base">
+                {summary.summary_text}
+              </Text>
+            </Box>
+          )}
 
-      {summary.generated_at && (
-        <Box revealOnHover>
-          <Text as="span" fontSize="xs" color="subtle">
-            {`Generated ${formatTimestamp(summary.generated_at)} · ${formatRelativeTime(summary.generated_at)}`}
-          </Text>
-        </Box>
-      )}
-    </Flex>
+          {summary.generated_at && (
+            <Text as="span" fontSize="xs" color="subtle">
+              {`Generated ${formatTimestamp(summary.generated_at)} · ${formatRelativeTime(summary.generated_at)}`}
+            </Text>
+          )}
+        </Flex>
+      </Collapsible.Content>
+    </Collapsible>
   );
 }
