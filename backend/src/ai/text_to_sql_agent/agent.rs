@@ -1,6 +1,7 @@
 use super::constants::{
-    DATA_CATALOG_BATCHES, LOGICAL_PLAN_HYPOTHESIS_GENERATION_ROUNDS,
-    SCHEMA_LINKING_MAX_REFINE_ROUNDS, SQL_GENERATION_ROUNDS,
+    DATA_CATALOG_BATCHES, DATA_PROFILING_CONCURRENCY, HYPOTHESIS_GENERATION_CONCURRENCY,
+    LOGICAL_PLAN_HYPOTHESIS_GENERATION_ROUNDS, SCHEMA_LINKING_MAX_REFINE_ROUNDS,
+    SEARCH_SPACE_REDUCTION_CONCURRENCY, SQL_GENERATION_ROUNDS,
 };
 use super::system_prompt::SystemPrompt;
 use super::user_prompt::UserPrompt;
@@ -21,6 +22,7 @@ use crate::data_catalog::{
 use crate::database::service::{execute_sql_queries_in_parallel, execute_sql_query};
 use crate::entity;
 use anyhow::Result;
+use futures_util::StreamExt;
 use rig::message::Message;
 use tracing::info;
 
@@ -50,24 +52,43 @@ pub async fn execute_schema_linking(
     question: &str,
     channels: &EventChannels,
 ) -> Result<(String, SchemaLinkingFinalSynthesisResponse)> {
-    let candidate_hypothesis =
-        execute_hypothesis_generation(app_state, connection, question, channels).await?;
-
-    channels.send(Event::IntegratingCandidatePlans).await?;
-    let master_plan =
-        execute_integrate_candidate_plans(app_state, connection, question, candidate_hypothesis)
+    let (data_catalog_batches, master_plan) = tokio::try_join!(
+        async {
+            get_data_catalog_batches(app_state, connection, DATA_CATALOG_BATCHES)
+                .await
+                .map_err(anyhow::Error::from)
+        },
+        async {
+            let candidate_hypothesis =
+                execute_hypothesis_generation(app_state, connection, question, channels).await?;
+            channels.send(Event::IntegratingCandidatePlans).await?;
+            let master_plan = execute_integrate_candidate_plans(
+                app_state,
+                connection,
+                question,
+                candidate_hypothesis,
+            )
             .await?;
-    channels
-        .send(Event::IntegratedCandidatePlans {
-            master_plan: master_plan.clone(),
-        })
-        .await?;
+            channels
+                .send(Event::IntegratedCandidatePlans {
+                    master_plan: master_plan.clone(),
+                })
+                .await?;
+            Ok(master_plan)
+        }
+    )?;
 
     info!("master_plan: {master_plan}");
 
     channels.send(Event::ExecutingSearchSpaceReduction).await?;
-    let pruned_data_catalog =
-        execute_search_space_reduction(app_state, connection, question, &master_plan).await?;
+    let pruned_data_catalog = execute_search_space_reduction(
+        app_state,
+        connection,
+        question,
+        &master_plan,
+        data_catalog_batches,
+    )
+    .await?;
     channels
         .send(Event::ExecutedSearchSpaceReduction {
             pruned_data_catalog: pruned_data_catalog.clone(),
@@ -128,24 +149,32 @@ async fn execute_hypothesis_generation(
 ) -> Result<Vec<LogicalPlanningResponse>> {
     channels.send(Event::GeneratingCandidateHypothesis).await?;
     let model_client = app_state.require_model_client().await?;
-    let hypothesis_generation_agent = model_client.build_agent(
-        ModelRole::Default,
-        AgentName::HypothesisGenerationAgent,
-        SystemPrompt::LogicalPlanning.as_str(),
-        0.8,
-        2048,
-    );
-    let mut candidate_hypothesis = Vec::new();
-    for _rounds in 0..LOGICAL_PLAN_HYPOTHESIS_GENERATION_ROUNDS {
-        let prompt = UserPrompt::LogicalPlanningHypothesisGeneration {
-            question: question.to_string(),
-        }
-        .render();
-        let result: LogicalPlanningResponse = hypothesis_generation_agent
-            .prompt_typed::<LogicalPlanningResponse>(prompt)
-            .await?;
-        candidate_hypothesis.push(result);
-    }
+
+    let generation_results: Vec<Result<LogicalPlanningResponse, _>> =
+        futures_util::stream::iter((0..LOGICAL_PLAN_HYPOTHESIS_GENERATION_ROUNDS).map(|_round| {
+            let model_client = model_client.clone();
+            let question = question.to_string();
+            async move {
+                let hypothesis_generation_agent = model_client.build_agent(
+                    ModelRole::Default,
+                    AgentName::HypothesisGenerationAgent,
+                    SystemPrompt::LogicalPlanning.as_str(),
+                    0.8,
+                    2048,
+                );
+                let prompt = UserPrompt::LogicalPlanningHypothesisGeneration { question }.render();
+                hypothesis_generation_agent
+                    .prompt_typed::<LogicalPlanningResponse>(prompt)
+                    .await
+            }
+        }))
+        .buffered(HYPOTHESIS_GENERATION_CONCURRENCY)
+        .collect()
+        .await;
+
+    let candidate_hypothesis: Vec<LogicalPlanningResponse> = generation_results
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?;
     let hypothesis_for_event: Vec<String> = candidate_hypothesis
         .iter()
         .map(|p| p.logical_steps.join("\n"))
@@ -182,55 +211,59 @@ async fn execute_integrate_candidate_plans(
 
 pub(crate) async fn execute_search_space_reduction(
     app_state: &AppState,
-    connection: &entity::connection::Model,
+    _connection: &entity::connection::Model,
     question: &str,
     master_plan: &str,
+    data_catalog_batches: Vec<Database>,
 ) -> Result<Database> {
-    let data_catalog_batches = get_data_catalog_batches(connection, DATA_CATALOG_BATCHES)
-        .await
-        .map_err(anyhow::Error::from)?;
     info!("initial data_catalog_batches: {:?}", data_catalog_batches);
-    let mut pruned_batches = Vec::new();
-    for mut data_catalog_batch in data_catalog_batches {
-        let model_client = app_state.require_model_client().await?;
-        let data_catalog_deletion_agent = model_client.build_agent(
-            ModelRole::Default,
-            AgentName::DataCatalogDeletionAgent,
-            SystemPrompt::IdentifyingDeletionSet.as_str(),
-            0.2,
-            2048,
-        );
-        let data_catalog_selection_agent = model_client.build_agent(
-            ModelRole::Default,
-            AgentName::DataCatalogSelectionAgent,
-            SystemPrompt::IdentifyingSelectionSet.as_str(),
-            0.2,
-            2048,
-        );
-        let data_catalog_json = data_catalog_batch.to_display_string().unwrap_or_default();
-        let prompt = format!(
-            "USER QUESTION {}\n MASTER LOGICAL PLAN: {}\n DATABASE SCHEMA: {}",
-            question, master_plan, data_catalog_json
-        );
-        let (deletion_result, selection_result) = tokio::join!(
-            async {
-                data_catalog_deletion_agent
-                    .prompt_typed::<DeletionSet>(&prompt)
-                    .await
+    let pruning_results: Vec<Result<Database>> =
+        futures_util::stream::iter(data_catalog_batches.into_iter().map(
+            |mut data_catalog_batch| {
+                let model_client = app_state.require_model_client();
+                let question = question.to_string();
+                let master_plan = master_plan.to_string();
+                async move {
+                    let model_client = model_client.await?;
+                    let data_catalog_deletion_agent = model_client.build_agent(
+                        ModelRole::Default,
+                        AgentName::DataCatalogDeletionAgent,
+                        SystemPrompt::IdentifyingDeletionSet.as_str(),
+                        0.2,
+                        2048,
+                    );
+                    let data_catalog_selection_agent = model_client.build_agent(
+                        ModelRole::Default,
+                        AgentName::DataCatalogSelectionAgent,
+                        SystemPrompt::IdentifyingSelectionSet.as_str(),
+                        0.2,
+                        2048,
+                    );
+                    let data_catalog_json =
+                        data_catalog_batch.to_display_string().unwrap_or_default();
+                    let prompt = format!(
+                        "USER QUESTION {}\n MASTER LOGICAL PLAN: {}\n DATABASE SCHEMA: {}",
+                        question, master_plan, data_catalog_json
+                    );
+                    let (deletion_result, selection_result) = tokio::join!(
+                        data_catalog_deletion_agent.prompt_typed::<DeletionSet>(&prompt),
+                        data_catalog_selection_agent.prompt_typed::<SelectionSet>(&prompt)
+                    );
+                    let deletion_set = deletion_result?;
+                    let selection_set = selection_result?;
+                    info!("Deletion: {:?}", deletion_set);
+                    info!("Selection: {:?}", selection_set);
+                    prune_data_catalog_batch(&mut data_catalog_batch, deletion_set, selection_set);
+                    Ok(data_catalog_batch)
+                }
             },
-            async {
-                data_catalog_selection_agent
-                    .prompt_typed::<SelectionSet>(&prompt)
-                    .await
-            }
-        );
-        let deletion_set = deletion_result?;
-        let selection_set = selection_result?;
-        info!("Deletion: {:?}", deletion_set);
-        info!("Selection: {:?}", selection_set);
-        prune_data_catalog_batch(&mut data_catalog_batch, deletion_set, selection_set);
-        pruned_batches.push(data_catalog_batch);
-    }
+        ))
+        .buffered(SEARCH_SPACE_REDUCTION_CONCURRENCY)
+        .collect()
+        .await;
+
+    let pruned_batches: Vec<Database> =
+        pruning_results.into_iter().collect::<Result<Vec<_>>>()?;
     let pruned_data_catalog = join_pruned_batches(pruned_batches);
     Ok(pruned_data_catalog)
 }
@@ -242,7 +275,7 @@ pub(crate) async fn execute_hypothesis_verification(
     master_plan: &str,
     pruned_data_catalog: &Database,
     channels: &EventChannels,
-) -> Result<(Vec<EmpericalObservation>, FunctionalRoleAnalysisResult)> {
+) -> Result<(Vec<(TableFunction, EmpericalObservation)>, FunctionalRoleAnalysisResult)> {
     channels
         .send(Event::ExecutingFunctionalRoleAnalysis)
         .await?;
@@ -270,7 +303,10 @@ pub(crate) async fn execute_hypothesis_verification(
     .await?;
     channels
         .send(Event::ExecutedDataProfiling {
-            emperical_observations: emperical_observations.clone(),
+            emperical_observations: emperical_observations
+                .iter()
+                .map(|(_, observation)| observation.clone())
+                .collect(),
         })
         .await?;
     Ok((emperical_observations, functional_role_analysis_result))
@@ -313,76 +349,99 @@ async fn execute_data_profiling(
     question: &str,
     pruned_data_catalog: &Database,
     functional_role_analysis_result: &FunctionalRoleAnalysisResult,
-) -> Result<Vec<EmpericalObservation>> {
-    let mut emperical_observations: Vec<EmpericalObservation> = Vec::new();
-    for table_function in &functional_role_analysis_result.table_functions {
-        let table =
-            match pruned_data_catalog.get_table(&table_function.schema, &table_function.table) {
-                Some(t) => t,
-                None => continue,
-            };
-        let mut chat_history: Vec<Message> = Vec::new();
-
-        let model_client = app_state.require_model_client().await?;
-        let data_profiling_agent = model_client.build_agent(
-            ModelRole::Default,
-            AgentName::DataProfilingBeforeAgent,
-            SystemPrompt::DataProfiling.as_str(),
-            0.2,
-            2048,
-        );
-        let sql_dialect = sql_dialect_from_source_type(&connection.source_type);
-        let prompt = UserPrompt::DataProfilingBefore {
-            table_name: table_function.table.clone(),
-            columns: table.columns_as_vec(),
-            question: question.to_string(),
-            semantic_role: table_function.table_function.clone(),
-            sql_dialect,
-        }
-        .render();
-        let exploration_queries: Vec<ExplorationQuery> = data_profiling_agent
-            .prompt_typed_with_history(prompt, &mut chat_history)
-            .await?;
-
-        let queries: Vec<&str> = exploration_queries.iter().map(|q| q.sql.as_str()).collect();
-        let query_results = execute_sql_queries_in_parallel(connection, &queries).await;
-        let observations: Vec<ExplorationQueryResult> = exploration_queries
+) -> Result<Vec<(TableFunction, EmpericalObservation)>> {
+    let profiling_targets: Vec<(TableFunction, Vec<crate::data_catalog::dto::Column>)> =
+        functional_role_analysis_result
+            .table_functions
             .iter()
-            .zip(query_results)
-            .map(|(eq, res)| {
-                let sql_result = match res {
-                    Ok(r) => serde_json::to_string(&r.data).unwrap_or_else(|_| "{}".to_string()),
-                    Err(e) => e.to_string(),
-                };
-                ExplorationQueryResult {
-                    sql: eq.sql.clone(),
-                    sql_result,
+            .filter_map(|table_function| {
+                match pruned_data_catalog.get_table(&table_function.schema, &table_function.table) {
+                    Some(table) => Some((table_function.clone(), table.columns_as_vec())),
+                    None => {
+                        tracing::warn!(
+                            "data profiling: table {}.{} from functional role analysis is absent from the pruned data catalog; skipping",
+                            table_function.schema,
+                            table_function.table
+                        );
+                        None
+                    }
                 }
             })
             .collect();
-        info!(
-            "observations: {}",
-            serde_json::to_string_pretty(&observations).unwrap_or_default()
-        );
 
-        let prompt = UserPrompt::DataProfilingAfter {
-            table_name: table_function.table.clone(),
-            observations,
-        }
-        .render();
+    let profiling_results: Vec<Result<(TableFunction, EmpericalObservation)>> =
+        futures_util::stream::iter(profiling_targets.into_iter().map(
+            |(table_function, table_columns)| async move {
+                let mut chat_history: Vec<Message> = Vec::new();
 
-        let table_emperical_observation: EmpericalObservation = data_profiling_agent
-            .prompt_typed_with_history(prompt, &mut chat_history)
-            .await?;
+                let model_client = app_state.require_model_client().await?;
+                let data_profiling_agent = model_client.build_agent(
+                    ModelRole::Default,
+                    AgentName::DataProfilingBeforeAgent,
+                    SystemPrompt::DataProfiling.as_str(),
+                    0.2,
+                    2048,
+                );
+                let sql_dialect = sql_dialect_from_source_type(&connection.source_type);
+                let prompt = UserPrompt::DataProfilingBefore {
+                    table_name: table_function.table.clone(),
+                    columns: table_columns,
+                    question: question.to_string(),
+                    semantic_role: table_function.table_function.clone(),
+                    sql_dialect,
+                }
+                .render();
+                let exploration_queries: Vec<ExplorationQuery> = data_profiling_agent
+                    .prompt_typed_with_history(prompt, &mut chat_history)
+                    .await?;
 
-        info!(
-            "table_emperical_observation: {}",
-            serde_json::to_string_pretty(&table_emperical_observation).unwrap_or_default()
-        );
+                let queries: Vec<&str> =
+                    exploration_queries.iter().map(|q| q.sql.as_str()).collect();
+                let query_results =
+                    execute_sql_queries_in_parallel(app_state, connection, &queries).await;
+                let observations: Vec<ExplorationQueryResult> = exploration_queries
+                    .iter()
+                    .zip(query_results)
+                    .map(|(exploration_query, query_result)| {
+                        let sql_result = match query_result {
+                            Ok(result) => serde_json::to_string(&result.data)
+                                .unwrap_or_else(|_| "{}".to_string()),
+                            Err(error) => error.to_string(),
+                        };
+                        ExplorationQueryResult {
+                            sql: exploration_query.sql.clone(),
+                            sql_result,
+                        }
+                    })
+                    .collect();
+                info!(
+                    "observations: {}",
+                    serde_json::to_string_pretty(&observations).unwrap_or_default()
+                );
 
-        emperical_observations.push(table_emperical_observation);
-    }
-    Ok(emperical_observations)
+                let prompt = UserPrompt::DataProfilingAfter {
+                    table_name: table_function.table.clone(),
+                    observations,
+                }
+                .render();
+
+                let table_emperical_observation: EmpericalObservation = data_profiling_agent
+                    .prompt_typed_with_history(prompt, &mut chat_history)
+                    .await?;
+
+                info!(
+                    "table_emperical_observation: {}",
+                    serde_json::to_string_pretty(&table_emperical_observation).unwrap_or_default()
+                );
+
+                Ok((table_function.clone(), table_emperical_observation))
+            },
+        ))
+        .buffered(DATA_PROFILING_CONCURRENCY)
+        .collect()
+        .await;
+
+    profiling_results.into_iter().collect::<Result<Vec<_>>>()
 }
 
 pub(crate) async fn schema_linking_final_synthesis(
@@ -390,7 +449,7 @@ pub(crate) async fn schema_linking_final_synthesis(
     connection: &entity::connection::Model,
     question: &str,
     functional_role_analysis_result: FunctionalRoleAnalysisResult,
-    emperical_observations: &[EmpericalObservation],
+    emperical_observations: &[(TableFunction, EmpericalObservation)],
     pruned_data_catalog: &Database,
 ) -> Result<SchemaLinkingFinalSynthesisResponse> {
     info!(
@@ -408,11 +467,7 @@ pub(crate) async fn schema_linking_final_synthesis(
         16384,
     );
 
-    let schema_status = generate_schema_status(
-        &functional_role_analysis_result.table_functions,
-        emperical_observations,
-        pruned_data_catalog,
-    );
+    let schema_status = generate_schema_status(emperical_observations, pruned_data_catalog);
     info!(
         "schema_linking_final_synthesis: schema_status ready (chars={})",
         schema_status.len()
@@ -456,7 +511,8 @@ pub(crate) async fn schema_linking_final_synthesis(
             SCHEMA_LINKING_MAX_REFINE_ROUNDS,
             queries.len()
         );
-        let query_results = execute_sql_queries_in_parallel(connection, &queries).await;
+        let query_results =
+            execute_sql_queries_in_parallel(app_state, connection, &queries).await;
 
         let results: String = result
             .exploration_queries
@@ -541,7 +597,7 @@ pub(crate) async fn sql_generation(
                 let queries: Vec<&str> =
                     explore_queries.iter().map(|res| res.sql.as_str()).collect();
                 let exploration_results =
-                    execute_sql_queries_in_parallel(connection, &queries).await;
+                    execute_sql_queries_in_parallel(app_state, connection, &queries).await;
                 let results: String = queries
                     .iter()
                     .zip(exploration_results)
@@ -572,7 +628,7 @@ pub(crate) async fn sql_generation(
             }
             SqlGenerationActionType::GenerateSql => {
                 let sql = result.sql.unwrap_or_default();
-                let result = execute_sql_query(connection, sql.as_str()).await;
+                let result = execute_sql_query(app_state, connection, sql.as_str()).await;
                 let result = match result {
                     Ok(r) => serde_json::to_string(&r.data).unwrap_or_else(|_| "{}".to_string()),
                     Err(e) => e.to_string(),
@@ -602,39 +658,40 @@ fn format_candidate_plans_for_prompt(candidate_plans: Vec<LogicalPlanningRespons
 }
 
 fn generate_schema_status(
-    table_functions: &[TableFunction],
-    emperical_observations: &[EmpericalObservation],
+    emperical_observations: &[(TableFunction, EmpericalObservation)],
     pruned_data_catalog: &Database,
 ) -> String {
-    let tables_status: Vec<SchemaStatusTable> = table_functions
+    let tables_status: Vec<SchemaStatusTable> = emperical_observations
         .iter()
-        .zip(emperical_observations.iter())
-        .filter_map(|(tf, obs)| {
-            let table = pruned_data_catalog.get_table(&tf.schema, &tf.table)?;
-            let observation_by_column: std::collections::HashMap<&str, _> = obs
+        .filter_map(|(table_function, observation)| {
+            let table =
+                pruned_data_catalog.get_table(&table_function.schema, &table_function.table)?;
+            let observation_by_column: std::collections::HashMap<&str, _> = observation
                 .relevant_columns
                 .iter()
-                .map(|c| (c.column_name.as_str(), c))
+                .map(|column| (column.column_name.as_str(), column))
                 .collect();
             let columns: Vec<SchemaStatusColumn> = table
                 .columns_as_vec()
                 .into_iter()
-                .map(|col| {
-                    let obs_col = observation_by_column.get(col.name.as_str());
+                .map(|column| {
+                    let observed_column = observation_by_column.get(column.name.as_str());
                     SchemaStatusColumn {
-                        name: col.name,
-                        data_type: col.data_type,
-                        description: col.description,
-                        observations: obs_col.map(|c| c.observations.clone()).unwrap_or_default(),
-                        relevance_reason: obs_col
+                        name: column.name,
+                        data_type: column.data_type,
+                        description: column.description,
+                        observations: observed_column
+                            .map(|c| c.observations.clone())
+                            .unwrap_or_default(),
+                        relevance_reason: observed_column
                             .map(|c| c.relevance_reason.clone())
                             .unwrap_or_default(),
                     }
                 })
                 .collect();
             Some(SchemaStatusTable {
-                table_name: tf.table.clone(),
-                status: if obs.relevant {
+                table_name: table_function.table.clone(),
+                status: if observation.relevant {
                     "MARKED_RELEVANT".to_string()
                 } else {
                     "MARKED_IRRELEVANT".to_string()
@@ -646,7 +703,7 @@ fn generate_schema_status(
 
     tables_status
         .iter()
-        .map(|t| serde_json::to_string(t).unwrap_or_default())
+        .map(|table_status| serde_json::to_string(table_status).unwrap_or_default())
         .collect::<Vec<_>>()
         .join("\n")
 }

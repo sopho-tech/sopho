@@ -1,13 +1,15 @@
 use crate::common::errors::{ExecuteQueryError, ValidationError};
 use crate::data_catalog::dto::{Column as CatalogColumn, Database, Schema, Table};
-use crate::database::constants::DatabaseConnection;
 use crate::database::constants::QueryResult;
+use crate::database::constants::{
+    CATALOG_SAMPLE_VALUES_PER_COLUMN, CATALOG_TABLE_FETCH_CONCURRENCY,
+};
 use crate::{connection::constants::ConnectionStatus, entity};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
+use futures_util::StreamExt;
 use sqlx::Column;
 use sqlx::Connection;
-use sqlx::Error;
 use sqlx::Row;
 use sqlx::TypeInfo;
 use sqlx::ValueRef;
@@ -17,7 +19,7 @@ fn quote_ident(identifier: &str) -> String {
     format!("\"{}\"", identifier.replace('"', "\"\""))
 }
 
-fn get_database_url(connection_entity: &entity::connection::Model) -> String {
+pub(crate) fn get_database_url(connection_entity: &entity::connection::Model) -> String {
     format!("sqlite:///{}?mode=rwc", connection_entity.database)
 }
 
@@ -68,14 +70,6 @@ pub async fn get_connection_status(
         }
         Err(_e) => Ok(ConnectionStatus::Failed),
     }
-}
-
-pub async fn get_database_connection(
-    connection: &entity::connection::Model,
-) -> Result<DatabaseConnection, Error> {
-    let database_url = get_database_url(connection);
-    let database_connection = sqlx::sqlite::SqliteConnection::connect(&database_url).await?;
-    Ok(DatabaseConnection::Sqlite(database_connection))
 }
 
 pub async fn execute_query(
@@ -224,74 +218,83 @@ pub async fn execute_query(
     })
 }
 
+async fn fetch_table_definition(
+    sqlite_pool: &sqlx::SqlitePool,
+    table_name: &str,
+) -> Result<Table, sqlx::Error> {
+    let pragma_query = format!("PRAGMA table_info({})", quote_ident(table_name));
+    let column_rows = sqlx::query(&pragma_query).fetch_all(sqlite_pool).await?;
+
+    let mut columns: std::collections::HashMap<String, CatalogColumn> =
+        std::collections::HashMap::new();
+    for column_row in column_rows {
+        let column_name: String = column_row.try_get("name")?;
+        let data_type: String = column_row
+            .try_get::<Option<String>, _>("type")?
+            .unwrap_or_default();
+
+        let quoted_table = quote_ident(table_name);
+        let quoted_column = quote_ident(&column_name);
+        let sample_query = format!(
+            "SELECT DISTINCT CAST({column} AS TEXT) AS sampled_value FROM {table} WHERE {column} IS NOT NULL LIMIT {limit}",
+            column = quoted_column,
+            table = quoted_table,
+            limit = CATALOG_SAMPLE_VALUES_PER_COLUMN
+        );
+        let sample_rows = sqlx::query(&sample_query).fetch_all(sqlite_pool).await?;
+        let sample_values = sample_rows
+            .into_iter()
+            .filter_map(|sample_row| {
+                sample_row
+                    .try_get::<Option<String>, _>("sampled_value")
+                    .ok()
+                    .flatten()
+            })
+            .collect::<Vec<_>>();
+
+        columns.insert(
+            column_name.clone(),
+            CatalogColumn::with_samples(column_name, "", sample_values, data_type, false, false),
+        );
+    }
+
+    Ok(Table {
+        name: table_name.to_string(),
+        description: String::new(),
+        columns,
+        should_delete: false,
+        should_select: false,
+    })
+}
+
 pub async fn get_data_catalog(
+    sqlite_pool: &sqlx::SqlitePool,
     connection: &entity::connection::Model,
 ) -> Result<Database, sqlx::Error> {
-    let mut conn = match get_database_connection(connection).await? {
-        DatabaseConnection::Sqlite(conn) => conn,
-        _ => unreachable!(),
-    };
-
     let database_name = connection.name.clone();
 
     let table_rows = sqlx::query(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
     )
-    .fetch_all(&mut conn)
+    .fetch_all(sqlite_pool)
     .await?;
 
-    let mut tables: Vec<Table> = Vec::new();
+    let mut table_names: Vec<String> = Vec::with_capacity(table_rows.len());
     for table_row in table_rows {
-        let table_name: String = table_row.try_get("name")?;
-        let pragma_query = format!("PRAGMA table_info({})", quote_ident(&table_name));
-        let column_rows = sqlx::query(&pragma_query).fetch_all(&mut conn).await?;
+        table_names.push(table_row.try_get("name")?);
+    }
 
-        let mut columns: std::collections::HashMap<String, CatalogColumn> =
-            std::collections::HashMap::new();
-        for column_row in column_rows {
-            let column_name: String = column_row.try_get("name")?;
-            let data_type: String = column_row
-                .try_get::<Option<String>, _>("type")?
-                .unwrap_or_default();
+    let table_definitions: Vec<Result<Table, sqlx::Error>> =
+        futures_util::stream::iter(table_names.into_iter().map(|table_name| async move {
+            fetch_table_definition(sqlite_pool, &table_name).await
+        }))
+        .buffered(CATALOG_TABLE_FETCH_CONCURRENCY)
+        .collect()
+        .await;
 
-            let quoted_table = quote_ident(&table_name);
-            let quoted_column = quote_ident(&column_name);
-            let sample_query = format!(
-                "SELECT DISTINCT CAST({column} AS TEXT) AS value FROM {table} WHERE {column} IS NOT NULL LIMIT 5",
-                column = quoted_column,
-                table = quoted_table
-            );
-            let sample_rows = sqlx::query(&sample_query).fetch_all(&mut conn).await?;
-            let sample_values = sample_rows
-                .into_iter()
-                .filter_map(|sample_row| {
-                    sample_row
-                        .try_get::<Option<String>, _>("value")
-                        .ok()
-                        .flatten()
-                })
-                .collect::<Vec<_>>();
-
-            columns.insert(
-                column_name.clone(),
-                CatalogColumn::with_samples(
-                    column_name,
-                    "",
-                    sample_values,
-                    data_type,
-                    false,
-                    false,
-                ),
-            );
-        }
-
-        tables.push(Table {
-            name: table_name,
-            description: String::new(),
-            columns,
-            should_delete: false,
-            should_select: false,
-        });
+    let mut tables: Vec<Table> = Vec::with_capacity(table_definitions.len());
+    for table_definition in table_definitions {
+        tables.push(table_definition?);
     }
 
     Ok(Database::new(

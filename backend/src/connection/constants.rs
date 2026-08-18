@@ -19,7 +19,7 @@ impl fmt::Display for SqlDialect {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SourceType {
     Postgresql,
