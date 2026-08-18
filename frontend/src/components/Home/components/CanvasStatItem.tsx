@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Flex, Badge, Icon, ToolTip, Text } from "src/components/design-system";
+import { Flex, Badge, Icon, ToolTip } from "src/components/design-system";
 import { IconType } from "src/components/design-system/datatypes";
 
 type CanvasStatItemProps = {
@@ -14,7 +14,7 @@ function CanvasStatItemComponent({
   tooltipText,
 }: CanvasStatItemProps) {
   return (
-    <ToolTip messageElement={<Text>{tooltipText}</Text>} tooltipSide="top">
+    <ToolTip messageElement={tooltipText} tooltipSide="top">
       <Flex gap="xs" alignItems="center">
         <Icon type={iconType} color="grey" />
         <Badge variant="subtle">{count}</Badge>
