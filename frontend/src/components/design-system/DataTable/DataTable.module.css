@@ -32,6 +32,16 @@
   text-overflow: ellipsis;
 }
 
+/*
+ * The table is `table-layout: auto` at `width: 100%`, so leftover space is shared
+ * proportionally between every px-width column. A percentage width opts the column
+ * out of that distribution and collapses it onto its min-width instead.
+ */
+.fixedWidthCell {
+  width: 1%;
+  box-sizing: border-box;
+}
+
 .tableHeaderCell {
   font-family: var(--font-family-primary);
   color: var(--color-grey-800);

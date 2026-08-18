@@ -95,8 +95,7 @@ export function useDataTable<T>({
             <Text color="darkGrey">{getDisplayRowNumber(table, row)}</Text>
           </Flex>
         ),
-        size: ROW_NUMBER_COLUMN_WIDTH,
-        minSize: ROW_NUMBER_COLUMN_WIDTH,
+        fixedWidth: ROW_NUMBER_COLUMN_WIDTH,
       });
     }
 
@@ -137,6 +136,7 @@ export function useDataTable<T>({
         size: col.size,
         minSize: col.minSize,
         maxSize: col.maxSize,
+        enableResizing: col.fixedWidth === undefined,
       };
 
       if (col.type === "accessor" && col.accessor) {

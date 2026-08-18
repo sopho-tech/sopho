@@ -3,6 +3,7 @@ import { ColumnConfig } from "src/components/design-system/DataTable/types";
 import {
   getAlignmentClass,
   getFontClass,
+  getColumnWidthStyle,
 } from "src/components/design-system/DataTable/utils";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
 
@@ -45,10 +46,8 @@ export function TableRow<T>({
         return (
           <td
             key={cell.id}
-            className={`${styles.tableDataCell} ${tableDataCellStyle} ${isHovered ? styles.tableDataCellHovered : ""} ${alignmentClass} ${fontClass}`}
-            style={{
-              width: cell.column.getSize(),
-            }}
+            className={`${styles.tableDataCell} ${tableDataCellStyle} ${isHovered ? styles.tableDataCellHovered : ""} ${alignmentClass} ${fontClass} ${columnConfig?.fixedWidth !== undefined ? styles.fixedWidthCell : ""}`}
+            style={getColumnWidthStyle(columnConfig, cell.column.getSize())}
           >
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
           </td>
