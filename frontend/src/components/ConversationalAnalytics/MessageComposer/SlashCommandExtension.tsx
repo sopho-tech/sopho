@@ -12,29 +12,39 @@ import {
   SlashCommandList,
   type SlashCommandListHandle,
 } from "./SlashCommandList";
+import {
+  findMatchingSlashCommands,
+  type SlashCommand,
+} from "src/constants/slash_commands";
 
 export enum EditorNodeName {
   SlashCommand = "slashCommand",
 }
 
-export type SlashCommand = { name: string; description: string };
-
-export const SLASH_COMMANDS: SlashCommand[] = [
-  { name: "canvas", description: "Generate canvas for the conversation" },
-];
+export type SlashCommandExtensionOptions = {
+  availableCommands: SlashCommand[];
+};
 
 const slashCommandPluginKey = new PluginKey(EditorNodeName.SlashCommand);
 
-export const isSlashSuggestionActive = (editor: Editor): boolean =>
-  slashCommandPluginKey.getState(editor.state)?.active ?? false;
+export const isSlashSuggestionActive = (
+  editor: Editor,
+  availableCommands: SlashCommand[],
+): boolean => {
+  const suggestionState = slashCommandPluginKey.getState(editor.state);
+  if (!suggestionState?.active) return false;
+  return (
+    findMatchingSlashCommands(availableCommands, suggestionState.query).length >
+    0
+  );
+};
 
-const suggestion: Omit<SuggestionOptions<SlashCommand>, "editor"> = {
+const buildSuggestion = (
+  availableCommands: SlashCommand[],
+): Omit<SuggestionOptions<SlashCommand>, "editor"> => ({
   char: "/",
   pluginKey: slashCommandPluginKey,
-  items: ({ query }) =>
-    SLASH_COMMANDS.filter((command) =>
-      command.name.toLowerCase().startsWith(query.toLowerCase()),
-    ),
+  items: ({ query }) => findMatchingSlashCommands(availableCommands, query),
   command: ({ editor, range, props }) => {
     editor
       .chain()
@@ -84,14 +94,18 @@ const suggestion: Omit<SuggestionOptions<SlashCommand>, "editor"> = {
       },
     };
   },
-};
+});
 
-export const SlashCommandExtension = Node.create({
+export const SlashCommandExtension = Node.create<SlashCommandExtensionOptions>({
   name: EditorNodeName.SlashCommand,
   group: "inline",
   inline: true,
   atom: true,
   selectable: true,
+
+  addOptions() {
+    return { availableCommands: [] };
+  },
 
   addAttributes() {
     return {
@@ -118,6 +132,12 @@ export const SlashCommandExtension = Node.create({
   },
 
   addProseMirrorPlugins() {
-    return [Suggestion({ editor: this.editor, ...suggestion })];
+    if (this.options.availableCommands.length === 0) return [];
+    return [
+      Suggestion({
+        editor: this.editor,
+        ...buildSuggestion(this.options.availableCommands),
+      }),
+    ];
   },
 });

@@ -36,11 +36,14 @@ import {
   SlashCommandExtension,
   isSlashSuggestionActive,
 } from "./SlashCommandExtension";
+import { SlashCommandTrigger } from "./SlashCommandTrigger";
 import type { MessageSegment } from "src/components/ConversationalAnalytics/dto";
+import type { SlashCommand } from "src/constants/slash_commands";
 import styles from "./MessageComposer.module.css";
 
 export type MessageComposerHandle = {
   setText: (text: string) => void;
+  insertCommand: (commandName: string) => void;
 };
 
 type MessageComposerProps = {
@@ -50,6 +53,7 @@ type MessageComposerProps = {
   disabledTooltip?: string;
   enabledTooltip?: string;
   slotLeft?: ReactNode;
+  availableCommands: SlashCommand[];
   ref?: Ref<MessageComposerHandle>;
 };
 
@@ -77,6 +81,7 @@ export function MessageComposer({
   disabledTooltip,
   enabledTooltip = "Send",
   slotLeft,
+  availableCommands,
   ref,
 }: MessageComposerProps) {
   const editor = useEditor({
@@ -103,7 +108,7 @@ export function MessageComposer({
       TrailingNode,
       Underline,
       UndoRedo,
-      SlashCommandExtension,
+      SlashCommandExtension.configure({ availableCommands }),
       Placeholder.configure({
         placeholder,
         emptyEditorClass: "is-editor-empty",
@@ -116,7 +121,8 @@ export function MessageComposer({
       },
       handleKeyDown: (_view, event) => {
         if (event.key === "Enter" && !event.shiftKey) {
-          if (editor && isSlashSuggestionActive(editor)) return false;
+          if (editor && isSlashSuggestionActive(editor, availableCommands))
+            return false;
           event.preventDefault();
           if (disabled || !editor) return true;
           const segments = extractSegments(editor);
@@ -140,11 +146,41 @@ export function MessageComposer({
         editor.commands.setContent(text);
         editor.commands.focus("end");
       },
+      insertCommand: (commandName: string) => {
+        if (!editor) return;
+        editor
+          .chain()
+          .focus("end")
+          .insertContent([
+            {
+              type: EditorNodeName.SlashCommand,
+              attrs: { commandName },
+            },
+            { type: "text", text: " " },
+          ])
+          .run();
+      },
     }),
     [editor],
   );
 
   const providerValue = useMemo(() => ({ editor }), [editor]);
+
+  const handleOpenSlashMenu = () => {
+    if (disabled || !editor) return;
+    const { from } = editor.state.selection;
+    const characterBeforeCaret = editor.state.doc.textBetween(
+      Math.max(0, from - 1),
+      from,
+    );
+    const needsSeparatingSpace =
+      characterBeforeCaret !== "" && characterBeforeCaret !== " ";
+    editor
+      .chain()
+      .focus()
+      .insertContent(needsSeparatingSpace ? " /" : "/")
+      .run();
+  };
 
   const handleClickSend = () => {
     if (disabled || !editor) return;
@@ -179,7 +215,15 @@ export function MessageComposer({
             backgroundColor: "var(--color-background)",
           }}
         >
-          {slotLeft}
+          <Flex alignItems="center" gap="xs">
+            {slotLeft}
+            {availableCommands.length > 0 && (
+              <SlashCommandTrigger
+                onClick={handleOpenSlashMenu}
+                disabled={disabled}
+              />
+            )}
+          </Flex>
           <Box sx={{ opacity: disabled ? 0.5 : 1, marginLeft: "auto" }}>
             <IconButton
               type="arrow_up"

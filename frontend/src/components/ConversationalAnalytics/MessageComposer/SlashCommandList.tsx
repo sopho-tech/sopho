@@ -1,6 +1,6 @@
 import { useEffect, useImperativeHandle, useState, type Ref } from "react";
-import { DropdownMenu } from "src/components/design-system";
-import type { SlashCommand } from "./SlashCommandExtension";
+import { Box, DropdownMenu, Text } from "src/components/design-system";
+import type { SlashCommand } from "src/constants/slash_commands";
 
 export type SlashCommandListHandle = {
   onKeyDown: (event: KeyboardEvent) => boolean;
@@ -48,7 +48,7 @@ export function SlashCommandList({
   }));
 
   const rect = clientRect?.();
-  if (items.length === 0 || !rect) return null;
+  if (!rect) return null;
 
   return (
     <DropdownMenu open modal={false}>
@@ -71,15 +71,23 @@ export function SlashCommandList({
         sideOffset={4}
         preventAutoFocus
       >
-        {items.map((item, index) => (
-          <DropdownMenu.ItemWithDescription
-            key={item.name}
-            label={`/${item.name}`}
-            description={item.description}
-            highlighted={index === selectedIndex}
-            onClick={() => selectItem(index)}
-          />
-        ))}
+        {items.length === 0 ? (
+          <Box paddingX="md" paddingY="sm">
+            <Text as="span" color="subtle" fontSize="sm">
+              No matching commands
+            </Text>
+          </Box>
+        ) : (
+          items.map((item, index) => (
+            <DropdownMenu.ItemWithDescription
+              key={item.name}
+              label={`/${item.name}`}
+              description={item.description}
+              highlighted={index === selectedIndex}
+              onClick={() => selectItem(index)}
+            />
+          ))
+        )}
       </DropdownMenu.Content>
     </DropdownMenu>
   );
