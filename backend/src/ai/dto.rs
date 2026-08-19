@@ -534,20 +534,46 @@ impl Event {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct AiChartSeries {
     pub column: String,
-    pub aggregate_function: Option<crate::cell::constants::AggregateFunction>,
+    pub aggregate_function: crate::cell::constants::AggregateFunction,
     pub label: Option<String>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct AiAxisChart {
+    pub x_axis: String,
+    pub series: Vec<AiChartSeries>,
+    pub x_axis_title: Option<String>,
+    pub y_axis_title: Option<String>,
+    pub sort_by_series_column: Option<String>,
+    pub sort_order: Option<crate::cell::constants::SortOrder>,
+    pub orientation: Option<crate::cell::constants::ChartOrientation>,
+    pub bar_layout: Option<crate::cell::constants::BarLayout>,
+    pub show_dots: Option<crate::cell::constants::LineDotShow>,
+    pub x_axis_tick_show: Option<crate::cell::constants::AxisTickShow>,
+    pub y_axis_tick_show: Option<crate::cell::constants::AxisTickShow>,
+    pub axis_minor_tick_show: Option<crate::cell::constants::AxisMinorTickShow>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct AiPieChart {
+    pub category: String,
+    pub value: String,
+    pub aggregate_function: crate::cell::constants::AggregateFunction,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct AiMetricChart {
+    pub format: Option<crate::cell::constants::MetricFormat>,
+    pub decimal_precision: Option<i32>,
+    pub suffix: Option<String>,
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct CanvasPlanChart {
     pub chart_type: crate::cell::constants::ChartType,
-    pub x_axis: Option<String>,
-    pub y_axis: Option<String>,
-    pub series: Option<Vec<AiChartSeries>>,
-    pub category: Option<String>,
-    pub value: Option<String>,
-    /// PIE only — BAR and LINE carry an aggregate function per series.
-    pub aggregate_function: Option<crate::cell::constants::AggregateFunction>,
+    pub axis: Option<AiAxisChart>,
+    pub pie: Option<AiPieChart>,
+    pub metric: Option<AiMetricChart>,
     pub grid_width: Option<i32>,
     pub grid_height: Option<i32>,
 }
@@ -563,6 +589,16 @@ pub struct PlannedSeries {
 pub struct PlannedAxisChart {
     pub x_axis: String,
     pub series: Vec<PlannedSeries>,
+    pub x_axis_title: Option<String>,
+    pub y_axis_title: Option<String>,
+    pub sort_by_series_column: Option<String>,
+    pub sort_order: crate::cell::constants::SortOrder,
+    pub orientation: crate::cell::constants::ChartOrientation,
+    pub bar_layout: crate::cell::constants::BarLayout,
+    pub show_dots: crate::cell::constants::LineDotShow,
+    pub x_axis_tick_show: crate::cell::constants::AxisTickShow,
+    pub y_axis_tick_show: crate::cell::constants::AxisTickShow,
+    pub axis_minor_tick_show: crate::cell::constants::AxisMinorTickShow,
 }
 
 #[derive(Clone, Debug)]
@@ -573,11 +609,18 @@ pub struct PlannedPieChart {
 }
 
 #[derive(Clone, Debug)]
+pub struct PlannedMetricChart {
+    pub format: crate::cell::constants::MetricFormat,
+    pub decimal_precision: u32,
+    pub suffix: Option<String>,
+}
+
+#[derive(Clone, Debug)]
 pub enum PlannedChartSpec {
     Bar(PlannedAxisChart),
     Line(PlannedAxisChart),
     Pie(PlannedPieChart),
-    Metric,
+    Metric(PlannedMetricChart),
 }
 
 #[derive(Clone, Debug)]
@@ -598,51 +641,122 @@ impl PlannedChart {
 }
 
 impl CanvasPlanChart {
-    fn planned_axis_chart(&self) -> Option<PlannedAxisChart> {
-        let x_axis = non_empty(&self.x_axis).or_else(|| non_empty(&self.category))?;
+    fn planned_axis_chart(&self) -> anyhow::Result<PlannedAxisChart> {
+        use crate::cell::constants::{
+            DEFAULT_AXIS_MINOR_TICK_SHOW, DEFAULT_AXIS_TICK_SHOW, DEFAULT_BAR_LAYOUT,
+            DEFAULT_CHART_ORIENTATION, DEFAULT_CHART_SORT_ORDER, DEFAULT_LINE_DOT_SHOW,
+        };
+
+        let axis = self.axis.as_ref().ok_or_else(|| {
+            anyhow::anyhow!(
+                "{} chart is missing its `axis` settings",
+                self.chart_type.as_str()
+            )
+        })?;
+        let x_axis = non_blank(&axis.x_axis).ok_or_else(|| {
+            anyhow::anyhow!("{} chart has a blank x_axis", self.chart_type.as_str())
+        })?;
 
         let mut seen = std::collections::HashSet::new();
-        let mut series: Vec<PlannedSeries> = self
+        let mut series: Vec<PlannedSeries> = axis
             .series
-            .clone()
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|entry| !entry.column.trim().is_empty())
-            .filter(|entry| seen.insert(entry.column.clone()))
-            .map(|entry| {
-                Some(PlannedSeries {
-                    column: entry.column,
-                    aggregate_function: entry.aggregate_function?,
-                    label: entry.label,
+            .iter()
+            .filter_map(|entry| {
+                let column = non_blank(&entry.column)?;
+                seen.insert(column.clone()).then(|| PlannedSeries {
+                    column,
+                    aggregate_function: entry.aggregate_function.clone(),
+                    label: non_empty(&entry.label),
                 })
             })
-            .collect::<Option<Vec<_>>>()?;
+            .collect();
         if series.is_empty() {
-            return None;
+            anyhow::bail!("{} chart has no series", self.chart_type.as_str());
         }
         series.truncate(crate::cell::constants::MAX_CHART_SERIES);
-        Some(PlannedAxisChart { x_axis, series })
-    }
 
-    fn planned_pie_chart(&self) -> Option<PlannedPieChart> {
-        Some(PlannedPieChart {
-            category: non_empty(&self.category).or_else(|| non_empty(&self.x_axis))?,
-            value: non_empty(&self.value).or_else(|| non_empty(&self.y_axis))?,
-            aggregate_function: self.aggregate_function.clone()?,
+        let sort_by_series_column = non_empty(&axis.sort_by_series_column);
+        if let Some(column) = &sort_by_series_column {
+            if !series.iter().any(|entry| &entry.column == column) {
+                anyhow::bail!(
+                    "{} chart sorts by {:?}, which is not one of its series",
+                    self.chart_type.as_str(),
+                    column
+                );
+            }
+        }
+
+        Ok(PlannedAxisChart {
+            x_axis,
+            series,
+            x_axis_title: non_empty(&axis.x_axis_title),
+            y_axis_title: non_empty(&axis.y_axis_title),
+            sort_by_series_column,
+            sort_order: axis.sort_order.clone().unwrap_or(DEFAULT_CHART_SORT_ORDER),
+            orientation: axis
+                .orientation
+                .clone()
+                .unwrap_or(DEFAULT_CHART_ORIENTATION),
+            bar_layout: axis.bar_layout.clone().unwrap_or(DEFAULT_BAR_LAYOUT),
+            show_dots: axis.show_dots.clone().unwrap_or(DEFAULT_LINE_DOT_SHOW),
+            x_axis_tick_show: axis
+                .x_axis_tick_show
+                .clone()
+                .unwrap_or(DEFAULT_AXIS_TICK_SHOW),
+            y_axis_tick_show: axis
+                .y_axis_tick_show
+                .clone()
+                .unwrap_or(DEFAULT_AXIS_TICK_SHOW),
+            axis_minor_tick_show: axis
+                .axis_minor_tick_show
+                .clone()
+                .unwrap_or(DEFAULT_AXIS_MINOR_TICK_SHOW),
         })
     }
 
-    /// Accepts axis/category as synonyms, since agents mix the two vocabularies.
-    fn planned(&self) -> Option<PlannedChart> {
+    fn planned_pie_chart(&self) -> anyhow::Result<PlannedPieChart> {
+        let pie = self
+            .pie
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("PIE chart is missing its `pie` settings"))?;
+        Ok(PlannedPieChart {
+            category: non_blank(&pie.category)
+                .ok_or_else(|| anyhow::anyhow!("PIE chart has a blank category"))?,
+            value: non_blank(&pie.value)
+                .ok_or_else(|| anyhow::anyhow!("PIE chart has a blank value"))?,
+            aggregate_function: pie.aggregate_function.clone(),
+        })
+    }
+
+    fn planned_metric_chart(&self) -> anyhow::Result<PlannedMetricChart> {
+        use crate::cell::constants::{DEFAULT_METRIC_DECIMAL_PRECISION, DEFAULT_METRIC_FORMAT};
+
+        let metric = self.metric.as_ref();
+        let decimal_precision = match metric.and_then(|settings| settings.decimal_precision) {
+            Some(precision) => u32::try_from(precision).map_err(|_| {
+                anyhow::anyhow!("METRIC chart has a negative decimal_precision of {precision}")
+            })?,
+            None => DEFAULT_METRIC_DECIMAL_PRECISION,
+        };
+        Ok(PlannedMetricChart {
+            format: metric
+                .and_then(|settings| settings.format.clone())
+                .unwrap_or(DEFAULT_METRIC_FORMAT),
+            decimal_precision,
+            suffix: metric.and_then(|settings| non_empty(&settings.suffix)),
+        })
+    }
+
+    fn planned(&self) -> anyhow::Result<PlannedChart> {
         use crate::cell::constants::ChartType;
 
         let spec = match self.chart_type {
             ChartType::Bar => PlannedChartSpec::Bar(self.planned_axis_chart()?),
             ChartType::Line => PlannedChartSpec::Line(self.planned_axis_chart()?),
             ChartType::Pie => PlannedChartSpec::Pie(self.planned_pie_chart()?),
-            ChartType::Metric => PlannedChartSpec::Metric,
+            ChartType::Metric => PlannedChartSpec::Metric(self.planned_metric_chart()?),
         };
-        Some(PlannedChart {
+        Ok(PlannedChart {
             spec,
             grid_width: self.grid_width,
             grid_height: self.grid_height,
@@ -650,17 +764,17 @@ impl CanvasPlanChart {
     }
 }
 
-fn resolve_chart(chart: Option<&CanvasPlanChart>, title: &Option<String>) -> Option<PlannedChart> {
-    let chart = chart?;
-    let planned = chart.planned();
-    if planned.is_none() {
-        tracing::warn!(
-            "canvas plan: dropped {} chart for {:?} because its axis, series or category fields were missing",
-            chart.chart_type.as_str(),
-            title.as_deref().unwrap_or("<untitled>")
-        );
-    }
-    planned
+fn resolve_chart(
+    chart: Option<&CanvasPlanChart>,
+    title: &Option<String>,
+) -> anyhow::Result<Option<PlannedChart>> {
+    let Some(chart) = chart else {
+        return Ok(None);
+    };
+    chart
+        .planned()
+        .map(Some)
+        .map_err(|e| anyhow::anyhow!("cell {:?}: {e}", title.as_deref().unwrap_or("<untitled>")))
 }
 
 fn to_grid_units(value: Option<i32>) -> Option<u16> {
@@ -731,9 +845,13 @@ fn to_zero_based(index: Option<i32>, len: usize) -> Option<usize> {
     (index < len).then_some(index)
 }
 
-fn non_empty(value: &Option<String>) -> Option<String> {
-    let trimmed = value.as_deref()?.trim();
+fn non_blank(value: &str) -> Option<String> {
+    let trimmed = value.trim();
     (!trimmed.is_empty()).then(|| trimmed.to_string())
+}
+
+fn non_empty(value: &Option<String>) -> Option<String> {
+    non_blank(value.as_deref()?)
 }
 
 fn normalize_sql(sql: &str) -> String {
@@ -748,7 +866,7 @@ impl CanvasPlan {
         to_zero_based(self.target_canvas_index, candidates.len()).map(|i| candidates[i].id)
     }
 
-    pub fn resolve_ops(&self, target: Option<&CanvasCandidate>) -> Vec<CanvasOp> {
+    pub fn resolve_ops(&self, target: Option<&CanvasCandidate>) -> anyhow::Result<Vec<CanvasOp>> {
         let cell_count = target.map(|c| c.cells.len()).unwrap_or(0);
         let mut present: std::collections::HashSet<String> = target
             .map(|c| {
@@ -761,7 +879,7 @@ impl CanvasPlan {
 
         let mut ops = Vec::new();
         for cell in self.cells.iter() {
-            let Some(op) = Self::resolve_op(cell, cell_count) else {
+            let Some(op) = Self::resolve_op(cell, cell_count)? else {
                 continue;
             };
             match &op {
@@ -783,23 +901,30 @@ impl CanvasPlan {
             }
             ops.push(op);
         }
-        ops
+        Ok(ops)
     }
 
-    fn resolve_op(cell: &CanvasPlanCell, cell_count: usize) -> Option<CanvasOp> {
-        match cell.action {
-            CanvasCellAction::Create => Some(CanvasOp::Create {
-                title: non_empty(&cell.title),
-                sql: non_empty(&cell.sql)?,
-                chart: resolve_chart(cell.chart.as_ref(), &cell.title),
-            }),
+    fn resolve_op(cell: &CanvasPlanCell, cell_count: usize) -> anyhow::Result<Option<CanvasOp>> {
+        Ok(match cell.action {
+            CanvasCellAction::Create => {
+                let Some(sql) = non_empty(&cell.sql) else {
+                    return Ok(None);
+                };
+                Some(CanvasOp::Create {
+                    title: non_empty(&cell.title),
+                    sql,
+                    chart: resolve_chart(cell.chart.as_ref(), &cell.title)?,
+                })
+            }
             CanvasCellAction::Update => {
-                let index = to_zero_based(cell.target_cell_index, cell_count)?;
+                let Some(index) = to_zero_based(cell.target_cell_index, cell_count) else {
+                    return Ok(None);
+                };
                 let title = non_empty(&cell.title);
                 let sql = non_empty(&cell.sql);
-                let chart = resolve_chart(cell.chart.as_ref(), &cell.title);
+                let chart = resolve_chart(cell.chart.as_ref(), &cell.title)?;
                 if title.is_none() && sql.is_none() && chart.is_none() {
-                    return None;
+                    return Ok(None);
                 }
                 Some(CanvasOp::Update {
                     index,
@@ -808,10 +933,9 @@ impl CanvasPlan {
                     chart,
                 })
             }
-            CanvasCellAction::Delete => Some(CanvasOp::Delete {
-                index: to_zero_based(cell.target_cell_index, cell_count)?,
-            }),
-        }
+            CanvasCellAction::Delete => to_zero_based(cell.target_cell_index, cell_count)
+                .map(|index| CanvasOp::Delete { index }),
+        })
     }
 }
 

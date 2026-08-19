@@ -7,6 +7,7 @@ use crate::cell::constants::CellStatus;
 use crate::cell::constants::CellType;
 use crate::cell::constants::ChartOrientation;
 use crate::cell::constants::ChartType;
+use crate::cell::constants::LineDotShow;
 use crate::cell::constants::MetricFormat;
 use crate::cell::constants::SortOrder;
 use crate::common::errors::ExecuteChartError;
@@ -105,6 +106,8 @@ pub struct AxisChartContent {
     pub x_axis_alias: String,
     #[serde(default)]
     pub series: Vec<ChartSeries>,
+    pub x_axis_title: Option<String>,
+    pub y_axis_title: Option<String>,
     pub y_axis_sort_by: Option<String>,
     #[serde(default)]
     pub bar_layout: Option<BarLayout>,
@@ -113,6 +116,7 @@ pub struct AxisChartContent {
     pub x_axis_tick_show: Option<AxisTickShow>,
     pub y_axis_tick_show: Option<AxisTickShow>,
     pub axis_minor_tick_show: Option<AxisMinorTickShow>,
+    pub show_dots: Option<LineDotShow>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

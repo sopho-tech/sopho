@@ -5,6 +5,15 @@ pub const MAX_CELLS_PER_NOTEBOOK: usize = 60;
 pub const MAX_CHART_SERIES: usize = 6;
 pub const MAX_IDENTIFIER_LEN: usize = 128;
 
+pub const DEFAULT_CHART_SORT_ORDER: SortOrder = SortOrder::None;
+pub const DEFAULT_CHART_ORIENTATION: ChartOrientation = ChartOrientation::Horizontal;
+pub const DEFAULT_BAR_LAYOUT: BarLayout = BarLayout::Grouped;
+pub const DEFAULT_LINE_DOT_SHOW: LineDotShow = LineDotShow::Show;
+pub const DEFAULT_AXIS_TICK_SHOW: AxisTickShow = AxisTickShow::Show;
+pub const DEFAULT_AXIS_MINOR_TICK_SHOW: AxisMinorTickShow = AxisMinorTickShow::Show;
+pub const DEFAULT_METRIC_FORMAT: MetricFormat = MetricFormat::Default;
+pub const DEFAULT_METRIC_DECIMAL_PRECISION: u32 = 2;
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum CellType {
@@ -66,21 +75,21 @@ impl std::fmt::Display for CellStatus {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, schemars::JsonSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ChartOrientation {
     Horizontal,
     Vertical,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, schemars::JsonSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum BarLayout {
     Grouped,
     Stacked,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, schemars::JsonSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SortOrder {
     None,
@@ -98,21 +107,28 @@ impl SortOrder {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, schemars::JsonSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AxisTickShow {
     Show,
     Hide,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, schemars::JsonSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AxisMinorTickShow {
     Show,
     Hide,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, schemars::JsonSchema)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum LineDotShow {
+    Show,
+    Hide,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, schemars::JsonSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum MetricFormat {
     Default,
