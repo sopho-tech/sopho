@@ -5,10 +5,7 @@ use crate::ai::dto::{
 use crate::canvas::constants::CanvasStatus;
 use crate::canvas::dto;
 use crate::canvas::repository;
-use crate::cell::constants::{
-    AxisMinorTickShow, AxisTickShow, BarLayout, CellType, ChartOrientation, ChartType, MetricFormat,
-    SortOrder,
-};
+use crate::cell::constants::{CellType, ChartType};
 use crate::cell::dto::{
     series_alias, AxisChartContent, ChartContent, ChartSeries, CreateCellDto, MetricChartContent,
     PieChartContent,
@@ -168,29 +165,38 @@ async fn create_canvas_transaction(
 }
 
 fn axis_chart_content(cell_id: Uuid, axis: &PlannedAxisChart) -> AxisChartContent {
+    let series: Vec<ChartSeries> = axis
+        .series
+        .iter()
+        .enumerate()
+        .map(|(index, entry)| ChartSeries {
+            alias: series_alias(&entry.column, &entry.aggregate_function),
+            column: entry.column.clone(),
+            aggregate_function: Some(entry.aggregate_function.clone()),
+            label: entry.label.clone(),
+            color_index: Some(index as u32),
+        })
+        .collect();
+
     AxisChartContent {
         cell_id,
         x_axis: axis.x_axis.clone(),
         x_axis_alias: axis.x_axis.clone(),
-        series: axis
-            .series
-            .iter()
-            .enumerate()
-            .map(|(index, entry)| ChartSeries {
-                alias: series_alias(&entry.column, &entry.aggregate_function),
-                column: entry.column.clone(),
-                aggregate_function: Some(entry.aggregate_function.clone()),
-                label: entry.label.clone(),
-                color_index: Some(index as u32),
-            })
-            .collect(),
-        y_axis_sort_by: None,
-        bar_layout: Some(BarLayout::Grouped),
-        orientation: Some(ChartOrientation::Horizontal),
-        y_axis_sort_order: Some(SortOrder::None),
-        x_axis_tick_show: Some(AxisTickShow::Show),
-        y_axis_tick_show: Some(AxisTickShow::Show),
-        axis_minor_tick_show: Some(AxisMinorTickShow::Show),
+        x_axis_title: axis.x_axis_title.clone(),
+        y_axis_title: axis.y_axis_title.clone(),
+        y_axis_sort_by: axis
+            .sort_by_series_column
+            .as_ref()
+            .and_then(|column| series.iter().find(|entry| &entry.column == column))
+            .map(|entry| entry.alias.clone()),
+        series,
+        bar_layout: Some(axis.bar_layout.clone()),
+        orientation: Some(axis.orientation.clone()),
+        y_axis_sort_order: Some(axis.sort_order.clone()),
+        x_axis_tick_show: Some(axis.x_axis_tick_show.clone()),
+        y_axis_tick_show: Some(axis.y_axis_tick_show.clone()),
+        axis_minor_tick_show: Some(axis.axis_minor_tick_show.clone()),
+        show_dots: Some(axis.show_dots.clone()),
     }
 }
 
@@ -204,11 +210,11 @@ fn chart_content_json(cell_id: Uuid, chart: &PlannedChart) -> Result<String, sea
             value: pie.value.clone(),
             aggregate_function: Some(pie.aggregate_function.as_str().to_string()),
         }),
-        PlannedChartSpec::Metric => ChartContent::Metric(MetricChartContent {
+        PlannedChartSpec::Metric(metric) => ChartContent::Metric(MetricChartContent {
             cell_id,
-            decimal_precision: Some(2),
-            suffix: None,
-            format: Some(MetricFormat::Default),
+            decimal_precision: Some(metric.decimal_precision),
+            suffix: metric.suffix.clone(),
+            format: Some(metric.format.clone()),
         }),
     };
 
@@ -350,8 +356,7 @@ pub async fn apply_canvas_plan(
     }
     let name = non_blank(&plan.name).unwrap_or_else(|| canvas.name.clone());
     let description = non_blank(&plan.description).or_else(|| canvas.description.clone());
-    let canvas =
-        repository::update_canvas_transaction(&txn, canvas, name, description).await?;
+    let canvas = repository::update_canvas_transaction(&txn, canvas, name, description).await?;
 
     txn.commit().await?;
 

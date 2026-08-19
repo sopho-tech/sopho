@@ -25,7 +25,7 @@ pub async fn generate(
     let target_canvas_id = plan.resolve_target_canvas(&candidates);
     let target =
         target_canvas_id.and_then(|id| candidates.iter().find(|candidate| candidate.id == id));
-    let ops = plan.resolve_ops(target);
+    let ops = plan.resolve_ops(target)?;
     if ops.is_empty() && target_canvas_id.is_none() {
         anyhow::bail!("the canvas plan contained no usable cells");
     }

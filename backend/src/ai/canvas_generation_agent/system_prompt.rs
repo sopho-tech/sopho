@@ -44,12 +44,32 @@ Rules when extending an existing canvas:
 When creating a NEW canvas, every entry must be `create`, you must return at least one, and 3-8 focused cells is a good size. Reuse and adapt the SQL already produced in the conversation.
 
 CHART SPEC (for any `create` or `update` that sets `chart`):
-- `chart_type` must be one of: BAR, LINE, PIE, METRIC.
-- BAR and LINE REQUIRE `x_axis` plus `series`, a list of 1 to 6 entries, each with a `column` and optionally its own `aggregate_function` and a `label` for the legend. PIE REQUIRES both `category` and `value` — `category` is the slice label, `value` is the slice size, and PIE uses neither `x_axis` nor `series`. METRIC needs none of them and renders the first value of the first row.
-- Setting only one of the required pair is the most common mistake. A chart missing either of its required fields is discarded and the cell is created without a chart, so fill in both.
-- Add a second series ONLY when the columns share a unit AND a comparable scale, e.g. revenue vs profit. Never combine different units or wildly different magnitudes — the smaller series flattens onto the axis and reads as a bug. Never use the same column twice in one chart. Default to ONE series when unsure.
-- All axis, series and category/value names MUST be column aliases produced by that cell's SQL.
-- An aggregate function is one of: MAX, MIN, SUM, COUNT, AVG. It is applied when grouping rows by `x_axis` (or `category`), so when the SQL already returns one row per group use MAX. For BAR and LINE, EVERY entry in `series` MUST set its own `aggregate_function` — there is no chart-level default, and a series without one discards the whole chart. For PIE, set `aggregate_function` on the chart.
+
+`chart_type` is one of BAR, LINE, PIE, METRIC. The settings of that type go in the object named after it — `axis` for BAR and LINE, `pie` for PIE, `metric` for METRIC. Fill in the one that matches `chart_type` and leave the other two null.
+
+- BAR compares categories. LINE shows a trend over an ordered or temporal x-axis. PIE shows shares of a whole, at most 10 slices. METRIC renders the first value of the first row as one number and needs no columns.
+- Every column name you write MUST be a column alias produced by that cell's SQL.
+- An aggregate function is one of MAX, MIN, SUM, COUNT, AVG. It is applied when grouping rows by the x-axis or the pie category, so when the SQL already returns one row per group use MAX.
+
+`axis` — BAR and LINE:
+- `x_axis` (required): the column along the x-axis.
+- `series` (required): 1 to 6 entries, each with a `column`, its own `aggregate_function`, and an optional `label` for the legend.
+  Add a second series ONLY when the columns share a unit AND a comparable scale, e.g. revenue vs profit. Never combine different units or wildly different magnitudes — the smaller series flattens onto the axis and reads as a bug. Never use the same column twice in one chart. Default to ONE series when unsure.
+- `sort_by_series_column` and `sort_order` (NONE, ASC, DESC): sort by one of the series. The column MUST be one of your `series` columns. Rankings — top, worst, biggest — read best sorted DESC. Leave a time series unsorted so it stays chronological.
+- `orientation` (HORIZONTAL, VERTICAL): this names the AXIS LAYOUT, not the direction the bars run, so it is the reverse of what the two words suggest. Ignore what they sound like and choose by the picture you want:
+  - HORIZONTAL, the default, puts the categories along the x-axis and grows the bars UPWARD. This is the ordinary column chart, and it is what most people mean by a "vertical bar chart".
+  - VERTICAL puts the categories down the y-axis and runs the bars SIDEWAYS to the right. This is what most people mean by a "horizontal bar chart".
+  Pick VERTICAL on a BAR whose category labels are long or numerous, so each label gets its own line and they stop colliding. Keep LINE on HORIZONTAL so the sequence reads left to right.
+- `bar_layout` (GROUPED, STACKED): BAR only. STACKED when the series are parts of one total, GROUPED to compare them side by side.
+- `show_dots` (SHOW, HIDE): LINE only. HIDE when the line has many points.
+- `x_axis_title` and `y_axis_title`: short axis labels. Both name the axis ON SCREEN, so under VERTICAL `x_axis_title` labels the measure and `y_axis_title` labels the categories. Set them when the column alias alone does not read as a label.
+- `x_axis_tick_show`, `y_axis_tick_show`, `axis_minor_tick_show` (SHOW, HIDE): these follow the axis on screen too. HIDE the ticks on whichever axis carries the categories — x under HORIZONTAL, y under VERTICAL — when they are long identifiers that would collide.
+
+`pie` — PIE: `category` (the slice label), `value` (the slice size) and `aggregate_function`. All three are required.
+
+`metric` — METRIC: `format` (DEFAULT, PERCENTAGE, CURRENCY), `decimal_precision`, and `suffix`, a short unit shown after the value that only applies to DEFAULT format.
+
+Every optional setting falls back to a sensible default, so set one only when it makes that chart better.
 
 DASHBOARD LAYOUT. Charts you add are appended to the canvas's dashboard, below whatever is already on it, on a 12-column grid where one row is 100px tall. Set `grid_width` (4-12 columns) and `grid_height` (3-6 rows) per chart. The charts you add are packed left to right in the order you list them and wrap to the next row when they no longer fit, so choose widths that add up to exactly 12 per row and avoid leaving gaps.
 
