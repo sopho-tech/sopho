@@ -7,3 +7,4 @@ export type { NotebookSlice } from "./notebookSlice";
 export type { CellSlice } from "./cellSlice";
 export type { ChartCellSlice } from "./chartCellSlice";
 export type { ConnectionSlice } from "./connectionSlice";
+export type { CommandMenuSlice } from "./commandMenuSlice";

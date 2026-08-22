@@ -5,13 +5,15 @@ import { createNotebookSlice, NotebookSlice } from "./notebookSlice";
 import { createCellSlice, CellSlice } from "./cellSlice";
 import { createChartCellSlice, ChartCellSlice } from "./chartCellSlice";
 import { createConnectionSlice, ConnectionSlice } from "./connectionSlice";
+import { createCommandMenuSlice, CommandMenuSlice } from "./commandMenuSlice";
 
 export type Store = DashboardSlice &
   CanvasSlice &
   NotebookSlice &
   CellSlice &
   ChartCellSlice &
-  ConnectionSlice;
+  ConnectionSlice &
+  CommandMenuSlice;
 
 export const useStore = create<Store>()((...a) => ({
   ...createDashboardSlice(...a),
@@ -20,4 +22,5 @@ export const useStore = create<Store>()((...a) => ({
   ...createCellSlice(...a),
   ...createChartCellSlice(...a),
   ...createConnectionSlice(...a),
+  ...createCommandMenuSlice(...a),
 }));
