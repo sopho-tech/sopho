@@ -49,10 +49,14 @@ const searchApi = {
   },
 };
 
-export const useSearch = (query: string, filters: EntityType[]) => {
+export const useSearch = (
+  query: string,
+  filters: EntityType[],
+  isEnabled: boolean
+) => {
   return useQuery({
     queryKey: searchKeys.search(query, filters),
     queryFn: () => searchApi.search(query, filters),
-    enabled: filters.length > 0,
+    enabled: isEnabled && filters.length > 0,
   });
 };
