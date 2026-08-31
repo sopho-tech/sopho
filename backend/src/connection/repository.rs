@@ -1,45 +1,82 @@
+use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::connection::dto;
 use crate::entity::connection;
+use sea_orm::ColumnTrait;
+use sea_orm::Condition;
+use sea_orm::QueryFilter;
 use sea_orm::Set;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait};
 use uuid::Uuid;
 
 pub async fn save_connection(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     connection: connection::Model,
 ) -> Result<connection::Model, DbErr> {
-    let connection_active_model: connection::ActiveModel = connection.into();
+    let mut connection_active_model: connection::ActiveModel = connection.into();
+    connection_active_model.tenant_id = Set(tenant_id.get_uuid());
     let connection_active_model = connection_active_model.insert(db).await?;
     Ok(connection_active_model)
 }
 
-pub async fn get_connection(db: &DatabaseConnection, id: Uuid) -> Result<connection::Model, DbErr> {
-    let connection = connection::Entity::find_by_id(id).one(db).await?;
-    match connection {
-        Some(model) => Ok(model),
-        None => Err(DbErr::RecordNotFound("Connection not found".into())),
-    }
+pub async fn get_connection(
+    db: &DatabaseConnection,
+    tenant_id: &TenantId,
+    id: Uuid,
+) -> Result<Option<connection::Model>, DbErr> {
+    connection::Entity::find()
+        .filter(connection::Column::Id.eq(id))
+        .filter(connection::Column::TenantId.eq(tenant_id.get_uuid()))
+        .one(db)
+        .await
 }
 
-pub async fn get_all_connections(db: &DatabaseConnection) -> Result<Vec<connection::Model>, DbErr> {
-    let connections = connection::Entity::find().all(db).await?;
+pub async fn get_all_connections(
+    db: &DatabaseConnection,
+    tenant_id: &TenantId,
+) -> Result<Vec<connection::Model>, DbErr> {
+    let connections = connection::Entity::find()
+        .filter(connection::Column::TenantId.eq(tenant_id.get_uuid()))
+        .all(db)
+        .await?;
+    Ok(connections)
+}
+
+pub async fn get_visible_connections(
+    db: &DatabaseConnection,
+    tenant_id: &TenantId,
+    reachable: Condition,
+) -> Result<Vec<connection::Model>, DbErr> {
+    let connections = connection::Entity::find()
+        .filter(connection::Column::TenantId.eq(tenant_id.get_uuid()))
+        .filter(reachable)
+        .all(db)
+        .await?;
     Ok(connections)
 }
 
 pub async fn delete_connection(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     id: Uuid,
 ) -> Result<sea_orm::DeleteResult, DbErr> {
-    connection::Entity::delete_by_id(id).exec(db).await
+    connection::Entity::delete_many()
+        .filter(connection::Column::Id.eq(id))
+        .filter(connection::Column::TenantId.eq(tenant_id.get_uuid()))
+        .exec(db)
+        .await
 }
 
 pub async fn update_connection(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     connection_id: Uuid,
     payload: dto::ConnectionDto,
-) -> Result<connection::Model, DbErr> {
-    let connection = get_connection(db, connection_id).await?;
+) -> Result<Option<connection::Model>, DbErr> {
+    let Some(connection) = get_connection(db, tenant_id, connection_id).await? else {
+        return Ok(None);
+    };
     let mut connection_entity: connection::ActiveModel = connection.into();
     connection_entity.name = Set(payload.name);
     connection_entity.description = Set(payload.description);
@@ -53,5 +90,5 @@ pub async fn update_connection(
     connection_entity.source_type = Set(payload.source_type.to_string());
     connection_entity.updated_at = Set(time_utils::now_utc_into());
     connection_entity.created_at = Set(payload.created_at);
-    connection_entity.update(db).await
+    connection_entity.update(db).await.map(Some)
 }

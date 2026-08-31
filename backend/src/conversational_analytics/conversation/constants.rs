@@ -106,8 +106,7 @@ impl FromStr for ConversationStatus {
     }
 }
 
-impl ConversationStatus {
-}
+impl ConversationStatus {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -140,5 +139,6 @@ impl FromStr for ContentType {
     }
 }
 
-impl ContentType {
-}
+impl ContentType {}
+
+pub const CONVERSATION_NOT_FOUND_MESSAGE: &str = "Conversation not found";

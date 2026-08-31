@@ -1,9 +1,11 @@
 use crate::authentication::constants::{
     CookieName, SessionStatus, ACCESS_TOKEN_EXPIRY_HOURS, REFRESH_TOKEN_EXPIRY_DAYS,
 };
+use crate::authentication::constants::{SESSION_NOT_FOUND_MESSAGE, USER_NOT_FOUND_MESSAGE};
 use crate::authentication::dto;
 use crate::authentication::repository;
 use crate::authentication::repository::{get_user, get_user_by_email};
+use crate::authorization::dto::AuthenticatedUser;
 use crate::common::error_codes::codes;
 use crate::common::time_utils;
 use crate::common::token_utils;
@@ -26,9 +28,7 @@ use tower_cookies::cookie::SameSite;
 use tower_cookies::Cookies;
 use uuid::Uuid;
 
-/// Result type for access token validation
 #[derive(Debug)]
-#[allow(dead_code)] // Missing variant is handled in middleware but kept for completeness
 pub enum AccessTokenValidationError {
     Missing,
     Invalid,
@@ -48,65 +48,59 @@ fn is_refresh_token_expired(session: &entity::session::Model) -> bool {
     false
 }
 
-/// Validates an access token and returns the session if valid
-pub async fn validate_access_token(
-    access_token: &str,
+async fn find_session_by_access_token_cookie(
+    cookies: &Cookies,
     app_state: &AppState,
 ) -> Result<entity::session::Model, AccessTokenValidationError> {
-    let session = repository::get_active_session_by_access_token(
+    let access_token = match cookies.get(&CookieName::AccessToken.to_string()) {
+        Some(cookie) => cookie.value().to_string(),
+        None => {
+            tracing::error!("No access token found");
+            return Err(AccessTokenValidationError::Missing);
+        }
+    };
+
+    repository::get_active_session_by_access_token(
         &app_state.database_connection,
-        token_utils::hash_token(access_token),
+        token_utils::hash_token(&access_token),
     )
     .await
-    .map_err(|_| AccessTokenValidationError::Invalid)?;
+    .map_err(|error| {
+        tracing::error!("Failed to get session: {:?}", error);
+        AccessTokenValidationError::Invalid
+    })?
+    .ok_or(AccessTokenValidationError::Invalid)
+}
 
-    // Check if access token has expired
+pub async fn authenticate_from_cookies(
+    cookies: &Cookies,
+    app_state: &AppState,
+) -> Result<AuthenticatedUser, AccessTokenValidationError> {
+    let session = find_session_by_access_token_cookie(cookies, app_state).await?;
+
     let access_token_expires_at = session.access_token_expires_at.with_timezone(&Utc);
     if time_utils::is_expired(&access_token_expires_at) {
         return Err(AccessTokenValidationError::Expired);
     }
 
-    Ok(session)
+    Ok(AuthenticatedUser::from_validated_session(session.user_id))
 }
 
-/// Extracts and validates access token from cookies
-/// Returns the session if valid, or an error response tuple
 async fn extract_and_validate_session(
     cookies: &Cookies,
     app_state: &AppState,
 ) -> Result<entity::session::Model, (StatusCode, Json<serde_json::Value>)> {
-    let access_token = match cookies.get(&CookieName::AccessToken.to_string()) {
-        Some(token) => token.value().to_string(),
-        None => {
-            tracing::error!("No access token found");
-            return Err((
+    let session = find_session_by_access_token_cookie(cookies, app_state)
+        .await
+        .map_err(|_| {
+            (
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({
                     "message": "Unauthorized"
                 })),
-            ));
-        }
-    };
+            )
+        })?;
 
-    let session = match repository::get_active_session_by_access_token(
-        &app_state.database_connection,
-        token_utils::hash_token(&access_token),
-    )
-    .await
-    {
-        Ok(sess) => sess,
-        Err(e) => {
-            tracing::error!("Failed to get session: {:?}", e);
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({
-                    "message": "Unauthorized"
-                })),
-            ));
-        }
-    };
-
-    // Check if refresh token has expired
     if is_refresh_token_expired(&session) {
         return Err((
             StatusCode::UNAUTHORIZED,
@@ -160,7 +154,11 @@ pub async fn get_current_user(cookies: Cookies, app_state: AppState) -> impl Int
         Err(err_response) => return err_response,
     };
 
-    let user = match get_user(&app_state.database_connection, session.user_id).await {
+    let user = match get_user(&app_state.database_connection, session.user_id)
+        .await
+        .map(|user| user.ok_or(DbErr::RecordNotFound(USER_NOT_FOUND_MESSAGE.into())))
+        .and_then(|user| user)
+    {
         Ok(u) => u,
         Err(e) => {
             tracing::error!("Failed to get user: {:?}", e);
@@ -188,7 +186,10 @@ pub async fn create_session(
     payload: dto::CreateSessionDto,
     cookies: Cookies,
 ) -> impl IntoResponse {
-    let user = match get_user_by_email(&app_state.database_connection, payload.email.clone()).await
+    let user = match get_user_by_email(&app_state.database_connection, payload.email.clone())
+        .await
+        .map(|user| user.ok_or(DbErr::RecordNotFound(USER_NOT_FOUND_MESSAGE.into())))
+        .and_then(|user| user)
     {
         Ok(u) => u,
         Err(e) => {
@@ -384,6 +385,8 @@ pub async fn signout(cookies: Cookies, app_state: AppState) -> impl IntoResponse
         token_utils::hash_token(&access_token),
     )
     .await
+    .map(|session| session.ok_or(DbErr::RecordNotFound(SESSION_NOT_FOUND_MESSAGE.into())))
+    .and_then(|session| session)
     {
         Ok(sess) => sess,
         Err(e) => {
@@ -440,6 +443,8 @@ pub async fn refresh_token(cookies: Cookies, app_state: AppState) -> impl IntoRe
         token_utils::hash_token(&refresh_token),
     )
     .await
+    .map(|session| session.ok_or(DbErr::RecordNotFound(SESSION_NOT_FOUND_MESSAGE.into())))
+    .and_then(|session| session)
     {
         Ok(sess) => sess,
         Err(e) => {
@@ -548,4 +553,13 @@ pub async fn seed_admin_user(app_state: &AppState) {
         }
         Err(e) => tracing::error!("Admin seeding failed: could not save user: {:?}", e),
     }
+}
+
+pub async fn find_user_by_email(
+    app_state: &AppState,
+    email: &str,
+) -> Result<entity::user::Model, DbErr> {
+    get_user_by_email(&app_state.database_connection, email.to_string())
+        .await?
+        .ok_or_else(|| DbErr::RecordNotFound(USER_NOT_FOUND_MESSAGE.into()))
 }

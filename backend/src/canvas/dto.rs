@@ -1,3 +1,4 @@
+use crate::authorization::dto::ResourceCapabilities;
 use crate::canvas::constants::CanvasStatus;
 use crate::entity;
 use chrono::{DateTime, FixedOffset};
@@ -43,6 +44,8 @@ pub struct CanvasDto {
     pub sql_cell_count: i32,
     pub chart_cell_count: i32,
     pub dashboard_charts_count: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub capabilities: Option<ResourceCapabilities>,
 }
 
 impl From<entity::canvas::Model> for CanvasDto {
@@ -57,6 +60,7 @@ impl From<entity::canvas::Model> for CanvasDto {
             sql_cell_count: 0,
             chart_cell_count: 0,
             dashboard_charts_count: 0,
+            capabilities: None,
         }
     }
 }

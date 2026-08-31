@@ -36,8 +36,7 @@ impl From<entity::ai_summary::Model> for AiSummaryDto {
             user_prompt_used: model.user_prompt_used,
             is_prompt_stale,
             generated_at: model.generated_at.map(|at| at.to_rfc3339()),
-            requested_at: (status != SummaryStatus::Idle)
-                .then(|| model.requested_at.to_rfc3339()),
+            requested_at: (status != SummaryStatus::Idle).then(|| model.requested_at.to_rfc3339()),
         }
     }
 }

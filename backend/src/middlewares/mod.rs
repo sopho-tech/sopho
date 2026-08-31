@@ -1,3 +1,3 @@
 mod auth_middleware;
 
-pub use auth_middleware::auth_middleware_fn;
+pub use auth_middleware::session_middleware_fn;

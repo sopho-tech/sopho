@@ -4,15 +4,19 @@ use crate::ai::dto::{ChartSummaryInput, DashboardSummaryInput};
 use crate::ai_summary::constants::{self, SummaryEntityType};
 use crate::ai_summary::dto::{AiSummaryDto, DashboardSummariesDto};
 use crate::ai_summary::repository;
+use crate::authorization::constants::Action;
+use crate::authorization::dto::{TenantContext, TenantId};
+use crate::authorization::errors::AuthorizationError;
+use crate::authorization::service as authorization_service;
 use crate::cell::dto::ChartExecution;
 use crate::cell::service as cell_service;
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::dashboard::service as dashboard_service;
 use crate::database::constants::QueryResult;
-use sea_orm::prelude::DateTimeWithTimeZone;
 use crate::entity;
 use futures_util::stream::{self, StreamExt};
+use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::{ConnectionTrait, DatabaseConnection, DbErr};
 use tracing::{error, info};
 use uuid::Uuid;
@@ -32,6 +36,39 @@ pub enum SummaryError {
     PromptTooLong(usize),
     #[error("Database error: {0}")]
     Repository(#[from] DbErr),
+    #[error("{0}")]
+    Unauthorized(#[from] AuthorizationError),
+}
+
+async fn require_dashboard_access(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    dashboard_id: Uuid,
+    action: Action,
+) -> Result<(), SummaryError> {
+    let subject = dashboard_service::load_authorization_subject(
+        app_state,
+        tenant_context.tenant_id(),
+        dashboard_id,
+    )
+    .await
+    .map_err(|_| SummaryError::NotFound)?;
+    authorization_service::require_access(app_state, tenant_context, &subject, action).await?;
+    Ok(())
+}
+
+async fn require_chart_cell_access(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    cell_id: Uuid,
+    action: Action,
+) -> Result<(), SummaryError> {
+    let subject =
+        cell_service::load_authorization_subject(app_state, tenant_context.tenant_id(), cell_id)
+            .await
+            .map_err(|_| SummaryError::NotFound)?;
+    authorization_service::require_access(app_state, tenant_context, &subject, action).await?;
+    Ok(())
 }
 
 pub enum GenerateOutcome {
@@ -46,15 +83,22 @@ enum GenerationClaim {
 
 pub async fn get_dashboard_summaries(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     dashboard_id: Uuid,
 ) -> Result<DashboardSummariesDto, SummaryError> {
-    let dashboard = dashboard_service::get_dashboard_entity(app_state, dashboard_id)
+    require_dashboard_access(app_state, tenant_context, dashboard_id, Action::Read).await?;
+    let tenant_id = tenant_context.tenant_id();
+    let dashboard = dashboard_service::get_dashboard_entity(app_state, tenant_id, dashboard_id)
         .await
         .map_err(map_not_found)?;
     let cell_ids = dashboard_service::dashboard_chart_cell_ids(&dashboard);
-    let rows =
-        repository::find_for_dashboard(&app_state.database_connection, dashboard_id, &cell_ids)
-            .await?;
+    let rows = repository::find_for_dashboard(
+        &app_state.database_connection,
+        tenant_id,
+        dashboard_id,
+        &cell_ids,
+    )
+    .await?;
 
     let mut dashboard_summary = None;
     let mut charts = Vec::new();
@@ -73,11 +117,14 @@ pub async fn get_dashboard_summaries(
 
 pub async fn generate_dashboard_summary(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     dashboard_id: Uuid,
 ) -> Result<GenerateOutcome, SummaryError> {
-    require_ai(app_state).await?;
+    require_dashboard_access(app_state, tenant_context, dashboard_id, Action::Write).await?;
+    let tenant_id = tenant_context.tenant_id();
+    require_ai(app_state, tenant_id).await?;
 
-    let dashboard = dashboard_service::get_dashboard_entity(app_state, dashboard_id)
+    let dashboard = dashboard_service::get_dashboard_entity(app_state, tenant_id, dashboard_id)
         .await
         .map_err(map_not_found)?;
     let cell_ids = dashboard_service::dashboard_chart_cell_ids(&dashboard);
@@ -86,7 +133,9 @@ pub async fn generate_dashboard_summary(
     }
 
     let entity_type = SummaryEntityType::Dashboard;
-    let user_prompt = match try_start_generation(app_state, entity_type, dashboard_id).await? {
+    let user_prompt = match try_start_generation(app_state, tenant_id, entity_type, dashboard_id)
+        .await?
+    {
         GenerationClaim::InProgress(row) => {
             info!("ai_summary: dashboard {dashboard_id} is already generating; ignoring request");
             return Ok(GenerateOutcome::AlreadyGenerating(AiSummaryDto::from(*row)));
@@ -99,7 +148,14 @@ pub async fn generate_dashboard_summary(
         cell_ids.len()
     );
 
-    let outcome = match summarize_dashboard(app_state, dashboard_id, &cell_ids, &user_prompt).await
+    let outcome = match summarize_dashboard(
+        app_state,
+        tenant_id,
+        dashboard_id,
+        &cell_ids,
+        &user_prompt,
+    )
+    .await
     {
         Ok((summary, count)) => {
             info!("ai_summary: dashboard {dashboard_id} summarised {count} chart(s)");
@@ -112,18 +168,28 @@ pub async fn generate_dashboard_summary(
     };
 
     Ok(GenerateOutcome::Generated(
-        record_generation_result(app_state, entity_type, dashboard_id, outcome, user_prompt)
-            .await?,
+        record_generation_result(
+            app_state,
+            tenant_id,
+            entity_type,
+            dashboard_id,
+            outcome,
+            user_prompt,
+        )
+        .await?,
     ))
 }
 
 pub async fn generate_all_chart_summaries(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     dashboard_id: Uuid,
 ) -> Result<Vec<AiSummaryDto>, SummaryError> {
-    require_ai(app_state).await?;
+    require_dashboard_access(app_state, tenant_context, dashboard_id, Action::Write).await?;
+    let tenant_id = tenant_context.tenant_id();
+    require_ai(app_state, tenant_id).await?;
 
-    let dashboard = dashboard_service::get_dashboard_entity(app_state, dashboard_id)
+    let dashboard = dashboard_service::get_dashboard_entity(app_state, tenant_id, dashboard_id)
         .await
         .map_err(map_not_found)?;
     let cell_ids = dashboard_service::dashboard_chart_cell_ids(&dashboard);
@@ -134,7 +200,9 @@ pub async fn generate_all_chart_summaries(
     let mut claimed = Vec::new();
     let mut rows = Vec::new();
     for cell_id in cell_ids {
-        match try_start_generation(app_state, SummaryEntityType::ChartCell, cell_id).await? {
+        match try_start_generation(app_state, tenant_id, SummaryEntityType::ChartCell, cell_id)
+            .await?
+        {
             GenerationClaim::Started { user_prompt } => claimed.push((cell_id, user_prompt)),
             GenerationClaim::InProgress(row) => rows.push(AiSummaryDto::from(*row)),
         }
@@ -149,6 +217,7 @@ pub async fn generate_all_chart_summaries(
     for (cell_id, _) in &claimed {
         if let Some(row) = repository::find(
             &app_state.database_connection,
+            tenant_id,
             SummaryEntityType::ChartCell,
             *cell_id,
         )
@@ -158,13 +227,14 @@ pub async fn generate_all_chart_summaries(
         }
     }
 
-    spawn_chart_summary_batch(app_state.clone(), dashboard_id, claimed);
+    spawn_chart_summary_batch(app_state.clone(), tenant_id.clone(), dashboard_id, claimed);
 
     Ok(rows)
 }
 
 fn spawn_chart_summary_batch(
     app_state: AppState,
+    tenant_id: TenantId,
     dashboard_id: Uuid,
     claimed: Vec<(Uuid, Option<String>)>,
 ) {
@@ -174,16 +244,19 @@ fn spawn_chart_summary_batch(
     tokio::spawn(async move {
         stream::iter(claimed.into_iter().map(|(cell_id, user_prompt)| {
             let app_state = &app_state;
+            let tenant_id = &tenant_id;
             async move {
-                let outcome = match summarize_chart(app_state, cell_id, &user_prompt).await {
-                    Ok(summary) => Ok((summary, None)),
-                    Err(e) => {
-                        error!("ai_summary: chart {cell_id} generation failed: {e:#}");
-                        Err(truncate_error(e))
-                    }
-                };
+                let outcome =
+                    match summarize_chart(app_state, tenant_id, cell_id, &user_prompt).await {
+                        Ok(summary) => Ok((summary, None)),
+                        Err(e) => {
+                            error!("ai_summary: chart {cell_id} generation failed: {e:#}");
+                            Err(truncate_error(e))
+                        }
+                    };
                 if let Err(e) = record_generation_result(
                     app_state,
+                    tenant_id,
                     SummaryEntityType::ChartCell,
                     cell_id,
                     outcome,
@@ -205,16 +278,20 @@ fn spawn_chart_summary_batch(
 
 pub async fn generate_chart_summary(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     cell_id: Uuid,
 ) -> Result<GenerateOutcome, SummaryError> {
-    require_ai(app_state).await?;
+    require_chart_cell_access(app_state, tenant_context, cell_id, Action::Write).await?;
+    let tenant_id = tenant_context.tenant_id();
+    require_ai(app_state, tenant_id).await?;
 
-    if !cell_service::does_cell_exist(app_state, cell_id).await {
+    if !cell_service::does_cell_exist(app_state, tenant_id, cell_id).await {
         return Err(SummaryError::NotFound);
     }
 
     let entity_type = SummaryEntityType::ChartCell;
-    let user_prompt = match try_start_generation(app_state, entity_type, cell_id).await? {
+    let user_prompt = match try_start_generation(app_state, tenant_id, entity_type, cell_id).await?
+    {
         GenerationClaim::InProgress(row) => {
             info!("ai_summary: chart {cell_id} is already generating; ignoring request");
             return Ok(GenerateOutcome::AlreadyGenerating(AiSummaryDto::from(*row)));
@@ -224,7 +301,7 @@ pub async fn generate_chart_summary(
 
     info!("ai_summary: chart {cell_id} starting summary");
 
-    let outcome = match summarize_chart(app_state, cell_id, &user_prompt).await {
+    let outcome = match summarize_chart(app_state, tenant_id, cell_id, &user_prompt).await {
         Ok(summary) => {
             info!("ai_summary: chart {cell_id} summarised");
             Ok((summary, None))
@@ -236,34 +313,63 @@ pub async fn generate_chart_summary(
     };
 
     Ok(GenerateOutcome::Generated(
-        record_generation_result(app_state, entity_type, cell_id, outcome, user_prompt).await?,
+        record_generation_result(
+            app_state,
+            tenant_id,
+            entity_type,
+            cell_id,
+            outcome,
+            user_prompt,
+        )
+        .await?,
     ))
 }
 
 pub async fn set_dashboard_prompt(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     dashboard_id: Uuid,
     user_prompt: Option<String>,
 ) -> Result<AiSummaryDto, SummaryError> {
-    dashboard_service::get_dashboard_entity(app_state, dashboard_id)
+    require_dashboard_access(app_state, tenant_context, dashboard_id, Action::Write).await?;
+    let tenant_id = tenant_context.tenant_id();
+    dashboard_service::get_dashboard_entity(app_state, tenant_id, dashboard_id)
         .await
         .map_err(map_not_found)?;
-    set_prompt(app_state, SummaryEntityType::Dashboard, dashboard_id, user_prompt).await
+    set_prompt(
+        app_state,
+        tenant_id,
+        SummaryEntityType::Dashboard,
+        dashboard_id,
+        user_prompt,
+    )
+    .await
 }
 
 pub async fn set_chart_prompt(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     cell_id: Uuid,
     user_prompt: Option<String>,
 ) -> Result<AiSummaryDto, SummaryError> {
-    if !cell_service::does_cell_exist(app_state, cell_id).await {
+    require_chart_cell_access(app_state, tenant_context, cell_id, Action::Write).await?;
+    let tenant_id = tenant_context.tenant_id();
+    if !cell_service::does_cell_exist(app_state, tenant_id, cell_id).await {
         return Err(SummaryError::NotFound);
     }
-    set_prompt(app_state, SummaryEntityType::ChartCell, cell_id, user_prompt).await
+    set_prompt(
+        app_state,
+        tenant_id,
+        SummaryEntityType::ChartCell,
+        cell_id,
+        user_prompt,
+    )
+    .await
 }
 
 async fn set_prompt(
     app_state: &AppState,
+    tenant_id: &TenantId,
     entity_type: SummaryEntityType,
     entity_id: Uuid,
     user_prompt: Option<String>,
@@ -271,6 +377,7 @@ async fn set_prompt(
     let user_prompt = normalise_prompt(user_prompt)?;
     let row = repository::set_user_prompt(
         &app_state.database_connection,
+        tenant_id,
         entity_type,
         entity_id,
         user_prompt,
@@ -296,26 +403,32 @@ fn normalise_prompt(user_prompt: Option<String>) -> Result<Option<String>, Summa
     Ok(Some(trimmed.to_string()))
 }
 
-pub async fn delete_chart_summary(db: &impl ConnectionTrait, cell_id: Uuid) -> Result<(), DbErr> {
-    repository::delete_for_entity(db, SummaryEntityType::ChartCell, cell_id).await
+pub async fn delete_chart_summary(
+    db: &impl ConnectionTrait,
+    tenant_id: &TenantId,
+    cell_id: Uuid,
+) -> Result<(), DbErr> {
+    repository::delete_for_entity(db, tenant_id, SummaryEntityType::ChartCell, cell_id).await
 }
 
 pub async fn delete_chart_summaries(
     db: &impl ConnectionTrait,
+    tenant_id: &TenantId,
     cell_ids: &[Uuid],
 ) -> Result<(), DbErr> {
-    repository::delete_for_entities(db, SummaryEntityType::ChartCell, cell_ids).await
+    repository::delete_for_entities(db, tenant_id, SummaryEntityType::ChartCell, cell_ids).await
 }
 
 pub async fn delete_dashboard_summary(
     db: &impl ConnectionTrait,
+    tenant_id: &TenantId,
     dashboard_id: Uuid,
 ) -> Result<(), DbErr> {
-    repository::delete_for_entity(db, SummaryEntityType::Dashboard, dashboard_id).await
+    repository::delete_for_entity(db, tenant_id, SummaryEntityType::Dashboard, dashboard_id).await
 }
 
-async fn require_ai(app_state: &AppState) -> Result<(), SummaryError> {
-    if app_state.current_model_client().await.is_none() {
+async fn require_ai(app_state: &AppState, tenant_id: &TenantId) -> Result<(), SummaryError> {
+    if app_state.current_model_client(tenant_id).await.is_none() {
         return Err(SummaryError::AiNotConfigured);
     }
     Ok(())
@@ -330,6 +443,7 @@ fn map_not_found(err: DbErr) -> SummaryError {
 
 async fn try_start_generation(
     app_state: &AppState,
+    tenant_id: &TenantId,
     entity_type: SummaryEntityType,
     entity_id: Uuid,
 ) -> Result<GenerationClaim, SummaryError> {
@@ -340,32 +454,35 @@ async fn try_start_generation(
 
     // The conditional update is the claim itself: it tests "not already generating" and takes
     // ownership in one statement, so no competing request can slip between the two.
-    if repository::try_mark_generating(db, entity_type, entity_id, stale_before).await? > 0 {
+    if repository::try_mark_generating(db, tenant_id, entity_type, entity_id, stale_before).await?
+        > 0
+    {
         // Snapshot the prompt after the claim commits, so a concurrent edit cannot change what
         // this run is recorded as having used.
-        let user_prompt = repository::find(db, entity_type, entity_id)
+        let user_prompt = repository::find(db, tenant_id, entity_type, entity_id)
             .await?
             .and_then(|row| row.user_prompt);
         return Ok(GenerationClaim::Started { user_prompt });
     }
 
     // Updating nothing means either a row exists and is actively generating, or none exists yet.
-    match repository::find(db, entity_type, entity_id).await? {
+    match repository::find(db, tenant_id, entity_type, entity_id).await? {
         Some(row) => Ok(GenerationClaim::InProgress(Box::new(row))),
-        None => insert_generation_claim(db, entity_type, entity_id).await,
+        None => insert_generation_claim(db, tenant_id, entity_type, entity_id).await,
     }
 }
 
 async fn insert_generation_claim(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     entity_type: SummaryEntityType,
     entity_id: Uuid,
 ) -> Result<GenerationClaim, SummaryError> {
-    match repository::insert_generating(db, entity_type, entity_id).await {
+    match repository::insert_generating(db, tenant_id, entity_type, entity_id).await {
         Ok(row) => Ok(GenerationClaim::Started {
             user_prompt: row.user_prompt,
         }),
-        Err(e) => match repository::find(db, entity_type, entity_id).await? {
+        Err(e) => match repository::find(db, tenant_id, entity_type, entity_id).await? {
             Some(row) => Ok(GenerationClaim::InProgress(Box::new(row))),
             None => Err(SummaryError::Repository(e)),
         },
@@ -374,6 +491,7 @@ async fn insert_generation_claim(
 
 async fn record_generation_result(
     app_state: &AppState,
+    tenant_id: &TenantId,
     entity_type: SummaryEntityType,
     entity_id: Uuid,
     outcome: Result<(String, Option<i32>), String>,
@@ -384,6 +502,7 @@ async fn record_generation_result(
         Ok((summary_text, summarized_entity_count)) => {
             repository::mark_ready(
                 db,
+                tenant_id,
                 entity_type,
                 entity_id,
                 summary_text,
@@ -392,19 +511,23 @@ async fn record_generation_result(
             )
             .await?
         }
-        Err(message) => repository::mark_failed(db, entity_type, entity_id, message).await?,
+        Err(message) => {
+            repository::mark_failed(db, tenant_id, entity_type, entity_id, message).await?
+        }
     };
     row.map(AiSummaryDto::from).ok_or(SummaryError::NotFound)
 }
 
 async fn summarize_dashboard(
     app_state: &AppState,
+    tenant_id: &TenantId,
     dashboard_id: Uuid,
     cell_ids: &[Uuid],
     user_prompt: &Option<String>,
 ) -> anyhow::Result<(String, i32)> {
     let outcomes = cell_service::execute_chart_cells_data(
         app_state,
+        tenant_id,
         cell_ids,
         constants::GENERATION_CONCURRENCY,
     )
@@ -448,18 +571,20 @@ async fn summarize_dashboard(
         user_prompt: user_prompt.clone(),
     };
 
-    let summary = dashboard_summary_agent::summarize_dashboard(app_state, &input).await?;
+    let summary =
+        dashboard_summary_agent::summarize_dashboard(app_state, tenant_id, &input).await?;
     Ok((summary, summarized_chart_count))
 }
 
 async fn summarize_chart(
     app_state: &AppState,
+    tenant_id: &TenantId,
     cell_id: Uuid,
     user_prompt: &Option<String>,
 ) -> anyhow::Result<String> {
-    let execution = cell_service::execute_chart_cell_data(app_state, cell_id).await?;
+    let execution = cell_service::execute_chart_cell_data(app_state, tenant_id, cell_id).await?;
     let input = to_summary_input(execution, constants::CHART_SUMMARY_ROW_LIMIT);
-    chart_summary_agent::summarize_chart(app_state, &input, user_prompt).await
+    chart_summary_agent::summarize_chart(app_state, tenant_id, &input, user_prompt).await
 }
 
 fn to_summary_input(execution: ChartExecution, row_limit: usize) -> ChartSummaryInput {

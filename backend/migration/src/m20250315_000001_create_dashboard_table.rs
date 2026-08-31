@@ -13,6 +13,7 @@ impl MigrationTrait for Migration {
                     .table(Dashboard::Table)
                     .if_not_exists()
                     .col(pk_uuid(Dashboard::Id))
+                    .col(uuid(Dashboard::TenantId))
                     .col(uuid(Dashboard::CanvasId))
                     .col(string(Dashboard::Name))
                     .col(string(Dashboard::Description))
@@ -31,9 +32,10 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum Dashboard {
+pub enum Dashboard {
     Table,
     Id,
+    TenantId,
     CanvasId,
     Name,
     Description,

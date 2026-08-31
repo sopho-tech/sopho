@@ -1,3 +1,4 @@
+use crate::authorization::dto::TenantContext;
 use crate::canvas::service as canvas_service;
 use crate::cell::constants::CellType;
 use crate::cell::service as cell_service;
@@ -19,13 +20,15 @@ const SUPPORTED_ENTITY_TYPES: [EntityType; 4] = [
 
 async fn search_canvases(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     search_query: &str,
     limit: u64,
 ) -> Result<Vec<SearchResultItemDto>, sea_orm::DbErr> {
     let canvases = if search_query.is_empty() {
-        canvas_service::get_last_modified_canvases(app_state, limit).await?
+        canvas_service::get_last_modified_canvases(app_state, tenant_context, limit).await?
     } else {
-        canvas_service::search_canvases_by_name(app_state, search_query, limit).await?
+        canvas_service::search_canvases_by_name(app_state, tenant_context, search_query, limit)
+            .await?
     };
 
     Ok(canvases
@@ -42,12 +45,18 @@ async fn search_canvases(
 
 async fn search_conversations(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     search_query: &str,
     limit: u64,
 ) -> Result<Vec<SearchResultItemDto>, sea_orm::DbErr> {
     let search_term = (!search_query.is_empty()).then_some(search_query);
-    let conversations =
-        conversation_service::search_conversations_by_name(app_state, search_term, limit).await?;
+    let conversations = conversation_service::search_conversations_by_name(
+        app_state,
+        tenant_context,
+        search_term,
+        limit,
+    )
+    .await?;
 
     Ok(conversations
         .into_iter()
@@ -63,23 +72,35 @@ async fn search_conversations(
 
 async fn search_cells(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     search_query: &str,
     cell_type: CellType,
     entity_type: EntityType,
     limit: u64,
 ) -> Result<Vec<SearchResultItemDto>, sea_orm::DbErr> {
     let cells = if search_query.is_empty() {
-        cell_service::get_last_modified_cells_by_type(app_state, cell_type, limit).await?
-    } else {
-        cell_service::search_cells_by_name_and_type(app_state, search_query, cell_type, limit)
+        cell_service::get_last_modified_cells_by_type(app_state, tenant_context, cell_type, limit)
             .await?
+    } else {
+        cell_service::search_cells_by_name_and_type(
+            app_state,
+            tenant_context,
+            search_query,
+            cell_type,
+            limit,
+        )
+        .await?
     };
 
     let mut notebook_ids: Vec<Uuid> = cells.iter().map(|cell| cell.notebook_id).collect();
     notebook_ids.sort();
     notebook_ids.dedup();
-    let canvas_id_by_notebook_id =
-        notebook_service::get_canvas_ids_by_notebook_ids(app_state, notebook_ids).await?;
+    let canvas_id_by_notebook_id = notebook_service::get_canvas_ids_by_notebook_ids(
+        app_state,
+        tenant_context.tenant_id(),
+        notebook_ids,
+    )
+    .await?;
 
     Ok(cells
         .into_iter()
@@ -95,24 +116,44 @@ async fn search_cells(
 
 async fn search_by_entity_type(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     search_query: &str,
     entity_type: EntityType,
     limit: u64,
 ) -> Result<Vec<SearchResultItemDto>, sea_orm::DbErr> {
     match entity_type {
-        EntityType::Canvas => search_canvases(app_state, search_query, limit).await,
-        EntityType::Conversation => search_conversations(app_state, search_query, limit).await,
+        EntityType::Canvas => search_canvases(app_state, tenant_context, search_query, limit).await,
+        EntityType::Conversation => {
+            search_conversations(app_state, tenant_context, search_query, limit).await
+        }
         EntityType::SqlCell => {
-            search_cells(app_state, search_query, CellType::Sql, entity_type, limit).await
+            search_cells(
+                app_state,
+                tenant_context,
+                search_query,
+                CellType::Sql,
+                entity_type,
+                limit,
+            )
+            .await
         }
         EntityType::ChartCell => {
-            search_cells(app_state, search_query, CellType::Chart, entity_type, limit).await
+            search_cells(
+                app_state,
+                tenant_context,
+                search_query,
+                CellType::Chart,
+                entity_type,
+                limit,
+            )
+            .await
         }
     }
 }
 
 async fn run_search(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     search_query: &str,
     filters: &[&str],
 ) -> Result<Vec<SearchResultItemDto>, sea_orm::DbErr> {
@@ -124,6 +165,7 @@ async fn run_search(
         }
         let mut entity_results = search_by_entity_type(
             app_state,
+            tenant_context,
             search_query,
             entity_type,
             SEARCH_LIMIT_PER_ENTITY,
@@ -136,7 +178,11 @@ async fn run_search(
     Ok(results)
 }
 
-pub async fn search(app_state: AppState, request: SearchRequestDto) -> impl IntoResponse {
+pub async fn search(
+    app_state: AppState,
+    tenant_context: &TenantContext,
+    request: SearchRequestDto,
+) -> impl IntoResponse {
     let search_query = request.query.as_deref().unwrap_or("");
     let requested_filters = request.filters.unwrap_or_default();
     let filters = requested_filters
@@ -155,7 +201,7 @@ pub async fn search(app_state: AppState, request: SearchRequestDto) -> impl Into
         );
     }
 
-    match run_search(&app_state, search_query, &filters).await {
+    match run_search(&app_state, tenant_context, search_query, &filters).await {
         Ok(results) => (
             StatusCode::OK,
             axum::Json(serde_json::json!({ "data": results })),

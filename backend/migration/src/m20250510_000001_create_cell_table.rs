@@ -14,6 +14,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Cell::Table)
                     .col(pk_uuid(Cell::Id))
+                    .col(uuid(Cell::TenantId))
                     .col(uuid(Cell::NotebookId))
                     .col(uuid_null(Cell::ConnectionId))
                     .col(integer(Cell::DisplayOrder))
@@ -38,6 +39,7 @@ impl MigrationTrait for Migration {
 pub enum Cell {
     Table,
     Id,
+    TenantId,
     NotebookId,
     ConnectionId,
     DisplayOrder,

@@ -6,7 +6,7 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "ai_configuration")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: String,
+    pub tenant_id: Uuid,
     pub provider: String,
     pub api_key_encrypted: String,
     pub liveness_status: String,

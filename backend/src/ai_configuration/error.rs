@@ -12,4 +12,6 @@ pub enum AiConfigurationError {
     EmptyApiKey,
     #[error("AI configuration not found")]
     NotFound,
+    #[error("{0}")]
+    Unauthorized(#[from] crate::authorization::errors::AuthorizationError),
 }

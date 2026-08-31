@@ -1,5 +1,6 @@
 use crate::ai::agent_utils::ModelClient;
 use crate::ai_configuration;
+use crate::authorization::dto::TenantId;
 use crate::common::cryptography_utils::{
     generate_and_store_encryption_key, get_encryption_key_from_path,
 };
@@ -9,9 +10,11 @@ use anyhow::bail;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::warn;
+use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Configurations {
@@ -214,7 +217,7 @@ pub struct AppState {
     pub database_connection: DatabaseConnection,
     pub config: Configurations,
     pub client: reqwest::Client,
-    pub model_client: Arc<RwLock<Option<ModelClient>>>,
+    pub model_client: Arc<RwLock<HashMap<Uuid, ModelClient>>>,
     pub database_pools: DatabasePoolRegistry,
 }
 
@@ -223,7 +226,7 @@ impl AppState {
         database_connection: DatabaseConnection,
         config: Configurations,
         client: reqwest::Client,
-        model_client: Arc<RwLock<Option<ModelClient>>>,
+        model_client: Arc<RwLock<HashMap<Uuid, ModelClient>>>,
         database_pools: DatabasePoolRegistry,
     ) -> Self {
         Self {
@@ -235,21 +238,40 @@ impl AppState {
         }
     }
 
-    pub async fn current_model_client(&self) -> Option<ModelClient> {
-        self.model_client.read().await.clone()
+    pub async fn current_model_client(&self, tenant_id: &TenantId) -> Option<ModelClient> {
+        self.model_client
+            .read()
+            .await
+            .get(&tenant_id.get_uuid())
+            .cloned()
     }
 
-    pub async fn require_model_client(&self) -> anyhow::Result<ModelClient> {
-        self.current_model_client()
+    pub async fn set_model_client(&self, tenant_id: &TenantId, model_client: ModelClient) {
+        self.model_client
+            .write()
             .await
-            .ok_or_else(|| anyhow::anyhow!("AI is not configured"))
+            .insert(tenant_id.get_uuid(), model_client);
+    }
+
+    pub async fn clear_model_client(&self, tenant_id: &TenantId) {
+        self.model_client
+            .write()
+            .await
+            .remove(&tenant_id.get_uuid());
+    }
+
+    pub async fn require_model_client(&self, tenant_id: &TenantId) -> anyhow::Result<ModelClient> {
+        self.current_model_client(tenant_id)
+            .await
+            .ok_or_else(|| anyhow::anyhow!("AI is not configured for this tenant"))
     }
 
     pub async fn from_env() -> anyhow::Result<Self> {
         let config = Configurations::from_env()?;
         let database_connection = db::get_db(&config.database_url).await.unwrap();
         let client = reqwest::Client::new();
-        let model_client: Arc<RwLock<Option<ModelClient>>> = Arc::new(RwLock::new(None));
+        let model_client: Arc<RwLock<HashMap<Uuid, ModelClient>>> =
+            Arc::new(RwLock::new(HashMap::new()));
         let database_pools = new_database_pool_registry();
         Ok(Self::new(
             database_connection,

@@ -1,3 +1,4 @@
+use crate::authorization::dto::TenantId;
 use crate::common::AppState;
 use crate::suggested_question;
 use tokio_cron_scheduler::{Job, JobScheduler};
@@ -12,7 +13,7 @@ const SCHEDULER_NOTIFICATION_STATES_TABLE: &str = "scheduler_notification_state"
 pub async fn start(app_state: AppState) {
     let startup_state = app_state.clone();
     tokio::spawn(async move {
-        suggested_question::service::refresh_all_stale(&startup_state).await;
+        refresh_all_stale_for_every_tenant(&startup_state).await;
     });
 
     tokio::spawn(async move {
@@ -29,7 +30,7 @@ async fn start_scheduler(app_state: AppState) -> anyhow::Result<()> {
     let job = Job::new_async(SUGGESTED_QUESTION_DAILY_CRON, move |_uuid, _lock| {
         let job_state = job_state.clone();
         Box::pin(async move {
-            suggested_question::service::refresh_all_stale(&job_state).await;
+            refresh_all_stale_for_every_tenant(&job_state).await;
         })
     })?;
     sched.add(job).await?;
@@ -79,4 +80,18 @@ async fn build_postgres(app_state: &AppState) -> anyhow::Result<JobScheduler> {
     )
     .await?;
     Ok(sched)
+}
+
+async fn refresh_all_stale_for_every_tenant(app_state: &AppState) {
+    let tenant_ids = match crate::tenant::service::list_all_tenant_ids(app_state).await {
+        Ok(tenant_ids) => tenant_ids,
+        Err(e) => {
+            tracing::error!("scheduler: failed to list tenants: {e}");
+            return;
+        }
+    };
+    for tenant_id in tenant_ids {
+        let tenant_id = TenantId::from_system_unchecked(tenant_id);
+        suggested_question::service::refresh_all_stale(app_state, &tenant_id).await;
+    }
 }

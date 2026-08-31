@@ -62,3 +62,6 @@ impl From<SessionStatus> for String {
 pub const ACCESS_TOKEN_EXPIRY_HOURS: i64 = 1;
 
 pub const REFRESH_TOKEN_EXPIRY_DAYS: i64 = 15;
+
+pub const USER_NOT_FOUND_MESSAGE: &str = "User not found";
+pub const SESSION_NOT_FOUND_MESSAGE: &str = "Session not found";

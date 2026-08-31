@@ -1,10 +1,10 @@
 use crate::common::errors::ExecuteQueryError;
+use crate::data_catalog::dto::{Column as CatalogColumn, Database, Schema, Table};
+use crate::database::constants::QueryResult;
 use crate::database::constants::{
     CATALOG_SAMPLE_COLUMNS_PER_QUERY, CATALOG_SAMPLE_VALUES_PER_COLUMN,
     CATALOG_TABLE_FETCH_CONCURRENCY,
 };
-use crate::data_catalog::dto::{Column as CatalogColumn, Database, Schema, Table};
-use crate::database::constants::QueryResult;
 use crate::{connection::constants::ConnectionStatus, entity};
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use futures_util::StreamExt;
@@ -263,8 +263,13 @@ pub async fn get_data_catalog(
         std::collections::HashMap::new();
     for table_key in table_order {
         let (schema_name, table_name) = table_key.clone();
-        let columns = columns_by_table.get(&table_key).cloned().unwrap_or_default();
-        let sample_values = sample_values_by_table.remove(&table_key).unwrap_or_default();
+        let columns = columns_by_table
+            .get(&table_key)
+            .cloned()
+            .unwrap_or_default();
+        let sample_values = sample_values_by_table
+            .remove(&table_key)
+            .unwrap_or_default();
 
         let schema = schema_map.entry(schema_name.clone()).or_insert_with(|| {
             Schema::new(

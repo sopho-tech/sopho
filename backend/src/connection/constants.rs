@@ -60,8 +60,6 @@ impl SourceType {
         }
     }
 
-
-
     pub fn to_sql_dialect(&self) -> Option<SqlDialect> {
         match self {
             SourceType::Postgresql | SourceType::Supabase => Some(SqlDialect::Postgresql),
@@ -130,3 +128,5 @@ impl fmt::Display for ConnectionStatus {
         })
     }
 }
+
+pub const CONNECTION_NOT_FOUND_MESSAGE: &str = "Connection not found";

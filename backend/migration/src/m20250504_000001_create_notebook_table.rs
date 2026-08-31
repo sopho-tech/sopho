@@ -14,6 +14,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Notebook::Table)
                     .col(pk_uuid(Notebook::Id))
+                    .col(uuid(Notebook::TenantId))
                     .col(uuid(Notebook::CanvasId))
                     .col(string(Notebook::Name))
                     .col(string_null(Notebook::Description))
@@ -34,6 +35,7 @@ impl MigrationTrait for Migration {
 pub enum Notebook {
     Table,
     Id,
+    TenantId,
     CanvasId,
     Name,
     Description,

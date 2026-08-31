@@ -13,6 +13,9 @@ impl MigrationTrait for Migration {
                     .table(Connection::Table)
                     .if_not_exists()
                     .col(pk_uuid(Connection::Id))
+                    .col(uuid(Connection::TenantId))
+                    .col(uuid(Connection::OwnerUserId))
+                    .col(string(Connection::Visibility))
                     .col(string(Connection::Name))
                     .col(string_null(Connection::Description))
                     .col(string_null(Connection::Username))
@@ -36,9 +39,12 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum Connection {
+pub enum Connection {
     Table,
     Id,
+    TenantId,
+    OwnerUserId,
+    Visibility,
     Name,
     Description,
     Username,

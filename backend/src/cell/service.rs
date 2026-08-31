@@ -1,20 +1,23 @@
+use crate::ai_summary::service as ai_summary_service;
+use crate::authorization::constants::Action;
+use crate::authorization::dto::{TenantContext, TenantId};
+use crate::authorization::service as authorization_service;
+use crate::canvas::service as canvas_service;
 use crate::cell::constants::AggregateFunction;
 use crate::cell::constants::CellDisplayOrderMovement;
 use crate::cell::constants::CellStatus;
+use crate::cell::constants::CellType;
+use crate::cell::constants::SortOrder;
 use crate::cell::constants::MAX_CELLS_PER_NOTEBOOK;
 use crate::cell::constants::MAX_CHART_SERIES;
 use crate::cell::constants::MAX_IDENTIFIER_LEN;
-use crate::cell::constants::CellType;
-use crate::cell::constants::SortOrder;
+use crate::cell::constants::{CELL_DISPLAY_ORDER_OUT_OF_BOUNDS_MESSAGE, CELL_NOT_FOUND_MESSAGE};
 use crate::cell::dto;
 use crate::cell::dto::CellContent;
-use crate::ai_summary::service as ai_summary_service;
+use crate::cell::error::CellError;
 use crate::cell::repository;
-use crate::common::error_codes::codes;
 use crate::common::errors::CreateCellError;
 use crate::common::errors::ExecuteChartError;
-use crate::common::errors::ExecuteQueryError;
-use crate::common::errors::ExecuteSqlError;
 use crate::common::errors::GetDatabaseConnectionError;
 use crate::common::errors::SophoError;
 use crate::common::time_utils;
@@ -26,55 +29,87 @@ use crate::database::service as database_service;
 use crate::entity;
 use crate::notebook::does_notebook_exist;
 use crate::notebook::service as notebook_service;
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
 use futures_util::stream::{self, StreamExt};
 use sea_orm::TransactionTrait;
-use sqlx::types::JsonValue;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use uuid::Uuid;
 
-pub async fn does_cell_exist(app_state: &AppState, id: Uuid) -> bool {
-    repository::get_cell(&app_state.database_connection, id)
+pub async fn does_cell_exist(app_state: &AppState, tenant_id: &TenantId, id: Uuid) -> bool {
+    repository::get_cell(&app_state.database_connection, tenant_id, id)
         .await
         .is_ok()
 }
 
-pub async fn get_cell(app_state: AppState, id: Uuid) -> impl IntoResponse {
-    let cell = execute_get_cell(&app_state, id).await;
-    match cell {
-        Ok(cell) => {
-            let response_dto = dto::CellDto::from(cell);
-            (StatusCode::OK, axum::Json(serde_json::json!(response_dto)))
-        }
-        Err(e) => match e {
-            sea_orm::DbErr::RecordNotFound(_) => (
-                StatusCode::NOT_FOUND,
-                axum::Json(serde_json::json!({ "error": "Cell not found" })),
-            ),
-            _ => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            ),
-        },
-    }
+pub async fn load_authorization_subject(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    cell_id: Uuid,
+) -> Result<crate::authorization::dto::AuthorizationSubject, sea_orm::DbErr> {
+    let cell = repository::get_cell(&app_state.database_connection, tenant_id, cell_id)
+        .await?
+        .ok_or_else(|| sea_orm::DbErr::RecordNotFound(CELL_NOT_FOUND_MESSAGE.into()))?;
+    let notebook =
+        notebook_service::get_notebook_entity(app_state, tenant_id, cell.notebook_id).await?;
+    canvas_service::load_authorization_subject(app_state, tenant_id, notebook.canvas_id).await
+}
+
+async fn authorize_cell(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    cell_id: Uuid,
+    action: Action,
+) -> Result<entity::cell::Model, CellError> {
+    let cell = repository::get_cell(
+        &app_state.database_connection,
+        tenant_context.tenant_id(),
+        cell_id,
+    )
+    .await
+    .map_err(|_| CellError::NotFound)?
+    .ok_or(CellError::NotFound)?;
+
+    let subject = load_authorization_subject(app_state, tenant_context.tenant_id(), cell_id)
+        .await
+        .map_err(|_| CellError::NotFound)?;
+
+    authorization_service::require_access(app_state, tenant_context, &subject, action).await?;
+
+    Ok(cell)
+}
+
+pub async fn get_cell(
+    app_state: AppState,
+    tenant_context: &TenantContext,
+    id: Uuid,
+) -> Result<dto::CellDto, CellError> {
+    let cell = authorize_cell(&app_state, tenant_context, id, Action::Read).await?;
+    Ok(dto::CellDto::from(cell))
 }
 
 async fn execute_get_cell(
     app_state: &AppState,
+    tenant_id: &TenantId,
     id: Uuid,
 ) -> Result<entity::cell::Model, sea_orm::DbErr> {
-    return repository::get_cell(&app_state.database_connection, id).await;
+    repository::get_cell(&app_state.database_connection, tenant_id, id)
+        .await?
+        .ok_or_else(|| sea_orm::DbErr::RecordNotFound(CELL_NOT_FOUND_MESSAGE.into()))
 }
 
 async fn generate_cell_name(
     app_state: &AppState,
+    tenant_id: &TenantId,
     notebook_id: Uuid,
     cell_type: CellType,
 ) -> Result<String, SophoError> {
-    let total_cells =
-        get_number_of_cells_in_notebook_by_type(app_state, notebook_id, cell_type.clone()).await;
+    let total_cells = get_number_of_cells_in_notebook_by_type(
+        app_state,
+        tenant_id,
+        notebook_id,
+        cell_type.clone(),
+    )
+    .await;
     match total_cells {
         Ok(total_cells) => {
             let cell_number = total_cells + 1;
@@ -86,6 +121,7 @@ async fn generate_cell_name(
 
 pub async fn get_cells_by_notebook_id_and_cell_type(
     app_state: &AppState,
+    tenant_id: &TenantId,
     notebook_id: Uuid,
     cell_type: Option<CellType>,
 ) -> Result<Vec<dto::CellDto>, SophoError> {
@@ -93,13 +129,19 @@ pub async fn get_cells_by_notebook_id_and_cell_type(
         Some(cell_type) => {
             repository::get_cells_by_notebook_id_and_cell_type(
                 &app_state.database_connection,
+                tenant_id,
                 notebook_id,
                 cell_type,
             )
             .await
         }
         None => {
-            repository::get_cells_by_notebook_id(&app_state.database_connection, notebook_id).await
+            repository::get_cells_by_notebook_id(
+                &app_state.database_connection,
+                tenant_id,
+                notebook_id,
+            )
+            .await
         }
     };
     match cells {
@@ -114,9 +156,11 @@ pub async fn get_cells_by_notebook_id_and_cell_type(
 
 async fn get_number_of_cells_in_notebook(
     app_state: &AppState,
+    tenant_id: &TenantId,
     notebook_id: Uuid,
 ) -> Result<i32, SophoError> {
-    let cells = get_cells_by_notebook_id_and_cell_type(app_state, notebook_id, None).await;
+    let cells =
+        get_cells_by_notebook_id_and_cell_type(app_state, tenant_id, notebook_id, None).await;
     match cells {
         Ok(cells) => Ok(cells.len() as i32),
         Err(e) => Err(e),
@@ -125,10 +169,11 @@ async fn get_number_of_cells_in_notebook(
 
 async fn get_number_of_cells_in_notebook_by_type(
     app_state: &AppState,
+    tenant_id: &TenantId,
     id: Uuid,
     cell_type: CellType,
 ) -> Result<i32, SophoError> {
-    let cells = get_cells_by_notebook_id_and_cell_type(app_state, id, None).await;
+    let cells = get_cells_by_notebook_id_and_cell_type(app_state, tenant_id, id, None).await;
     match cells {
         Ok(cells) => {
             let count = cells
@@ -143,16 +188,20 @@ async fn get_number_of_cells_in_notebook_by_type(
 
 pub async fn execute_create_cell(
     app_state: &AppState,
+    tenant_id: &TenantId,
     payload: dto::CreateCellDto,
 ) -> Result<entity::cell::Model, CreateCellError> {
-    if !does_notebook_exist(app_state, payload.notebook_id).await {
+    if !does_notebook_exist(app_state, tenant_id, payload.notebook_id).await {
         return Err(CreateCellError::NotebookNotFound);
     }
 
-    let cell_count =
-        repository::count_cells_by_notebook_id(&app_state.database_connection, payload.notebook_id)
-            .await
-            .map_err(CreateCellError::Repository)?;
+    let cell_count = repository::count_cells_by_notebook_id(
+        &app_state.database_connection,
+        tenant_id,
+        payload.notebook_id,
+    )
+    .await
+    .map_err(CreateCellError::Repository)?;
     if cell_count as usize >= MAX_CELLS_PER_NOTEBOOK {
         return Err(CreateCellError::NotebookFull(MAX_CELLS_PER_NOTEBOOK));
     }
@@ -160,22 +209,29 @@ pub async fn execute_create_cell(
     let display_order = match payload.display_order {
         Some(order) => order,
         None => {
-            let number_of_cells = get_number_of_cells_in_notebook(app_state, payload.notebook_id)
-                .await
-                .map_err(CreateCellError::Sopho)?;
+            let number_of_cells =
+                get_number_of_cells_in_notebook(app_state, tenant_id, payload.notebook_id)
+                    .await
+                    .map_err(CreateCellError::Sopho)?;
             number_of_cells + 1
         }
     };
 
     let cell_name = match payload.name {
         Some(name) => name,
-        None => generate_cell_name(app_state, payload.notebook_id, payload.cell_type.clone())
-            .await
-            .map_err(CreateCellError::Sopho)?,
+        None => generate_cell_name(
+            app_state,
+            tenant_id,
+            payload.notebook_id,
+            payload.cell_type.clone(),
+        )
+        .await
+        .map_err(CreateCellError::Sopho)?,
     };
 
     let cell_entity = entity::cell::Model {
         id: Uuid::new_v4(),
+        tenant_id: tenant_id.get_uuid(),
         name: Some(cell_name),
         content: payload.content,
         cell_type: payload.cell_type.to_string(),
@@ -187,7 +243,7 @@ pub async fn execute_create_cell(
         updated_at: time_utils::now_utc_into(),
     };
 
-    let cell = repository::save_cell(&app_state.database_connection, cell_entity)
+    let cell = repository::save_cell(&app_state.database_connection, tenant_id, cell_entity)
         .await
         .map_err(CreateCellError::Repository)?;
 
@@ -196,10 +252,12 @@ pub async fn execute_create_cell(
 
 pub async fn execute_create_cell_transaction(
     txn: &sea_orm::DatabaseTransaction,
+    tenant_id: &TenantId,
     payload: dto::CreateCellDto,
     display_order: i32,
 ) -> Result<entity::cell::Model, sea_orm::DbErr> {
-    let cell_count = repository::count_cells_by_notebook_id(txn, payload.notebook_id).await?;
+    let cell_count =
+        repository::count_cells_by_notebook_id(txn, tenant_id, payload.notebook_id).await?;
     if cell_count as usize >= MAX_CELLS_PER_NOTEBOOK {
         return Err(sea_orm::DbErr::Custom(format!(
             "notebook already holds the maximum of {MAX_CELLS_PER_NOTEBOOK} cells"
@@ -208,6 +266,7 @@ pub async fn execute_create_cell_transaction(
 
     let cell_entity = entity::cell::Model {
         id: Uuid::new_v4(),
+        tenant_id: tenant_id.get_uuid(),
         name: payload.name,
         content: payload.content,
         cell_type: payload.cell_type.to_string(),
@@ -218,176 +277,133 @@ pub async fn execute_create_cell_transaction(
         created_at: time_utils::now_utc_into(),
         updated_at: time_utils::now_utc_into(),
     };
-    repository::save_cell_transaction(txn, cell_entity).await
+    repository::save_cell_transaction(txn, tenant_id, cell_entity).await
 }
 
 pub async fn get_cells_by_notebook_id_entities(
     app_state: &AppState,
+    tenant_id: &TenantId,
     notebook_id: Uuid,
 ) -> Result<Vec<entity::cell::Model>, sea_orm::DbErr> {
-    repository::get_cells_by_notebook_id(&app_state.database_connection, notebook_id).await
+    repository::get_cells_by_notebook_id(&app_state.database_connection, tenant_id, notebook_id)
+        .await
 }
 
 pub async fn get_cells_by_notebook_id_transaction(
     txn: &sea_orm::DatabaseTransaction,
+    tenant_id: &TenantId,
     notebook_id: Uuid,
 ) -> Result<Vec<entity::cell::Model>, sea_orm::DbErr> {
-    repository::get_cells_by_notebook_id_transaction(txn, notebook_id).await
+    repository::get_cells_by_notebook_id_transaction(txn, tenant_id, notebook_id).await
 }
 
 pub async fn update_cell_content_transaction(
     txn: &sea_orm::DatabaseTransaction,
+    tenant_id: &TenantId,
     cell_id: Uuid,
     name: Option<String>,
     content: Option<String>,
 ) -> Result<entity::cell::Model, sea_orm::DbErr> {
-    repository::update_cell_content_transaction(txn, cell_id, name, content).await
+    repository::update_cell_content_transaction(txn, tenant_id, cell_id, name, content)
+        .await?
+        .ok_or_else(|| sea_orm::DbErr::RecordNotFound("Cell not found".into()))
 }
 
 pub async fn delete_cell_transaction(
     txn: &sea_orm::DatabaseTransaction,
+    tenant_id: &TenantId,
     cell_id: Uuid,
 ) -> Result<(), sea_orm::DbErr> {
-    repository::delete_cell_transaction(txn, cell_id).await?;
+    repository::delete_cell_transaction(txn, tenant_id, cell_id).await?;
     Ok(())
 }
 
-pub async fn create_cell(app_state: AppState, payload: dto::CreateCellDto) -> impl IntoResponse {
-    match execute_create_cell(&app_state, payload).await {
-        Ok(cell) => {
-            let response_dto = dto::CellDto::from(cell);
-            (
-                StatusCode::CREATED,
-                axum::Json(serde_json::json!(response_dto)),
-            )
+pub async fn create_cell(
+    app_state: AppState,
+    tenant_context: &TenantContext,
+    payload: dto::CreateCellDto,
+) -> Result<dto::CellDto, CellError> {
+    crate::authorization::service::require_capability(
+        tenant_context,
+        crate::authorization::constants::Permission::CanvasWrite,
+    )?;
+
+    let cell = execute_create_cell(&app_state, tenant_context.tenant_id(), payload).await?;
+    Ok(dto::CellDto::from(cell))
+}
+
+pub async fn delete_cell(
+    app_state: AppState,
+    tenant_context: &TenantContext,
+    id: Uuid,
+) -> Result<(), CellError> {
+    authorize_cell(&app_state, tenant_context, id, Action::Delete).await?;
+
+    let transaction = app_state.database_connection.begin().await?;
+    match delete_cell_in_transaction(&transaction, tenant_context.tenant_id(), id).await {
+        Ok(()) => {
+            transaction.commit().await?;
+            Ok(())
         }
-        Err(CreateCellError::NotebookNotFound) => (
-            StatusCode::BAD_REQUEST,
-            axum::Json(serde_json::json!({ "error": "Notebook not found" })),
-        ),
-        Err(e @ CreateCellError::NotebookFull(_)) => (
-            StatusCode::PRECONDITION_FAILED,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        ),
+        Err(error) => {
+            let _ = transaction.rollback().await;
+            Err(error)
+        }
     }
 }
 
-pub async fn delete_cell(app_state: AppState, id: Uuid) -> impl IntoResponse {
-    let txn = match app_state.database_connection.begin().await {
-        Ok(t) => t,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            )
-        }
-    };
-    let cell = match repository::get_cell_transaction(&txn, id).await {
-        Ok(c) => c,
-        Err(sea_orm::DbErr::RecordNotFound(_)) => {
-            let _ = txn.rollback().await;
-            return (
-                StatusCode::NOT_FOUND,
-                axum::Json(serde_json::json!({ "error": "Cell not found" })),
-            );
-        }
-        Err(e) => {
-            let _ = txn.rollback().await;
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
-    let notebook = match notebook_service::get_notebook_transaction(&txn, cell.notebook_id).await {
-        Ok(n) => n,
-        Err(e) => {
-            let _ = txn.rollback().await;
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
-    if let Err(e) =
-        dashboard_service::remove_cell_from_layout_transaction(&txn, notebook.canvas_id, id).await
-    {
-        let _ = txn.rollback().await;
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        );
-    }
-    if let Err(e) = repository::delete_cell_transaction(&txn, id).await {
-        let _ = txn.rollback().await;
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        );
-    }
-    if let Err(e) = ai_summary_service::delete_chart_summary(&txn, id).await {
-        let _ = txn.rollback().await;
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        );
-    }
-    match txn.commit().await {
-        Ok(_) => (StatusCode::NO_CONTENT, axum::Json(serde_json::Value::Null)),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        ),
-    }
+async fn delete_cell_in_transaction(
+    transaction: &sea_orm::DatabaseTransaction,
+    tenant_id: &TenantId,
+    id: Uuid,
+) -> Result<(), CellError> {
+    let cell = repository::get_cell_transaction(transaction, tenant_id, id)
+        .await?
+        .ok_or(CellError::NotFound)?;
+
+    let notebook =
+        notebook_service::get_notebook_transaction(transaction, tenant_id, cell.notebook_id)
+            .await?;
+
+    dashboard_service::remove_cell_from_layout_transaction(
+        transaction,
+        tenant_id,
+        notebook.canvas_id,
+        id,
+    )
+    .await?;
+    repository::delete_cell_transaction(transaction, tenant_id, id).await?;
+    ai_summary_service::delete_chart_summary(transaction, tenant_id, id).await?;
+
+    Ok(())
 }
 
 pub async fn reorder_cell(
     app_state: AppState,
+    tenant_context: &TenantContext,
     id: Uuid,
     payload: dto::ReorderCellDto,
-) -> impl IntoResponse {
-    let cell = match execute_get_cell(&app_state, id).await {
-        Ok(c) => c,
-        Err(sea_orm::DbErr::RecordNotFound(_)) => {
-            return (
-                StatusCode::NOT_FOUND,
-                axum::Json(serde_json::json!({ "error": "Cell not found" })),
-            );
-        }
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
-    let cells = match repository::get_cells_by_notebook_id(
+) -> Result<dto::CellDto, CellError> {
+    authorize_cell(&app_state, tenant_context, id, Action::Write).await?;
+
+    let tenant_id = tenant_context.tenant_id();
+    let cell = execute_get_cell(&app_state, tenant_id, id).await?;
+
+    let mut ordered_cells = repository::get_cells_by_notebook_id(
         &app_state.database_connection,
+        tenant_id,
         cell.notebook_id,
     )
-    .await
-    {
-        Ok(c) => c,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
-    let mut ordered_cells: Vec<entity::cell::Model> = cells;
-    let len = ordered_cells.len() as i32;
+    .await?;
+
+    let cell_count = ordered_cells.len() as i32;
     let current_index = cell.display_order;
-    if current_index < 1 || current_index > len {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": "Cell display_order out of bounds" })),
-        );
+    if current_index < 1 || current_index > cell_count {
+        return Err(CellError::Internal(
+            CELL_DISPLAY_ORDER_OUT_OF_BOUNDS_MESSAGE.to_string(),
+        ));
     }
+
     let new_index = match payload.movement_type {
         CellDisplayOrderMovement::Up => {
             if current_index > 1 {
@@ -397,206 +413,110 @@ pub async fn reorder_cell(
             }
         }
         CellDisplayOrderMovement::Down => {
-            if current_index < len {
+            if current_index < cell_count {
                 current_index + 1
             } else {
                 current_index
             }
         }
         CellDisplayOrderMovement::Top => 1,
-        CellDisplayOrderMovement::Bottom => len,
+        CellDisplayOrderMovement::Bottom => cell_count,
     };
     if new_index != current_index {
-        let from_pos = (current_index - 1) as usize;
-        let to_pos = (new_index - 1) as usize;
-        let cell_model = ordered_cells.remove(from_pos);
-        ordered_cells.insert(to_pos, cell_model);
+        let cell_model = ordered_cells.remove((current_index - 1) as usize);
+        ordered_cells.insert((new_index - 1) as usize, cell_model);
     }
-    let txn = match app_state.database_connection.begin().await {
-        Ok(t) => t,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            )
+
+    let transaction = app_state.database_connection.begin().await?;
+    match persist_cell_order(&transaction, tenant_id, &ordered_cells, id, cell.clone()).await {
+        Ok(reordered_cell) => {
+            transaction.commit().await?;
+            Ok(dto::CellDto::from(reordered_cell))
         }
-    };
-    let mut response_cell = cell.clone();
-    for (i, c) in ordered_cells.iter().enumerate() {
-        let new_order = (i + 1) as i32;
-        if c.display_order != new_order {
-            match repository::update_cell_display_order_transaction(&txn, c.id, new_order).await {
-                Ok(updated) => {
-                    if c.id == id {
-                        response_cell = updated;
-                    }
-                }
-                Err(e) => {
-                    let _ = txn.rollback().await;
-                    return (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        axum::Json(serde_json::json!({ "error": e.to_string() })),
-                    );
-                }
-            }
+        Err(error) => {
+            let _ = transaction.rollback().await;
+            Err(error)
         }
     }
-    match txn.commit().await {
-        Ok(_) => {
-            let response_dto = dto::CellDto::from(response_cell);
-            (StatusCode::OK, axum::Json(serde_json::json!(response_dto)))
+}
+
+async fn persist_cell_order(
+    transaction: &sea_orm::DatabaseTransaction,
+    tenant_id: &TenantId,
+    ordered_cells: &[entity::cell::Model],
+    reordered_cell_id: Uuid,
+    original_cell: entity::cell::Model,
+) -> Result<entity::cell::Model, CellError> {
+    let mut reordered_cell = original_cell;
+    for (position, cell) in ordered_cells.iter().enumerate() {
+        let new_display_order = (position + 1) as i32;
+        if cell.display_order == new_display_order {
+            continue;
         }
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        ),
+        let updated = repository::update_cell_display_order_transaction(
+            transaction,
+            tenant_id,
+            cell.id,
+            new_display_order,
+        )
+        .await?
+        .ok_or(CellError::NotFound)?;
+        if cell.id == reordered_cell_id {
+            reordered_cell = updated;
+        }
     }
+    Ok(reordered_cell)
 }
 
 pub async fn update_cell(
     app_state: AppState,
+    tenant_context: &TenantContext,
     id: Uuid,
     payload: dto::CellDto,
-) -> impl IntoResponse {
-    let cell = repository::update_cell(&app_state.database_connection, id, payload).await;
-    match cell {
-        Ok(cell) => {
-            let response_dto = dto::CellDto::from(cell);
-            (StatusCode::OK, axum::Json(serde_json::json!(response_dto)))
-        }
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        ),
-    }
+) -> Result<dto::CellDto, CellError> {
+    authorize_cell(&app_state, tenant_context, id, Action::Write).await?;
+
+    let cell = repository::update_cell(
+        &app_state.database_connection,
+        tenant_context.tenant_id(),
+        id,
+        payload,
+    )
+    .await?
+    .ok_or(CellError::NotFound)?;
+
+    Ok(dto::CellDto::from(cell))
 }
 
-pub async fn execute_cell(app_state: AppState, id: Uuid) -> impl IntoResponse {
-    let cell = execute_get_cell(&app_state, id).await;
-    let cell = match cell {
-        Ok(cell) => cell,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
-    let cell_type = match CellType::from_str(&cell.cell_type) {
-        Ok(cell_type) => cell_type,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            )
-        }
-    };
+pub async fn execute_cell(
+    app_state: AppState,
+    tenant_context: &TenantContext,
+    id: Uuid,
+) -> Result<QueryResult, CellError> {
+    authorize_cell(&app_state, tenant_context, id, Action::Read).await?;
+
+    let tenant_id = tenant_context.tenant_id();
+    let cell = execute_get_cell(&app_state, tenant_id, id).await?;
+    let cell_type = CellType::from_str(&cell.cell_type).map_err(CellError::Internal)?;
+
     match cell_type {
-        CellType::Sql => return execute_sql_cell(&app_state, cell).await,
-        CellType::Chart => return execute_chart_cell(&app_state, cell).await,
-        _ => (
-            StatusCode::EXPECTATION_FAILED,
-            axum::Json(serde_json::json!({ "error": "cell type not supported" })),
-        ),
+        CellType::Sql => execute_sql_cell(&app_state, tenant_id, cell).await,
+        CellType::Chart => execute_chart_cell(&app_state, tenant_id, cell).await,
+        _ => Err(CellError::UnsupportedCellType),
     }
 }
 
 async fn fetch_connection(
     app_state: &AppState,
+    tenant_id: &TenantId,
     connection_id: Uuid,
 ) -> Result<entity::connection::Model, GetDatabaseConnectionError> {
-    connection_service::execute_get_connection(app_state, connection_id)
+    connection_service::execute_get_connection(app_state, tenant_id, connection_id)
         .await
         .map_err(|e| match &e {
             sea_orm::DbErr::RecordNotFound(_) => GetDatabaseConnectionError::ConnectionNotFound,
             _ => GetDatabaseConnectionError::Connection(e),
         })
-}
-
-fn query_result_response(result: &QueryResult) -> (http::StatusCode, axum::Json<JsonValue>) {
-    (
-        StatusCode::OK,
-        axum::Json(serde_json::json!({
-            "columns": result.columns,
-            "data": result.data,
-        })),
-    )
-}
-
-fn execute_query_error_response(
-    err: ExecuteQueryError,
-) -> (http::StatusCode, axum::Json<JsonValue>) {
-    match err {
-        ExecuteQueryError::Database(sqlx::Error::Database(e)) => (
-            StatusCode::BAD_REQUEST,
-            axum::Json(serde_json::json!({
-                "status": StatusCode::BAD_REQUEST.as_u16(),
-                "code": codes::SYNTAX_ERROR.as_str(),
-                "message": e.to_string()
-            })),
-        ),
-        ExecuteQueryError::Database(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        ),
-        ExecuteQueryError::UnhandledDataType(type_name) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({
-                "error": format!("data type '{}' not handled", type_name)
-            })),
-        ),
-    }
-}
-
-fn execute_sql_error_response(err: ExecuteSqlError) -> (http::StatusCode, axum::Json<JsonValue>) {
-    match err {
-        ExecuteSqlError::GetConnection(e) => get_database_connection_error_response(e),
-        ExecuteSqlError::ExecuteQuery(e) => execute_query_error_response(e),
-    }
-}
-
-fn execute_chart_error_response(
-    err: ExecuteChartError,
-) -> (http::StatusCode, axum::Json<JsonValue>) {
-    match err {
-        ExecuteChartError::CellNotFound => (
-            StatusCode::NOT_FOUND,
-            axum::Json(serde_json::json!({ "error": "Cell not found" })),
-        ),
-        ExecuteChartError::MissingContent => (
-            StatusCode::PRECONDITION_FAILED,
-            axum::Json(serde_json::json!({ "error": "Cell has no content" })),
-        ),
-        ExecuteChartError::InvalidChartContent => (
-            StatusCode::BAD_REQUEST,
-            axum::Json(serde_json::json!({ "error": "Invalid chart content format" })),
-        ),
-        ExecuteChartError::SourceNotSql => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": "Cell content is not SQL" })),
-        ),
-        ExecuteChartError::MissingConnection => (
-            StatusCode::PRECONDITION_FAILED,
-            axum::Json(serde_json::json!({ "error": "Source cell has no connection assigned" })),
-        ),
-        ExecuteChartError::MissingChartSetting(setting) => (
-            StatusCode::PRECONDITION_FAILED,
-            axum::Json(serde_json::json!({
-                "message": format!("ChartCell has no {} specified", setting)
-            })),
-        ),
-        ExecuteChartError::TooManySeries { .. }
-        | ExecuteChartError::DuplicateSeriesAlias(_)
-        | ExecuteChartError::InvalidIdentifier(_) => (
-            StatusCode::PRECONDITION_FAILED,
-            axum::Json(serde_json::json!({ "message": err.to_string() })),
-        ),
-        ExecuteChartError::ExecuteSql(e) => execute_sql_error_response(e),
-        ExecuteChartError::Repository(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        ),
-    }
 }
 
 fn strip_trailing_semicolons(query: &str) -> String {
@@ -675,17 +595,10 @@ fn build_pie_chart_aggregated_query(
     ))
 }
 
-fn get_sql_query_from_content_inner(
-    content: &str,
-    invalid_format_status: StatusCode,
-    invalid_format_msg: &str,
-) -> Result<String, (http::StatusCode, axum::Json<JsonValue>)> {
+fn get_sql_query_from_content(content: &str) -> Result<String, CellError> {
     match CellContent::parse(content, &CellType::Sql) {
         Ok(CellContent::Sql(sql_content)) => Ok(sql_content.query),
-        Ok(_) => Err((
-            invalid_format_status,
-            axum::Json(serde_json::json!({ "error": invalid_format_msg })),
-        )),
+        Ok(_) => Err(CellError::InvalidSqlContent),
         Err(_) => Ok(content.to_string()),
     }
 }
@@ -702,20 +615,8 @@ fn get_sql_query_from_cell_data(cell: &entity::cell::Model) -> Result<String, Ex
     }
 }
 
-fn get_sql_query_from_cell(
-    cell: &entity::cell::Model,
-) -> Result<String, (http::StatusCode, axum::Json<JsonValue>)> {
-    get_sql_query_from_cell_data(cell).map_err(execute_chart_error_response)
-}
-
-fn get_sql_query_from_content(
-    content: &str,
-) -> Result<String, (http::StatusCode, axum::Json<JsonValue>)> {
-    get_sql_query_from_content_inner(
-        content,
-        StatusCode::BAD_REQUEST,
-        "Content is not valid SQL format",
-    )
+fn get_sql_query_from_cell(cell: &entity::cell::Model) -> Result<String, CellError> {
+    get_sql_query_from_cell_data(cell).map_err(CellError::ExecuteChart)
 }
 
 fn parse_chart_content(content: &str) -> Result<dto::ChartContent, ExecuteChartError> {
@@ -731,132 +632,46 @@ fn parse_chart_content(content: &str) -> Result<dto::ChartContent, ExecuteChartE
 
 pub async fn execute_cell_preview(
     app_state: AppState,
+    tenant_context: &TenantContext,
     id: Uuid,
     payload: dto::ExecuteCellPreviewDto,
-) -> impl IntoResponse {
-    let cell = execute_get_cell(&app_state, id).await;
-    let cell = match cell {
-        Ok(cell) => cell,
-        Err(sea_orm::DbErr::RecordNotFound(_)) => {
-            return (
-                StatusCode::NOT_FOUND,
-                axum::Json(serde_json::json!({ "error": "Cell not found" })),
-            );
-        }
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
+) -> Result<QueryResult, CellError> {
+    authorize_cell(&app_state, tenant_context, id, Action::Write).await?;
+
+    let tenant_id = tenant_context.tenant_id();
+    let cell = execute_get_cell(&app_state, tenant_id, id).await?;
 
     match payload.cell_type {
         CellType::Sql => {
-            let connection_id = match cell.connection_id {
-                Some(id) => id,
-                None => return missing_connection_response(),
-            };
-            let connection = match fetch_connection(&app_state, connection_id).await {
-                Ok(conn) => conn,
-                Err(err) => return get_database_connection_error_response(err),
-            };
-            let query = match get_sql_query_from_content(&payload.content) {
-                Ok(q) => q,
-                Err(err) => return err,
-            };
+            let connection_id = cell.connection_id.ok_or(CellError::MissingConnection)?;
+            let connection = fetch_connection(&app_state, tenant_id, connection_id).await?;
+            let query = get_sql_query_from_content(&payload.content)?;
             execute_sql_with_query(&app_state, &connection, &query).await
         }
         CellType::Chart => {
-            let chart_content = match parse_chart_content(&payload.content) {
-                Ok(c) => c,
-                Err(err) => return execute_chart_error_response(err),
-            };
-            match execute_chart_content_data(&app_state, &chart_content).await {
-                Ok(result) => query_result_response(&result),
-                Err(err) => execute_chart_error_response(err),
-            }
+            let chart_content = parse_chart_content(&payload.content)?;
+            Ok(execute_chart_content_data(&app_state, tenant_id, &chart_content).await?)
         }
-        _ => (
-            StatusCode::BAD_REQUEST,
-            axum::Json(
-                serde_json::json!({ "error": "Only SQL and Chart cell types are supported for preview execution" }),
-            ),
-        ),
+        _ => Err(CellError::UnsupportedPreviewCellType),
     }
-}
-
-fn get_database_connection_error_response(
-    err: GetDatabaseConnectionError,
-) -> (http::StatusCode, axum::Json<JsonValue>) {
-    match err {
-        GetDatabaseConnectionError::ConnectionNotFound => (
-            StatusCode::NOT_FOUND,
-            axum::Json(serde_json::json!({ "error": "Connection not found" })),
-        ),
-        GetDatabaseConnectionError::Connection(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        ),
-        GetDatabaseConnectionError::DatabaseConnection(e) => (
-            StatusCode::BAD_REQUEST,
-            axum::Json(serde_json::json!({ "error": e.to_string() })),
-        ),
-        GetDatabaseConnectionError::SourceTypeParse(message) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": message })),
-        ),
-        GetDatabaseConnectionError::UnsupportedSourceType(source_type) => (
-            StatusCode::BAD_REQUEST,
-            axum::Json(
-                serde_json::json!({ "error": format!("Unsupported source type: {source_type}") }),
-            ),
-        ),
-        GetDatabaseConnectionError::PoolUnavailable(message) => (
-            StatusCode::BAD_REQUEST,
-            axum::Json(serde_json::json!({ "error": message })),
-        ),
-    }
-}
-
-fn missing_connection_response() -> (http::StatusCode, axum::Json<JsonValue>) {
-    (
-        StatusCode::PRECONDITION_FAILED,
-        axum::Json(serde_json::json!({
-            "status": StatusCode::PRECONDITION_FAILED.as_u16(),
-            "code": codes::MISSING_PREREQUISITES.as_str(),
-            "message": "Choose a connection"
-        })),
-    )
 }
 
 async fn execute_sql_with_query(
     app_state: &AppState,
     connection: &entity::connection::Model,
     query: &str,
-) -> (http::StatusCode, axum::Json<JsonValue>) {
-    match database_service::execute_sql_query(app_state, connection, query).await {
-        Ok(result) => query_result_response(&result),
-        Err(err) => execute_sql_error_response(err),
-    }
+) -> Result<QueryResult, CellError> {
+    Ok(database_service::execute_sql_query(app_state, connection, query).await?)
 }
 
 async fn execute_sql_cell(
     app_state: &AppState,
+    tenant_id: &TenantId,
     cell: entity::cell::Model,
-) -> (http::StatusCode, axum::Json<JsonValue>) {
-    let connection_id = match cell.connection_id {
-        Some(id) => id,
-        None => return missing_connection_response(),
-    };
-    let connection = match fetch_connection(app_state, connection_id).await {
-        Ok(conn) => conn,
-        Err(err) => return get_database_connection_error_response(err),
-    };
-    let query = match get_sql_query_from_cell(&cell) {
-        Ok(q) => q,
-        Err(err) => return err,
-    };
+) -> Result<QueryResult, CellError> {
+    let connection_id = cell.connection_id.ok_or(CellError::MissingConnection)?;
+    let connection = fetch_connection(app_state, tenant_id, connection_id).await?;
+    let query = get_sql_query_from_cell(&cell)?;
     execute_sql_with_query(app_state, &connection, &query).await
 }
 
@@ -879,9 +694,10 @@ fn get_source_cell_id(chart_content: &dto::ChartContent) -> Uuid {
 
 async fn get_source_cell_for_chart(
     app_state: &AppState,
+    tenant_id: &TenantId,
     source_cell_id: Uuid,
 ) -> Result<(entity::connection::Model, String), ExecuteChartError> {
-    let source_cell = execute_get_cell(app_state, source_cell_id)
+    let source_cell = execute_get_cell(app_state, tenant_id, source_cell_id)
         .await
         .map_err(map_cell_lookup_error)?;
 
@@ -889,7 +705,7 @@ async fn get_source_cell_for_chart(
         .connection_id
         .ok_or(ExecuteChartError::MissingConnection)?;
 
-    let connection = fetch_connection(app_state, connection_id)
+    let connection = fetch_connection(app_state, tenant_id, connection_id)
         .await
         .map_err(|e| ExecuteChartError::ExecuteSql(e.into()))?;
 
@@ -987,16 +803,19 @@ fn build_chart_aggregated_query(
 
 async fn execute_chart_content_data(
     app_state: &AppState,
+    tenant_id: &TenantId,
     chart_content: &dto::ChartContent,
 ) -> Result<QueryResult, ExecuteChartError> {
     let source_cell_id = get_source_cell_id(chart_content);
-    let (connection, source_query) = get_source_cell_for_chart(app_state, source_cell_id).await?;
+    let (connection, source_query) =
+        get_source_cell_for_chart(app_state, tenant_id, source_cell_id).await?;
     let aggregated_query = build_chart_aggregated_query(chart_content, &source_query)?;
     Ok(database_service::execute_sql_query(app_state, &connection, &aggregated_query).await?)
 }
 
 async fn execute_chart_for_cell(
     app_state: &AppState,
+    tenant_id: &TenantId,
     cell: &entity::cell::Model,
 ) -> Result<dto::ChartExecution, ExecuteChartError> {
     let content = cell
@@ -1004,7 +823,7 @@ async fn execute_chart_for_cell(
         .as_ref()
         .ok_or(ExecuteChartError::MissingContent)?;
     let chart_content = parse_chart_content(content)?;
-    let result = execute_chart_content_data(app_state, &chart_content).await?;
+    let result = execute_chart_content_data(app_state, tenant_id, &chart_content).await?;
     Ok(dto::ChartExecution {
         cell_id: cell.id,
         chart_name: cell.name.clone().unwrap_or_default(),
@@ -1016,20 +835,23 @@ async fn execute_chart_for_cell(
 
 pub async fn execute_chart_cell_data(
     app_state: &AppState,
+    tenant_id: &TenantId,
     cell_id: Uuid,
 ) -> Result<dto::ChartExecution, ExecuteChartError> {
-    let cell = execute_get_cell(app_state, cell_id)
+    let cell = execute_get_cell(app_state, tenant_id, cell_id)
         .await
         .map_err(map_cell_lookup_error)?;
-    execute_chart_for_cell(app_state, &cell).await
+    execute_chart_for_cell(app_state, tenant_id, &cell).await
 }
 
 pub async fn execute_chart_cells_data(
     app_state: &AppState,
+    tenant_id: &TenantId,
     cell_ids: &[Uuid],
     concurrency: usize,
 ) -> Result<Vec<dto::ChartExecutionOutcome>, sea_orm::DbErr> {
-    let cells = repository::get_cells_by_ids(&app_state.database_connection, cell_ids).await?;
+    let cells =
+        repository::get_cells_by_ids(&app_state.database_connection, tenant_id, cell_ids).await?;
     let cells_by_id: HashMap<Uuid, entity::cell::Model> =
         cells.into_iter().map(|cell| (cell.id, cell)).collect();
 
@@ -1039,11 +861,9 @@ pub async fn execute_chart_cells_data(
             let cell = cells_by_id.get(&cell_id);
             dto::ChartExecutionOutcome {
                 cell_id,
-                chart_name: cell
-                    .and_then(|cell| cell.name.clone())
-                    .unwrap_or_default(),
+                chart_name: cell.and_then(|cell| cell.name.clone()).unwrap_or_default(),
                 result: match cell {
-                    Some(cell) => execute_chart_for_cell(app_state, cell).await,
+                    Some(cell) => execute_chart_for_cell(app_state, tenant_id, cell).await,
                     None => Err(ExecuteChartError::CellNotFound),
                 },
             }
@@ -1058,34 +878,43 @@ pub async fn execute_chart_cells_data(
 
 async fn execute_chart_cell(
     app_state: &AppState,
+    tenant_id: &TenantId,
     cell: entity::cell::Model,
-) -> (http::StatusCode, axum::Json<JsonValue>) {
-    match execute_chart_for_cell(app_state, &cell).await {
-        Ok(execution) => query_result_response(&execution.result),
-        Err(ExecuteChartError::InvalidChartContent) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": "Cell has non serializable content" })),
-        ),
-        Err(e) => execute_chart_error_response(e),
+) -> Result<QueryResult, CellError> {
+    match execute_chart_for_cell(app_state, tenant_id, &cell).await {
+        Ok(execution) => Ok(execution.result),
+        Err(ExecuteChartError::InvalidChartContent) => Err(CellError::NonSerializableContent),
+        Err(other) => Err(CellError::ExecuteChart(other)),
     }
 }
 
 pub async fn get_last_modified_cells_by_type(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     cell_type: CellType,
     limit: u64,
 ) -> Result<Vec<entity::cell::Model>, sea_orm::DbErr> {
-    repository::get_latest_cells_by_type(&app_state.database_connection, cell_type, limit).await
+    repository::get_latest_cells_by_type(
+        &app_state.database_connection,
+        tenant_context.tenant_id(),
+        notebook_service::visible_notebook_ids_subquery(tenant_context),
+        cell_type,
+        limit,
+    )
+    .await
 }
 
 pub async fn search_cells_by_name_and_type(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     search_query: &str,
     cell_type: CellType,
     limit: u64,
 ) -> Result<Vec<entity::cell::Model>, sea_orm::DbErr> {
     repository::search_cells_by_name_and_type(
         &app_state.database_connection,
+        tenant_context.tenant_id(),
+        notebook_service::visible_notebook_ids_subquery(tenant_context),
         search_query,
         cell_type,
         limit,
@@ -1095,27 +924,31 @@ pub async fn search_cells_by_name_and_type(
 
 pub async fn delete_cells_by_notebook_id_transaction(
     txn: &sea_orm::DatabaseTransaction,
+    tenant_id: &TenantId,
     notebook_id: Uuid,
 ) -> Result<(), sea_orm::DbErr> {
-    let cell_ids: Vec<Uuid> = repository::get_cells_by_notebook_id_transaction(txn, notebook_id)
-        .await?
-        .into_iter()
-        .map(|cell| cell.id)
-        .collect();
-    repository::delete_cells_by_notebook_id_transaction(txn, notebook_id).await?;
-    ai_summary_service::delete_chart_summaries(txn, &cell_ids).await
+    let cell_ids: Vec<Uuid> =
+        repository::get_cells_by_notebook_id_transaction(txn, tenant_id, notebook_id)
+            .await?
+            .into_iter()
+            .map(|cell| cell.id)
+            .collect();
+    repository::delete_cells_by_notebook_id_transaction(txn, tenant_id, notebook_id).await?;
+    ai_summary_service::delete_chart_summaries(txn, tenant_id, &cell_ids).await
 }
 
 pub async fn get_cell_counts_by_canvas_id(
     app_state: &AppState,
+    tenant_id: &TenantId,
     canvas_id: Uuid,
 ) -> Result<(i32, i32), SophoError> {
-    let notebook = notebook_service::get_notebook_by_canvas_id(app_state, canvas_id)
+    let notebook = notebook_service::get_notebook_by_canvas_id(app_state, tenant_id, canvas_id)
         .await
         .map_err(SophoError::DatabaseError)?;
 
     let sql_count = repository::count_cells_by_notebook_id_and_cell_type(
         &app_state.database_connection,
+        tenant_id,
         notebook.id,
         CellType::Sql,
     )
@@ -1124,6 +957,7 @@ pub async fn get_cell_counts_by_canvas_id(
 
     let chart_count = repository::count_cells_by_notebook_id_and_cell_type(
         &app_state.database_connection,
+        tenant_id,
         notebook.id,
         CellType::Chart,
     )

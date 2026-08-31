@@ -27,7 +27,9 @@ const CHART_BLOCK: &str = indoc! {r#"
 "#};
 
 pub enum UserPrompt<'a> {
-    SummarizeDashboard { dashboard: &'a DashboardSummaryInput },
+    SummarizeDashboard {
+        dashboard: &'a DashboardSummaryInput,
+    },
 }
 
 impl UserPrompt<'_> {
@@ -77,10 +79,7 @@ fn render_chart_block(position: usize, chart: &ChartSummaryInput) -> String {
 }
 
 fn render_coverage_note(dashboard: &DashboardSummaryInput) -> String {
-    let mut notes = vec![format!(
-        "{} chart(s) shown above.",
-        dashboard.charts.len()
-    )];
+    let mut notes = vec![format!("{} chart(s) shown above.", dashboard.charts.len())];
 
     if !dashboard.skipped_chart_names.is_empty() {
         notes.push(format!(

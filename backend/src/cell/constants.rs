@@ -198,3 +198,17 @@ pub enum CellDisplayOrderMovement {
     Bottom,
 }
 
+pub const CELL_NOT_FOUND_MESSAGE: &str = "Cell not found";
+pub const NOTEBOOK_NOT_FOUND_MESSAGE: &str = "Notebook not found";
+pub const MISSING_CONNECTION_MESSAGE: &str = "Choose a connection";
+pub const NON_SERIALIZABLE_CONTENT_MESSAGE: &str = "Cell has non serializable content";
+pub const INVALID_SQL_CONTENT_MESSAGE: &str = "Content is not valid SQL format";
+pub const CELL_DISPLAY_ORDER_OUT_OF_BOUNDS_MESSAGE: &str = "Cell display_order out of bounds";
+pub const UNSUPPORTED_CELL_TYPE_MESSAGE: &str = "cell type not supported";
+pub const UNSUPPORTED_PREVIEW_CELL_TYPE_MESSAGE: &str =
+    "Only SQL and Chart cell types are supported for preview execution";
+pub const CELL_HAS_NO_CONTENT_MESSAGE: &str = "Cell has no content";
+pub const INVALID_CHART_CONTENT_MESSAGE: &str = "Invalid chart content format";
+pub const CELL_CONTENT_NOT_SQL_MESSAGE: &str = "Cell content is not SQL";
+pub const SOURCE_CELL_MISSING_CONNECTION_MESSAGE: &str = "Source cell has no connection assigned";
+pub const CONNECTION_NOT_FOUND_MESSAGE: &str = "Connection not found";

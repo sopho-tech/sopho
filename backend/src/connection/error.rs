@@ -1,0 +1,34 @@
+use crate::authorization::errors::AuthorizationError;
+use crate::common::errors::CreateConnectionError;
+use crate::connection::constants::CONNECTION_NOT_FOUND_MESSAGE;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum ConnectionError {
+    #[error("Database error: {0}")]
+    Database(#[from] sea_orm::DbErr),
+    #[error("{0}")]
+    Unauthorized(#[from] AuthorizationError),
+    #[error("{CONNECTION_NOT_FOUND_MESSAGE}")]
+    NotFound,
+    #[error("{0}")]
+    InvalidRequest(String),
+    #[error("Failed to encrypt connection")]
+    Encryption,
+    #[error("{0}")]
+    Internal(String),
+}
+
+impl From<CreateConnectionError> for ConnectionError {
+    fn from(error: CreateConnectionError) -> Self {
+        match error {
+            CreateConnectionError::ConnectionStatus(status_error) => {
+                ConnectionError::InvalidRequest(status_error.to_string())
+            }
+            CreateConnectionError::Encryption => ConnectionError::Encryption,
+            CreateConnectionError::Repository(database_error) => {
+                ConnectionError::Database(database_error)
+            }
+        }
+    }
+}

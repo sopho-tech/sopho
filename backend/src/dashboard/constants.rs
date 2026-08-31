@@ -34,3 +34,6 @@ impl fmt::Display for DashboardStatus {
         })
     }
 }
+
+pub const DASHBOARD_NOT_FOUND_MESSAGE: &str = "Dashboard not found";
+pub const CANVAS_NOT_FOUND_MESSAGE: &str = "Canvas not found";

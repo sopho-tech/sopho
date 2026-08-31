@@ -14,6 +14,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(ConversationMessageContent::Table)
                     .col(pk_uuid(ConversationMessageContent::Id))
+                    .col(uuid(ConversationMessageContent::TenantId))
                     .col(uuid(ConversationMessageContent::ConversationMessageId))
                     .col(integer(ConversationMessageContent::SequenceNumber))
                     .col(string(ConversationMessageContent::ContentType))
@@ -39,6 +40,7 @@ impl MigrationTrait for Migration {
 pub enum ConversationMessageContent {
     Table,
     Id,
+    TenantId,
     ConversationMessageId,
     SequenceNumber,
     ContentType,

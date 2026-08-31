@@ -13,56 +13,43 @@ pub async fn save_user(
     Ok(user_active_model)
 }
 
-pub async fn get_user(db: &DatabaseConnection, id: Uuid) -> Result<entity::user::Model, DbErr> {
-    let user = entity::user::Entity::find_by_id(id).one(db).await?;
-    match user {
-        Some(model) => Ok(model),
-        None => Err(DbErr::RecordNotFound("User not found".into())),
-    }
+pub async fn get_user(
+    db: &DatabaseConnection,
+    id: Uuid,
+) -> Result<Option<entity::user::Model>, DbErr> {
+    entity::user::Entity::find_by_id(id).one(db).await
 }
 
 pub async fn get_user_by_email(
     db: &DatabaseConnection,
     email: String,
-) -> Result<entity::user::Model, DbErr> {
-    let user = entity::user::Entity::find()
+) -> Result<Option<entity::user::Model>, DbErr> {
+    entity::user::Entity::find()
         .filter(entity::user::Column::Email.eq(email))
         .one(db)
-        .await?;
-    match user {
-        Some(model) => Ok(model),
-        None => Err(DbErr::RecordNotFound("User not found".into())),
-    }
+        .await
 }
 
 pub async fn get_active_session_by_access_token(
     db: &DatabaseConnection,
     access_token_hash: String,
-) -> Result<entity::session::Model, DbErr> {
-    let session = entity::session::Entity::find()
+) -> Result<Option<entity::session::Model>, DbErr> {
+    entity::session::Entity::find()
         .filter(entity::session::Column::AccessTokenHash.eq(access_token_hash))
         .filter(entity::session::Column::Status.eq(SessionStatus::Active.as_str()))
         .one(db)
-        .await?;
-    match session {
-        Some(model) => Ok(model),
-        None => Err(DbErr::RecordNotFound("Session not found".into())),
-    }
+        .await
 }
 
 pub async fn get_active_session_by_refresh_token(
     db: &DatabaseConnection,
     refresh_token_hash: String,
-) -> Result<entity::session::Model, DbErr> {
-    let session = entity::session::Entity::find()
+) -> Result<Option<entity::session::Model>, DbErr> {
+    entity::session::Entity::find()
         .filter(entity::session::Column::RefreshTokenHash.eq(refresh_token_hash))
         .filter(entity::session::Column::Status.eq(SessionStatus::Active.as_str()))
         .one(db)
-        .await?;
-    match session {
-        Some(model) => Ok(model),
-        None => Err(DbErr::RecordNotFound("Session not found".into())),
-    }
+        .await
 }
 
 pub async fn create_session(
@@ -77,7 +64,7 @@ pub async fn create_session(
 pub async fn deactivate_session(
     db: &DatabaseConnection,
     session_id: Uuid,
-) -> Result<entity::session::Model, DbErr> {
+) -> Result<Option<entity::session::Model>, DbErr> {
     let session = entity::session::Entity::find_by_id(session_id)
         .one(db)
         .await?;
@@ -88,8 +75,8 @@ pub async fn deactivate_session(
             session_active_model.status =
                 sea_orm::Set(SessionStatus::Inactive.as_str().to_string());
             session_active_model.updated_at = sea_orm::Set(time_utils::now_utc_into());
-            session_active_model.update(db).await
+            session_active_model.update(db).await.map(Some)
         }
-        None => Err(DbErr::RecordNotFound("Session not found".into())),
+        None => Ok(None),
     }
 }

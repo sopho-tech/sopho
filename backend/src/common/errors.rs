@@ -1,8 +1,10 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-#[error("{0}")]
-pub struct ValidationError(pub String);
+#[error("{message}")]
+pub struct ValidationError {
+    pub message: String,
+}
 
 #[derive(Error, Debug)]
 pub enum ExecuteQueryError {

@@ -1,7 +1,10 @@
+use crate::authorization::dto::TenantContext;
 use crate::common::error_codes::codes;
 use crate::common::errors::{ExecuteQueryError, ExecuteSqlError, GetDatabaseConnectionError};
 use crate::common::AppState;
+use crate::connection::constants::CONNECTION_NOT_FOUND_MESSAGE;
 use crate::connection::dto;
+use crate::connection::error::ConnectionError;
 use crate::connection::service;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -9,6 +12,11 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post, put};
 use axum::Router;
 use uuid::Uuid;
+
+#[derive(serde::Deserialize)]
+struct ConnectionPath {
+    id: Uuid,
+}
 
 pub fn routes(app_state: AppState) -> Router {
     Router::new()
@@ -22,36 +30,58 @@ pub fn routes(app_state: AppState) -> Router {
 
 async fn get_connection(
     State(app_state): State<AppState>,
-    axum::extract::Path(id): axum::extract::Path<Uuid>,
+    tenant_context: TenantContext,
+    axum::extract::Path(ConnectionPath { id }): axum::extract::Path<ConnectionPath>,
 ) -> impl IntoResponse {
-    service::get_connection(app_state, id).await
+    match service::get_connection(app_state, &tenant_context, id).await {
+        Ok(connection) => (StatusCode::OK, axum::Json(serde_json::json!(connection))),
+        Err(error) => connection_error_http_response(error),
+    }
 }
 
 async fn create_connection(
     State(app_state): State<AppState>,
+    tenant_context: TenantContext,
     axum::extract::Json(payload): axum::extract::Json<dto::CreateConnectionDto>,
 ) -> impl IntoResponse {
-    service::create_connection(&app_state, payload).await
+    match service::create_connection(&app_state, &tenant_context, payload).await {
+        Ok(connection) => (
+            StatusCode::CREATED,
+            axum::Json(serde_json::json!(connection)),
+        ),
+        Err(error) => connection_error_http_response(error),
+    }
 }
 
-async fn get_all_connections(State(app_state): State<AppState>) -> impl IntoResponse {
-    service::get_all_connections(app_state).await
+async fn get_all_connections(
+    State(app_state): State<AppState>,
+    tenant_context: TenantContext,
+) -> impl IntoResponse {
+    match service::get_all_connections(app_state, &tenant_context).await {
+        Ok(connections) => (StatusCode::OK, axum::Json(serde_json::json!(connections))),
+        Err(error) => connection_error_http_response(error),
+    }
 }
 
 async fn update_connection(
     State(app_state): State<AppState>,
-    axum::extract::Path(id): axum::extract::Path<Uuid>,
+    tenant_context: TenantContext,
+    axum::extract::Path(ConnectionPath { id }): axum::extract::Path<ConnectionPath>,
     axum::extract::Json(payload): axum::extract::Json<dto::ConnectionDto>,
 ) -> impl IntoResponse {
-    service::update_connection(app_state, id, payload).await
+    match service::update_connection(app_state, &tenant_context, id, payload).await {
+        Ok(connection) => (StatusCode::OK, axum::Json(serde_json::json!(connection))),
+        Err(error) => connection_error_http_response(error),
+    }
 }
 
 async fn execute_query(
     State(app_state): State<AppState>,
-    axum::extract::Path(id): axum::extract::Path<Uuid>,
+    tenant_context: TenantContext,
+    axum::extract::Path(ConnectionPath { id }): axum::extract::Path<ConnectionPath>,
     axum::extract::Json(payload): axum::extract::Json<dto::ExecuteQueryDto>,
 ) -> impl IntoResponse {
-    match service::execute_query(&app_state, id, payload).await {
+    match service::execute_query(&app_state, &tenant_context, id, payload).await {
         Ok(result) => (
             StatusCode::OK,
             axum::Json(serde_json::json!({
@@ -86,6 +116,33 @@ async fn execute_query(
             axum::Json(serde_json::json!({
                 "error": format!("data type '{}' not handled", type_name)
             })),
+        ),
+    }
+}
+
+fn connection_error_http_response(
+    error: ConnectionError,
+) -> (StatusCode, axum::Json<serde_json::Value>) {
+    match error {
+        ConnectionError::Unauthorized(authorization_error) => {
+            crate::authorization::service::authorization_error_response(
+                authorization_error,
+                CONNECTION_NOT_FOUND_MESSAGE,
+            )
+        }
+        ConnectionError::NotFound => (
+            StatusCode::NOT_FOUND,
+            axum::Json(serde_json::json!({ "error": error.to_string() })),
+        ),
+        ConnectionError::InvalidRequest(_) => (
+            StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({ "error": error.to_string() })),
+        ),
+        ConnectionError::Encryption
+        | ConnectionError::Database(_)
+        | ConnectionError::Internal(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": error.to_string() })),
         ),
     }
 }

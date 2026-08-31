@@ -2,6 +2,7 @@ mod system_prompt;
 mod user_prompt;
 
 use crate::ai::agent_utils::{AgentName, ModelRole};
+use crate::authorization::dto::TenantId;
 use crate::common::AppState;
 use crate::data_catalog::dto::Database;
 use crate::entity;
@@ -14,10 +15,11 @@ struct SuggestedQuestionsResponse {
 
 pub async fn suggest_questions(
     app_state: &AppState,
+    tenant_id: &TenantId,
     connection: &entity::connection::Model,
     catalog: &Database,
 ) -> Result<Vec<String>> {
-    let model_client = app_state.require_model_client().await?;
+    let model_client = app_state.require_model_client(tenant_id).await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
         AgentName::SuggestedQuestionsAgent,

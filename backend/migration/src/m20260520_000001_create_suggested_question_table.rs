@@ -15,6 +15,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(SuggestedQuestion::Table)
                     .col(pk_uuid(SuggestedQuestion::Id))
+                    .col(uuid(SuggestedQuestion::TenantId))
                     .col(uuid(SuggestedQuestion::ConnectionId))
                     .col(string(SuggestedQuestion::QuestionText))
                     .col(timestamp_with_time_zone(SuggestedQuestion::GeneratedAt))
@@ -34,6 +35,7 @@ impl MigrationTrait for Migration {
 pub enum SuggestedQuestion {
     Table,
     Id,
+    TenantId,
     ConnectionId,
     QuestionText,
     GeneratedAt,

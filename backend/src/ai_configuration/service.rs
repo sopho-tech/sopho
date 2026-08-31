@@ -1,9 +1,10 @@
 use crate::ai::agent_utils::{AgentName, ModelClient, ModelRole};
-use crate::ai_configuration::dto::{
-    AiConfigurationDto, Provider, TestAiConfigurationResponse,
-};
+use crate::ai_configuration::dto::{AiConfigurationDto, Provider, TestAiConfigurationResponse};
 use crate::ai_configuration::error::AiConfigurationError;
 use crate::ai_configuration::repository;
+use crate::authorization::constants::Permission;
+use crate::authorization::dto::{TenantContext, TenantId};
+use crate::authorization::service::require_capability;
 use crate::common::cryptography_utils::{decrypt, encrypt};
 use crate::common::time_utils;
 use crate::common::AppState;
@@ -11,8 +12,17 @@ use tracing::warn;
 
 pub async fn get_status(
     app_state: &AppState,
+    tenant_context: &TenantContext,
 ) -> Result<AiConfigurationDto, AiConfigurationError> {
-    match repository::find(&app_state.database_connection).await? {
+    require_capability(tenant_context, Permission::AiConfigurationRead)?;
+    execute_get_status(app_state, tenant_context.tenant_id()).await
+}
+
+pub async fn execute_get_status(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+) -> Result<AiConfigurationDto, AiConfigurationError> {
+    match repository::find(&app_state.database_connection, tenant_id).await? {
         Some(model) => Ok(AiConfigurationDto::from_model(&model)),
         None => Ok(AiConfigurationDto::unconfigured()),
     }
@@ -20,9 +30,12 @@ pub async fn get_status(
 
 pub async fn upsert(
     app_state: &AppState,
+    tenant_context: &TenantContext,
     provider: Provider,
     api_key: String,
 ) -> Result<AiConfigurationDto, AiConfigurationError> {
+    require_capability(tenant_context, Permission::AiConfigurationWrite)?;
+    let tenant_id = tenant_context.tenant_id();
     if api_key.trim().is_empty() {
         return Err(AiConfigurationError::EmptyApiKey);
     }
@@ -43,6 +56,7 @@ pub async fn upsert(
 
     let model = repository::upsert(
         &app_state.database_connection,
+        tenant_id,
         provider.as_db_str(),
         &encrypted,
         liveness_db,
@@ -52,25 +66,28 @@ pub async fn upsert(
 
     let new_client = build_client_for_provider(provider, &api_key)
         .map_err(|e| AiConfigurationError::ClientBuild(e.to_string()))?;
-    {
-        let mut slot = app_state.model_client.write().await;
-        *slot = Some(new_client);
-    }
+    app_state.set_model_client(tenant_id, new_client).await;
 
     Ok(AiConfigurationDto::from_model(&model))
 }
 
-pub async fn delete(app_state: &AppState) -> Result<(), AiConfigurationError> {
-    repository::delete(&app_state.database_connection).await?;
-    let mut slot = app_state.model_client.write().await;
-    *slot = None;
+pub async fn delete(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+) -> Result<(), AiConfigurationError> {
+    require_capability(tenant_context, Permission::AiConfigurationWrite)?;
+    let tenant_id = tenant_context.tenant_id();
+    repository::delete(&app_state.database_connection, tenant_id).await?;
+    app_state.clear_model_client(tenant_id).await;
     Ok(())
 }
 
 pub async fn test(
+    tenant_context: &TenantContext,
     provider: Provider,
     api_key: String,
 ) -> Result<TestAiConfigurationResponse, AiConfigurationError> {
+    require_capability(tenant_context, Permission::AiConfigurationWrite)?;
     if api_key.trim().is_empty() {
         return Err(AiConfigurationError::EmptyApiKey);
     }
@@ -86,8 +103,11 @@ pub async fn test(
     }
 }
 
-pub async fn load_at_startup(app_state: &AppState) -> Result<(), AiConfigurationError> {
-    let Some(model) = repository::find(&app_state.database_connection).await? else {
+pub async fn load_at_startup_for_tenant(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+) -> Result<(), AiConfigurationError> {
+    let Some(model) = repository::find(&app_state.database_connection, tenant_id).await? else {
         return Ok(());
     };
     let encryption_key = app_state.config.encryption_key.to_string();
@@ -102,8 +122,7 @@ pub async fn load_at_startup(app_state: &AppState) -> Result<(), AiConfiguration
     };
     let client = build_client_for_provider(provider, &api_key)
         .map_err(|e| AiConfigurationError::ClientBuild(e.to_string()))?;
-    let mut slot = app_state.model_client.write().await;
-    *slot = Some(client);
+    app_state.set_model_client(tenant_id, client).await;
     Ok(())
 }
 
@@ -127,5 +146,16 @@ async fn run_liveness_ping(provider: Provider, api_key: &str) -> anyhow::Result<
         5,
     );
     let _ = agent.prompt("ping").await?;
+    Ok(())
+}
+
+pub async fn load_at_startup(app_state: &AppState) -> Result<(), AiConfigurationError> {
+    let tenant_ids = crate::tenant::service::list_all_tenant_ids(app_state)
+        .await
+        .map_err(|e| AiConfigurationError::Database(sea_orm::DbErr::Custom(e.to_string())))?;
+    for tenant_id in tenant_ids {
+        let tenant_id = TenantId::from_system_unchecked(tenant_id);
+        load_at_startup_for_tenant(app_state, &tenant_id).await?;
+    }
     Ok(())
 }

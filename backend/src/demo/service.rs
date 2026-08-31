@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use tracing::{error, info};
 use uuid::Uuid;
 
+use crate::authorization::dto::TenantId;
 use crate::canvas::dto::CreateCanvasDto;
 use crate::canvas::service::execute_create_canvas;
 use crate::cell::dto::CreateCellDto;
@@ -19,8 +20,36 @@ pub async fn seed_demo_data(app_state: &AppState) {
         return;
     }
 
+    let default_tenant_id = match crate::tenant::service::seed_default_tenant(app_state).await {
+        Ok(tenant_id) => tenant_id,
+        Err(e) => {
+            error!(
+                "Failed to resolve default tenant when seeding demo data: {}",
+                e
+            );
+            return;
+        }
+    };
+    let tenant_id = TenantId::from_system_unchecked(default_tenant_id);
+    let tenant_id = &tenant_id;
+
+    let admin_email = app_state.config.admin_email.as_ref();
+    let owner_user_id =
+        match crate::authentication::service::find_user_by_email(app_state, admin_email).await {
+            Ok(admin_user) => admin_user.id,
+            Err(e) => {
+                error!(
+                    "Failed to resolve the admin user when seeding demo data: {}",
+                    e
+                );
+                return;
+            }
+        };
+
     let connection = match execute_create_connection(
         app_state,
+        tenant_id,
+        owner_user_id,
         CreateConnectionDto {
             name: "Ecommerce Sales Demo".to_string(),
             username: None,
@@ -47,6 +76,8 @@ pub async fn seed_demo_data(app_state: &AppState) {
 
     let canvas_result = match execute_create_canvas(
         app_state,
+        tenant_id,
+        owner_user_id,
         CreateCanvasDto {
             name: "Ecommerce Sales".to_string(),
             description: Some("Ecommerce sales analytics".to_string()),
@@ -85,6 +116,7 @@ pub async fn seed_demo_data(app_state: &AppState) {
     for (idx, (display_order, name, content)) in sql_cells.into_iter().enumerate() {
         match execute_create_cell(
             app_state,
+            tenant_id,
             CreateCellDto {
                 notebook_id,
                 connection_id: Some(connection_id),
@@ -186,6 +218,7 @@ pub async fn seed_demo_data(app_state: &AppState) {
             content_template.replace("\"PLACEHOLDER\"", &format!("\"{}\"", source_cell_id));
         match execute_create_cell(
             app_state,
+            tenant_id,
             CreateCellDto {
                 notebook_id,
                 connection_id: None,
@@ -208,7 +241,7 @@ pub async fn seed_demo_data(app_state: &AppState) {
     }
 
     let canvas_id = canvas_result.canvas.id;
-    let dashboard = match get_dashboard_by_canvas_id_entity(app_state, canvas_id).await {
+    let dashboard = match get_dashboard_by_canvas_id_entity(app_state, tenant_id, canvas_id).await {
         Ok(d) => d,
         Err(e) => {
             error!("Failed to get dashboard when seeding demo data: {}", e);
@@ -229,7 +262,7 @@ pub async fn seed_demo_data(app_state: &AppState) {
         Layout::new(chart_id_map[&9], notebook_id, 0, 12, 6, 3),
         Layout::new(chart_id_map[&10], notebook_id, 6, 12, 6, 3),
     ]);
-    if let Err(e) = execute_update_dashboard(app_state, dashboard.id, payload).await {
+    if let Err(e) = execute_update_dashboard(app_state, tenant_id, dashboard.id, payload).await {
         error!(
             "Failed to update dashboard layout when seeding demo data: {}",
             e

@@ -3,6 +3,7 @@ mod user_prompt;
 
 use crate::ai::agent_utils::{AgentName, ModelRole};
 use crate::ai::dto::{ConversationHistory, ConversationHistoryTerminalStatus};
+use crate::authorization::dto::TenantId;
 use crate::common::AppState;
 use crate::data_catalog::dto::Database;
 use crate::entity;
@@ -24,7 +25,9 @@ fn format_history(history: &ConversationHistory) -> String {
         .map(|turn| {
             let status = match turn.terminal_status {
                 ConversationHistoryTerminalStatus::Completed => "answered",
-                ConversationHistoryTerminalStatus::AwaitingClarification => "clarification requested",
+                ConversationHistoryTerminalStatus::AwaitingClarification => {
+                    "clarification requested"
+                }
                 ConversationHistoryTerminalStatus::Rejected => "rejected",
                 ConversationHistoryTerminalStatus::Failed => "failed",
             };
@@ -36,13 +39,14 @@ fn format_history(history: &ConversationHistory) -> String {
 
 pub async fn suggest_followups(
     app_state: &AppState,
+    tenant_id: &TenantId,
     _connection: &entity::connection::Model,
     question: &str,
     sql: &str,
     history: &ConversationHistory,
     catalog: &Database,
 ) -> Result<Vec<String>> {
-    let model_client = app_state.require_model_client().await?;
+    let model_client = app_state.require_model_client(tenant_id).await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
         AgentName::FollowupQuestionsAgent,

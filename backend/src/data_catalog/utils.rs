@@ -1,8 +1,8 @@
 use super::dto::{Column, Database, Schema, Table};
 use crate::{
     ai::dto::{DeletionSet, SelectionSet},
-    common::AppState,
     common::errors::GetDataCatalogError,
+    common::AppState,
     data_catalog::service::get_data_catalog_of_connection,
     entity,
 };

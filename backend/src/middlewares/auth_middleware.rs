@@ -1,5 +1,4 @@
-use crate::authentication::service::{validate_access_token, AccessTokenValidationError};
-use crate::authentication::CookieName;
+use crate::authentication::service::{authenticate_from_cookies, AccessTokenValidationError};
 use crate::common::error_codes::codes;
 use crate::common::AppState;
 use axum::body::Body;
@@ -8,15 +7,43 @@ use axum::http::{Response, StatusCode};
 use axum::middleware::Next;
 use serde_json::json;
 
-/// Creates an error response with the given status code, message, and error code
-fn create_error_response(status: StatusCode, message: &str, error_code: &str) -> Response<Body> {
+pub async fn session_middleware_fn(
+    axum::extract::State(app_state): axum::extract::State<AppState>,
+    cookies: tower_cookies::Cookies,
+    request: Request,
+    next: Next,
+) -> Response<Body> {
+    match authenticate_from_cookies(&cookies, &app_state).await {
+        Ok(authenticated_user) => {
+            let mut request = request;
+            request.extensions_mut().insert(authenticated_user);
+            next.run(request).await
+        }
+        Err(error) => access_token_error_response(error),
+    }
+}
+
+fn access_token_error_response(error: AccessTokenValidationError) -> Response<Body> {
+    let (message, error_code) = match error {
+        AccessTokenValidationError::Missing => (
+            "Access token required",
+            codes::INVALID_ACCESS_TOKEN.as_str(),
+        ),
+        AccessTokenValidationError::Invalid => {
+            ("Invalid access token", codes::INVALID_ACCESS_TOKEN.as_str())
+        }
+        AccessTokenValidationError::Expired => {
+            ("Access token expired", codes::ACCESS_TOKEN_EXPIRED.as_str())
+        }
+    };
+
     let body = json!({
         "message": message,
         "error_code": error_code
     });
 
     Response::builder()
-        .status(status)
+        .status(StatusCode::UNAUTHORIZED)
         .header("content-type", "application/json")
         .body(Body::from(serde_json::to_string(&body).unwrap_or_default()))
         .unwrap_or_else(|_| {
@@ -25,62 +52,4 @@ fn create_error_response(status: StatusCode, message: &str, error_code: &str) ->
                 .body(Body::empty())
                 .unwrap()
         })
-}
-
-/// Axum middleware function that validates access tokens
-/// This function can be used with `axum::middleware::from_fn_with_state`
-pub async fn auth_middleware_fn(
-    axum::extract::State(app_state): axum::extract::State<AppState>,
-    cookies: tower_cookies::Cookies,
-    req: Request,
-    next: Next,
-) -> Response<Body> {
-    // Extract access token from cookies
-    let access_token = cookies
-        .get(&CookieName::AccessToken.to_string())
-        .map(|cookie| cookie.value().to_string());
-
-    match access_token {
-        Some(token) => {
-            // Validate the access token
-            match validate_access_token(&token, &app_state).await {
-                Ok(_) => {
-                    // Token is valid, proceed with the request
-                    next.run(req).await
-                }
-                Err(AccessTokenValidationError::Expired) => {
-                    // Access token expired
-                    create_error_response(
-                        StatusCode::UNAUTHORIZED,
-                        "Access token expired",
-                        codes::ACCESS_TOKEN_EXPIRED.as_str(),
-                    )
-                }
-                Err(AccessTokenValidationError::Invalid) => {
-                    // Invalid access token
-                    create_error_response(
-                        StatusCode::UNAUTHORIZED,
-                        "Invalid access token",
-                        codes::INVALID_ACCESS_TOKEN.as_str(),
-                    )
-                }
-                Err(AccessTokenValidationError::Missing) => {
-                    // This shouldn't happen here, but handle it anyway
-                    create_error_response(
-                        StatusCode::UNAUTHORIZED,
-                        "Access token required",
-                        codes::INVALID_ACCESS_TOKEN.as_str(),
-                    )
-                }
-            }
-        }
-        None => {
-            // No access token found
-            create_error_response(
-                StatusCode::UNAUTHORIZED,
-                "Access token required",
-                codes::INVALID_ACCESS_TOKEN.as_str(),
-            )
-        }
-    }
 }

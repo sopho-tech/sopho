@@ -1,7 +1,7 @@
 use crate::db::add_created_at_and_updated_at_timestamps;
 use sea_orm_migration::{
     prelude::*,
-    schema::{string, timestamp_with_time_zone_null},
+    schema::{string, timestamp_with_time_zone_null, uuid},
 };
 
 #[derive(DeriveMigrationName)]
@@ -14,16 +14,18 @@ impl MigrationTrait for Migration {
             .create_table(add_created_at_and_updated_at_timestamps(
                 Table::create()
                     .table(AiConfiguration::Table)
-                    .col(
-                        ColumnDef::new(AiConfiguration::Id)
-                            .string()
-                            .not_null()
-                            .primary_key(),
+                    .col(uuid(AiConfiguration::TenantId))
+                    .primary_key(
+                        Index::create()
+                            .name("ai_configuration_tenant_pkey")
+                            .col(AiConfiguration::TenantId),
                     )
                     .col(string(AiConfiguration::Provider))
                     .col(string(AiConfiguration::ApiKeyEncrypted))
                     .col(string(AiConfiguration::LivenessStatus))
-                    .col(timestamp_with_time_zone_null(AiConfiguration::LastCheckedAt))
+                    .col(timestamp_with_time_zone_null(
+                        AiConfiguration::LastCheckedAt,
+                    ))
                     .to_owned(),
             ))
             .await
@@ -39,7 +41,7 @@ impl MigrationTrait for Migration {
 #[derive(Iden)]
 pub enum AiConfiguration {
     Table,
-    Id,
+    TenantId,
     Provider,
     ApiKeyEncrypted,
     LivenessStatus,

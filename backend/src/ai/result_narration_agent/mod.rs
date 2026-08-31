@@ -3,6 +3,7 @@ mod user_prompt;
 
 use crate::ai::agent_utils::{AgentName, ModelRole};
 use crate::ai::dto::{Event, EventChannels};
+use crate::authorization::dto::TenantId;
 use crate::common::AppState;
 use crate::database::constants::QueryResult;
 use anyhow::Result;
@@ -16,13 +17,14 @@ struct NarrationResponse {
 
 pub async fn execute(
     app_state: &AppState,
+    tenant_id: &TenantId,
     question: &str,
     sql: &str,
     query_result: &QueryResult,
     channels: &EventChannels,
 ) {
     channels.send_sse_only(Event::Narrating).await;
-    match narrate(app_state, question, sql, query_result).await {
+    match narrate(app_state, tenant_id, question, sql, query_result).await {
         Ok(narration) if !narration.trim().is_empty() => {
             let _ = channels.send(Event::Narrated { narration }).await;
         }
@@ -33,11 +35,12 @@ pub async fn execute(
 
 async fn narrate(
     app_state: &AppState,
+    tenant_id: &TenantId,
     question: &str,
     sql: &str,
     query_result: &QueryResult,
 ) -> Result<String> {
-    let model_client = app_state.require_model_client().await?;
+    let model_client = app_state.require_model_client(tenant_id).await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
         AgentName::ResultNarrationAgent,

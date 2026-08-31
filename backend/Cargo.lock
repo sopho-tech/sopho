@@ -2139,6 +2139,7 @@ version = "0.1.7"
 dependencies = [
  "async-std",
  "sea-orm-migration",
+ "uuid",
 ]
 
 [[package]]

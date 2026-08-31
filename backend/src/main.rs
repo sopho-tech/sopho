@@ -4,6 +4,7 @@ mod ai;
 mod ai_configuration;
 mod ai_summary;
 mod authentication;
+mod authorization;
 mod canvas;
 mod cell;
 mod common;
@@ -16,12 +17,14 @@ mod database;
 mod db;
 mod demo;
 mod entity;
+mod grant;
 mod middlewares;
 mod monitor;
 mod notebook;
 mod scheduler;
 mod search;
 mod suggested_question;
+mod tenant;
 #[cfg(test)]
 mod tests;
 
@@ -46,6 +49,46 @@ use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+fn api_router(app_state: AppState) -> Router {
+    let tenant_scoped_routes = Router::new()
+        .nest("/dashboard", dashboard::routes(app_state.clone()))
+        .nest("/connection", connection::routes(app_state.clone()))
+        .nest("/notebook", notebook::routes(app_state.clone()))
+        .nest("/cell", cell::routes(app_state.clone()))
+        .nest("/grant", grant::routes(app_state.clone()))
+        .nest("/canvas", canvas::routes(app_state.clone()))
+        .nest("/search", search::routes(app_state.clone()))
+        .nest(
+            "/conversational_analytics",
+            conversational_analytics::routes(app_state.clone()),
+        )
+        .nest(
+            "/ai_configuration",
+            ai_configuration::routes(app_state.clone()),
+        )
+        .nest(
+            "/suggested_question",
+            suggested_question::routes(app_state.clone()),
+        )
+        .nest("/ai_summary", ai_summary::routes(app_state.clone()))
+        .layer(axum::middleware::from_fn_with_state(
+            app_state.clone(),
+            middlewares::session_middleware_fn,
+        ));
+
+    Router::new()
+        .nest("/api/v1/monitor", monitor::routes())
+        .nest("/api/v1/auth", authentication::routes(app_state.clone()))
+        .nest("/api/v1/tenant/{tenant_id}", tenant_scoped_routes)
+        .nest(
+            "/api/v1/tenant",
+            tenant::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
+                app_state.clone(),
+                middlewares::session_middleware_fn,
+            )),
+        )
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
@@ -64,9 +107,17 @@ async fn main() {
         .await
         .unwrap();
 
+    tenant::service::reconcile_system_roles_for_all_tenants(&app_state)
+        .await
+        .unwrap();
+
     app_state.load_ai_configuration().await;
 
     authentication::service::seed_admin_user(&app_state).await;
+    tenant::service::ensure_default_tenant_membership(&app_state)
+        .await
+        .unwrap();
+
     demo::service::seed_demo_data(&app_state).await;
 
     scheduler::start(app_state.clone()).await;
@@ -75,85 +126,7 @@ async fn main() {
     let index_path = frontend_dir.join("index.html");
     let static_files_service = ServeDir::new(&frontend_dir);
 
-    let mut app = Router::new()
-        .nest("/api/v1/monitor", monitor::routes())
-        .nest("/api/v1/auth", authentication::routes(app_state.clone()))
-        .nest(
-            "/api/v1/dashboard",
-            dashboard::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
-                app_state.clone(),
-                middlewares::auth_middleware_fn,
-            )),
-        )
-        .nest(
-            "/api/v1/connection",
-            connection::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
-                app_state.clone(),
-                middlewares::auth_middleware_fn,
-            )),
-        )
-        .nest(
-            "/api/v1/notebook",
-            notebook::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
-                app_state.clone(),
-                middlewares::auth_middleware_fn,
-            )),
-        )
-        .nest(
-            "/api/v1/cell",
-            cell::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
-                app_state.clone(),
-                middlewares::auth_middleware_fn,
-            )),
-        )
-        .nest(
-            "/api/v1/canvas",
-            canvas::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
-                app_state.clone(),
-                middlewares::auth_middleware_fn,
-            )),
-        )
-        .nest(
-            "/api/v1/search",
-            search::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
-                app_state.clone(),
-                middlewares::auth_middleware_fn,
-            )),
-        )
-        .nest(
-            "/api/v1/conversational_analytics",
-            conversational_analytics::routes(app_state.clone()).layer(
-                axum::middleware::from_fn_with_state(
-                    app_state.clone(),
-                    middlewares::auth_middleware_fn,
-                ),
-            ),
-        )
-        .nest(
-            "/api/v1/ai_configuration",
-            ai_configuration::routes(app_state.clone()).layer(
-                axum::middleware::from_fn_with_state(
-                    app_state.clone(),
-                    middlewares::auth_middleware_fn,
-                ),
-            ),
-        )
-        .nest(
-            "/api/v1/suggested_question",
-            suggested_question::routes(app_state.clone()).layer(
-                axum::middleware::from_fn_with_state(
-                    app_state.clone(),
-                    middlewares::auth_middleware_fn,
-                ),
-            ),
-        )
-        .nest(
-            "/api/v1/ai_summary",
-            ai_summary::routes(app_state.clone()).layer(axum::middleware::from_fn_with_state(
-                app_state.clone(),
-                middlewares::auth_middleware_fn,
-            )),
-        )
+    let mut app = api_router(app_state.clone())
         .fallback_service(static_files_service)
         .layer(middleware::from_fn(move |req: Request, next: Next| {
             let index_path = index_path.clone();

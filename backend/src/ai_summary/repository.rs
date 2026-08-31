@@ -1,4 +1,5 @@
 use crate::ai_summary::constants::{SummaryEntityType, SummaryStatus};
+use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::entity::ai_summary;
 use sea_orm::prelude::DateTimeWithTimeZone;
@@ -11,10 +12,12 @@ use uuid::Uuid;
 
 pub async fn find(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     entity_type: SummaryEntityType,
     entity_id: Uuid,
 ) -> Result<Option<ai_summary::Model>, DbErr> {
     ai_summary::Entity::find()
+        .filter(ai_summary::Column::TenantId.eq(tenant_id.get_uuid()))
         .filter(ai_summary::Column::EntityType.eq(entity_type.to_string()))
         .filter(ai_summary::Column::EntityId.eq(entity_id))
         .one(db)
@@ -23,6 +26,7 @@ pub async fn find(
 
 pub async fn find_for_dashboard(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     dashboard_id: Uuid,
     chart_cell_ids: &[Uuid],
 ) -> Result<Vec<ai_summary::Model>, DbErr> {
@@ -40,17 +44,23 @@ pub async fn find_for_dashboard(
         );
     }
 
-    ai_summary::Entity::find().filter(condition).all(db).await
+    ai_summary::Entity::find()
+        .filter(ai_summary::Column::TenantId.eq(tenant_id.get_uuid()))
+        .filter(condition)
+        .all(db)
+        .await
 }
 
 pub async fn try_mark_generating(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     entity_type: SummaryEntityType,
     entity_id: Uuid,
     stale_before: DateTimeWithTimeZone,
 ) -> Result<u64, DbErr> {
     let now: DateTimeWithTimeZone = time_utils::now_utc_into();
     let result = ai_summary::Entity::update_many()
+        .filter(ai_summary::Column::TenantId.eq(tenant_id.get_uuid()))
         .col_expr(
             ai_summary::Column::Status,
             Expr::value(SummaryStatus::Generating.to_string()),
@@ -71,12 +81,14 @@ pub async fn try_mark_generating(
 
 pub async fn insert_generating(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     entity_type: SummaryEntityType,
     entity_id: Uuid,
 ) -> Result<ai_summary::Model, DbErr> {
     let now: DateTimeWithTimeZone = time_utils::now_utc_into();
     ai_summary::ActiveModel {
         id: Set(Uuid::new_v4()),
+        tenant_id: Set(tenant_id.get_uuid()),
         entity_type: Set(entity_type.to_string()),
         entity_id: Set(entity_id),
         status: Set(SummaryStatus::Generating.to_string()),
@@ -96,13 +108,14 @@ pub async fn insert_generating(
 
 pub async fn set_user_prompt(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     entity_type: SummaryEntityType,
     entity_id: Uuid,
     user_prompt: Option<String>,
 ) -> Result<ai_summary::Model, DbErr> {
     let now: DateTimeWithTimeZone = time_utils::now_utc_into();
 
-    if let Some(row) = find(db, entity_type, entity_id).await? {
+    if let Some(row) = find(db, tenant_id, entity_type, entity_id).await? {
         let mut active: ai_summary::ActiveModel = row.into();
         active.user_prompt = Set(user_prompt);
         active.updated_at = Set(now);
@@ -111,6 +124,7 @@ pub async fn set_user_prompt(
 
     ai_summary::ActiveModel {
         id: Set(Uuid::new_v4()),
+        tenant_id: Set(tenant_id.get_uuid()),
         entity_type: Set(entity_type.to_string()),
         entity_id: Set(entity_id),
         status: Set(SummaryStatus::Idle.to_string()),
@@ -130,13 +144,14 @@ pub async fn set_user_prompt(
 
 pub async fn mark_ready(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     entity_type: SummaryEntityType,
     entity_id: Uuid,
     summary_text: String,
     summarized_entity_count: Option<i32>,
     user_prompt_used: Option<String>,
 ) -> Result<Option<ai_summary::Model>, DbErr> {
-    let Some(row) = find(db, entity_type, entity_id).await? else {
+    let Some(row) = find(db, tenant_id, entity_type, entity_id).await? else {
         return Ok(None);
     };
     let now: DateTimeWithTimeZone = time_utils::now_utc_into();
@@ -153,11 +168,12 @@ pub async fn mark_ready(
 
 pub async fn mark_failed(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     entity_type: SummaryEntityType,
     entity_id: Uuid,
     error_message: String,
 ) -> Result<Option<ai_summary::Model>, DbErr> {
-    let Some(row) = find(db, entity_type, entity_id).await? else {
+    let Some(row) = find(db, tenant_id, entity_type, entity_id).await? else {
         return Ok(None);
     };
     let now: DateTimeWithTimeZone = time_utils::now_utc_into();
@@ -170,10 +186,12 @@ pub async fn mark_failed(
 
 pub async fn delete_for_entity(
     db: &impl ConnectionTrait,
+    tenant_id: &TenantId,
     entity_type: SummaryEntityType,
     entity_id: Uuid,
 ) -> Result<(), DbErr> {
     ai_summary::Entity::delete_many()
+        .filter(ai_summary::Column::TenantId.eq(tenant_id.get_uuid()))
         .filter(ai_summary::Column::EntityType.eq(entity_type.to_string()))
         .filter(ai_summary::Column::EntityId.eq(entity_id))
         .exec(db)
@@ -183,6 +201,7 @@ pub async fn delete_for_entity(
 
 pub async fn delete_for_entities(
     db: &impl ConnectionTrait,
+    tenant_id: &TenantId,
     entity_type: SummaryEntityType,
     entity_ids: &[Uuid],
 ) -> Result<(), DbErr> {
@@ -190,6 +209,7 @@ pub async fn delete_for_entities(
         return Ok(());
     }
     ai_summary::Entity::delete_many()
+        .filter(ai_summary::Column::TenantId.eq(tenant_id.get_uuid()))
         .filter(ai_summary::Column::EntityType.eq(entity_type.to_string()))
         .filter(ai_summary::Column::EntityId.is_in(entity_ids.iter().copied()))
         .exec(db)

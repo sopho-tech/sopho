@@ -19,3 +19,16 @@ pub async fn update_value(
     active_model.value = Set(value.to_string());
     active_model.update(db).await
 }
+
+pub async fn insert_value(
+    db: &DatabaseConnection,
+    key: &str,
+    value: &str,
+) -> Result<configuration::Model, DbErr> {
+    configuration::ActiveModel {
+        key: Set(key.to_string()),
+        value: Set(value.to_string()),
+    }
+    .insert(db)
+    .await
+}

@@ -10,7 +10,7 @@ use sea_orm_migration::{
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
-const UNIQUE_ENTITY_INDEX: &str = "idx_ai_summary_entity_type_entity_id";
+pub const UNIQUE_ENTITY_INDEX: &str = "idx_ai_summary_entity_type_entity_id";
 
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
@@ -20,6 +20,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(AiSummary::Table)
                     .col(pk_uuid(AiSummary::Id))
+                    .col(uuid(AiSummary::TenantId))
                     .col(string(AiSummary::EntityType))
                     .col(uuid(AiSummary::EntityId))
                     .col(string(AiSummary::Status))
@@ -58,6 +59,7 @@ impl MigrationTrait for Migration {
 pub enum AiSummary {
     Table,
     Id,
+    TenantId,
     EntityType,
     EntityId,
     Status,

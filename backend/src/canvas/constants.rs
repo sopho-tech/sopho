@@ -26,3 +26,7 @@ impl fmt::Display for CanvasStatus {
         })
     }
 }
+
+pub const CANVAS_NOT_FOUND_MESSAGE: &str = "Canvas not found";
+pub const CANVAS_DELETED_MESSAGE: &str = "Canvas deleted successfully";
+pub const DASHBOARD_NOT_FOUND_FOR_CANVAS_MESSAGE: &str = "Dashboard not found for canvas";
