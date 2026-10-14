@@ -137,7 +137,7 @@ fn respond(provider: Provider, shared_state: &SharedState, body: String) -> Resp
     let matching_fixtures: Vec<&Fixture> = shared_state
         .fixtures
         .iter()
-        .filter(|fixture| fixture.provider == provider && body.contains(&fixture.match_text))
+        .filter(|fixture| fixture.matches(provider, &body))
         .collect();
     let matched_fixture = match matching_fixtures.as_slice() {
         [fixture] => Some(*fixture),

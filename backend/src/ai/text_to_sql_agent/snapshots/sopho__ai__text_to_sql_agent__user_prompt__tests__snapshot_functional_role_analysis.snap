@@ -1,0 +1,12 @@
+---
+source: src/ai/text_to_sql_agent/user_prompt.rs
+expression: "UserPrompt::FunctionalRoleAnalysis\n{\n    question: \"How many orders were placed per month?\".to_string(),\n    logical_plan: \"Count orders grouped by purchase month\".to_string(),\n    database_schema: \"orders(order_id, order_purchase_timestamp)\".to_string(),\n}.render()"
+---
+### USER QUESTION
+How many orders were placed per month?
+
+### LOGICAL PLAN
+Count orders grouped by purchase month
+
+### DATABASE SCHEMA
+orders(order_id, order_purchase_timestamp)

@@ -1,0 +1,10 @@
+---
+source: src/ai/text_to_sql_agent/user_prompt.rs
+expression: "UserPrompt::AggregatingPlanCandidates\n{\n    question: \"How many orders were placed per month?\".to_string(),\n    candidate_plans:\n    \"1. Count orders grouped by month\\n2. Count order items\".to_string(),\n}.render()"
+---
+### USER QUESTION
+How many orders were placed per month?
+
+### CANDIDATE PLANS
+1. Count orders grouped by month
+2. Count order items

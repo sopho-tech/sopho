@@ -7,10 +7,10 @@ repos:
     hooks:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md, --markdown-linebreak-ext=mdx]
-        exclude: \.rs$
+        exclude: \.(rs|snap)$
         stages: [pre-commit]
       - id: end-of-file-fixer
-        exclude: \.rs$
+        exclude: \.(rs|snap)$
         stages: [pre-commit]
 
   - repo: https://github.com/crate-ci/typos

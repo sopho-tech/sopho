@@ -1,4 +1,4 @@
-.PHONY: install run dev tools setup hooks fmt lint lint-repo lint-backend typecheck
+.PHONY: install run dev tools setup hooks fmt lint lint-repo lint-backend typecheck test test-backend test-backend-postgres test-clean
 
 CARGO_TOOLS := cargo-nextest cargo-llvm-cov cargo-deny cargo-shear
 
@@ -70,3 +70,14 @@ lint-backend:
 typecheck:
 	cd frontend && npx tsc -b
 	cd docs && npm run types:check
+
+test: test-backend
+
+test-backend:
+	cd backend && TEST_DB=sqlite cargo nextest run --workspace
+
+test-backend-postgres:
+	cd backend && TEST_DB=postgres cargo nextest run --workspace
+
+test-clean:
+	docker rm --force --volumes sopho-test-postgres

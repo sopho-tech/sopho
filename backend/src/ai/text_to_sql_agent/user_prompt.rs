@@ -312,6 +312,7 @@ impl UserPrompt {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ai::dto::TableFunction;
 
     fn column(name: &str, data_type: &str, description: &str) -> crate::data_catalog::dto::Column {
         crate::data_catalog::dto::Column {
@@ -378,5 +379,154 @@ mod tests {
         assert!(rendered.contains("status (varchar): Current status: Active, Expired, Pending"));
         assert!(rendered.contains("Patents granted in 2020?"));
         assert!(rendered.contains("Bridge table connecting Inventors and Applications"));
+    }
+
+    fn ecommerce_semantic_analysis() -> FunctionalRoleAnalysisResult {
+        FunctionalRoleAnalysisResult {
+            database_structure: "One ecommerce schema with orders and customers".to_string(),
+            query_specific_content_analysis: "Orders carry the purchase timestamp".to_string(),
+            table_functions: vec![TableFunction {
+                database: "ecommerce".to_string(),
+                schema: "main".to_string(),
+                table: "orders".to_string(),
+                table_function: "Target Table for order counts".to_string(),
+            }],
+        }
+    }
+
+    #[test]
+    fn snapshot_logical_planning_hypothesis_generation() {
+        insta::assert_snapshot!(
+            UserPrompt::LogicalPlanningHypothesisGeneration {
+                question: "How many orders were placed per month?".to_string(),
+            }
+            .render()
+        );
+    }
+
+    #[test]
+    fn snapshot_aggregating_plan_candidates() {
+        insta::assert_snapshot!(
+            UserPrompt::AggregatingPlanCandidates {
+                question: "How many orders were placed per month?".to_string(),
+                candidate_plans: "1. Count orders grouped by month\n2. Count order items"
+                    .to_string(),
+            }
+            .render()
+        );
+    }
+
+    #[test]
+    fn snapshot_functional_role_analysis() {
+        insta::assert_snapshot!(
+            UserPrompt::FunctionalRoleAnalysis {
+                question: "How many orders were placed per month?".to_string(),
+                logical_plan: "Count orders grouped by purchase month".to_string(),
+                database_schema: "orders(order_id, order_purchase_timestamp)".to_string(),
+            }
+            .render()
+        );
+    }
+
+    #[test]
+    fn snapshot_data_profiling_before() {
+        insta::assert_snapshot!(
+            UserPrompt::DataProfilingBefore {
+                table_name: "orders".to_string(),
+                columns: vec![
+                    column("order_id", "TEXT", "Order identifier"),
+                    column(
+                        "order_purchase_timestamp",
+                        "TEXT",
+                        "When the order was placed"
+                    ),
+                ],
+                question: "How many orders were placed per month?".to_string(),
+                semantic_role: "Target Table for order counts".to_string(),
+                sql_dialect: SqlDialect::Sqlite,
+            }
+            .render()
+        );
+    }
+
+    #[test]
+    fn snapshot_data_profiling_after() {
+        insta::assert_snapshot!(
+            UserPrompt::DataProfilingAfter {
+                table_name: "orders".to_string(),
+                observations: vec![ExplorationQueryResult {
+                    sql: "SELECT MIN(order_purchase_timestamp) FROM orders".to_string(),
+                    sql_result: "2016-09-04 21:15:19".to_string(),
+                }],
+            }
+            .render()
+        );
+    }
+
+    #[test]
+    fn snapshot_schema_linking_final_synthesis_first() {
+        insta::assert_snapshot!(
+            UserPrompt::SchemaLinkingFinalSynthesisFirst {
+                question: "How many orders were placed per month?".to_string(),
+                semantic_analysis: ecommerce_semantic_analysis(),
+                schema_status: "orders: order_id, order_purchase_timestamp".to_string(),
+                max_refine_rounds: 3,
+                sql_dialect: SqlDialect::Sqlite,
+            }
+            .render()
+        );
+    }
+
+    #[test]
+    fn snapshot_schema_linking_final_synthesis_exploration_results() {
+        insta::assert_snapshot!(
+            UserPrompt::SchemaLinkingFinalSynthesisExplorationResults {
+                results: "order_purchase_timestamp spans 2016 to 2018".to_string(),
+            }
+            .render()
+        );
+    }
+
+    #[test]
+    fn snapshot_sql_generation_first() {
+        insta::assert_snapshot!(
+            UserPrompt::SqlGenerationFirst {
+                question: "How many orders were placed per month?".to_string(),
+                schema: "orders(order_id, order_purchase_timestamp)".to_string(),
+                current_plan: "Count orders grouped by purchase month".to_string(),
+                sql_dialect: SqlDialect::Sqlite,
+            }
+            .render()
+        );
+    }
+
+    #[test]
+    fn snapshot_sql_generation_exploration_result() {
+        insta::assert_snapshot!(
+            UserPrompt::SqlGenerationExplorationResult {
+                results: "12 distinct months".to_string(),
+            }
+            .render()
+        );
+    }
+
+    #[test]
+    fn snapshot_sql_generation_refine_result() {
+        insta::assert_snapshot!(
+            UserPrompt::SqlGenerationRefineResult {
+                next_action: RefineNextAction::GenerateSql,
+            }
+            .render()
+        );
+    }
+
+    #[test]
+    fn snapshot_sql_generation_query_result() {
+        insta::assert_snapshot!(
+            UserPrompt::SqlGenerationQueryResult {
+                result: "month | order_count\n2017-01 | 800".to_string(),
+            }
+            .render()
+        );
     }
 }

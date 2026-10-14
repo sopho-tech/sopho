@@ -1,0 +1,21 @@
+{
+  "match": "### CANDIDATE PLANS",
+  "response": {
+    "id": "msg_fake_integrate_candidate_plan_agent",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-haiku-4-5",
+    "content": [
+      {
+        "type": "text",
+        "text": "1. Group the orders table by order_status.\n2. Count the orders in each group.\n3. Sort the groups by order count, largest first."
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 1,
+      "output_tokens": 1
+    }
+  }
+}

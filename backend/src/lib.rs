@@ -50,6 +50,10 @@ pub async fn initialize(app_state: &AppState) -> anyhow::Result<()> {
     Ok(())
 }
 
+pub async fn refresh_stale_suggested_questions(app_state: &AppState) {
+    suggested_question::service::refresh_all_stale(app_state).await;
+}
+
 pub fn build_app(app_state: AppState) -> Router {
     let frontend_dir = PathBuf::from(app_state.config.frontend_dir.as_ref());
     let index_path = frontend_dir.join("index.html");

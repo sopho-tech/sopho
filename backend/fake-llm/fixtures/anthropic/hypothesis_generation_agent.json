@@ -1,0 +1,21 @@
+{
+  "match": "\"title\":\"LogicalPlanningResponse\"",
+  "response": {
+    "id": "msg_fake_hypothesis_generation_agent",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-haiku-4-5",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"logical_steps\":[\"Read the orders table\",\"Group the orders by order_status\",\"Count the orders in each group\",\"Sort the groups by their order count\"]}"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 1,
+      "output_tokens": 1
+    }
+  }
+}

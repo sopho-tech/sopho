@@ -12,6 +12,8 @@ use std::str::FromStr;
 struct FixtureFile {
     #[serde(rename = "match")]
     match_text: String,
+    #[serde(rename = "exclude")]
+    exclude_text: Option<String>,
     response: serde_json::Value,
 }
 
@@ -20,7 +22,19 @@ pub struct Fixture {
     pub name: String,
     pub provider: Provider,
     pub match_text: String,
+    pub exclude_text: Option<String>,
     pub response: serde_json::Value,
+}
+
+impl Fixture {
+    pub fn matches(&self, provider: Provider, body: &str) -> bool {
+        self.provider == provider
+            && body.contains(&self.match_text)
+            && !self
+                .exclude_text
+                .as_ref()
+                .is_some_and(|exclude_text| body.contains(exclude_text))
+    }
 }
 
 pub fn load_fixtures(fixture_directory: &Path) -> anyhow::Result<Vec<Fixture>> {
@@ -73,10 +87,18 @@ fn load_fixture(provider: Provider, fixture_path: &Path) -> anyhow::Result<Fixtu
     if fixture_file.match_text.is_empty() {
         bail!("fixture {} has an empty match", fixture_path.display());
     }
+    if fixture_file
+        .exclude_text
+        .as_ref()
+        .is_some_and(String::is_empty)
+    {
+        bail!("fixture {} has an empty exclude", fixture_path.display());
+    }
     Ok(Fixture {
         name,
         provider,
         match_text: fixture_file.match_text,
+        exclude_text: fixture_file.exclude_text,
         response: fixture_file.response,
     })
 }
