@@ -55,6 +55,7 @@ uuid = { version = "1.4", features = ["serde", "v4"] }
 [dev-dependencies]
 fake-llm = { path = "fake-llm" }
 insta = "1.49.0"
+percent-encoding = "2.3.2"
 reqwest = { version = "0.13.5", features = ["cookies", "json", "stream"] }
 tempfile = "3.27.0"
 testcontainers = { version = "0.28.0", features = ["reusable-containers"] }

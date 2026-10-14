@@ -4,6 +4,7 @@ use crate::support::constants::{
     POSTGRES_READY_TIMEOUT_SECONDS, POSTGRES_STARTUP_LOCK_FILE_NAME, POSTGRES_USER,
     TEST_POSTGRES_URL_VARIABLE,
 };
+use percent_encoding::percent_decode_str;
 use sqlx::{Connection, Executor, PgConnection};
 use std::fs::File;
 use std::time::{Duration, Instant};
@@ -16,18 +17,67 @@ use uuid::Uuid;
 pub struct PostgresServer {
     pub host: String,
     pub port: u16,
+    pub username: String,
+    pub password: String,
+    admin_database: String,
 }
 
 impl PostgresServer {
     pub fn url_for(&self, database_name: &str) -> String {
-        format!(
-            "postgres://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{}:{}/{database_name}",
+        let mut url = reqwest::Url::parse(&format!(
+            "postgres://{}:{}/{database_name}",
             self.host, self.port
-        )
+        ))
+        .expect("build the Postgres URL");
+        url.set_username(&self.username)
+            .expect("set the Postgres username");
+        url.set_password(Some(&self.password))
+            .expect("set the Postgres password");
+        url.to_string()
     }
 
     pub fn admin_url(&self) -> String {
-        self.url_for(POSTGRES_ADMIN_DATABASE)
+        self.url_for(&self.admin_database)
+    }
+}
+
+fn decoded_url_part(encoded_part: &str, part_name: &str) -> String {
+    percent_decode_str(encoded_part)
+        .decode_utf8()
+        .unwrap_or_else(|error| {
+            panic!("the {part_name} in {TEST_POSTGRES_URL_VARIABLE} is not UTF-8: {error}")
+        })
+        .into_owned()
+}
+
+fn postgres_server_from_url(url: &str) -> PostgresServer {
+    let parsed_url = reqwest::Url::parse(url)
+        .unwrap_or_else(|error| panic!("{TEST_POSTGRES_URL_VARIABLE} is not a URL: {error}"));
+    let username = decoded_url_part(parsed_url.username(), "username");
+    if username.is_empty() {
+        panic!("{TEST_POSTGRES_URL_VARIABLE} must include a username");
+    }
+    let password = decoded_url_part(
+        parsed_url
+            .password()
+            .unwrap_or_else(|| panic!("{TEST_POSTGRES_URL_VARIABLE} must include a password")),
+        "password",
+    );
+    let admin_database = decoded_url_part(parsed_url.path().trim_start_matches('/'), "database");
+    if admin_database.is_empty() {
+        panic!(
+            "{TEST_POSTGRES_URL_VARIABLE} must name the database the tests connect to when they create their own databases"
+        );
+    }
+    PostgresServer {
+        host: parsed_url
+            .host_str()
+            .unwrap_or_else(|| panic!("{TEST_POSTGRES_URL_VARIABLE} has no host"))
+            .to_string(),
+        port: parsed_url.port().unwrap_or(POSTGRES_PORT),
+        username,
+        password,
+        admin_database,
     }
 }
 
@@ -95,15 +145,7 @@ impl Drop for PostgresDatabase {
 
 async fn start_or_reuse_postgres_server() -> PostgresServer {
     if let Ok(url) = std::env::var(TEST_POSTGRES_URL_VARIABLE) {
-        let parsed_url = reqwest::Url::parse(&url)
-            .unwrap_or_else(|error| panic!("{TEST_POSTGRES_URL_VARIABLE} is not a URL: {error}"));
-        let server = PostgresServer {
-            host: parsed_url
-                .host_str()
-                .unwrap_or_else(|| panic!("{TEST_POSTGRES_URL_VARIABLE} has no host"))
-                .to_string(),
-            port: parsed_url.port().unwrap_or(POSTGRES_PORT),
-        };
+        let server = postgres_server_from_url(&url);
         wait_until_ready(&server.admin_url()).await;
         return server;
     }
@@ -141,6 +183,9 @@ async fn start_or_reuse_postgres_server() -> PostgresServer {
             .get_host_port_ipv4(POSTGRES_PORT)
             .await
             .expect("read the Postgres container port"),
+        username: POSTGRES_USER.to_string(),
+        password: POSTGRES_PASSWORD.to_string(),
+        admin_database: POSTGRES_ADMIN_DATABASE.to_string(),
     };
     wait_until_ready(&server.admin_url()).await;
     drop(startup_lock);

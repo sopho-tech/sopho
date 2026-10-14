@@ -98,7 +98,14 @@ export async function startSopho({
       { source: dataVolumeName, target: SOPHO_CONTAINER_DATA_DIRECTORY },
     ]);
   }
-  const startedContainer = await container.start();
+  const startedContainer = await container
+    .start()
+    .catch((startError: unknown) => {
+      throw new Error(
+        `${image} did not become healthy. Container logs:\n${logs.join("")}`,
+        { cause: startError },
+      );
+    });
   return {
     baseUrl: `http://${startedContainer.getHost()}:${startedContainer.getMappedPort(SOPHO_CONTAINER_PORT)}`,
     logs,

@@ -1,13 +1,13 @@
 use crate::support::TestApp;
-use crate::support::constants::{ADMIN_EMAIL, ADMIN_FULL_NAME, ADMIN_PASSWORD, ADMIN_USERNAME};
+use crate::support::constants::{
+    ACCESS_TOKEN_COOKIE, ADMIN_EMAIL, ADMIN_FULL_NAME, ADMIN_PASSWORD, ADMIN_USERNAME,
+    REFRESH_TOKEN_COOKIE,
+};
 use reqwest::StatusCode;
 use reqwest::header::SET_COOKIE;
 use sea_orm::{ConnectionTrait, Statement};
 use serde_json::json;
 use uuid::Uuid;
-
-const ACCESS_TOKEN_COOKIE: &str = "ACCESS_TOKEN";
-const REFRESH_TOKEN_COOKIE: &str = "REFRESH_TOKEN";
 
 fn cookie_names(response: &reqwest::Response) -> Vec<String> {
     response

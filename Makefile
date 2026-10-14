@@ -96,6 +96,7 @@ test-e2e:
 
 test-docker:
 	docker build --file docker/Dockerfile --tag $(SOPHO_DEV_IMAGE) .
+	docker pull $(SOPHO_RELEASE_IMAGE)
 	$(MAKE) test-image SOPHO_IMAGE=$(SOPHO_DEV_IMAGE) SOPHO_UPGRADE_FROM_IMAGE=$(SOPHO_RELEASE_IMAGE)
 
 test-image:

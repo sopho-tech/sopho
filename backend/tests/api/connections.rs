@@ -1,7 +1,5 @@
 use crate::support::TestApp;
-use crate::support::constants::{
-    DEMO_ORDER_COUNT, ORDER_COUNT_QUERY, POSTGRES_PASSWORD, POSTGRES_USER, SAMPLE_DATABASE_SCHEMA,
-};
+use crate::support::constants::{DEMO_ORDER_COUNT, ORDER_COUNT_QUERY, SAMPLE_DATABASE_SCHEMA};
 use crate::support::postgres_server::shared_postgres_server;
 use reqwest::StatusCode;
 use sea_orm::ConnectionTrait;
@@ -98,9 +96,10 @@ async fn connection_credentials_are_encrypted_at_rest() {
     let connection = app.create_postgres_sample_connection().await;
 
     let stored_password = stored_connection_password(&app, &connection).await;
+    let plain_password = &shared_postgres_server().await.password;
     assert!(!stored_password.is_empty());
-    assert_ne!(stored_password, POSTGRES_PASSWORD);
-    assert!(!stored_password.contains(POSTGRES_PASSWORD));
+    assert_ne!(&stored_password, plain_password);
+    assert!(!stored_password.contains(plain_password.as_str()));
 }
 
 #[tokio::test]
@@ -186,7 +185,7 @@ async fn wrong_postgres_credentials_return_a_clear_error() {
                 "source_type": "POSTGRESQL",
                 "host": server.host,
                 "port": server.port,
-                "username": POSTGRES_USER,
+                "username": server.username,
                 "password": "not-the-postgres-password",
                 "database": "postgres",
                 "schema": SAMPLE_DATABASE_SCHEMA,

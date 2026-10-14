@@ -1,8 +1,7 @@
 use crate::support::constants::{
     ADMIN_EMAIL, ADMIN_FULL_NAME, ADMIN_PASSWORD, ADMIN_USERNAME, AI_PROVIDER_API_KEY, API_PREFIX,
     ENCRYPTION_KEY, ENVIRONMENT, FAKE_LLM_FIXTURES_RELATIVE_PATH, FRONTEND_DIRECTORY_FOR_API_TESTS,
-    POSTGRES_PASSWORD, POSTGRES_SAMPLE_CONNECTION_NAME, POSTGRES_USER, SAMPLE_DATABASE_SCHEMA,
-    SQLITE_DEMO_CONNECTION_NAME,
+    POSTGRES_SAMPLE_CONNECTION_NAME, SAMPLE_DATABASE_SCHEMA, SQLITE_DEMO_CONNECTION_NAME,
 };
 use crate::support::data_sources::{
     SqliteDemoDatabase, copy_sqlite_demo_database, create_postgres_sample_database, manifest_path,
@@ -160,8 +159,8 @@ impl TestApp {
             "source_type": "POSTGRESQL",
             "host": server.host,
             "port": server.port,
-            "username": POSTGRES_USER,
-            "password": POSTGRES_PASSWORD,
+            "username": server.username,
+            "password": server.password,
             "database": sample_database.name,
             "schema": SAMPLE_DATABASE_SCHEMA,
         });
