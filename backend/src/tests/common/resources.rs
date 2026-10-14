@@ -113,6 +113,25 @@ pub async fn insert_connection(
     owner_user_id: Uuid,
     visibility: Visibility,
 ) -> Uuid {
+    insert_sqlite_connection(
+        app_state,
+        tenant_id,
+        name,
+        owner_user_id,
+        visibility,
+        UNUSED_SQLITE_DATABASE,
+    )
+    .await
+}
+
+pub async fn insert_sqlite_connection(
+    app_state: &AppState,
+    tenant_id: Uuid,
+    name: &str,
+    owner_user_id: Uuid,
+    visibility: Visibility,
+    database_path: &str,
+) -> Uuid {
     let connection_id = Uuid::new_v4();
     entity::connection::ActiveModel {
         id: Set(connection_id),
@@ -125,7 +144,7 @@ pub async fn insert_connection(
         password: Set(None),
         host: Set(None),
         port: Set(None),
-        database: Set(UNUSED_SQLITE_DATABASE.to_string()),
+        database: Set(database_path.to_string()),
         schema: Set(None),
         source_type: Set("SQLITE".to_string()),
         status: Set(ACTIVE_STATUS.to_string()),

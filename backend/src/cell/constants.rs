@@ -212,3 +212,4 @@ pub const INVALID_CHART_CONTENT_MESSAGE: &str = "Invalid chart content format";
 pub const CELL_CONTENT_NOT_SQL_MESSAGE: &str = "Cell content is not SQL";
 pub const SOURCE_CELL_MISSING_CONNECTION_MESSAGE: &str = "Source cell has no connection assigned";
 pub const CONNECTION_NOT_FOUND_MESSAGE: &str = "Connection not found";
+pub const CELL_NOTEBOOK_IS_FIXED_MESSAGE: &str = "A cell cannot be moved to another notebook";

@@ -161,3 +161,27 @@ pub fn visible_canvas_ids_subquery(tenant_id: &TenantId, reachable: Condition) -
         )
         .to_owned()
 }
+
+pub async fn update_canvas_visibility(
+    db: &DatabaseConnection,
+    tenant_id: &TenantId,
+    id: Uuid,
+    visibility: &str,
+) -> Result<u64, DbErr> {
+    let result = canvas::Entity::update_many()
+        .col_expr(
+            canvas::Column::Visibility,
+            sea_orm::sea_query::Expr::value(visibility.to_string()),
+        )
+        .col_expr(
+            canvas::Column::UpdatedAt,
+            sea_orm::sea_query::Expr::value(time_utils::now_utc_into::<
+                sea_orm::prelude::DateTimeWithTimeZone,
+            >()),
+        )
+        .filter(canvas::Column::Id.eq(id))
+        .filter(canvas::Column::TenantId.eq(tenant_id.get_uuid()))
+        .exec(db)
+        .await?;
+    Ok(result.rows_affected)
+}

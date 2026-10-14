@@ -1,12 +1,12 @@
 use crate::authorization::dto::TenantContext;
 use crate::common::AppState;
-use crate::grant::dto::CreateGrantDto;
+use crate::grant::dto::{CreateGrantDto, UpdateVisibilityDto};
 use crate::grant::error::GrantError;
 use crate::grant::service;
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::{delete, get, post};
+use axum::routing::{delete, get, post, put};
 use axum::Router;
 use serde_json::Value;
 use uuid::Uuid;
@@ -25,7 +25,11 @@ struct GrantPath {
 pub fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/", post(create_grant))
-        .route("/{resource_type}/{resource_id}", get(list_grants))
+        .route("/{resource_type}/{resource_id}", get(get_sharing))
+        .route(
+            "/{resource_type}/{resource_id}/visibility",
+            put(update_visibility),
+        )
         .route("/{grant_id}", delete(revoke_grant))
         .with_state(app_state)
 }
@@ -41,7 +45,7 @@ async fn create_grant(
     }
 }
 
-async fn list_grants(
+async fn get_sharing(
     State(app_state): State<AppState>,
     tenant_context: TenantContext,
     Path(GrantResourcePath {
@@ -49,8 +53,31 @@ async fn list_grants(
         resource_id,
     }): Path<GrantResourcePath>,
 ) -> impl IntoResponse {
-    match service::list_grants(app_state, &tenant_context, resource_type, resource_id).await {
-        Ok(grants) => (StatusCode::OK, axum::Json(serde_json::json!(grants))),
+    match service::get_sharing(app_state, &tenant_context, resource_type, resource_id).await {
+        Ok(sharing) => (StatusCode::OK, axum::Json(serde_json::json!(sharing))),
+        Err(error) => grant_error_http_response(error),
+    }
+}
+
+async fn update_visibility(
+    State(app_state): State<AppState>,
+    tenant_context: TenantContext,
+    Path(GrantResourcePath {
+        resource_type,
+        resource_id,
+    }): Path<GrantResourcePath>,
+    Json(payload): Json<UpdateVisibilityDto>,
+) -> impl IntoResponse {
+    match service::update_visibility(
+        app_state,
+        &tenant_context,
+        resource_type,
+        resource_id,
+        payload,
+    )
+    .await
+    {
+        Ok(sharing) => (StatusCode::OK, axum::Json(serde_json::json!(sharing))),
         Err(error) => grant_error_http_response(error),
     }
 }
@@ -82,7 +109,7 @@ fn grant_error_http_response(error: GrantError) -> (StatusCode, axum::Json<Value
             StatusCode::NOT_FOUND,
             axum::Json(serde_json::json!({ "error": error.to_string() })),
         ),
-        GrantError::Database(_) => (
+        GrantError::Database(_) | GrantError::Internal(_) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": error.to_string() })),
         ),

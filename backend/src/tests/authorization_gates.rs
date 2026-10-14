@@ -6,7 +6,7 @@ use crate::authorization::errors::AuthorizationError;
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::entity;
-use crate::tests::common::app_state::init_test_app_state;
+use crate::tests::common::app_state::{absolute_test_database_path, init_test_app_state};
 use crate::tests::common::resources::{
     insert_canvas, insert_cell, insert_connection, insert_conversation, insert_notebook,
 };
@@ -346,13 +346,17 @@ async fn capabilities_reflect_what_the_gates_allow() {
     let viewer = context_with_role(&app_state, tenant_id, SystemRole::Viewer, "viewer").await;
 
     let owned = canvas_subject(tenant_id, member.user_id().get_uuid(), Visibility::Private);
-    let owned_capabilities = resolve_capabilities(&app_state, &member, &owned).await;
+    let owned_capabilities = resolve_capabilities(&app_state, &member, &owned)
+        .await
+        .unwrap();
     assert!(owned_capabilities.can_edit);
     assert!(owned_capabilities.can_delete);
     assert!(owned_capabilities.can_share);
 
     let someone_elses = canvas_subject(tenant_id, Uuid::new_v4(), Visibility::Tenant);
-    let readable_capabilities = resolve_capabilities(&app_state, &member, &someone_elses).await;
+    let readable_capabilities = resolve_capabilities(&app_state, &member, &someone_elses)
+        .await
+        .unwrap();
     assert!(
         !readable_capabilities.can_edit,
         "tenant-visible is readable but not editable"
@@ -360,7 +364,9 @@ async fn capabilities_reflect_what_the_gates_allow() {
     assert!(!readable_capabilities.can_delete);
     assert!(!readable_capabilities.can_share);
 
-    let viewer_capabilities = resolve_capabilities(&app_state, &viewer, &someone_elses).await;
+    let viewer_capabilities = resolve_capabilities(&app_state, &viewer, &someone_elses)
+        .await
+        .unwrap();
     assert!(!viewer_capabilities.can_edit);
     assert!(!viewer_capabilities.can_delete);
     assert!(!viewer_capabilities.can_share);
@@ -437,6 +443,93 @@ async fn conversation_and_connection_dtos_carry_capabilities() {
     .await
     .unwrap();
     assert!(administrator_connection.capabilities.unwrap().can_edit);
+}
+
+#[tokio::test]
+async fn created_and_updated_resources_carry_the_callers_capabilities() {
+    let test_name = "gates_mutation_capabilities";
+    let app_state = init_test_app_state(test_name).await;
+    let tenant_id = create_tenant(&app_state, "t").await;
+    let member = context_with_role(&app_state, tenant_id, SystemRole::Member, "member").await;
+    let administrator =
+        context_with_role(&app_state, tenant_id, SystemRole::Admin, "administrator").await;
+
+    let created_canvas = crate::canvas::service::create_canvas(
+        app_state.clone(),
+        &member,
+        member.user_id().get_uuid(),
+        crate::canvas::dto::CreateCanvasDto {
+            name: "draft".to_string(),
+            description: None,
+        },
+    )
+    .await
+    .unwrap();
+    assert!(created_canvas.capabilities.unwrap().can_share);
+
+    let renamed_canvas = crate::canvas::service::update_canvas(
+        app_state.clone(),
+        &member,
+        created_canvas.id,
+        crate::canvas::dto::CreateCanvasDto {
+            name: "final".to_string(),
+            description: None,
+        },
+    )
+    .await
+    .unwrap();
+    let renamed_capabilities = renamed_canvas.capabilities.unwrap();
+    assert!(renamed_capabilities.can_edit);
+    assert!(renamed_capabilities.can_share);
+
+    let created_connection = crate::connection::service::create_connection(
+        &app_state,
+        &administrator,
+        crate::connection::dto::CreateConnectionDto {
+            name: "warehouse".to_string(),
+            username: None,
+            password: None,
+            host: None,
+            port: None,
+            database: absolute_test_database_path(test_name),
+            schema: None,
+            description: None,
+            source_type: crate::connection::constants::SourceType::Sqlite,
+        },
+    )
+    .await
+    .unwrap();
+    assert!(created_connection.capabilities.unwrap().can_edit);
+
+    let conversation_id = insert_conversation(
+        &app_state,
+        tenant_id,
+        "question",
+        member.user_id().get_uuid(),
+        Visibility::Private,
+        created_connection.id,
+    )
+    .await;
+    let mut conversation =
+        crate::conversational_analytics::conversation::service::get_conversation(
+            app_state.clone(),
+            &member,
+            conversation_id,
+        )
+        .await
+        .unwrap()
+        .conversation;
+    conversation.name = "renamed question".to_string();
+    let renamed_conversation =
+        crate::conversational_analytics::conversation::service::update_conversation(
+            app_state.clone(),
+            &member,
+            conversation_id,
+            conversation,
+        )
+        .await
+        .unwrap();
+    assert!(renamed_conversation.capabilities.unwrap().can_share);
 }
 
 #[tokio::test]
@@ -1020,5 +1113,135 @@ async fn custom_role_with_read_private_can_see_private_canvas() {
     assert!(
         !allowed(&app_state, &auditor, &someone_elses, Action::Write).await,
         "reading private does not imply writing"
+    );
+}
+
+#[tokio::test]
+async fn only_someone_who_can_share_may_change_visibility() {
+    let app_state = init_test_app_state("gates_visibility_change").await;
+    let tenant_id = create_tenant(&app_state, "t").await;
+    let owner = context_with_role(&app_state, tenant_id, SystemRole::Member, "owner").await;
+    let other = context_with_role(&app_state, tenant_id, SystemRole::Member, "other").await;
+    let canvas_id = insert_canvas(
+        &app_state,
+        tenant_id,
+        "private canvas",
+        owner.user_id().get_uuid(),
+        Visibility::Private,
+    )
+    .await;
+
+    let refused = crate::grant::service::update_visibility(
+        app_state.clone(),
+        &other,
+        "CANVAS".to_string(),
+        canvas_id,
+        crate::grant::dto::UpdateVisibilityDto {
+            visibility: "TENANT".to_string(),
+        },
+    )
+    .await;
+    assert!(
+        refused.is_err(),
+        "a member who cannot reach the canvas must not be able to widen it"
+    );
+
+    let sharing = crate::grant::service::update_visibility(
+        app_state.clone(),
+        &owner,
+        "CANVAS".to_string(),
+        canvas_id,
+        crate::grant::dto::UpdateVisibilityDto {
+            visibility: "TENANT".to_string(),
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(sharing.visibility, "TENANT");
+
+    assert!(
+        crate::canvas::service::get_canvas(app_state.clone(), &other, canvas_id)
+            .await
+            .is_ok(),
+        "once tenant-visible, every member can read it"
+    );
+}
+
+#[tokio::test]
+async fn sharing_with_someone_outside_the_tenant_is_rejected() {
+    let app_state = init_test_app_state("gates_grant_non_member").await;
+    let tenant_id = create_tenant(&app_state, "t").await;
+    let owner = context_with_role(&app_state, tenant_id, SystemRole::Member, "owner").await;
+    let canvas_id = insert_canvas(
+        &app_state,
+        tenant_id,
+        "private canvas",
+        owner.user_id().get_uuid(),
+        Visibility::Private,
+    )
+    .await;
+
+    let outsider = insert_user(&app_state, "outsider").await;
+    let result = crate::grant::service::create_grant(
+        app_state.clone(),
+        &owner,
+        crate::grant::dto::CreateGrantDto {
+            resource_type: "CANVAS".to_string(),
+            resource_id: canvas_id,
+            principal_user_id: outsider,
+            access_level: "VIEWER".to_string(),
+        },
+    )
+    .await;
+    assert!(matches!(
+        result,
+        Err(crate::grant::error::GrantError::InvalidRequest(_))
+    ));
+}
+
+#[tokio::test]
+async fn sharing_state_names_the_owner_and_each_grantee() {
+    let app_state = init_test_app_state("gates_sharing_state").await;
+    let tenant_id = create_tenant(&app_state, "t").await;
+    let owner = context_with_role(&app_state, tenant_id, SystemRole::Member, "owner").await;
+    let grantee = context_with_role(&app_state, tenant_id, SystemRole::Member, "grantee").await;
+    let canvas_id = insert_canvas(
+        &app_state,
+        tenant_id,
+        "private canvas",
+        owner.user_id().get_uuid(),
+        Visibility::Private,
+    )
+    .await;
+
+    crate::grant::service::create_grant(
+        app_state.clone(),
+        &owner,
+        crate::grant::dto::CreateGrantDto {
+            resource_type: "CANVAS".to_string(),
+            resource_id: canvas_id,
+            principal_user_id: grantee.user_id().get_uuid(),
+            access_level: "EDITOR".to_string(),
+        },
+    )
+    .await
+    .unwrap();
+
+    let sharing = crate::grant::service::get_sharing(
+        app_state.clone(),
+        &owner,
+        "CANVAS".to_string(),
+        canvas_id,
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(sharing.visibility, "PRIVATE");
+    assert_eq!(sharing.owner.unwrap().full_name, "owner");
+    assert_eq!(sharing.grants.len(), 1);
+    assert_eq!(sharing.grants[0].access_level, "EDITOR");
+    assert_eq!(
+        sharing.grants[0].principal.as_ref().unwrap().full_name,
+        "grantee"
     );
 }

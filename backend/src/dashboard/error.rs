@@ -1,6 +1,8 @@
 use crate::authorization::errors::AuthorizationError;
 use crate::common::errors::UpdateDashboardError;
-use crate::dashboard::constants::{CANVAS_NOT_FOUND_MESSAGE, DASHBOARD_NOT_FOUND_MESSAGE};
+use crate::dashboard::constants::{
+    CANVAS_NOT_FOUND_MESSAGE, DASHBOARD_NOT_FOUND_MESSAGE, LAYOUT_OUTSIDE_CANVAS_MESSAGE,
+};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -15,6 +17,8 @@ pub enum DashboardError {
     CanvasNotFound,
     #[error("Dashboard can hold at most {0} charts")]
     TooManyCharts(usize),
+    #[error("{LAYOUT_OUTSIDE_CANVAS_MESSAGE}")]
+    LayoutOutsideCanvas,
     #[error("{0}")]
     Internal(String),
 }

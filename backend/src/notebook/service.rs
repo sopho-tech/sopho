@@ -1,5 +1,6 @@
 use crate::authorization::constants::Action;
 use crate::authorization::dto::{TenantContext, TenantId};
+use crate::authorization::errors::AuthorizationError;
 use crate::cell::constants::CellType;
 use crate::cell::service as cell_service;
 use crate::common::time_utils;
@@ -14,9 +15,10 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 pub async fn does_notebook_exist(app_state: &AppState, tenant_id: &TenantId, id: Uuid) -> bool {
-    repository::get_notebook(&app_state.database_connection, tenant_id, id)
-        .await
-        .is_ok()
+    matches!(
+        repository::get_notebook(&app_state.database_connection, tenant_id, id).await,
+        Ok(Some(_))
+    )
 }
 
 pub async fn get_notebook(
@@ -254,6 +256,22 @@ pub async fn authorize_notebook(
         .await?;
 
     Ok(record)
+}
+
+pub async fn require_notebook_access(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    id: Uuid,
+    action: Action,
+) -> Result<(), AuthorizationError> {
+    match authorize_notebook(app_state, tenant_context, id, action).await {
+        Ok(_) => Ok(()),
+        Err(NotebookError::Unauthorized(authorization_error)) => Err(authorization_error),
+        Err(NotebookError::Database(database_error)) => {
+            Err(AuthorizationError::Database(database_error))
+        }
+        Err(_) => Err(AuthorizationError::NotReachable),
+    }
 }
 
 async fn authorize_canvas_for_children(

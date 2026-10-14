@@ -404,8 +404,11 @@ pub async fn signout(cookies: Cookies, app_state: AppState) -> impl IntoResponse
 
     // Mark session as inactive
     match repository::deactivate_session(&app_state.database_connection, session.id).await {
-        Ok(_) => {
+        Ok(Some(_)) => {
             tracing::info!("Session {} deactivated successfully", session.id);
+        }
+        Ok(None) => {
+            tracing::warn!("Session {} was already gone when signing out", session.id);
         }
         Err(e) => {
             tracing::error!("Failed to deactivate session: {:?}", e);
@@ -506,9 +509,9 @@ fn invalidate_session_cookies(cookies: &Cookies, app_state: &AppState) {
     invalidate_session_cookie(cookies, CookieName::RefreshToken, app_state);
 }
 
-pub async fn seed_admin_user(app_state: &AppState) {
+pub async fn seed_admin_user(app_state: &AppState) -> anyhow::Result<()> {
     if crate::configuration::service::is_admin_user_setup_done(app_state).await {
-        return;
+        return Ok(());
     }
 
     let username = app_state.config.admin_username.as_ref();
@@ -517,24 +520,19 @@ pub async fn seed_admin_user(app_state: &AppState) {
     let full_name = app_state.config.admin_full_name.as_ref();
 
     if get_user_by_email(&app_state.database_connection, email.to_string())
-        .await
-        .is_ok()
+        .await?
+        .is_some()
     {
         tracing::info!(
             "Admin user with email {} already exists, skipping seed",
             email
         );
         crate::configuration::service::mark_admin_user_setup_done(app_state).await;
-        return;
+        return Ok(());
     }
 
-    let password_hash = match hash_password(password) {
-        Ok(h) => h,
-        Err(e) => {
-            tracing::error!("Admin seeding failed: could not hash password: {:?}", e);
-            return;
-        }
-    };
+    let password_hash = hash_password(password)
+        .map_err(|error| anyhow::anyhow!("could not hash the admin password: {error:?}"))?;
 
     let user = entity::user::Model {
         id: Uuid::new_v4(),
@@ -546,13 +544,10 @@ pub async fn seed_admin_user(app_state: &AppState) {
         updated_at: time_utils::now_utc_into(),
     };
 
-    match repository::save_user(&app_state.database_connection, user).await {
-        Ok(_) => {
-            tracing::info!("Admin user {} created successfully", username);
-            crate::configuration::service::mark_admin_user_setup_done(app_state).await;
-        }
-        Err(e) => tracing::error!("Admin seeding failed: could not save user: {:?}", e),
-    }
+    repository::save_user(&app_state.database_connection, user).await?;
+    tracing::info!("Admin user {} created successfully", username);
+    crate::configuration::service::mark_admin_user_setup_done(app_state).await;
+    Ok(())
 }
 
 pub async fn find_user_by_email(

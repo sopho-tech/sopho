@@ -117,3 +117,27 @@ pub async fn count_conversations_by_ids(
         .count(db)
         .await
 }
+
+pub async fn update_conversation_visibility(
+    db: &DatabaseConnection,
+    tenant_id: &TenantId,
+    id: Uuid,
+    visibility: &str,
+) -> Result<u64, DbErr> {
+    let result = conversation::Entity::update_many()
+        .col_expr(
+            conversation::Column::Visibility,
+            sea_orm::sea_query::Expr::value(visibility.to_string()),
+        )
+        .col_expr(
+            conversation::Column::UpdatedAt,
+            sea_orm::sea_query::Expr::value(time_utils::now_utc_into::<
+                sea_orm::prelude::DateTimeWithTimeZone,
+            >()),
+        )
+        .filter(conversation::Column::Id.eq(id))
+        .filter(conversation::Column::TenantId.eq(tenant_id.get_uuid()))
+        .exec(db)
+        .await?;
+    Ok(result.rows_affected)
+}

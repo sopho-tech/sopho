@@ -1,6 +1,7 @@
 use crate::ai_summary::service as ai_summary_service;
 use crate::authorization::constants::Action;
 use crate::authorization::dto::{TenantContext, TenantId};
+use crate::cell::service as cell_service;
 use crate::common::errors::UpdateDashboardError;
 use crate::common::time_utils;
 use crate::common::AppState;
@@ -16,9 +17,10 @@ use sea_orm::DatabaseTransaction;
 use uuid::Uuid;
 
 pub async fn does_dashboard_exist(app_state: &AppState, tenant_id: &TenantId, id: Uuid) -> bool {
-    repository::get_dashboard(&app_state.database_connection, tenant_id, id)
-        .await
-        .is_ok()
+    matches!(
+        repository::get_dashboard(&app_state.database_connection, tenant_id, id).await,
+        Ok(Some(_))
+    )
 }
 
 pub async fn get_dashboard(
@@ -268,7 +270,17 @@ pub async fn update_dashboard(
     dashboard_id: Uuid,
     payload: dto::DashboardDto,
 ) -> Result<dto::DashboardDto, DashboardError> {
-    authorize_dashboard(&app_state, tenant_context, dashboard_id, Action::Write).await?;
+    let dashboard =
+        authorize_dashboard(&app_state, tenant_context, dashboard_id, Action::Write).await?;
+    if let Some(layout) = payload.layout.as_deref() {
+        require_layout_within_canvas(
+            &app_state,
+            tenant_context.tenant_id(),
+            dashboard.canvas_id,
+            layout,
+        )
+        .await?;
+    }
 
     let dashboard = execute_update_dashboard(
         &app_state,
@@ -279,6 +291,32 @@ pub async fn update_dashboard(
     .await?;
 
     Ok(dto::DashboardDto::from(dashboard))
+}
+
+async fn require_layout_within_canvas(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    canvas_id: Uuid,
+    layout: &[Layout],
+) -> Result<(), DashboardError> {
+    let cell_ids: Vec<Uuid> = layout.iter().map(Layout::cell_id).collect();
+    let notebook_id_by_cell_id =
+        cell_service::get_notebook_ids_by_cell_ids(app_state, tenant_id, &cell_ids).await?;
+    let canvas_id_by_notebook_id = crate::notebook::service::get_canvas_ids_by_notebook_ids(
+        app_state,
+        tenant_id,
+        notebook_id_by_cell_id.values().copied().collect(),
+    )
+    .await?;
+
+    let every_chart_belongs_to_canvas = layout.iter().all(|item| {
+        notebook_id_by_cell_id.get(&item.cell_id()) == Some(&item.notebook_id())
+            && canvas_id_by_notebook_id.get(&item.notebook_id()) == Some(&canvas_id)
+    });
+    if !every_chart_belongs_to_canvas {
+        return Err(DashboardError::LayoutOutsideCanvas);
+    }
+    Ok(())
 }
 
 pub async fn remove_cell_from_layout_transaction(

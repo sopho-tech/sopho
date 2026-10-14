@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-const ALLOWED_ESCAPE_HATCH_FILES: [&str; 7] = [
+const ALLOWED_ESCAPE_HATCH_FILES: [&str; 8] = [
     "src/ai_configuration/service.rs",
     "src/authorization/dto.rs",
     "src/demo/service.rs",
@@ -9,6 +9,7 @@ const ALLOWED_ESCAPE_HATCH_FILES: [&str; 7] = [
     "src/tenant/service.rs",
     "src/tests/authorization_gates.rs",
     "src/tests/common/tenancy.rs",
+    "src/tests/startup.rs",
 ];
 
 const THIS_FILE: &str = "src/tests/from_system_unchecked_allowlist.rs";

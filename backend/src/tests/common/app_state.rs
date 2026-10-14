@@ -8,8 +8,19 @@ use tokio::sync::RwLock;
 
 const TEST_ENCRYPTION_KEY: &str = "test-secret-key-32-chars-long!!";
 
+fn test_database_path(test_name: &str) -> String {
+    format!("./data/test_{}.db", test_name)
+}
+
+pub fn absolute_test_database_path(test_name: &str) -> String {
+    std::fs::canonicalize(test_database_path(test_name))
+        .unwrap()
+        .to_string_lossy()
+        .into_owned()
+}
+
 pub async fn init_test_app_state(test_name: &str) -> AppState {
-    let database_path = format!("./data/test_{}.db", test_name);
+    let database_path = test_database_path(test_name);
     if let Some(parent) = Path::new(&database_path).parent() {
         std::fs::create_dir_all(parent).ok();
     }

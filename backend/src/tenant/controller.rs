@@ -1,4 +1,4 @@
-use crate::authorization::dto::AuthenticatedUser;
+use crate::authorization::dto::{AuthenticatedUser, TenantContext};
 use crate::common::AppState;
 use crate::tenant::dto::CreateTenantDto;
 use crate::tenant::service;
@@ -43,6 +43,25 @@ async fn create_tenant(
                 "name": created_tenant.name,
             })),
         ),
+        Err(error) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": error.to_string() })),
+        ),
+    }
+}
+
+pub fn member_routes(app_state: AppState) -> Router {
+    Router::new()
+        .route("/", get(list_members))
+        .with_state(app_state)
+}
+
+async fn list_members(
+    State(app_state): State<AppState>,
+    tenant_context: TenantContext,
+) -> impl IntoResponse {
+    match service::list_members(&app_state, &tenant_context).await {
+        Ok(members) => (StatusCode::OK, axum::Json(serde_json::json!(members))),
         Err(error) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": error.to_string() })),

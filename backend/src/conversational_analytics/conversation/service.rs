@@ -1,7 +1,7 @@
 use super::canvas;
 use super::constants;
-use super::constants::CONVERSATION_NOT_FOUND_MESSAGE;
 use super::constants::{ConversationStatus, PipelineOutcome};
+use super::constants::{CONNECTION_NOT_FOUND_MESSAGE, CONVERSATION_NOT_FOUND_MESSAGE};
 use super::dto;
 use super::error::AppendUserMessageError;
 use super::error::ConversationError;
@@ -20,6 +20,7 @@ use crate::ai_configuration::dto::AiConfigurationStatus;
 use crate::ai_configuration::service as ai_config_service;
 use crate::authorization::constants::{Action, Permission, ResourceType, Visibility};
 use crate::authorization::dto::{AuthorizationSubject, TenantContext, TenantId};
+use crate::authorization::errors::AuthorizationError;
 use crate::authorization::service as authorization_service;
 use crate::common::time_utils;
 use crate::common::AppState;
@@ -125,25 +126,41 @@ fn conversation_subject(
     .map_err(|_| ConversationError::NotFound)
 }
 
+async fn conversation_dto_with_capabilities(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    model: entity::conversation::Model,
+) -> Result<dto::ConversationDto, ConversationError> {
+    let subject = conversation_subject(tenant_context, &model)?;
+    let mut conversation =
+        dto::ConversationDto::try_from(model).map_err(ConversationError::Conversion)?;
+    conversation.capabilities = Some(
+        authorization_service::resolve_capabilities(app_state, tenant_context, &subject)
+            .await
+            .map_err(|error| match error {
+                AuthorizationError::Database(database_error) => {
+                    ConversationError::Database(database_error)
+                }
+                _ => ConversationError::NotFound,
+            })?,
+    );
+    Ok(conversation)
+}
+
 pub async fn get_conversation(
     app_state: AppState,
     tenant_context: &TenantContext,
     conversation_id: Uuid,
 ) -> Result<dto::ConversationWithMessagesDto, ConversationError> {
-    let authorized =
-        authorize_conversation(&app_state, tenant_context, conversation_id, Action::Read).await?;
+    authorize_conversation(&app_state, tenant_context, conversation_id, Action::Read).await?;
     let tenant_id = tenant_context.tenant_id();
     let model =
         repository::get_conversation(&app_state.database_connection, tenant_id, conversation_id)
             .await
             .map_err(ConversationError::Database)?
             .ok_or(ConversationError::NotFound)?;
-    let mut conversation =
-        dto::ConversationDto::try_from(model).map_err(ConversationError::Conversion)?;
-    let subject = conversation_subject(tenant_context, &authorized)?;
-    conversation.capabilities = Some(
-        authorization_service::resolve_capabilities(&app_state, tenant_context, &subject).await,
-    );
+    let conversation =
+        conversation_dto_with_capabilities(&app_state, tenant_context, model).await?;
     let messages = message_service::list_messages_for_conversation(
         &app_state.database_connection,
         tenant_id,
@@ -238,12 +255,8 @@ pub async fn list_conversations(
             .get(&model.id)
             .copied()
             .unwrap_or_default();
-        let subject = conversation_subject(tenant_context, &model)?;
-        let mut conversation =
-            dto::ConversationDto::try_from(model).map_err(ConversationError::Conversion)?;
-        conversation.capabilities = Some(
-            authorization_service::resolve_capabilities(&app_state, tenant_context, &subject).await,
-        );
+        let conversation =
+            conversation_dto_with_capabilities(&app_state, tenant_context, model).await?;
         items.push(dto::ConversationListItemDto {
             conversation,
             user_message_count,
@@ -284,6 +297,17 @@ pub async fn create_conversation(
 ) -> Result<dto::ConversationDto, ConversationError> {
     authorization_service::require_capability(tenant_context, Permission::ConversationCreate)
         .map_err(|_| ConversationError::NotFound)?;
+    connection_service::require_connection_access(
+        &app_state,
+        tenant_context,
+        payload.connection_id,
+        Action::Read,
+    )
+    .await
+    .map_err(|error| match error {
+        AuthorizationError::Database(database_error) => ConversationError::Database(database_error),
+        _ => ConversationError::InvalidRequest(CONNECTION_NOT_FOUND_MESSAGE.to_string()),
+    })?;
     let tenant_id = tenant_context.tenant_id();
     ensure_ai_live(&app_state, tenant_id).await?;
     let now = time_utils::now_utc_into();
@@ -321,7 +345,7 @@ pub async fn create_conversation(
     message_content_service::create_message_content(&txn, tenant_id, user_message_content).await?;
 
     txn.commit().await?;
-    dto::ConversationDto::try_from(saved_conversation).map_err(ConversationError::Conversion)
+    conversation_dto_with_capabilities(&app_state, tenant_context, saved_conversation).await
 }
 
 pub async fn update_conversation(
@@ -340,7 +364,7 @@ pub async fn update_conversation(
     )
     .await?
     .ok_or(ConversationError::NotFound)?;
-    dto::ConversationDto::try_from(model).map_err(ConversationError::Conversion)
+    conversation_dto_with_capabilities(&app_state, tenant_context, model).await
 }
 
 pub async fn delete_conversation(
@@ -485,7 +509,7 @@ pub async fn suggest_conversation_name(
     .await?
     .ok_or(ConversationError::NotFound)?;
 
-    dto::ConversationDto::try_from(model).map_err(ConversationError::Conversion)
+    conversation_dto_with_capabilities(&app_state, tenant_context, model).await
 }
 
 pub async fn append_user_message(
@@ -994,4 +1018,25 @@ pub async fn load_authorization_subject(
         &conversation.visibility,
     )
     .map_err(sea_orm::DbErr::Custom)
+}
+
+pub async fn set_visibility(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    id: Uuid,
+    visibility: Visibility,
+) -> Result<(), sea_orm::DbErr> {
+    let updated_rows = repository::update_conversation_visibility(
+        &app_state.database_connection,
+        tenant_id,
+        id,
+        visibility.as_str(),
+    )
+    .await?;
+    if updated_rows == 0 {
+        return Err(sea_orm::DbErr::RecordNotFound(
+            CONVERSATION_NOT_FOUND_MESSAGE.into(),
+        ));
+    }
+    Ok(())
 }

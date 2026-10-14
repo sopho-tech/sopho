@@ -4,4 +4,4 @@ pub mod dto;
 mod repository;
 pub mod service;
 
-pub use controller::routes;
+pub use controller::{member_routes, routes};

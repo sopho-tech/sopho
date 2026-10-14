@@ -37,3 +37,5 @@ impl fmt::Display for DashboardStatus {
 
 pub const DASHBOARD_NOT_FOUND_MESSAGE: &str = "Dashboard not found";
 pub const CANVAS_NOT_FOUND_MESSAGE: &str = "Canvas not found";
+pub const LAYOUT_OUTSIDE_CANVAS_MESSAGE: &str =
+    "A dashboard can only show charts from its own canvas";

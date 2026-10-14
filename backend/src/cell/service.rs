@@ -1,6 +1,7 @@
 use crate::ai_summary::service as ai_summary_service;
 use crate::authorization::constants::Action;
 use crate::authorization::dto::{TenantContext, TenantId};
+use crate::authorization::errors::AuthorizationError;
 use crate::authorization::service as authorization_service;
 use crate::canvas::service as canvas_service;
 use crate::cell::constants::AggregateFunction;
@@ -11,7 +12,10 @@ use crate::cell::constants::SortOrder;
 use crate::cell::constants::MAX_CELLS_PER_NOTEBOOK;
 use crate::cell::constants::MAX_CHART_SERIES;
 use crate::cell::constants::MAX_IDENTIFIER_LEN;
-use crate::cell::constants::{CELL_DISPLAY_ORDER_OUT_OF_BOUNDS_MESSAGE, CELL_NOT_FOUND_MESSAGE};
+use crate::cell::constants::{
+    CELL_DISPLAY_ORDER_OUT_OF_BOUNDS_MESSAGE, CELL_NOTEBOOK_IS_FIXED_MESSAGE,
+    CELL_NOT_FOUND_MESSAGE,
+};
 use crate::cell::dto;
 use crate::cell::dto::CellContent;
 use crate::cell::error::CellError;
@@ -36,9 +40,10 @@ use std::collections::HashSet;
 use uuid::Uuid;
 
 pub async fn does_cell_exist(app_state: &AppState, tenant_id: &TenantId, id: Uuid) -> bool {
-    repository::get_cell(&app_state.database_connection, tenant_id, id)
-        .await
-        .is_ok()
+    matches!(
+        repository::get_cell(&app_state.database_connection, tenant_id, id).await,
+        Ok(Some(_))
+    )
 }
 
 pub async fn load_authorization_subject(
@@ -318,15 +323,50 @@ pub async fn delete_cell_transaction(
     Ok(())
 }
 
+async fn require_notebook_write(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    notebook_id: Uuid,
+) -> Result<(), CellError> {
+    notebook_service::require_notebook_access(app_state, tenant_context, notebook_id, Action::Write)
+        .await
+        .map_err(|error| match error {
+            AuthorizationError::NotReachable | AuthorizationError::WrongTenant => {
+                CellError::NotebookNotFound
+            }
+            other => CellError::Unauthorized(other),
+        })
+}
+
+async fn require_connection_read(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    connection_id: Uuid,
+) -> Result<(), CellError> {
+    connection_service::require_connection_access(
+        app_state,
+        tenant_context,
+        connection_id,
+        Action::Read,
+    )
+    .await
+    .map_err(|error| match error {
+        AuthorizationError::NotReachable | AuthorizationError::WrongTenant => {
+            CellError::GetConnection(GetDatabaseConnectionError::ConnectionNotFound)
+        }
+        other => CellError::Unauthorized(other),
+    })
+}
+
 pub async fn create_cell(
     app_state: AppState,
     tenant_context: &TenantContext,
     payload: dto::CreateCellDto,
 ) -> Result<dto::CellDto, CellError> {
-    crate::authorization::service::require_capability(
-        tenant_context,
-        crate::authorization::constants::Permission::CanvasWrite,
-    )?;
+    require_notebook_write(&app_state, tenant_context, payload.notebook_id).await?;
+    if let Some(connection_id) = payload.connection_id {
+        require_connection_read(&app_state, tenant_context, connection_id).await?;
+    }
 
     let cell = execute_create_cell(&app_state, tenant_context.tenant_id(), payload).await?;
     Ok(dto::CellDto::from(cell))
@@ -474,7 +514,17 @@ pub async fn update_cell(
     id: Uuid,
     payload: dto::CellDto,
 ) -> Result<dto::CellDto, CellError> {
-    authorize_cell(&app_state, tenant_context, id, Action::Write).await?;
+    let existing_cell = authorize_cell(&app_state, tenant_context, id, Action::Write).await?;
+    if payload.notebook_id != existing_cell.notebook_id {
+        return Err(CellError::InvalidRequest(
+            CELL_NOTEBOOK_IS_FIXED_MESSAGE.to_string(),
+        ));
+    }
+    if let Some(connection_id) = payload.connection_id {
+        if existing_cell.connection_id != Some(connection_id) {
+            require_connection_read(&app_state, tenant_context, connection_id).await?;
+        }
+    }
 
     let cell = repository::update_cell(
         &app_state.database_connection,
@@ -650,7 +700,10 @@ pub async fn execute_cell_preview(
         }
         CellType::Chart => {
             let chart_content = parse_chart_content(&payload.content)?;
-            Ok(execute_chart_content_data(&app_state, tenant_id, &chart_content).await?)
+            Ok(
+                execute_chart_content_data(&app_state, tenant_id, cell.notebook_id, &chart_content)
+                    .await?,
+            )
         }
         _ => Err(CellError::UnsupportedPreviewCellType),
     }
@@ -695,11 +748,15 @@ fn get_source_cell_id(chart_content: &dto::ChartContent) -> Uuid {
 async fn get_source_cell_for_chart(
     app_state: &AppState,
     tenant_id: &TenantId,
+    chart_notebook_id: Uuid,
     source_cell_id: Uuid,
 ) -> Result<(entity::connection::Model, String), ExecuteChartError> {
     let source_cell = execute_get_cell(app_state, tenant_id, source_cell_id)
         .await
         .map_err(map_cell_lookup_error)?;
+    if source_cell.notebook_id != chart_notebook_id {
+        return Err(ExecuteChartError::CellNotFound);
+    }
 
     let connection_id = source_cell
         .connection_id
@@ -804,11 +861,12 @@ fn build_chart_aggregated_query(
 async fn execute_chart_content_data(
     app_state: &AppState,
     tenant_id: &TenantId,
+    chart_notebook_id: Uuid,
     chart_content: &dto::ChartContent,
 ) -> Result<QueryResult, ExecuteChartError> {
     let source_cell_id = get_source_cell_id(chart_content);
     let (connection, source_query) =
-        get_source_cell_for_chart(app_state, tenant_id, source_cell_id).await?;
+        get_source_cell_for_chart(app_state, tenant_id, chart_notebook_id, source_cell_id).await?;
     let aggregated_query = build_chart_aggregated_query(chart_content, &source_query)?;
     Ok(database_service::execute_sql_query(app_state, &connection, &aggregated_query).await?)
 }
@@ -823,7 +881,8 @@ async fn execute_chart_for_cell(
         .as_ref()
         .ok_or(ExecuteChartError::MissingContent)?;
     let chart_content = parse_chart_content(content)?;
-    let result = execute_chart_content_data(app_state, tenant_id, &chart_content).await?;
+    let result =
+        execute_chart_content_data(app_state, tenant_id, cell.notebook_id, &chart_content).await?;
     Ok(dto::ChartExecution {
         cell_id: cell.id,
         chart_name: cell.name.clone().unwrap_or_default(),
@@ -842,6 +901,19 @@ pub async fn execute_chart_cell_data(
         .await
         .map_err(map_cell_lookup_error)?;
     execute_chart_for_cell(app_state, tenant_id, &cell).await
+}
+
+pub async fn get_notebook_ids_by_cell_ids(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    cell_ids: &[Uuid],
+) -> Result<HashMap<Uuid, Uuid>, sea_orm::DbErr> {
+    let cells =
+        repository::get_cells_by_ids(&app_state.database_connection, tenant_id, cell_ids).await?;
+    Ok(cells
+        .into_iter()
+        .map(|cell| (cell.id, cell.notebook_id))
+        .collect())
 }
 
 pub async fn execute_chart_cells_data(

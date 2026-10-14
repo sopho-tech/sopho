@@ -88,13 +88,20 @@ pub async fn get_canvas(
     id: Uuid,
 ) -> Result<dto::CanvasDto, CanvasError> {
     let canvas = authorize_canvas(&app_state, tenant_context, id, Action::Read).await?;
+    canvas_dto_with_capabilities(&app_state, tenant_context, canvas).await
+}
 
-    let mut response_dto = dto::CanvasDto::from(canvas.clone());
-    if let Ok(subject) = authorization_subject_for(&canvas, tenant_context.tenant_id()) {
-        response_dto.capabilities = Some(
-            authorization_service::resolve_capabilities(&app_state, tenant_context, &subject).await,
-        );
-    }
+async fn canvas_dto_with_capabilities(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    canvas: entity::canvas::Model,
+) -> Result<dto::CanvasDto, CanvasError> {
+    let subject = authorization_subject_for(&canvas, tenant_context.tenant_id())
+        .map_err(CanvasError::Internal)?;
+    let mut response_dto = dto::CanvasDto::from(canvas);
+    response_dto.capabilities = Some(
+        authorization_service::resolve_capabilities(app_state, tenant_context, &subject).await?,
+    );
     Ok(response_dto)
 }
 
@@ -120,14 +127,8 @@ pub async fn get_all_canvases(
 
     let mut response_dto_list: Vec<dto::CanvasDto> = Vec::new();
     for canvas in canvases.iter() {
-        let mut canvas_dto = dto::CanvasDto::from(canvas.clone());
-
-        if let Ok(subject) = authorization_subject_for(canvas, tenant_context.tenant_id()) {
-            canvas_dto.capabilities = Some(
-                authorization_service::resolve_capabilities(&app_state, tenant_context, &subject)
-                    .await,
-            );
-        }
+        let mut canvas_dto =
+            canvas_dto_with_capabilities(&app_state, tenant_context, canvas.clone()).await?;
 
         let cell_counts_result = cell_service::get_cell_counts_by_canvas_id(
             &app_state,
@@ -184,7 +185,7 @@ pub async fn create_canvas(
     )
     .await?;
 
-    Ok(dto::CanvasDto::from(created.canvas))
+    canvas_dto_with_capabilities(&app_state, tenant_context, created.canvas).await
 }
 
 pub async fn execute_create_canvas(
@@ -730,7 +731,7 @@ pub async fn update_canvas(
     .await?
     .ok_or(CanvasError::NotFound)?;
 
-    Ok(dto::CanvasDto::from(canvas))
+    canvas_dto_with_capabilities(&app_state, tenant_context, canvas).await
 }
 
 pub async fn delete_canvas(
@@ -792,4 +793,25 @@ pub async fn load_authorization_subject(
         .await?
         .ok_or_else(|| sea_orm::DbErr::RecordNotFound(CANVAS_NOT_FOUND_MESSAGE.into()))?;
     authorization_subject_for(&canvas, tenant_id).map_err(sea_orm::DbErr::Custom)
+}
+
+pub async fn set_visibility(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    id: Uuid,
+    visibility: Visibility,
+) -> Result<(), sea_orm::DbErr> {
+    let updated_rows = repository::update_canvas_visibility(
+        &app_state.database_connection,
+        tenant_id,
+        id,
+        visibility.as_str(),
+    )
+    .await?;
+    if updated_rows == 0 {
+        return Err(sea_orm::DbErr::RecordNotFound(
+            CANVAS_NOT_FOUND_MESSAGE.into(),
+        ));
+    }
+    Ok(())
 }

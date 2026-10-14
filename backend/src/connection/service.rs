@@ -1,6 +1,7 @@
 use crate::authorization::constants::{Action, ResourceType, Visibility};
 use crate::authorization::dto::TenantId;
 use crate::authorization::dto::{AuthorizationSubject, TenantContext};
+use crate::authorization::errors::AuthorizationError;
 use crate::authorization::service as authorization_service;
 use crate::common::errors::{CreateConnectionError, ExecuteSqlError, GetDatabaseConnectionError};
 use crate::common::time_utils;
@@ -23,9 +24,10 @@ use tracing::info;
 use uuid::Uuid;
 
 pub async fn does_connection_exist(app_state: &AppState, tenant_id: &TenantId, id: Uuid) -> bool {
-    repository::get_connection(&app_state.database_connection, tenant_id, id)
-        .await
-        .is_ok()
+    matches!(
+        repository::get_connection(&app_state.database_connection, tenant_id, id).await,
+        Ok(Some(_))
+    )
 }
 
 pub(crate) fn reachable_connection_condition(tenant_context: &TenantContext) -> sea_orm::Condition {
@@ -78,9 +80,18 @@ pub async fn get_connection(
         .map_err(|_| ConnectionError::NotFound)?;
 
     let subject = connection_subject(tenant_context, &authorized)?;
+    connection_dto_with_capabilities(&app_state, tenant_context, &subject, connection).await
+}
+
+async fn connection_dto_with_capabilities(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    subject: &AuthorizationSubject,
+    connection: entity::connection::Model,
+) -> Result<dto::ConnectionDto, ConnectionError> {
     let mut response_dto = dto::ConnectionDto::from(connection);
     response_dto.capabilities = Some(
-        authorization_service::resolve_capabilities(&app_state, tenant_context, &subject).await,
+        authorization_service::resolve_capabilities(app_state, tenant_context, subject).await?,
     );
     Ok(response_dto)
 }
@@ -146,11 +157,10 @@ pub async fn get_all_connections(
     let mut response_dto_list = Vec::with_capacity(connections.len());
     for connection in connections {
         let subject = connection_subject(tenant_context, &connection)?;
-        let mut response_dto = dto::ConnectionDto::from(connection);
-        response_dto.capabilities = Some(
-            authorization_service::resolve_capabilities(&app_state, tenant_context, &subject).await,
+        response_dto_list.push(
+            connection_dto_with_capabilities(&app_state, tenant_context, &subject, connection)
+                .await?,
         );
-        response_dto_list.push(response_dto);
     }
     Ok(response_dto_list)
 }
@@ -232,7 +242,8 @@ pub async fn create_connection(
     )
     .await?;
 
-    Ok(dto::ConnectionDto::from(connection))
+    let subject = connection_subject(tenant_context, &connection)?;
+    connection_dto_with_capabilities(app_state, tenant_context, &subject, connection).await
 }
 
 pub async fn execute_delete_connection(
@@ -275,7 +286,9 @@ pub async fn update_connection(
             .ok_or(ConnectionError::NotFound)?;
     cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key);
 
-    let response_dto = dto::ConnectionDto::from(connection);
+    let subject = connection_subject(tenant_context, &connection)?;
+    let response_dto =
+        connection_dto_with_capabilities(&app_state, tenant_context, &subject, connection).await?;
     info!("Connection updated: {:?}", response_dto);
     Ok(response_dto)
 }
@@ -323,4 +336,40 @@ pub async fn load_authorization_subject(
         &connection.visibility,
     )
     .map_err(sea_orm::DbErr::Custom)
+}
+
+pub async fn require_connection_access(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    id: Uuid,
+    action: Action,
+) -> Result<(), AuthorizationError> {
+    let subject = match load_authorization_subject(app_state, tenant_context.tenant_id(), id).await
+    {
+        Ok(subject) => subject,
+        Err(sea_orm::DbErr::RecordNotFound(_)) => return Err(AuthorizationError::NotReachable),
+        Err(database_error) => return Err(AuthorizationError::Database(database_error)),
+    };
+    authorization_service::require_access(app_state, tenant_context, &subject, action).await
+}
+
+pub async fn set_visibility(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    id: Uuid,
+    visibility: Visibility,
+) -> Result<(), sea_orm::DbErr> {
+    let updated_rows = repository::update_connection_visibility(
+        &app_state.database_connection,
+        tenant_id,
+        id,
+        visibility.as_str(),
+    )
+    .await?;
+    if updated_rows == 0 {
+        return Err(sea_orm::DbErr::RecordNotFound(
+            CONNECTION_NOT_FOUND_MESSAGE.into(),
+        ));
+    }
+    Ok(())
 }

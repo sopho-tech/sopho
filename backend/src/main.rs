@@ -49,6 +49,16 @@ use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+async fn bootstrap(app_state: &AppState) -> anyhow::Result<()> {
+    db::run_migrations(&app_state.database_connection).await?;
+    tenant::service::reconcile_system_roles_for_all_tenants(app_state).await?;
+    app_state.load_ai_configuration().await;
+    authentication::service::seed_admin_user(app_state).await?;
+    tenant::service::ensure_default_tenant_membership(app_state).await?;
+    demo::service::seed_demo_data(app_state).await;
+    Ok(())
+}
+
 fn api_router(app_state: AppState) -> Router {
     let tenant_scoped_routes = Router::new()
         .nest("/dashboard", dashboard::routes(app_state.clone()))
@@ -71,6 +81,7 @@ fn api_router(app_state: AppState) -> Router {
             suggested_question::routes(app_state.clone()),
         )
         .nest("/ai_summary", ai_summary::routes(app_state.clone()))
+        .nest("/member", tenant::member_routes(app_state.clone()))
         .layer(axum::middleware::from_fn_with_state(
             app_state.clone(),
             middlewares::session_middleware_fn,
@@ -103,22 +114,7 @@ async fn main() {
     dotenv().ok();
     let app_state = AppState::from_env().await.unwrap();
 
-    db::run_migrations(&app_state.database_connection)
-        .await
-        .unwrap();
-
-    tenant::service::reconcile_system_roles_for_all_tenants(&app_state)
-        .await
-        .unwrap();
-
-    app_state.load_ai_configuration().await;
-
-    authentication::service::seed_admin_user(&app_state).await;
-    tenant::service::ensure_default_tenant_membership(&app_state)
-        .await
-        .unwrap();
-
-    demo::service::seed_demo_data(&app_state).await;
+    bootstrap(&app_state).await.unwrap();
 
     scheduler::start(app_state.clone()).await;
 
@@ -131,12 +127,15 @@ async fn main() {
         .layer(middleware::from_fn(move |req: Request, next: Next| {
             let index_path = index_path.clone();
             async move {
+                let is_api_request = req
+                    .uri()
+                    .path()
+                    .starts_with(common::constants::API_PATH_PREFIX);
                 let res = next.run(req).await;
                 let (parts, body) = res.into_parts();
                 let status = parts.status;
 
-                // If the response is 404, serve index.html instead
-                if status == StatusCode::NOT_FOUND {
+                if status == StatusCode::NOT_FOUND && !is_api_request {
                     match tokio::fs::read_to_string(&index_path).await {
                         Ok(html) => Html(html).into_response(),
                         Err(_) => Response::from_parts(parts, body),

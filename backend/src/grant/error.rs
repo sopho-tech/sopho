@@ -14,4 +14,6 @@ pub enum GrantError {
     ResourceNotFound,
     #[error("{GRANT_NOT_FOUND_MESSAGE}")]
     GrantNotFound,
+    #[error("{0}")]
+    Internal(String),
 }

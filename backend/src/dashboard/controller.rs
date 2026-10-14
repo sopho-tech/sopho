@@ -102,6 +102,10 @@ fn dashboard_error_http_response(
             StatusCode::PRECONDITION_FAILED,
             axum::Json(serde_json::json!({ "error": error.to_string() })),
         ),
+        DashboardError::LayoutOutsideCanvas => (
+            StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({ "error": error.to_string() })),
+        ),
         DashboardError::Database(_) | DashboardError::Internal(_) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": error.to_string() })),

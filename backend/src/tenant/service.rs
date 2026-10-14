@@ -1,4 +1,5 @@
 use crate::authorization::constants::SystemRole;
+use crate::authorization::dto::TenantContext;
 use crate::authorization::dto::TenantId;
 use crate::authorization::dto::UserId;
 use crate::authorization::service as authorization_service;
@@ -6,7 +7,7 @@ use crate::common::AppState;
 use crate::configuration::constants::ConfigurationKey;
 use crate::entity::tenant;
 use crate::tenant::constants::DEFAULT_TENANT_NAME;
-use crate::tenant::dto::TenantMembershipDto;
+use crate::tenant::dto::{TenantMemberDto, TenantMembershipDto};
 use crate::tenant::repository;
 use uuid::Uuid;
 
@@ -61,25 +62,28 @@ pub async fn list_tenants_for_user(
         repository::list_memberships_for_user(&app_state.database_connection, user_id.get_uuid())
             .await?;
 
-    memberships
-        .into_iter()
-        .map(|row| {
-            let tenant = row.tenant.ok_or_else(|| {
-                anyhow::anyhow!(
-                    "Membership {} points at a missing tenant",
-                    row.membership.id
-                )
-            })?;
-            let role = row.role.ok_or_else(|| {
-                anyhow::anyhow!("Membership {} points at a missing role", row.membership.id)
-            })?;
-            Ok(TenantMembershipDto {
-                tenant_id: tenant.id,
-                tenant_name: tenant.name,
-                role_name: role.name,
-            })
-        })
-        .collect::<anyhow::Result<Vec<TenantMembershipDto>>>()
+    let mut response_dto_list = Vec::with_capacity(memberships.len());
+    for row in memberships {
+        let tenant = row.tenant.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Membership {} points at a missing tenant",
+                row.membership.id
+            )
+        })?;
+        let role = row.role.ok_or_else(|| {
+            anyhow::anyhow!("Membership {} points at a missing role", row.membership.id)
+        })?;
+        let permissions = authorization_service::resolve_permissions_for_role(app_state, role.id)
+            .await?
+            .as_strings();
+        response_dto_list.push(TenantMembershipDto {
+            tenant_id: tenant.id,
+            tenant_name: tenant.name,
+            role_name: role.name,
+            permissions,
+        });
+    }
+    Ok(response_dto_list)
 }
 
 pub async fn seed_default_tenant(app_state: &AppState) -> anyhow::Result<Uuid> {
@@ -157,4 +161,31 @@ pub async fn reconcile_system_roles_for_all_tenants(app_state: &AppState) -> any
         .await?;
     }
     Ok(())
+}
+
+pub async fn list_members(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+) -> anyhow::Result<Vec<TenantMemberDto>> {
+    let rows =
+        repository::list_active_members(&app_state.database_connection, tenant_context.tenant_id())
+            .await?;
+
+    let mut members = Vec::with_capacity(rows.len());
+    for row in rows {
+        let user = row.user.ok_or_else(|| {
+            anyhow::anyhow!("Membership {} points at a missing user", row.membership.id)
+        })?;
+        let role = row.role.ok_or_else(|| {
+            anyhow::anyhow!("Membership {} points at a missing role", row.membership.id)
+        })?;
+        members.push(TenantMemberDto {
+            user_id: user.id,
+            full_name: user.full_name,
+            email: user.email,
+            role_name: role.name,
+        });
+    }
+    members.sort_by(|first, second| first.full_name.cmp(&second.full_name));
+    Ok(members)
 }

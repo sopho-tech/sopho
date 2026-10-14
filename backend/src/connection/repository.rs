@@ -92,3 +92,27 @@ pub async fn update_connection(
     connection_entity.created_at = Set(payload.created_at);
     connection_entity.update(db).await.map(Some)
 }
+
+pub async fn update_connection_visibility(
+    db: &DatabaseConnection,
+    tenant_id: &TenantId,
+    id: Uuid,
+    visibility: &str,
+) -> Result<u64, DbErr> {
+    let result = connection::Entity::update_many()
+        .col_expr(
+            connection::Column::Visibility,
+            sea_orm::sea_query::Expr::value(visibility.to_string()),
+        )
+        .col_expr(
+            connection::Column::UpdatedAt,
+            sea_orm::sea_query::Expr::value(time_utils::now_utc_into::<
+                sea_orm::prelude::DateTimeWithTimeZone,
+            >()),
+        )
+        .filter(connection::Column::Id.eq(id))
+        .filter(connection::Column::TenantId.eq(tenant_id.get_uuid()))
+        .exec(db)
+        .await?;
+    Ok(result.rows_affected)
+}

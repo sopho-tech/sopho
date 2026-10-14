@@ -70,6 +70,16 @@ impl PermissionSet {
     pub fn contains(&self, permission: Permission) -> bool {
         self.permissions.contains(&permission)
     }
+
+    pub fn as_strings(&self) -> Vec<String> {
+        let mut values: Vec<String> = self
+            .permissions
+            .iter()
+            .map(|permission| permission.as_str().to_string())
+            .collect();
+        values.sort();
+        values
+    }
 }
 
 #[derive(Debug, Clone)]

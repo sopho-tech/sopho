@@ -71,8 +71,21 @@ pub async fn resolve_tenant_context(
         return Err(TenantContextError::MembershipSuspended);
     }
 
+    let permissions = resolve_permissions_for_role(app_state, membership.role_id).await?;
+
+    Ok(TenantContext::new(
+        user_id,
+        TenantId::from_verified_membership(tenant_id),
+        permissions,
+    ))
+}
+
+pub async fn resolve_permissions_for_role(
+    app_state: &AppState,
+    role_id: Uuid,
+) -> Result<PermissionSet, TenantContextError> {
     let role_permissions =
-        repository::find_permissions_for_role(&app_state.database_connection, membership.role_id)
+        repository::find_permissions_for_role(&app_state.database_connection, role_id)
             .await
             .map_err(TenantContextError::Database)?;
 
@@ -82,12 +95,7 @@ pub async fn resolve_tenant_context(
             .map_err(|_| TenantContextError::UnknownPermission(role_permission.permission))?;
         permissions.insert(permission);
     }
-
-    Ok(TenantContext::new(
-        user_id,
-        TenantId::from_verified_membership(tenant_id),
-        PermissionSet::from_permissions(permissions),
-    ))
+    Ok(PermissionSet::from_permissions(permissions))
 }
 
 pub async fn create_custom_role(
@@ -323,16 +331,25 @@ pub async fn resolve_capabilities(
     app_state: &AppState,
     tenant_context: &TenantContext,
     subject: &AuthorizationSubject,
-) -> ResourceCapabilities {
-    ResourceCapabilities {
-        can_edit: require_access(app_state, tenant_context, subject, Action::Write)
-            .await
-            .is_ok(),
-        can_delete: require_access(app_state, tenant_context, subject, Action::Delete)
-            .await
-            .is_ok(),
-        can_share: require_access(app_state, tenant_context, subject, Action::Share)
-            .await
-            .is_ok(),
+) -> Result<ResourceCapabilities, AuthorizationError> {
+    Ok(ResourceCapabilities {
+        can_edit: is_allowed(app_state, tenant_context, subject, Action::Write).await?,
+        can_delete: is_allowed(app_state, tenant_context, subject, Action::Delete).await?,
+        can_share: is_allowed(app_state, tenant_context, subject, Action::Share).await?,
+    })
+}
+
+async fn is_allowed(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    subject: &AuthorizationSubject,
+    action: Action,
+) -> Result<bool, AuthorizationError> {
+    match require_access(app_state, tenant_context, subject, action).await {
+        Ok(()) => Ok(true),
+        Err(AuthorizationError::Database(database_error)) => {
+            Err(AuthorizationError::Database(database_error))
+        }
+        Err(_) => Ok(false),
     }
 }
