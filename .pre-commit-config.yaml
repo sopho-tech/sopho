@@ -102,3 +102,10 @@ repos:
         files: ^backend/
         pass_filenames: false
         stages: [pre-push]
+      - id: backend-unit-tests
+        name: backend unit tests
+        entry: cargo nextest run --manifest-path backend/Cargo.toml --workspace --lib
+        language: system
+        files: ^backend/
+        pass_filenames: false
+        stages: [pre-push]
