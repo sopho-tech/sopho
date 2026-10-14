@@ -1,3 +1,4 @@
+import { ResourceCapabilities } from "src/api/dto";
 export enum ConnectionDetailsPageStateEnum {
   NEW = "NEW",
   LIST = "LIST",
@@ -25,4 +26,5 @@ export type ConnectionDto = {
   status: StatusType;
   created_at: string;
   updated_at: string;
+  capabilities: ResourceCapabilities;
 };

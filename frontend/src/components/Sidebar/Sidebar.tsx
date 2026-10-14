@@ -6,7 +6,8 @@ import {
   IconButtonLink,
   IconButtonLinkState,
 } from "src/components/design-system";
-import logo from "src/assets/images/logo.svg";
+import { TenantSwitcher } from "src/components/Sidebar/TenantSwitcher";
+import { useTenantPath } from "src/utils/tenant";
 
 const HOME_TOOLTIP = { text: "Home", direction: "right" } as const;
 const NOTEBOOKS_TOOLTIP = { text: "Notebooks", direction: "right" } as const;
@@ -17,16 +18,21 @@ const CONVERSATION_ANALYTICS_TOOLTIP = {
   direction: "right",
 } as const;
 
+const withoutTrailingSlash = (path: string) => path.replace(/\/$/, "");
+
 export function Sidebar() {
   const location = useLocation();
+  const toTenantPath = useTenantPath();
 
   const getState = (path: string) => {
+    const currentPath = withoutTrailingSlash(location.pathname);
+    const targetPath = withoutTrailingSlash(toTenantPath(path));
     if (path === APP_ROUTES.INDEX) {
-      return location.pathname === APP_ROUTES.INDEX
+      return currentPath === targetPath
         ? IconButtonLinkState.ACTIVE
         : IconButtonLinkState.INACTIVE;
     }
-    return location.pathname.startsWith(path)
+    return currentPath.startsWith(targetPath)
       ? IconButtonLinkState.ACTIVE
       : IconButtonLinkState.INACTIVE;
   };
@@ -36,13 +42,14 @@ export function Sidebar() {
       <NavigationMenu.Root>
         <NavigationMenu.List className={SidebarStyles.navItems}>
           <NavigationMenu.Item className={SidebarStyles.companyLogo}>
-            <NavLink to={APP_ROUTES.INDEX} className={SidebarStyles.link}>
-              <img src={logo} alt="Logo" className={SidebarStyles.logo} />
-            </NavLink>
+            <TenantSwitcher />
           </NavigationMenu.Item>
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
-              <NavLink to={APP_ROUTES.INDEX} className={SidebarStyles.link}>
+              <NavLink
+                to={toTenantPath(APP_ROUTES.INDEX)}
+                className={SidebarStyles.link}
+              >
                 <IconButtonLink
                   type="home"
                   state={getState(APP_ROUTES.INDEX)}
@@ -53,7 +60,10 @@ export function Sidebar() {
           </NavigationMenu.Item>
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
-              <NavLink to={APP_ROUTES.CANVASES} className={SidebarStyles.link}>
+              <NavLink
+                to={toTenantPath(APP_ROUTES.CANVASES)}
+                className={SidebarStyles.link}
+              >
                 <IconButtonLink
                   type="layers"
                   state={getState(APP_ROUTES.CANVASES)}
@@ -65,7 +75,7 @@ export function Sidebar() {
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
               <NavLink
-                to={APP_ROUTES.CONVERSATIONAL_ANALYTICS}
+                to={toTenantPath(APP_ROUTES.CONVERSATIONAL_ANALYTICS)}
                 className={SidebarStyles.link}
               >
                 <IconButtonLink
@@ -79,7 +89,7 @@ export function Sidebar() {
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
               <NavLink
-                to={APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS}
+                to={toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS)}
                 className={SidebarStyles.link}
               >
                 <IconButtonLink
@@ -92,7 +102,10 @@ export function Sidebar() {
           </NavigationMenu.Item>
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
-              <NavLink to={APP_ROUTES.PROFILE} className={SidebarStyles.link}>
+              <NavLink
+                to={toTenantPath(APP_ROUTES.PROFILE)}
+                className={SidebarStyles.link}
+              >
                 <IconButtonLink
                   type="user"
                   state={getState(APP_ROUTES.PROFILE)}

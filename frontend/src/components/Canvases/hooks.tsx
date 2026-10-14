@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { PaginationState, Updater } from "@tanstack/react-table";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 import { useDeleteCanvas } from "src/api/canvas/queries";
 import { useStore } from "src/store";
 import { CanvasesPageState } from "src/components/Canvases/dto";
@@ -44,15 +45,16 @@ export function useCanvasesPagination() {
 
 export function useCanvasActions() {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const deleteMutation = useDeleteCanvas();
   const setCanvasPageState = useStore((state) => state.canvas.setCanvasPageState);
 
   const handleViewCanvas = (id: string) => {
-    navigate(APP_ROUTES.CANVAS.replace(":id", id));
+    navigate(toTenantPath(APP_ROUTES.CANVAS.replace(":id", id)));
   };
 
   const handleEditCanvas = (id: string) => {
-    navigate(APP_ROUTES.CANVAS.replace(":id", id));
+    navigate(toTenantPath(APP_ROUTES.CANVAS.replace(":id", id)));
   };
 
   const handleDeleteCanvas = (id: string) => {

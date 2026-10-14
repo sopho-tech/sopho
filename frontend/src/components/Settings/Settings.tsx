@@ -4,6 +4,7 @@ import { NavLink, Outlet, useLocation } from "react-router";
 import { Flex, Box, Text } from "src/components/design-system";
 import styles from "src/components/Settings/Settings.module.css";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 
 type SettingsItem = {
   id: string;
@@ -14,21 +15,22 @@ type SettingsItem = {
 
 export function Settings() {
   const { pathname } = useLocation();
+  const toTenantPath = useTenantPath();
   const items = useMemo<SettingsItem[]>(
     () => [
       {
         id: "connections",
         label: "Connections",
-        to: APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS,
-        matchPrefixes: ["/settings/connection"],
+        to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS),
+        matchPrefixes: [toTenantPath("/settings/connection")],
       },
       {
         id: "ai-configurations",
         label: "AI Configurations",
-        to: APP_ROUTES.SETTINGS_ROUTES.AI_CONFIGURATIONS,
+        to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.AI_CONFIGURATIONS),
       },
     ],
-    [],
+    [toTenantPath],
   );
 
   return (

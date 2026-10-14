@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
 import RGL, { WidthProvider, Layout } from "react-grid-layout";
 import { useDashboardByCanvasId } from "src/api/dashboard/queries";
+import { useCanvasCapabilities } from "src/api/canvas/queries";
 import { useCellsByNotebookId } from "src/api/notebook/queries";
 import { CellType } from "src/components/Notebook/Cell/dto";
 import { DashboardChart } from "src/components/Dashboard/DashboardChart";
@@ -20,12 +21,14 @@ import { EmptyState } from "src/components/EmptyState";
 import { Flex } from "src/components/design-system";
 import { useStore, DashboardMode } from "src/store";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 
 const ReactGridLayout = WidthProvider(RGL);
 
 export function Dashboard() {
   const params = useParams();
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const canvasId = params.id || "";
   const mode = useStore((state) => state.dashboard.mode);
   const setLayout = useStore((state) => state.dashboard.setLayout);
@@ -35,6 +38,7 @@ export function Dashboard() {
   const cellsQuery = useCellsByNotebookId(activeNotebookId, CellType.CHART);
   const isEditing = mode === DashboardMode.EDITING;
   const { handleEditSaveClick } = useDashboardReset(canvasId, true);
+  const canEdit = useCanvasCapabilities().can_edit;
   const setMode = useStore((state) => state.dashboard.setMode);
   const setShowChartBrowser = useStore(
     (state) => state.dashboard.setShowChartBrowser
@@ -53,9 +57,11 @@ export function Dashboard() {
   const handleNavigateToNotebook = useCallback(
     () =>
       navigate(
-        `${APP_ROUTES.CANVAS.replace(":id", canvasId)}/${APP_ROUTES.CANVAS_ROUTES.NOTEBOOK}`
+        toTenantPath(
+          `${APP_ROUTES.CANVAS.replace(":id", canvasId)}/${APP_ROUTES.CANVAS_ROUTES.NOTEBOOK}`,
+        ),
       ),
-    [navigate, canvasId]
+    [navigate, canvasId, toTenantPath]
   );
 
   const chartCellCount = cellsQuery.data?.cells?.length ?? 0;
@@ -135,6 +141,15 @@ export function Dashboard() {
           description="Create chart cells in the notebook to add them to your dashboard"
           buttonLabel="Go to Notebook"
           onButtonClick={handleNavigateToNotebook}
+        />
+      );
+    }
+    if (showNoChartsInLayoutEmptyState && !canEdit) {
+      return (
+        <EmptyState
+          icon="layout_dashboard"
+          heading="No charts on dashboard"
+          description="Charts added to this dashboard will appear here"
         />
       );
     }

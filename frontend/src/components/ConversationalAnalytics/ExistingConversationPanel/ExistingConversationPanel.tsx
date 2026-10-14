@@ -8,6 +8,7 @@ import {
   useConversation,
 } from "src/api/conversational_analytics";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 import { ConversationActionsMenu } from "src/components/ConversationalAnalytics/ConversationActionsMenu";
 import { Flex, Icon, Text } from "src/components/design-system";
 import { ConversationLimitNotice } from "src/components/ConversationalAnalytics/ExistingConversationPanel/ConversationLimitNotice";
@@ -94,6 +95,7 @@ export const ExistingConversationPanel = () => {
   const conversationId = id ?? "";
   const conversationQuery = useConversation(conversationId);
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const startStream = useStartStream();
   const composerRef = useRef<MessageComposerHandle>(null);
   const { events: streamingEvents, isStreaming } =
@@ -105,10 +107,13 @@ export const ExistingConversationPanel = () => {
 
   useEffect(() => {
     if (!isNotFound) return;
-    navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATIONS, {
-      replace: true,
-    });
-  }, [isNotFound, navigate]);
+    navigate(
+      toTenantPath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATIONS),
+      {
+        replace: true,
+      },
+    );
+  }, [isNotFound, navigate, toTenantPath]);
 
   useEffect(() => {
     if (!conversationId || !conversationQuery.isSuccess) return;

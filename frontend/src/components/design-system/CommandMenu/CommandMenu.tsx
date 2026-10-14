@@ -8,6 +8,7 @@ import { Flex } from "src/components/design-system";
 import { SearchResultItemDto, useSearch } from "src/api/search/queries";
 import { EntityType } from "src/api/search";
 import { APP_ROUTES, SEARCH_PARAMS } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 import {
   KEYBOARD_SHORTCUTS,
   useKeyboardShortcut,
@@ -52,6 +53,7 @@ export const CommandMenu = ({
   onOpenChange,
 }: CommandMenuProps) => {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const setCanvasPageState = useStore((state) => state.canvas.setCanvasPageState);
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -128,16 +130,18 @@ export const CommandMenu = ({
   const handleSearchResultSelect = (item: SearchResultItemDto) => {
     if (item.entity_type === EntityType.Canvas) {
       handleOpenChange(false);
-      navigate(APP_ROUTES.CANVAS.replace(":id", item.id));
+      navigate(toTenantPath(APP_ROUTES.CANVAS.replace(":id", item.id)));
       return;
     }
     if (item.entity_type === EntityType.Conversation) {
       handleOpenChange(false);
       navigate(
-        APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION.replace(
-          ":id",
-          item.id
-        )
+        toTenantPath(
+          APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION.replace(
+            ":id",
+            item.id
+          ),
+        ),
       );
       return;
     }
@@ -146,20 +150,22 @@ export const CommandMenu = ({
     }
     handleOpenChange(false);
     navigate(
-      `${APP_ROUTES.CANVAS.replace(":id", item.canvas_id)}?${SEARCH_PARAMS.CELL}=${item.id}`
+      toTenantPath(
+        `${APP_ROUTES.CANVAS.replace(":id", item.canvas_id)}?${SEARCH_PARAMS.CELL}=${item.id}`,
+      ),
     );
   };
 
   const handleCreateCanvas = (value: string) => {
     handleOpenChange(false);
     setCanvasPageState(CanvasesPageState.CREATE_CANVAS_DIALOG);
-    navigate(APP_ROUTES.CANVASES);
+    navigate(toTenantPath(APP_ROUTES.CANVASES));
     return value;
   };
 
   const handleCreateConversation = (value: string) => {
     handleOpenChange(false);
-    navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
+    navigate(toTenantPath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX));
     return value;
   };
 

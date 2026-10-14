@@ -9,6 +9,7 @@ import {
 } from "src/components/design-system";
 import type { IconType } from "src/components/design-system/datatypes";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 import type { CanvasGeneratedData } from "src/components/ConversationalAnalytics/dto";
 
 type CanvasStatProps = {
@@ -39,9 +40,10 @@ const STATS_STYLE = { flexWrap: "wrap" } as const;
 
 export function CanvasGeneratedCard({ data }: CanvasGeneratedCardProps) {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const canvasPath = useMemo(
-    () => APP_ROUTES.CANVAS.replace(":id", data.canvas_id),
-    [data.canvas_id],
+    () => toTenantPath(APP_ROUTES.CANVAS.replace(":id", data.canvas_id)),
+    [data.canvas_id, toTenantPath],
   );
 
   const handleClick = useCallback(() => {

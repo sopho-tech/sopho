@@ -3,13 +3,30 @@ import { SearchBar, Button, DropdownMenu } from "src/components/design-system";
 import { TopBar } from "src/components/TopBar";
 import { useHomeNavigation } from "../hooks";
 import { createDropdownItems } from "../utils";
+import { useTenantPermission } from "src/api/tenant/queries";
+import { PERMISSIONS } from "src/constants/permissions";
 
 export function HomeHeader() {
   const { handleCreateCanvas, handleCreateConnection } = useHomeNavigation();
+  const canCreateCanvas = useTenantPermission(PERMISSIONS.CANVAS_CREATE);
+  const canCreateConnection = useTenantPermission(
+    PERMISSIONS.CONNECTION_CREATE,
+  );
 
   const dropdownItems = useMemo(
-    () => createDropdownItems(handleCreateCanvas, handleCreateConnection),
-    [handleCreateCanvas, handleCreateConnection]
+    () =>
+      createDropdownItems(
+        handleCreateCanvas,
+        handleCreateConnection,
+        canCreateCanvas,
+        canCreateConnection,
+      ),
+    [
+      handleCreateCanvas,
+      handleCreateConnection,
+      canCreateCanvas,
+      canCreateConnection,
+    ],
   );
 
   return (

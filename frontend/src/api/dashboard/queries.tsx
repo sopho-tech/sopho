@@ -2,41 +2,62 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { DashboardDto } from "src/components/Dashboard/dto";
+import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
 export const dashboardKeys = {
-  all: ["dashboards"] as const,
-  details: () => [...dashboardKeys.all, "detail"] as const,
-  detail: (id: string) => [...dashboardKeys.details(), id] as const,
-  byCanvas: (canvasId: string) =>
-    [...dashboardKeys.all, "byCanvas", canvasId] as const,
+  all: (tenantId: string) => [tenantId, "dashboards"] as const,
+  details: (tenantId: string) =>
+    [...dashboardKeys.all(tenantId), "detail"] as const,
+  detail: (tenantId: string, id: string) =>
+    [...dashboardKeys.details(tenantId), id] as const,
+  byCanvas: (tenantId: string, canvasId: string) =>
+    [...dashboardKeys.all(tenantId), "byCanvas", canvasId] as const,
 };
 
 const dashboardApi = {
-  getDashboard: async (dashboardId: string): Promise<DashboardDto> => {
+  getDashboard: async (
+    tenantId: string,
+    dashboardId: string,
+  ): Promise<DashboardDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.DASHBOARD.GET_BY_ID?.replace(":id", dashboardId) || `/dashboard/${dashboardId}`,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.DASHBOARD.GET_BY_ID.replace(":id", dashboardId),
+      ),
       onlyBody: true,
     });
     return response as DashboardDto;
   },
 
-  getDashboardByCanvasId: async (canvasId: string): Promise<DashboardDto> => {
+  getDashboardByCanvasId: async (
+    tenantId: string,
+    canvasId: string,
+  ): Promise<DashboardDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.DASHBOARD.GET_BY_CANVAS_ID?.replace(":canvas_id", canvasId) || `/dashboard/canvas/${canvasId}`,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.DASHBOARD.GET_BY_CANVAS_ID.replace(":canvas_id", canvasId),
+      ),
       onlyBody: true,
     });
     return response as DashboardDto;
   },
 
-  updateDashboard: async ({
-    dashboardId,
-    payload,
-  }: {
-    dashboardId: string;
-    payload: Partial<DashboardDto>;
-  }): Promise<DashboardDto> => {
+  updateDashboard: async (
+    tenantId: string,
+    {
+      dashboardId,
+      payload,
+    }: {
+      dashboardId: string;
+      payload: Partial<DashboardDto>;
+    },
+  ): Promise<DashboardDto> => {
     const response = await ApiService.put({
-      url: API_ENDPOINTS.DASHBOARD.UPDATE.replace(":id", dashboardId),
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.DASHBOARD.UPDATE.replace(":id", dashboardId),
+      ),
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -47,30 +68,36 @@ const dashboardApi = {
 };
 
 export const useDashboard = (dashboardId: string) => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: dashboardKeys.detail(dashboardId),
-    queryFn: () => dashboardApi.getDashboard(dashboardId),
+    queryKey: dashboardKeys.detail(tenantId, dashboardId),
+    queryFn: () => dashboardApi.getDashboard(tenantId, dashboardId),
     enabled: !!dashboardId,
   });
 };
 
 export const useDashboardByCanvasId = (canvasId: string) => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: dashboardKeys.byCanvas(canvasId),
-    queryFn: () => dashboardApi.getDashboardByCanvasId(canvasId),
+    queryKey: dashboardKeys.byCanvas(tenantId, canvasId),
+    queryFn: () => dashboardApi.getDashboardByCanvasId(tenantId, canvasId),
     enabled: !!canvasId,
   });
 };
 
 export const useUpdateDashboard = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: dashboardApi.updateDashboard,
+    mutationFn: (variables: {
+      dashboardId: string;
+      payload: Partial<DashboardDto>;
+    }) => dashboardApi.updateDashboard(tenantId, variables),
     onSuccess: (data, { dashboardId }) => {
-      queryClient.setQueryData(dashboardKeys.detail(dashboardId), data);
+      queryClient.setQueryData(dashboardKeys.detail(tenantId, dashboardId), data);
       queryClient.invalidateQueries({
-        queryKey: dashboardKeys.all,
+        queryKey: dashboardKeys.all(tenantId),
       });
     },
     onError: (error) => {

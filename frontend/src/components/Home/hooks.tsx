@@ -4,27 +4,29 @@ import { useStore } from "src/store";
 import { CanvasesPageState } from "src/components/Canvases/dto";
 import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 import { useAllCanvases } from "src/api/canvas/queries";
 import { useConnections } from "src/api/connection";
 
 export function useHomeNavigation() {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const setCanvasPageState = useStore(
-    (state) => state.canvas.setCanvasPageState
+    (state) => state.canvas.setCanvasPageState,
   );
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
 
   const handleCreateCanvas = useCallback(() => {
-    navigate(APP_ROUTES.CANVASES);
+    navigate(toTenantPath(APP_ROUTES.CANVASES));
     setCanvasPageState(CanvasesPageState.CREATE_CANVAS_DIALOG);
-  }, [navigate, setCanvasPageState]);
+  }, [navigate, setCanvasPageState, toTenantPath]);
 
   const handleCreateConnection = useCallback(() => {
-    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW);
-  }, [navigate, setConnectionDetailsPageState]);
+  }, [navigate, setConnectionDetailsPageState, toTenantPath]);
 
   return {
     handleCreateCanvas,
@@ -34,7 +36,7 @@ export function useHomeNavigation() {
 
 export function useRecentlyUpdatedCanvases(
   page: number = 0,
-  pageSize: number = 9
+  pageSize: number = 9,
 ) {
   return useAllCanvases(page, pageSize);
 }

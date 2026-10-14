@@ -6,35 +6,49 @@ import {
 } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
-import { CanvasDto } from "src/components/Canvases/dto";
-import { PaginatedData, PaginatedDataResponse } from "../dto";
+import { useParams } from "react-router";
+import { CanvasDto, NewCanvasDto } from "src/components/Canvases/dto";
+import {
+  PaginatedData,
+  PaginatedDataResponse,
+  ResourceCapabilities,
+} from "src/api/dto";
+import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
 // Query keys for canvases
 export const canvasKeys = {
-  all: ["canvases"] as const,
-  lists: () => [...canvasKeys.all, "list"] as const,
-  list: (filters: string) => [...canvasKeys.lists(), { filters }] as const,
-  listPaginated: (page: number, pageSize: number) =>
-    [...canvasKeys.lists(), { page, pageSize }] as const,
-  details: () => [...canvasKeys.all, "detail"] as const,
-  detail: (id: string) => [...canvasKeys.details(), id] as const,
+  all: (tenantId: string) => [tenantId, "canvases"] as const,
+  lists: (tenantId: string) => [...canvasKeys.all(tenantId), "list"] as const,
+  listPaginated: (tenantId: string, page: number, pageSize: number) =>
+    [...canvasKeys.lists(tenantId), { page, pageSize }] as const,
+  details: (tenantId: string) =>
+    [...canvasKeys.all(tenantId), "detail"] as const,
+  detail: (tenantId: string, id: string) =>
+    [...canvasKeys.details(tenantId), id] as const,
 };
 
 // API functions
 const canvasApi = {
-  getCanvas: async (canvasId: string): Promise<CanvasDto> => {
+  getCanvas: async (tenantId: string, canvasId: string): Promise<CanvasDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.CANVAS.GET_BY_ID?.replace(":id", canvasId) || `/canvas/${canvasId}`,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CANVAS.GET_BY_ID.replace(":id", canvasId),
+      ),
       onlyBody: true,
     });
     return response as CanvasDto;
   },
 
   getAllCanvases: async (
+    tenantId: string,
     page?: number,
     pageSize?: number
   ): Promise<PaginatedData<CanvasDto>> => {
-    const url = new URL(API_ENDPOINTS.CANVAS.GET_ALL, window.location.origin);
+    const url = new URL(
+      tenantApiUrl(tenantId, API_ENDPOINTS.CANVAS.GET_ALL),
+      window.location.origin,
+    );
     if (page !== undefined) {
       url.searchParams.set("page", page.toString());
     }
@@ -56,15 +70,21 @@ const canvasApi = {
     };
   },
 
-  updateCanvas: async ({
-    canvasId,
-    payload,
-  }: {
-    canvasId: string;
-    payload: Partial<CanvasDto>;
-  }): Promise<CanvasDto> => {
+  updateCanvas: async (
+    tenantId: string,
+    {
+      canvasId,
+      payload,
+    }: {
+      canvasId: string;
+      payload: Partial<CanvasDto>;
+    },
+  ): Promise<CanvasDto> => {
     const response = await ApiService.put({
-      url: API_ENDPOINTS.CANVAS.UPDATE.replace(":id", canvasId),
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CANVAS.UPDATE.replace(":id", canvasId),
+      ),
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -73,9 +93,12 @@ const canvasApi = {
     return response as CanvasDto;
   },
 
-  createCanvas: async (payload: Omit<CanvasDto, "id">): Promise<CanvasDto> => {
+  createCanvas: async (
+    tenantId: string,
+    payload: NewCanvasDto,
+  ): Promise<CanvasDto> => {
     const response = await ApiService.post({
-      url: API_ENDPOINTS.CANVAS.CREATE,
+      url: tenantApiUrl(tenantId, API_ENDPOINTS.CANVAS.CREATE),
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -84,34 +107,40 @@ const canvasApi = {
     return response as CanvasDto;
   },
 
-  deleteCanvas: async (canvasId: string): Promise<void> => {
-    const response = await fetch(
-      API_ENDPOINTS.CANVAS.DELETE?.replace(":id", canvasId) || `/canvas/${canvasId}`,
-      {
-        method: "DELETE",
-        credentials: "include",
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to delete canvas: ${response.statusText}`);
-    }
+  deleteCanvas: async (tenantId: string, canvasId: string): Promise<void> => {
+    await ApiService.delete({
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CANVAS.DELETE.replace(":id", canvasId),
+      ),
+    });
   },
 };
 
 // Query hooks
 export const useCanvas = (canvasId: string) => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: canvasKeys.detail(canvasId),
-    queryFn: () => canvasApi.getCanvas(canvasId),
+    queryKey: canvasKeys.detail(tenantId, canvasId),
+    queryFn: () => canvasApi.getCanvas(tenantId, canvasId),
     enabled: !!canvasId,
   });
 };
 
+export const useCanvasCapabilities = (): ResourceCapabilities => {
+  const params = useParams();
+  const canvasQuery = useCanvas(params.id!);
+  if (!canvasQuery.data) {
+    throw new Error("Canvas capabilities were read before the canvas loaded");
+  }
+  return canvasQuery.data.capabilities;
+};
+
 export const useAllCanvases = (page?: number, pageSize?: number) => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: canvasKeys.listPaginated(page ?? 1, pageSize ?? 10),
-    queryFn: () => canvasApi.getAllCanvases(page, pageSize),
+    queryKey: canvasKeys.listPaginated(tenantId, page ?? 1, pageSize ?? 10),
+    queryFn: () => canvasApi.getAllCanvases(tenantId, page, pageSize),
     placeholderData: keepPreviousData,
   });
 };
@@ -121,13 +150,15 @@ export const useUpdateCanvas = (callbacks?: {
   onError?: (error: Error) => void;
 }) => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: canvasApi.updateCanvas,
+    mutationFn: (variables: { canvasId: string; payload: Partial<CanvasDto> }) =>
+      canvasApi.updateCanvas(tenantId, variables),
     onSuccess: (data) => {
-      queryClient.setQueryData(canvasKeys.detail(data.id!), data);
+      queryClient.setQueryData(canvasKeys.detail(tenantId, data.id!), data);
       queryClient.invalidateQueries({
-        queryKey: canvasKeys.lists(),
+        queryKey: canvasKeys.lists(tenantId),
       });
       callbacks?.onSuccess?.(data);
     },
@@ -143,16 +174,18 @@ export const useCreateCanvas = (callbacks?: {
   onError?: (error: Error) => void;
 }) => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: canvasApi.createCanvas,
+    mutationFn: (payload: NewCanvasDto) =>
+      canvasApi.createCanvas(tenantId, payload),
     onSuccess: (data) => {
       // Add the new canvas to the cache
-      queryClient.setQueryData(canvasKeys.detail(data.id!), data);
+      queryClient.setQueryData(canvasKeys.detail(tenantId, data.id!), data);
 
       // Invalidate the canvases list to refetch
       queryClient.invalidateQueries({
-        queryKey: canvasKeys.lists(),
+        queryKey: canvasKeys.lists(tenantId),
       });
 
       // Call custom success callback if provided
@@ -176,18 +209,19 @@ export const useDeleteCanvas = (callbacks?: {
   onError?: (error: Error) => void;
 }) => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: canvasApi.deleteCanvas,
+    mutationFn: (canvasId: string) => canvasApi.deleteCanvas(tenantId, canvasId),
     onSuccess: (_, canvasId) => {
       // Remove the deleted canvas from the cache
       queryClient.removeQueries({
-        queryKey: canvasKeys.detail(canvasId),
+        queryKey: canvasKeys.detail(tenantId, canvasId),
       });
 
       // Invalidate the canvases list to refetch
       queryClient.invalidateQueries({
-        queryKey: canvasKeys.lists(),
+        queryKey: canvasKeys.lists(tenantId),
       });
 
       // Call custom success callback if provided

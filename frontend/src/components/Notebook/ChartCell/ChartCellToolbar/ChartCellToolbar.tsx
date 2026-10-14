@@ -3,6 +3,7 @@ import ToolbarStyles from "src/css/toolbar.module.css";
 import * as Toolbar from "@radix-ui/react-toolbar";
 import { InlineEdit } from "src/components/design-system/InlineEdit";
 import { useCell, useUpdateCell } from "src/api/cell";
+import { useCanvasCapabilities } from "src/api/canvas/queries";
 import {
   useExecutionPhase,
   ExecutionPhase,
@@ -14,6 +15,7 @@ import styles from "./ChartCellToolbar.module.css";
 export function ChartCellToolbar({ cellId }: { cellId: string }) {
   const updateCellMutation = useUpdateCell();
   const getCellQuery = useCell(cellId);
+  const canEdit = useCanvasCapabilities().can_edit;
   const { phase, startedAt } = useExecutionPhase(cellId);
   const showElapsed = isAtLeast(phase, ExecutionPhase.EXTENDED);
 
@@ -39,6 +41,7 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
           placeholder="Cell Name"
           defaultValue="Unnamed"
           className={styles["toolbar__inlineEdit"]}
+          readOnly={!canEdit}
         />
       </div>
       {showElapsed && startedAt && <ElapsedTime startedAt={startedAt} />}

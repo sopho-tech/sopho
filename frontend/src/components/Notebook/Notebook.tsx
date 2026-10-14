@@ -4,6 +4,7 @@ import { NotebookToolbar } from "src/components/Notebook/NotebookToolbar";
 import { DeleteCellDialog } from "src/components/Notebook/DeleteCellDialog";
 import { useStore } from "src/store";
 import { useNotebook } from "src/api/notebook/queries";
+import { useCanvasCapabilities } from "src/api/canvas/queries";
 import { CellType, ExecutionState } from "src/components/Notebook/Cell/dto";
 import { KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
 import { useHandleRunCell } from "src/components/Notebook/Cell";
@@ -25,6 +26,7 @@ export function Notebook() {
   const canvasId = params.id || "";
   const activeNotebookId = useStore((state) => state.canvas.activeNotebookId);
   const query = useNotebook(activeNotebookId);
+  const canEdit = useCanvasCapabilities().can_edit;
   const handleRunCell = useHandleRunCell();
   const notebookRef = useRef<HTMLDivElement>(null);
   const createCellMutation = useCreateCell();
@@ -62,17 +64,17 @@ export function Notebook() {
     movementType: "UP" | "DOWN" | "TOP" | "BOTTOM"
   ) => {
     const activeCellId = useStore.getState().notebook.activeCellId;
-    if (activeCellId) {
+    if (canEdit && activeCellId) {
       reorderCellMutation.mutate({ cellId: activeCellId, movementType });
     }
   };
 
   const handleRequestDeleteCell = useCallback(() => {
     const activeCellId = useStore.getState().notebook.activeCellId;
-    if (activeCellId) {
+    if (canEdit && activeCellId) {
       useStore.getState().notebook.setCellPendingDeletion(activeCellId);
     }
-  }, []);
+  }, [canEdit]);
 
   const handleCancelDeleteCell = useCallback(() => {
     useStore.getState().notebook.setCellPendingDeletion("");
@@ -97,6 +99,7 @@ export function Notebook() {
 
   const handleCreateCell = useCallback(
     (cellType: CellType) => {
+      if (!canEdit) return;
       const activeNotebookId = useStore.getState().canvas.activeNotebookId;
       createCellMutation.mutate({
         notebook_id: activeNotebookId,
@@ -105,7 +108,7 @@ export function Notebook() {
         cell_type: cellType,
       });
     },
-    [createCellMutation]
+    [canEdit, createCellMutation]
   );
 
   useKeyboardShortcut(
@@ -192,6 +195,15 @@ export function Notebook() {
     if (query.data?.cells && query.data?.cells.length > 0) {
       return cellComponents;
     }
+    if (!canEdit) {
+      return (
+        <EmptyState
+          icon="table"
+          heading="No cells yet"
+          description="Cells added to this notebook will appear here"
+        />
+      );
+    }
     return (
       <EmptyState
         icon="table"
@@ -205,7 +217,7 @@ export function Notebook() {
 
   return (
     <Flex ref={notebookRef} direction="column" gap="md" flex="grow">
-      <NotebookToolbar />
+      {canEdit && <NotebookToolbar />}
       <Flex direction="column" gap="2xl">
         {render()}
       </Flex>

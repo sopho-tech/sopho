@@ -10,6 +10,7 @@ import { createCanvasesTableColumns } from "src/components/Canvases/CanvasesTabl
 import styles from "src/components/Canvases/CanvasesTable/CanvasesTable.module.css";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 import { CanvasDto } from "src/components/Canvases/dto";
 import { CanvasesEmptyState } from "src/components/Home/components/EmptyState";
 
@@ -21,6 +22,7 @@ export function CanvasesTable() {
     handleOpenCreateDialog,
   } = useCanvasActions();
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const {
     pagination,
     handlePaginationChange,
@@ -43,10 +45,10 @@ export function CanvasesTable() {
   const handleRowClick = useCallback(
     (row: CanvasDto) => {
       if (row.id) {
-        navigate(APP_ROUTES.CANVAS.replace(":id", row.id));
+        navigate(toTenantPath(APP_ROUTES.CANVAS.replace(":id", row.id)));
       }
     },
-    [navigate]
+    [navigate, toTenantPath]
   );
 
   const tableData = useMemo(

@@ -3,10 +3,11 @@ import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { ConnectionDto } from "src/components/Connection/dto";
 import { type ExecuteCellResponseDto } from "src/components/Notebook/Cell/dto";
+import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
 export type CreateConnectionDto = Omit<
   ConnectionDto,
-  "id" | "created_at" | "updated_at"
+  "id" | "created_at" | "updated_at" | "capabilities"
 >;
 
 export type QueryExecutionResultDto =
@@ -14,41 +15,60 @@ export type QueryExecutionResultDto =
   | { status: "error"; error: unknown };
 
 export const connectionKeys = {
-  all: ["connections"] as const,
-  lists: () => [...connectionKeys.all, "list"] as const,
-  list: (filters: string) => [...connectionKeys.lists(), { filters }] as const,
-  details: () => [...connectionKeys.all, "detail"] as const,
-  detail: (id: string) => [...connectionKeys.details(), id] as const,
-  queryExecution: (connectionId: string, query: string) =>
-    [...connectionKeys.all, "query-execution", connectionId, query] as const,
+  all: (tenantId: string) => [tenantId, "connections"] as const,
+  lists: (tenantId: string) =>
+    [...connectionKeys.all(tenantId), "list"] as const,
+  details: (tenantId: string) =>
+    [...connectionKeys.all(tenantId), "detail"] as const,
+  detail: (tenantId: string, id: string) =>
+    [...connectionKeys.details(tenantId), id] as const,
+  queryExecution: (tenantId: string, connectionId: string, query: string) =>
+    [
+      ...connectionKeys.all(tenantId),
+      "query-execution",
+      connectionId,
+      query,
+    ] as const,
 };
 
 const connectionApi = {
-  getConnection: async (connectionId: string): Promise<ConnectionDto> => {
+  getConnection: async (
+    tenantId: string,
+    connectionId: string,
+  ): Promise<ConnectionDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.CONNECTION.GET_BY_ID?.replace(":id", connectionId) || `/api/v1/connection/${connectionId}`,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CONNECTION.GET_BY_ID.replace(":id", connectionId),
+      ),
       onlyBody: true,
     });
     return response as ConnectionDto;
   },
 
-  getAllConnections: async (): Promise<ConnectionDto[]> => {
+  getAllConnections: async (tenantId: string): Promise<ConnectionDto[]> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.CONNECTION.GET_ALL,
+      url: tenantApiUrl(tenantId, API_ENDPOINTS.CONNECTION.GET_ALL),
       onlyBody: true,
     });
     return response as ConnectionDto[];
   },
 
-  updateConnection: async ({
-    connectionId,
-    payload,
-  }: {
-    connectionId: string;
-    payload: Partial<ConnectionDto>;
-  }): Promise<ConnectionDto> => {
+  updateConnection: async (
+    tenantId: string,
+    {
+      connectionId,
+      payload,
+    }: {
+      connectionId: string;
+      payload: Partial<ConnectionDto>;
+    },
+  ): Promise<ConnectionDto> => {
     const response = await ApiService.put({
-      url: API_ENDPOINTS.CONNECTION.UPDATE.replace(":id", connectionId),
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CONNECTION.UPDATE.replace(":id", connectionId),
+      ),
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -58,10 +78,11 @@ const connectionApi = {
   },
 
   createConnection: async (
-    payload: CreateConnectionDto
+    tenantId: string,
+    payload: CreateConnectionDto,
   ): Promise<ConnectionDto> => {
     const response = await ApiService.post({
-      url: API_ENDPOINTS.CONNECTION.CREATE,
+      url: tenantApiUrl(tenantId, API_ENDPOINTS.CONNECTION.CREATE),
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -70,61 +91,74 @@ const connectionApi = {
     return response as ConnectionDto;
   },
 
-  executeQuery: async ({
-    connectionId,
-    query,
-  }: {
-    connectionId: string;
-    query: string;
-  }): Promise<ExecuteCellResponseDto> => {
+  executeQuery: async (
+    tenantId: string,
+    {
+      connectionId,
+      query,
+    }: {
+      connectionId: string;
+      query: string;
+    },
+  ): Promise<ExecuteCellResponseDto> => {
     const response = await ApiService.post({
-      url: API_ENDPOINTS.CONNECTION.EXECUTE_QUERY.replace(":id", connectionId),
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CONNECTION.EXECUTE_QUERY.replace(":id", connectionId),
+      ),
       data: { query },
       headers: { "Content-Type": "application/json" },
     });
     return response as ExecuteCellResponseDto;
   },
 
-  deleteConnection: async (connectionId: string): Promise<void> => {
-    const response = await fetch(
-      API_ENDPOINTS.CONNECTION.DELETE?.replace(":id", connectionId) || `/api/v1/connection/${connectionId}`,
-      {
-        method: "DELETE",
-        credentials: "include",
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to delete connection: ${response.statusText}`);
-    }
+  deleteConnection: async (
+    tenantId: string,
+    connectionId: string,
+  ): Promise<void> => {
+    await ApiService.delete({
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CONNECTION.DELETE.replace(":id", connectionId),
+      ),
+    });
   },
 };
 
 export const useConnection = (connectionId: string) => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: connectionKeys.detail(connectionId),
-    queryFn: () => connectionApi.getConnection(connectionId),
+    queryKey: connectionKeys.detail(tenantId, connectionId),
+    queryFn: () => connectionApi.getConnection(tenantId, connectionId),
     enabled: !!connectionId,
   });
 };
 
 export const useConnections = () => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: connectionKeys.lists(),
-    queryFn: () => connectionApi.getAllConnections(),
+    queryKey: connectionKeys.lists(tenantId),
+    queryFn: () => connectionApi.getAllConnections(tenantId),
   });
 };
 
 export const useUpdateConnection = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: connectionApi.updateConnection,
+    mutationFn: (variables: {
+      connectionId: string;
+      payload: Partial<ConnectionDto>;
+    }) => connectionApi.updateConnection(tenantId, variables),
     onSuccess: (data, { connectionId }) => {
-      queryClient.setQueryData(connectionKeys.detail(connectionId), data);
+      queryClient.setQueryData(
+        connectionKeys.detail(tenantId, connectionId),
+        data,
+      );
 
       queryClient.invalidateQueries({
-        queryKey: connectionKeys.lists(),
+        queryKey: connectionKeys.lists(tenantId),
       });
     },
     onError: (error) => {
@@ -135,14 +169,16 @@ export const useUpdateConnection = () => {
 
 export const useCreateConnection = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: connectionApi.createConnection,
+    mutationFn: (payload: CreateConnectionDto) =>
+      connectionApi.createConnection(tenantId, payload),
     onSuccess: (data) => {
-      queryClient.setQueryData(connectionKeys.detail(data.id), data);
+      queryClient.setQueryData(connectionKeys.detail(tenantId, data.id), data);
 
       queryClient.invalidateQueries({
-        queryKey: connectionKeys.lists(),
+        queryKey: connectionKeys.lists(tenantId),
       });
     },
     onError: (error) => {
@@ -153,18 +189,20 @@ export const useCreateConnection = () => {
 
 export const useExecuteQuery = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: connectionApi.executeQuery,
+    mutationFn: (variables: { connectionId: string; query: string }) =>
+      connectionApi.executeQuery(tenantId, variables),
     onSuccess: (data, { connectionId, query }) => {
       queryClient.setQueryData(
-        connectionKeys.queryExecution(connectionId, query),
+        connectionKeys.queryExecution(tenantId, connectionId, query),
         { status: "success", data } satisfies QueryExecutionResultDto,
       );
     },
     onError: (error, { connectionId, query }) => {
       queryClient.setQueryData(
-        connectionKeys.queryExecution(connectionId, query),
+        connectionKeys.queryExecution(tenantId, connectionId, query),
         { status: "error", error } satisfies QueryExecutionResultDto,
       );
     },
@@ -175,8 +213,9 @@ export const useQueryExecutionResult = (
   connectionId: string,
   query: string,
 ) => {
+  const tenantId = useTenantId();
   return useQuery<QueryExecutionResultDto>({
-    queryKey: connectionKeys.queryExecution(connectionId, query),
+    queryKey: connectionKeys.queryExecution(tenantId, connectionId, query),
     queryFn: () =>
       Promise.reject(new Error("Execution results are cache-only")),
     enabled: false,
@@ -185,16 +224,18 @@ export const useQueryExecutionResult = (
 
 export const useDeleteConnection = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: connectionApi.deleteConnection,
+    mutationFn: (connectionId: string) =>
+      connectionApi.deleteConnection(tenantId, connectionId),
     onSuccess: (_, connectionId) => {
       queryClient.removeQueries({
-        queryKey: connectionKeys.detail(connectionId),
+        queryKey: connectionKeys.detail(tenantId, connectionId),
       });
 
       queryClient.invalidateQueries({
-        queryKey: connectionKeys.lists(),
+        queryKey: connectionKeys.lists(tenantId),
       });
     },
     onError: (error) => {

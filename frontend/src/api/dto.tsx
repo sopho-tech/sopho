@@ -18,7 +18,14 @@ export type ApiErrorBody = {
   status?: number;
   code?: string;
   message?: string;
+  error?: string;
   details?: string;
+};
+
+export type ResourceCapabilities = {
+  can_edit: boolean;
+  can_delete: boolean;
+  can_share: boolean;
 };
 
 export class ApiError extends Error {
@@ -28,7 +35,7 @@ export class ApiError extends Error {
     message?: string
   ) {
     super(
-      message ?? body.message ?? body.message ?? `Request failed with ${status}`
+      message ?? body.message ?? body.error ?? `Request failed with ${status}`
     );
     this.name = "ApiError";
   }
@@ -38,7 +45,7 @@ export class ApiError extends Error {
   }
 
   get message(): string {
-    return this.body.message ?? this.body.message ?? "";
+    return this.body.message ?? this.body.error ?? "";
   }
 }
 

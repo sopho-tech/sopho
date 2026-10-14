@@ -21,21 +21,31 @@ const refreshAndRetry = async (
   } else {
     isRefreshing = true;
     failedQueue.push({ query, mutation, variables });
-    const result = await authApi.refreshToken();
-    if (result) {
-      failedQueue.forEach(({ query, mutation, variables }) => {
-        if (query) {
-          query.fetch();
-        } else if (mutation) {
-          mutation.execute(variables);
-        }
-      });
-    } else {
-      // Redirect to sign-in page when refresh fails
-      window.location.href = APP_ROUTES.SIGN_IN;
+    try {
+      const refreshed = await authApi.refreshToken();
+      if (refreshed) {
+        failedQueue.forEach(({ query, mutation, variables }) => {
+          if (query) {
+            query.fetch();
+          } else if (mutation) {
+            mutation.execute(variables);
+          }
+        });
+      } else {
+        redirectToSignIn();
+      }
+    } catch {
+      redirectToSignIn();
+    } finally {
+      isRefreshing = false;
+      failedQueue = [];
     }
-    isRefreshing = false;
-    failedQueue = [];
+  }
+};
+
+const redirectToSignIn = () => {
+  if (window.location.pathname !== APP_ROUTES.SIGN_IN) {
+    window.location.href = APP_ROUTES.SIGN_IN;
   }
 };
 

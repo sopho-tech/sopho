@@ -9,20 +9,27 @@ import { Heading } from "src/components/design-system/Heading/Heading";
 import { Text } from "src/components/design-system/Text/Text";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
+import { useTenantPermission } from "src/api/tenant/queries";
+import { PERMISSIONS } from "src/constants/permissions";
 
 export function Connections() {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
+  const canCreateConnection = useTenantPermission(
+    PERMISSIONS.CONNECTION_CREATE,
+  );
   const connectionDetailsPageState = useStore(
-    (state) => state.connection.connectionDetailsPageState
+    (state) => state.connection.connectionDetailsPageState,
   );
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
 
   const handleNewClick = useCallback(() => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW);
-    navigate(APP_ROUTES.CONNECTION_NEW);
-  }, [setConnectionDetailsPageState, navigate]);
+    navigate(toTenantPath(APP_ROUTES.CONNECTION_NEW));
+  }, [setConnectionDetailsPageState, navigate, toTenantPath]);
 
   return (
     <Flex direction="column" flex="grow" gap="lg" overflow="hidden">
@@ -40,14 +47,16 @@ export function Connections() {
             Manage the data sources available to your workspace.
           </Text>
         </Flex>
-        <Button
-          label="New"
-          leadingIconName="add"
-          backgroundColor="accent"
-          shape="rectangle"
-          size="md"
-          onClick={handleNewClick}
-        />
+        {canCreateConnection && (
+          <Button
+            label="New"
+            leadingIconName="add"
+            backgroundColor="accent"
+            shape="rectangle"
+            size="md"
+            onClick={handleNewClick}
+          />
+        )}
       </Flex>
       {connectionDetailsPageState === ConnectionDetailsPageStateEnum.DETAIL && (
         <ConnectionDetail />

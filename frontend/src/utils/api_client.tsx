@@ -10,7 +10,7 @@ async function handleErrorResponse(response: Response): Promise<never> {
       body = {};
     }
   }
-  throw new ApiError(response.status, body, body.message ?? body.message);
+  throw new ApiError(response.status, body, body.message ?? body.error);
 }
 
 export const ApiService = {
@@ -89,6 +89,25 @@ export const ApiService = {
     }
     if (onlyBody) {
       return response.json() as Promise<T>;
+    }
+    return response;
+  },
+  delete: async ({
+    url,
+    headers,
+    credentials = true,
+  }: {
+    url: string;
+    headers?: Record<string, string>;
+    credentials?: boolean;
+  }): Promise<Response> => {
+    const response = await fetch(url, {
+      headers: headers,
+      method: "DELETE",
+      credentials: credentials ? "include" : undefined,
+    });
+    if (!response.ok) {
+      await handleErrorResponse(response);
     }
     return response;
   },

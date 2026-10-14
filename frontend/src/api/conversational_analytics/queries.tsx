@@ -16,6 +16,7 @@ import {
   PaginatedConversationsDto,
 } from "src/components/ConversationalAnalytics/dto";
 import type { AppendUserMessageDto } from "src/components/ConversationalAnalytics/dto";
+import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
 export type {
   ConversationMessageContentDto,
@@ -36,42 +37,54 @@ export {
 } from "src/components/ConversationalAnalytics/dto";
 
 export const conversationKeys = {
-  all: ["conversations"] as const,
-  lists: () => [...conversationKeys.all, "list"] as const,
-  list: (params: ListConversationsParams) =>
-    [...conversationKeys.lists(), params] as const,
-  details: () => [...conversationKeys.all, "detail"] as const,
-  detail: (id: string) => [...conversationKeys.details(), id] as const,
+  all: (tenantId: string) => [tenantId, "conversations"] as const,
+  lists: (tenantId: string) =>
+    [...conversationKeys.all(tenantId), "list"] as const,
+  list: (tenantId: string, params: ListConversationsParams) =>
+    [...conversationKeys.lists(tenantId), params] as const,
+  details: (tenantId: string) =>
+    [...conversationKeys.all(tenantId), "detail"] as const,
+  detail: (tenantId: string, id: string) =>
+    [...conversationKeys.details(tenantId), id] as const,
 };
 
-function buildListConversationsUrl({
-  page,
-  pageSize,
-  search,
-}: ListConversationsParams): string {
+function buildListConversationsUrl(
+  tenantId: string,
+  { page, pageSize, search }: ListConversationsParams,
+): string {
   const searchParams = new URLSearchParams();
   if (page !== undefined) searchParams.set("page", String(page));
   if (pageSize !== undefined) searchParams.set("page_size", String(pageSize));
   if (search?.trim()) searchParams.set("search", search.trim());
   const query = searchParams.toString();
-  const base = API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.GET_ALL;
+  const base = tenantApiUrl(
+    tenantId,
+    API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.GET_ALL,
+  );
   return query ? `${base}?${query}` : base;
 }
 
 const conversationalAnalyticsApi = {
   listConversations: async (
+    tenantId: string,
     params: ListConversationsParams,
   ): Promise<PaginatedConversationsDto> => {
     const response = await ApiService.get({
-      url: buildListConversationsUrl(params),
+      url: buildListConversationsUrl(tenantId, params),
       onlyBody: true,
     });
     return response as PaginatedConversationsDto;
   },
 
-  bulkDeleteConversations: async (conversationIds: string[]): Promise<void> => {
+  bulkDeleteConversations: async (
+    tenantId: string,
+    conversationIds: string[],
+  ): Promise<void> => {
     await ApiService.post({
-      url: API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.BULK_DELETE,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.BULK_DELETE,
+      ),
       data: { conversation_ids: conversationIds },
       headers: { "Content-Type": "application/json" },
       onlyBody: false,
@@ -79,12 +92,16 @@ const conversationalAnalyticsApi = {
   },
 
   getConversation: async (
+    tenantId: string,
     conversationId: string,
   ): Promise<ConversationWithMessagesDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.GET_BY_ID.replace(
-        ":conversation_id",
-        conversationId,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.GET_BY_ID.replace(
+          ":conversation_id",
+          conversationId,
+        ),
       ),
       onlyBody: true,
     });
@@ -92,10 +109,14 @@ const conversationalAnalyticsApi = {
   },
 
   createConversation: async (
+    tenantId: string,
     payload: CreateConversationDto,
   ): Promise<ConversationDto> => {
     const response = await ApiService.post({
-      url: API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.CREATE,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.CREATE,
+      ),
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -105,12 +126,16 @@ const conversationalAnalyticsApi = {
   },
 
   updateConversation: async (
+    tenantId: string,
     payload: ConversationDto,
   ): Promise<ConversationDto> => {
     const response = await ApiService.put({
-      url: API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.UPDATE.replace(
-        ":conversation_id",
-        payload.id,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.UPDATE.replace(
+          ":conversation_id",
+          payload.id,
+        ),
       ),
       data: payload,
       headers: {
@@ -121,25 +146,33 @@ const conversationalAnalyticsApi = {
   },
 
   suggestConversationName: async (
+    tenantId: string,
     conversationId: string,
   ): Promise<ConversationDto> => {
     const response = await ApiService.post({
-      url: API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.SUGGEST_NAME.replace(
-        ":conversation_id",
-        conversationId,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.SUGGEST_NAME.replace(
+          ":conversation_id",
+          conversationId,
+        ),
       ),
     });
     return response as ConversationDto;
   },
 
   appendUserMessage: async (
+    tenantId: string,
     conversationId: string,
     payload: AppendUserMessageDto,
   ): Promise<ConversationWithMessagesDto> => {
     const response = await ApiService.post({
-      url: API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.APPEND_MESSAGE.replace(
-        ":conversation_id",
-        conversationId,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.APPEND_MESSAGE.replace(
+          ":conversation_id",
+          conversationId,
+        ),
       ),
       data: payload,
       headers: {
@@ -149,28 +182,28 @@ const conversationalAnalyticsApi = {
     return response as ConversationWithMessagesDto;
   },
 
-  deleteConversation: async (conversationId: string): Promise<void> => {
-    const response = await fetch(
-      API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.DELETE?.replace(
-        ":conversation_id",
-        conversationId,
+  deleteConversation: async (
+    tenantId: string,
+    conversationId: string,
+  ): Promise<void> => {
+    await ApiService.delete({
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.DELETE.replace(
+          ":conversation_id",
+          conversationId,
+        ),
       ),
-      {
-        method: "DELETE",
-        credentials: "include",
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to delete conversation: ${response.statusText}`);
-    }
+    });
   },
 };
 
 export const useConversations = (params: ListConversationsParams = {}) => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: conversationKeys.list(params),
-    queryFn: () => conversationalAnalyticsApi.listConversations(params),
+    queryKey: conversationKeys.list(tenantId, params),
+    queryFn: () =>
+      conversationalAnalyticsApi.listConversations(tenantId, params),
     placeholderData: keepPreviousData,
   });
 };
@@ -182,9 +215,11 @@ export const isConversationNotFoundError = (error: unknown): boolean =>
   error instanceof ApiError && error.status === 404;
 
 export const useConversation = (conversationId: string) => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: conversationKeys.detail(conversationId),
-    queryFn: () => conversationalAnalyticsApi.getConversation(conversationId),
+    queryKey: conversationKeys.detail(tenantId, conversationId),
+    queryFn: () =>
+      conversationalAnalyticsApi.getConversation(tenantId, conversationId),
     enabled: !!conversationId,
     retry: (failureCount, error) => !isClientError(error) && failureCount < 3,
   });
@@ -192,15 +227,17 @@ export const useConversation = (conversationId: string) => {
 
 export const useCreateConversation = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: conversationalAnalyticsApi.createConversation,
+    mutationFn: (payload: CreateConversationDto) =>
+      conversationalAnalyticsApi.createConversation(tenantId, payload),
     onSuccess: (data) => {
       queryClient.invalidateQueries({
-        queryKey: conversationKeys.detail(data.id),
+        queryKey: conversationKeys.detail(tenantId, data.id),
       });
       queryClient.invalidateQueries({
-        queryKey: conversationKeys.lists(),
+        queryKey: conversationKeys.lists(tenantId),
       });
     },
   });
@@ -208,14 +245,15 @@ export const useCreateConversation = () => {
 
 function patchConversationCaches(
   queryClient: QueryClient,
+  tenantId: string,
   data: ConversationDto,
 ) {
   queryClient.setQueryData<ConversationWithMessagesDto>(
-    conversationKeys.detail(data.id),
+    conversationKeys.detail(tenantId, data.id),
     (old) => (old ? { ...old, conversation: data } : undefined),
   );
   queryClient.setQueriesData<PaginatedConversationsDto>(
-    { queryKey: conversationKeys.lists() },
+    { queryKey: conversationKeys.lists(tenantId) },
     (old) =>
       old && {
         ...old,
@@ -228,37 +266,46 @@ function patchConversationCaches(
 
 export const useSuggestConversationName = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: conversationalAnalyticsApi.suggestConversationName,
+    mutationFn: (conversationId: string) =>
+      conversationalAnalyticsApi.suggestConversationName(
+        tenantId,
+        conversationId,
+      ),
     onSuccess: (data) => {
-      patchConversationCaches(queryClient, data);
+      patchConversationCaches(queryClient, tenantId, data);
     },
   });
 };
 
 export const useUpdateConversation = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: conversationalAnalyticsApi.updateConversation,
+    mutationFn: (payload: ConversationDto) =>
+      conversationalAnalyticsApi.updateConversation(tenantId, payload),
     onSuccess: (data) => {
-      patchConversationCaches(queryClient, data);
+      patchConversationCaches(queryClient, tenantId, data);
     },
   });
 };
 
 export const useDeleteConversation = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: conversationalAnalyticsApi.deleteConversation,
+    mutationFn: (conversationId: string) =>
+      conversationalAnalyticsApi.deleteConversation(tenantId, conversationId),
     onSuccess: (_, conversationId) => {
       queryClient.removeQueries({
-        queryKey: conversationKeys.detail(conversationId),
+        queryKey: conversationKeys.detail(tenantId, conversationId),
       });
       queryClient.invalidateQueries({
-        queryKey: conversationKeys.lists(),
+        queryKey: conversationKeys.lists(tenantId),
       });
     },
   });
@@ -266,17 +313,22 @@ export const useDeleteConversation = () => {
 
 export const useBulkDeleteConversations = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: conversationalAnalyticsApi.bulkDeleteConversations,
+    mutationFn: (conversationIds: string[]) =>
+      conversationalAnalyticsApi.bulkDeleteConversations(
+        tenantId,
+        conversationIds,
+      ),
     onSuccess: (_, conversationIds) => {
       conversationIds.forEach((conversationId) => {
         queryClient.removeQueries({
-          queryKey: conversationKeys.detail(conversationId),
+          queryKey: conversationKeys.detail(tenantId, conversationId),
         });
       });
       queryClient.invalidateQueries({
-        queryKey: conversationKeys.lists(),
+        queryKey: conversationKeys.lists(tenantId),
       });
     },
   });
@@ -284,17 +336,22 @@ export const useBulkDeleteConversations = () => {
 
 export const useAppendUserMessage = (conversationId: string) => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
     mutationFn: (payload: AppendUserMessageDto) =>
-      conversationalAnalyticsApi.appendUserMessage(conversationId, payload),
+      conversationalAnalyticsApi.appendUserMessage(
+        tenantId,
+        conversationId,
+        payload,
+      ),
     onSuccess: (data) => {
       queryClient.setQueryData<ConversationWithMessagesDto>(
-        conversationKeys.detail(conversationId),
+        conversationKeys.detail(tenantId, conversationId),
         data,
       );
       queryClient.invalidateQueries({
-        queryKey: conversationKeys.lists(),
+        queryKey: conversationKeys.lists(tenantId),
       });
     },
   });

@@ -4,6 +4,7 @@ import { Card, Text } from "src/components/design-system";
 import { CanvasStats } from "./CanvasStats";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 import type { CanvasDto } from "src/components/Canvases/dto";
 
 type CanvasCardProps = {
@@ -12,12 +13,13 @@ type CanvasCardProps = {
 
 export const CanvasCard = ({ canvas }: CanvasCardProps) => {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
 
   const handleClick = useCallback(() => {
     if (canvas.id) {
-      navigate(APP_ROUTES.CANVAS.replace(":id", canvas.id));
+      navigate(toTenantPath(APP_ROUTES.CANVAS.replace(":id", canvas.id)));
     }
-  }, [canvas.id, navigate]);
+  }, [canvas.id, navigate, toTenantPath]);
 
   return (
     <Card onClick={canvas.id ? handleClick : undefined}>

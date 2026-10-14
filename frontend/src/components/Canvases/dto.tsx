@@ -1,3 +1,5 @@
+import { ResourceCapabilities } from "src/api/dto";
+
 export type CanvasDto = {
   id: string | null;
   name: string | null;
@@ -8,7 +10,10 @@ export type CanvasDto = {
   sql_cell_count: number;
   chart_cell_count: number;
   dashboard_charts_count: number;
+  capabilities: ResourceCapabilities;
 };
+
+export type NewCanvasDto = Omit<CanvasDto, "id" | "capabilities">;
 
 export enum CanvasesPageState {
   LIST = "LIST",

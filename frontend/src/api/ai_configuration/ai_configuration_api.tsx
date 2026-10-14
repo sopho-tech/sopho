@@ -7,49 +7,43 @@ import {
   TestAiConfigurationResult,
   UpsertAiConfigurationInput,
 } from "src/api/ai_configuration/dto";
+import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
 export const aiConfigurationKeys = {
-  all: ["ai_configuration"] as const,
-  detail: () => [...aiConfigurationKeys.all, "detail"] as const,
+  all: (tenantId: string) => [tenantId, "ai_configuration"] as const,
+  detail: (tenantId: string) =>
+    [...aiConfigurationKeys.all(tenantId), "detail"] as const,
 };
 
 export const aiConfigurationApi = {
-  get: async (): Promise<AiConfiguration> => {
-    const url = API_ENDPOINTS.AI_CONFIGURATION.GET;
+  get: async (tenantId: string): Promise<AiConfiguration> => {
     return (await ApiService.get<AiConfiguration>({
-      url,
+      url: tenantApiUrl(tenantId, API_ENDPOINTS.AI_CONFIGURATION.GET),
       onlyBody: true,
     })) as AiConfiguration;
   },
   update: async (
+    tenantId: string,
     payload: UpsertAiConfigurationInput,
   ): Promise<AiConfiguration> => {
-    const url = API_ENDPOINTS.AI_CONFIGURATION.UPDATE;
     return (await ApiService.put<AiConfiguration>({
-      url,
+      url: tenantApiUrl(tenantId, API_ENDPOINTS.AI_CONFIGURATION.UPDATE),
       data: payload,
       onlyBody: true,
       headers: { "Content-Type": "application/json" },
     })) as AiConfiguration;
   },
-  remove: async (): Promise<void> => {
-    const url = API_ENDPOINTS.AI_CONFIGURATION.DELETE;
-    const response = await fetch(url, {
-      method: "DELETE",
-      credentials: "include",
+  remove: async (tenantId: string): Promise<void> => {
+    await ApiService.delete({
+      url: tenantApiUrl(tenantId, API_ENDPOINTS.AI_CONFIGURATION.DELETE),
     });
-    if (!response.ok) {
-      throw new Error(
-        `Failed to delete AI configuration: ${response.statusText}`,
-      );
-    }
   },
   test: async (
+    tenantId: string,
     payload: TestAiConfigurationInput,
   ): Promise<TestAiConfigurationResult> => {
-    const url = API_ENDPOINTS.AI_CONFIGURATION.TEST;
     return (await ApiService.post<TestAiConfigurationResult>({
-      url,
+      url: tenantApiUrl(tenantId, API_ENDPOINTS.AI_CONFIGURATION.TEST),
       data: payload,
       onlyBody: true,
       headers: { "Content-Type": "application/json" },
@@ -57,20 +51,24 @@ export const aiConfigurationApi = {
   },
 };
 
-export const useAiConfiguration = () =>
-  useQuery({
-    queryKey: aiConfigurationKeys.detail(),
-    queryFn: aiConfigurationApi.get,
+export const useAiConfiguration = () => {
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: aiConfigurationKeys.detail(tenantId),
+    queryFn: () => aiConfigurationApi.get(tenantId),
     staleTime: 30 * 1000,
   });
+};
 
 export const useUpdateAiConfiguration = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
   return useMutation({
-    mutationFn: aiConfigurationApi.update,
+    mutationFn: (payload: UpsertAiConfigurationInput) =>
+      aiConfigurationApi.update(tenantId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: aiConfigurationKeys.detail(),
+        queryKey: aiConfigurationKeys.detail(tenantId),
       });
     },
   });
@@ -78,17 +76,21 @@ export const useUpdateAiConfiguration = () => {
 
 export const useDeleteAiConfiguration = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
   return useMutation({
-    mutationFn: aiConfigurationApi.remove,
+    mutationFn: () => aiConfigurationApi.remove(tenantId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: aiConfigurationKeys.detail(),
+        queryKey: aiConfigurationKeys.detail(tenantId),
       });
     },
   });
 };
 
-export const useTestAiConfiguration = () =>
-  useMutation({
-    mutationFn: aiConfigurationApi.test,
+export const useTestAiConfiguration = () => {
+  const tenantId = useTenantId();
+  return useMutation({
+    mutationFn: (payload: TestAiConfigurationInput) =>
+      aiConfigurationApi.test(tenantId, payload),
   });
+};

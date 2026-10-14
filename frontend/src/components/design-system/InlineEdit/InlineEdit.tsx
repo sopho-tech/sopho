@@ -21,6 +21,7 @@ type InlineEditProps = {
   defaultValue?: string;
   textColor?: TextColor;
   className?: string;
+  readOnly?: boolean;
 };
 
 export function InlineEdit({
@@ -32,6 +33,7 @@ export function InlineEdit({
   defaultValue,
   textColor,
   className,
+  readOnly = false,
 }: InlineEditProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
@@ -50,7 +52,7 @@ export function InlineEdit({
   };
 
   const handleClick = () => {
-    if (!isEditing) {
+    if (!isEditing && !readOnly) {
       setEditValue(value);
       setIsEditing(true);
     }

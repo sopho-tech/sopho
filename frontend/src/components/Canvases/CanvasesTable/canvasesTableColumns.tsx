@@ -48,6 +48,7 @@ export function createCanvasesTableColumns({
       cell: (props) => (
         <ActionButtons
           connectionId={props.row.original.id ?? ""}
+          capabilities={props.row.original.capabilities}
           onViewClick={onViewClick}
           onEditClick={onEditClick}
           onDeleteClick={onDeleteClick}

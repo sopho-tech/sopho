@@ -8,40 +8,52 @@ import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { NotebookDto } from "src/components/Notebook/dto";
 import { PaginatedData, PaginatedDataResponse } from "../dto";
+import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
 // Query keys for notebooks
 export const notebookKeys = {
-  all: ["notebooks"] as const,
-  lists: () => [...notebookKeys.all, "list"] as const,
-  list: (filters: string) => [...notebookKeys.lists(), { filters }] as const,
-  listPaginated: (page: number, pageSize: number) =>
-    [...notebookKeys.lists(), { page, pageSize }] as const,
-  details: () => [...notebookKeys.all, "detail"] as const,
-  detail: (id: string) => [...notebookKeys.details(), id] as const,
-  byCanvas: (canvasId: string) =>
-    [...notebookKeys.all, "byCanvas", canvasId] as const,
-  cells: () => [...notebookKeys.all, "cells"] as const,
-  cellsByNotebook: (notebookId: string, cellType?: string) =>
-    [...notebookKeys.cells(), notebookId, { cellType }] as const,
+  all: (tenantId: string) => [tenantId, "notebooks"] as const,
+  lists: (tenantId: string) =>
+    [...notebookKeys.all(tenantId), "list"] as const,
+  listPaginated: (tenantId: string, page: number, pageSize: number) =>
+    [...notebookKeys.lists(tenantId), { page, pageSize }] as const,
+  details: (tenantId: string) =>
+    [...notebookKeys.all(tenantId), "detail"] as const,
+  detail: (tenantId: string, id: string) =>
+    [...notebookKeys.details(tenantId), id] as const,
+  byCanvas: (tenantId: string, canvasId: string) =>
+    [...notebookKeys.all(tenantId), "byCanvas", canvasId] as const,
+  cells: (tenantId: string) =>
+    [...notebookKeys.all(tenantId), "cells"] as const,
+  cellsByNotebook: (tenantId: string, notebookId: string, cellType?: string) =>
+    [...notebookKeys.cells(tenantId), notebookId, { cellType }] as const,
 };
 
 // API functions
 const notebookApi = {
-  getNotebook: async (notebookId: string): Promise<NotebookDto> => {
+  getNotebook: async (
+    tenantId: string,
+    notebookId: string,
+  ): Promise<NotebookDto> => {
     const response = await ApiService.get({
-      url:
-        API_ENDPOINTS.NOTEBOOK.GET_BY_ID?.replace(":id", notebookId) ||
-        `/notebooks/${notebookId}`,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.NOTEBOOK.GET_BY_ID.replace(":id", notebookId),
+      ),
       onlyBody: true,
     });
     return response as NotebookDto;
   },
 
   getAllNotebooks: async (
+    tenantId: string,
     page?: number,
     pageSize?: number
   ): Promise<PaginatedData<NotebookDto>> => {
-    const url = new URL(API_ENDPOINTS.NOTEBOOK.GET_ALL, window.location.origin);
+    const url = new URL(
+      tenantApiUrl(tenantId, API_ENDPOINTS.NOTEBOOK.GET_ALL),
+      window.location.origin,
+    );
     if (page !== undefined) {
       url.searchParams.set("page", page.toString());
     }
@@ -64,10 +76,11 @@ const notebookApi = {
   },
 
   createNotebook: async (
+    tenantId: string,
     payload: Omit<NotebookDto, "id">
   ): Promise<NotebookDto> => {
     const response = await ApiService.post({
-      url: API_ENDPOINTS.NOTEBOOK.CREATE,
+      url: tenantApiUrl(tenantId, API_ENDPOINTS.NOTEBOOK.CREATE),
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -76,59 +89,30 @@ const notebookApi = {
     return response as NotebookDto;
   },
 
-  updateNotebook: async ({
-    notebookId,
-    payload,
-  }: {
-    notebookId: string;
-    payload: Partial<NotebookDto>;
-  }): Promise<NotebookDto> => {
-    const response = await ApiService.put({
-      url: API_ENDPOINTS.NOTEBOOK.UPDATE.replace(":id", notebookId),
-      data: payload,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    return response as NotebookDto;
-  },
-
-  deleteNotebook: async (notebookId: string): Promise<void> => {
-    const response = await fetch(
-      API_ENDPOINTS.NOTEBOOK.DELETE?.replace(":id", notebookId) ||
-        `/notebooks/${notebookId}`,
-      {
-        method: "DELETE",
-        credentials: "include",
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to delete notebook: ${response.statusText}`);
-    }
-  },
-
-  getNotebooksByCanvasId: async (canvasId: string): Promise<NotebookDto[]> => {
+  getNotebooksByCanvasId: async (
+    tenantId: string,
+    canvasId: string,
+  ): Promise<NotebookDto[]> => {
     const response = await ApiService.get({
-      url:
-        API_ENDPOINTS.NOTEBOOK.GET_BY_CANVAS_ID?.replace(
-          ":canvas_id",
-          canvasId
-        ) || `/notebooks/canvas/${canvasId}`,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.NOTEBOOK.GET_BY_CANVAS_ID.replace(":canvas_id", canvasId),
+      ),
       onlyBody: true,
     });
     return response as NotebookDto[];
   },
 
   getCellsByNotebookId: async (
+    tenantId: string,
     notebookId: string,
     cellType?: string
   ): Promise<NotebookDto> => {
     const url = new URL(
-      API_ENDPOINTS.NOTEBOOK.GET_CELLS_BY_NOTEBOOK_ID?.replace(
-        ":id",
-        notebookId
-      ) || `/notebooks/${notebookId}/cells`,
+      tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.NOTEBOOK.GET_CELLS_BY_NOTEBOOK_ID.replace(":id", notebookId),
+      ),
       window.location.origin
     );
     if (cellType) {
@@ -144,33 +128,38 @@ const notebookApi = {
 
 // Query hooks
 export const useNotebook = (notebookId: string) => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: notebookKeys.detail(notebookId),
-    queryFn: () => notebookApi.getNotebook(notebookId),
+    queryKey: notebookKeys.detail(tenantId, notebookId),
+    queryFn: () => notebookApi.getNotebook(tenantId, notebookId),
     enabled: !!notebookId,
   });
 };
 
 export const useAllNotebooks = (page?: number, pageSize?: number) => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: notebookKeys.listPaginated(page ?? 1, pageSize ?? 10),
-    queryFn: () => notebookApi.getAllNotebooks(page, pageSize),
+    queryKey: notebookKeys.listPaginated(tenantId, page ?? 1, pageSize ?? 10),
+    queryFn: () => notebookApi.getAllNotebooks(tenantId, page, pageSize),
     placeholderData: keepPreviousData,
   });
 };
 
 export const useNotebooksByCanvasId = (canvasId: string) => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: notebookKeys.byCanvas(canvasId),
-    queryFn: () => notebookApi.getNotebooksByCanvasId(canvasId),
+    queryKey: notebookKeys.byCanvas(tenantId, canvasId),
+    queryFn: () => notebookApi.getNotebooksByCanvasId(tenantId, canvasId),
     enabled: !!canvasId,
   });
 };
 
 export const useCellsByNotebookId = (notebookId: string, cellType?: string) => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: notebookKeys.cellsByNotebook(notebookId, cellType),
-    queryFn: () => notebookApi.getCellsByNotebookId(notebookId, cellType),
+    queryKey: notebookKeys.cellsByNotebook(tenantId, notebookId, cellType),
+    queryFn: () =>
+      notebookApi.getCellsByNotebookId(tenantId, notebookId, cellType),
     enabled: !!notebookId,
   });
 };
@@ -181,16 +170,18 @@ export const useCreateNotebook = (callbacks?: {
   onError?: (error: Error) => void;
 }) => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: notebookApi.createNotebook,
+    mutationFn: (payload: Omit<NotebookDto, "id">) =>
+      notebookApi.createNotebook(tenantId, payload),
     onSuccess: (data) => {
       // Add the new notebook to the cache
-      queryClient.setQueryData(notebookKeys.detail(data.id!), data);
+      queryClient.setQueryData(notebookKeys.detail(tenantId, data.id!), data);
 
       // Invalidate the notebooks list to refetch
       queryClient.invalidateQueries({
-        queryKey: notebookKeys.lists(),
+        queryKey: notebookKeys.lists(tenantId),
       });
 
       // Call custom success callback if provided
@@ -205,48 +196,6 @@ export const useCreateNotebook = (callbacks?: {
       if (callbacks?.onError) {
         callbacks.onError(error);
       }
-    },
-  });
-};
-
-export const useUpdateNotebook = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: notebookApi.updateNotebook,
-    onSuccess: (data, { notebookId }) => {
-      // Update the specific notebook query
-      queryClient.setQueryData(notebookKeys.detail(notebookId), data);
-
-      // Invalidate the notebooks list to refetch
-      queryClient.invalidateQueries({
-        queryKey: notebookKeys.lists(),
-      });
-    },
-    onError: (error) => {
-      console.error("Failed to update notebook:", error);
-    },
-  });
-};
-
-export const useDeleteNotebook = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: notebookApi.deleteNotebook,
-    onSuccess: (_, notebookId) => {
-      // Remove the notebook from cache
-      queryClient.removeQueries({
-        queryKey: notebookKeys.detail(notebookId),
-      });
-
-      // Invalidate the notebooks list to refetch
-      queryClient.invalidateQueries({
-        queryKey: notebookKeys.lists(),
-      });
-    },
-    onError: (error) => {
-      console.error("Failed to delete notebook:", error);
     },
   });
 };

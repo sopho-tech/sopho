@@ -17,12 +17,14 @@ import { formatTimestamp } from "src/utils/timestamp_utils";
 import { ConnectionsEmptyState } from "src/components/Home/components/EmptyState";
 import { useNavigate, generatePath } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 
 export function ConnectionsTable() {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const setConnectionId = useStore((state) => state.connection.setConnectionId);
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
   const deleteMutation = useDeleteConnection();
   const { data: connectionsData, isLoading, isError } = useConnections();
@@ -33,14 +35,14 @@ export function ConnectionsTable() {
       setConnectionId(id);
       setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.DETAIL);
     },
-    [setConnectionId, setConnectionDetailsPageState]
+    [setConnectionId, setConnectionDetailsPageState],
   );
 
   const handleEditConnection = useCallback(
     (id: string) => {
-      navigate(generatePath(APP_ROUTES.CONNECTION_EDIT, { id }));
+      navigate(toTenantPath(generatePath(APP_ROUTES.CONNECTION_EDIT, { id })));
     },
-    [navigate]
+    [navigate, toTenantPath],
   );
 
   const handleDelete = useCallback(
@@ -49,7 +51,7 @@ export function ConnectionsTable() {
         deleteMutation.mutate(id);
       }
     },
-    [deleteMutation]
+    [deleteMutation],
   );
 
   const handleCreateConnection = useCallback(() => {
@@ -117,6 +119,7 @@ export function ConnectionsTable() {
         cell: (props) => (
           <ActionButtons
             connectionId={props.row.original.id}
+            capabilities={props.row.original.capabilities}
             onViewClick={handleViewConnection}
             onEditClick={handleEditConnection}
             onDeleteClick={handleDelete}
@@ -125,7 +128,7 @@ export function ConnectionsTable() {
         size: 100,
       },
     ],
-    [handleViewConnection, handleEditConnection, handleDelete]
+    [handleViewConnection, handleEditConnection, handleDelete],
   );
 
   const render = () => {

@@ -5,6 +5,7 @@ import { useCreateConversation } from "src/api/conversational_analytics/queries"
 import { useConnections } from "src/api/connection/queries";
 import { useAiConfiguration } from "src/api/ai_configuration";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 import {
   MessageComposer,
   type MessageComposerHandle,
@@ -17,6 +18,7 @@ import styles from "./NewConversationPanel.module.css";
 
 export function NewConversationPanel() {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const { mutate: createConversation, isPending } = useCreateConversation();
   const { data: connections } = useConnections();
 
@@ -48,9 +50,11 @@ export function NewConversationPanel() {
       {
         onSuccess: (data) => {
           navigate(
-            generatePath(
-              APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION,
-              { id: data.id },
+            toTenantPath(
+              generatePath(
+                APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION,
+                { id: data.id },
+              ),
             ),
           );
         },

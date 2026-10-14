@@ -9,6 +9,7 @@ import {
   useConversations,
 } from "src/api/conversational_analytics";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 import {
   CONVERSATION_LIST_PAGE_SIZE,
   CONVERSATION_SEARCH_DEBOUNCE_MS,
@@ -21,6 +22,7 @@ import { useConversationSelection } from "./useConversationSelection";
 
 export const ConversationList = () => {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: CONVERSATION_LIST_PAGE_SIZE,
@@ -62,12 +64,17 @@ export const ConversationList = () => {
         return;
       }
       navigate(
-        generatePath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION, {
-          id: conversation.id,
-        }),
+        toTenantPath(
+          generatePath(
+            APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION,
+            {
+              id: conversation.id,
+            },
+          ),
+        ),
       );
     },
-    [navigate, isSelectMode, toggle],
+    [navigate, isSelectMode, toggle, toTenantPath],
   );
 
   const columns = useMemo(
@@ -127,7 +134,9 @@ export const ConversationList = () => {
         }
         onDeleteSelected={() => setIsDeleteDialogOpen(true)}
         onCreateConversation={() =>
-          navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX)
+          navigate(
+            toTenantPath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX),
+          )
         }
       />
 

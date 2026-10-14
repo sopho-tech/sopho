@@ -2,8 +2,12 @@ export const SEARCH_PARAMS = {
   CELL: "cell",
 };
 
+export const TENANT_ROUTE_PARAMETER = "tenantId";
+
 export const APP_ROUTES = {
   INDEX: "/",
+  ONBOARDING: "/onboarding",
+  TENANT: "/t/:tenantId",
   CANVAS: "/canvas/:id",
   CANVASES: "/canvas",
   CANVAS_ROUTES: {

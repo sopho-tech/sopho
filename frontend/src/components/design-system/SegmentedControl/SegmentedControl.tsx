@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useId } from "react";
 import SegmentedControlStyles from "src/components/design-system/SegmentedControl/SegmentedControl.module.css";
 import { IconType } from "src/components/design-system/datatypes";
 import { Icon } from "../Icon";
@@ -27,6 +27,7 @@ export function SegmentedControl({
   onValueChange,
   disabled = false,
 }: SegmentedControlProps) {
+  const indicatorLayoutId = `segmented-control-indicator-${useId()}`;
   return (
     <div className={SegmentedControlStyles.root} role="tablist">
       {options.map((option) => {
@@ -35,7 +36,7 @@ export function SegmentedControl({
           <div className={SegmentedControlStyles.segmentWrapper}>
             {isSelected && (
               <motion.div
-                layoutId="segmented-control-indicator"
+                layoutId={indicatorLayoutId}
                 className={SegmentedControlStyles.indicator}
                 transition={layoutSpringTransition}
               />

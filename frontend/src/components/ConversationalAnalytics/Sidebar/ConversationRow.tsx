@@ -7,6 +7,7 @@ import { ConversationActionsMenu } from "src/components/ConversationalAnalytics/
 import { useCallback, useState } from "react";
 import { generatePath, useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 
 type ConversationRowProps = {
   conversation: ConversationDto;
@@ -18,6 +19,7 @@ export const ConversationRow = ({
   isActive,
 }: ConversationRowProps) => {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const { isStreaming } = useConversationStream(conversation.id);
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,11 +28,13 @@ export const ConversationRow = ({
 
   const handleClick = useCallback(() => {
     navigate(
-      generatePath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION, {
-        id: conversation.id,
-      }),
+      toTenantPath(
+        generatePath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION, {
+          id: conversation.id,
+        }),
+      ),
     );
-  }, [navigate, conversation.id]);
+  }, [navigate, conversation.id, toTenantPath]);
 
   return (
     <MotionFlex

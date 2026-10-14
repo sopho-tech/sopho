@@ -45,15 +45,7 @@ export const authApi = {
     return response;
   },
   deleteSession: async (): Promise<void> => {
-    const url = API_ENDPOINTS.AUTH.DELETE_SESSION;
-    const response = await fetch(url, {
-      method: "DELETE",
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to delete session: ${response.statusText}`);
-    }
+    await ApiService.delete({ url: API_ENDPOINTS.AUTH.DELETE_SESSION });
   },
   refreshToken: async (): Promise<boolean> => {
     const url = API_ENDPOINTS.AUTH.REFRESH_TOKEN;
@@ -123,10 +115,7 @@ export const useDeleteSession = (callbacks?: {
   return useMutation({
     mutationFn: authApi.deleteSession,
     onSuccess: () => {
-      // Clear all auth-related queries
-      queryClient.removeQueries({
-        queryKey: authKeys.all,
-      });
+      queryClient.clear();
 
       // Call custom success callback if provided
       if (callbacks?.onSuccess) {

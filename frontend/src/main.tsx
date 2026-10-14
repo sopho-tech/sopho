@@ -8,6 +8,8 @@ import { Connections } from "src/components/Connection/ConnectionsPage";
 import { AIConfiguration } from "src/components/Settings/AIConfiguration";
 import { Profile } from "src/components/Profile";
 import { ProtectedRoute } from "src/components/ProtectedRoute";
+import { TenantIndexRedirect, TenantRoute } from "src/components/TenantRoute";
+import { Onboarding } from "src/components/Onboarding";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { ReactQueryClientProvider } from "./utils/react_query_provider";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -29,80 +31,89 @@ const router = createBrowserRouter([
     children: [
       {
         path: APP_ROUTES.INDEX,
-        element: <Home />,
+        element: <TenantIndexRedirect />,
       },
       {
-        path: APP_ROUTES.CONVERSATIONAL_ANALYTICS,
-        element: <ConversationalAnalytics />,
-        children: [
-          {
-            path: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX,
-            element: <NewConversationPanel />,
-          },
-          {
-            path: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION,
-            element: <ExistingConversationPanel />,
-          },
-          {
-            path: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATIONS,
-            element: <ConversationList />,
-          },
-        ],
+        path: APP_ROUTES.ONBOARDING,
+        element: <Onboarding />,
       },
       {
-        path: APP_ROUTES.SETTINGS,
-        element: <Settings />,
+        path: APP_ROUTES.TENANT,
+        element: <TenantRoute />,
         children: [
           {
             index: true,
-            element: (
-              <Navigate
-                to={APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS}
-                replace
-              />
-            ),
+            element: <Home />,
           },
           {
-            path: "connections",
-            element: <Connections />,
+            path: "conversational_analytics",
+            element: <ConversationalAnalytics />,
+            children: [
+              {
+                index: true,
+                element: <NewConversationPanel />,
+              },
+              {
+                path: "conversation/:id",
+                element: <ExistingConversationPanel />,
+              },
+              {
+                path: "conversations",
+                element: <ConversationList />,
+              },
+            ],
           },
           {
-            path: "ai-configurations",
-            element: <AIConfiguration />,
+            path: "settings",
+            element: <Settings />,
+            children: [
+              {
+                index: true,
+                element: <Navigate to="connections" replace />,
+              },
+              {
+                path: "connections",
+                element: <Connections />,
+              },
+              {
+                path: "ai-configurations",
+                element: <AIConfiguration />,
+              },
+              {
+                path: "connection/new",
+                element: <ConnectionNew />,
+              },
+              {
+                path: "connection/:id/edit",
+                element: <ConnectionEdit />,
+              },
+            ],
           },
           {
-            path: "connection/new",
-            element: <ConnectionNew />,
+            path: "profile",
+            element: <Profile />,
           },
           {
-            path: "connection/:id/edit",
-            element: <ConnectionEdit />,
-          },
-        ],
-      },
-      {
-        path: APP_ROUTES.PROFILE,
-        element: <Profile />,
-      },
-      {
-        path: APP_ROUTES.CANVASES,
-        element: <Canvases />,
-      },
-      {
-        path: APP_ROUTES.CANVAS,
-        element: <Canvas />,
-        children: [
-          {
-            index: true,
-            element: <CanvasIndexRedirect />,
+            path: "canvas",
+            element: <Canvases />,
           },
           {
-            path: APP_ROUTES.CANVAS_ROUTES.NOTEBOOK,
-            element: <Notebook />,
-          },
-          {
-            path: APP_ROUTES.CANVAS_ROUTES.DASHBOARD,
-            element: <Dashboard />,
+            path: "canvas/:id",
+            element: <Canvas />,
+            children: [
+              {
+                index: true,
+                element: <CanvasIndexRedirect />,
+              },
+              {
+                path: APP_ROUTES.CANVAS_ROUTES.NOTEBOOK,
+                element: <Notebook />,
+              },
+              {
+                path: APP_ROUTES.CANVAS_ROUTES.DASHBOARD,
+                element: <Dashboard />,
+              },
+            ],
           },
         ],
       },

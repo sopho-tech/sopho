@@ -49,6 +49,7 @@ const REFRESH_DASHBOARD_TOOLTIP = {
 type CanvasButtonsProps = {
   viewType: string;
   onViewTypeChange: (value: string) => void;
+  canEdit: boolean;
 };
 
 function SummarizeButton({ dashboardId }: { dashboardId: string }) {
@@ -126,6 +127,7 @@ function RefreshAllChartsButton() {
 export function CanvasButtons({
   viewType,
   onViewTypeChange,
+  canEdit,
 }: CanvasButtonsProps) {
   const params = useParams();
   const canvasId = params.id || "";
@@ -142,6 +144,7 @@ export function CanvasButtons({
   const dashboardId = dashboardQuery.data?.id;
   const hasSavedCharts = (dashboardQuery.data?.layout?.length ?? 0) > 0;
   const canSummarize =
+    canEdit &&
     isDashboardView &&
     !isEditing &&
     hasSavedCharts &&
@@ -151,7 +154,7 @@ export function CanvasButtons({
   return (
     <Flex direction="row" gap="md">
       <Flex direction="row" gap="md">
-        {isDashboardView && (
+        {canEdit && isDashboardView && (
           <IconButton
             type={isEditing ? "save" : "edit"}
             onClick={handleEditSaveClick}
@@ -160,7 +163,7 @@ export function CanvasButtons({
             tooltip={EDIT_DASHBOARD_TOOLTIP}
           />
         )}
-        {isDashboardView && isEditing && (
+        {canEdit && isDashboardView && isEditing && (
           <IconButton
             type="circle_x"
             onClick={handleCancelClick}
