@@ -148,10 +148,10 @@ impl Configurations {
     }
 
     pub fn from_env() -> anyhow::Result<Self> {
-        dotenv::dotenv().ok();
+        dotenvy::dotenv().ok();
 
         Ok(Self {
-            database_url: match dotenv::var("DATABASE_URL") {
+            database_url: match dotenvy::var("DATABASE_URL") {
                 Ok(url) => url.into(),
                 Err(_) => {
                     let database_url = Cow::Owned(db::get_sqlite_database_file_path());
@@ -161,20 +161,20 @@ impl Configurations {
                     database_url
                 }
             },
-            port: match dotenv::var("PORT") {
+            port: match dotenvy::var("PORT") {
                 Ok(port) => port.parse()?,
                 _ => 8000,
             },
             frontend_dir: Cow::Borrowed("/app/frontend/dist/"),
-            environment: match dotenv::var("ENVIRONMENT") {
+            environment: match dotenvy::var("ENVIRONMENT") {
                 Ok(environment) => environment.into(),
                 Err(_err) => Cow::Borrowed("production"),
             },
-            cookie_secure: match dotenv::var("COOKIE_SECURE") {
+            cookie_secure: match dotenvy::var("COOKIE_SECURE") {
                 Ok(cookie_secure) => cookie_secure.parse()?,
                 Err(_err) => false,
             },
-            encryption_key: match dotenv::var("ENCRYPTION_KEY") {
+            encryption_key: match dotenvy::var("ENCRYPTION_KEY") {
                 Ok(v) => v.into(),
                 Err(_) => {
                     if let Some(key) = get_encryption_key_from_path()? {
@@ -189,19 +189,19 @@ impl Configurations {
                     }
                 }
             },
-            admin_username: match dotenv::var("ADMIN_USERNAME") {
+            admin_username: match dotenvy::var("ADMIN_USERNAME") {
                 Ok(v) => v.into(),
                 Err(err) => bail!("missing ADMIN_USERNAME: {err}"),
             },
-            admin_password: match dotenv::var("ADMIN_PASSWORD") {
+            admin_password: match dotenvy::var("ADMIN_PASSWORD") {
                 Ok(v) => v.into(),
                 Err(err) => bail!("missing ADMIN_PASSWORD: {err}"),
             },
-            admin_email: match dotenv::var("ADMIN_EMAIL") {
+            admin_email: match dotenvy::var("ADMIN_EMAIL") {
                 Ok(v) => v.into(),
                 Err(err) => bail!("missing ADMIN_EMAIL: {err}"),
             },
-            admin_full_name: match dotenv::var("ADMIN_FULL_NAME") {
+            admin_full_name: match dotenvy::var("ADMIN_FULL_NAME") {
                 Ok(v) => v.into(),
                 Err(err) => bail!("missing ADMIN_FULL_NAME: {err}"),
             },

@@ -34,7 +34,7 @@ use axum::{
     middleware::{self, Next},
     response::{IntoResponse, Response},
 };
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use http::header;
 use std::path::PathBuf;
 use tower_cookies::CookieManagerLayer;

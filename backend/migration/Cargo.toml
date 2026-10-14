@@ -9,16 +9,15 @@ name = "migration"
 path = "src/lib.rs"
 
 [dependencies]
-async-std = { version = "1", features = ["attributes", "tokio1"] }
 sea-orm-migration = {
   version = "1.1.19",
   features = [
-    "runtime-async-std-native-tls",
-    "sqlx-mysql",
+    "runtime-tokio-native-tls",
     "sqlx-postgres",
     "sqlx-sqlite",
   ]
 }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [lints]
 workspace = true
