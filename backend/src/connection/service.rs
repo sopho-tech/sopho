@@ -146,7 +146,7 @@ pub async fn execute_create_connection(
 pub async fn create_connection(
     app_state: &AppState,
     payload: dto::CreateConnectionDto,
-) -> impl IntoResponse {
+) -> impl IntoResponse + use<> {
     match execute_create_connection(app_state, payload).await {
         Ok(connection) => {
             let response_dto = dto::ConnectionDto::from(connection);
