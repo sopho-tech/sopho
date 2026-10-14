@@ -1,3 +1,9 @@
+.git
+**/node_modules
+**/coverage
+**/playwright-report
+**/test-results
 backend/target
-frontend/node_modules
 frontend/dist
+docs
+e2e

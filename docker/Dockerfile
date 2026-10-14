@@ -1,38 +1,39 @@
-# Frontend builder stage
-FROM node:20 AS frontend-builder
-WORKDIR /app
-COPY frontend/package*.json ./
+# syntax=docker/dockerfile:1
+# check=error=true
+
+FROM node:24-trixie-slim AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
-COPY frontend/ .
+COPY frontend/ ./
 RUN npm run build
 
-# Backend builder stage
-FROM rust:1.93.1 AS backend-builder
-RUN apt-get update && apt-get install -y --no-install-recommends protobuf-compiler && rm -rf /var/lib/apt/lists/*
+FROM rust:1.99.0-trixie AS chef
+ENV RUSTUP_TOOLCHAIN=1.99.0
+RUN cargo install --locked cargo-chef --version 0.1.78
 WORKDIR /app
-COPY backend/ .
-RUN cargo build --release
 
-# Final stage
-FROM debian:bookworm-slim
+FROM chef AS planner
+COPY backend/ ./
+RUN cargo chef prepare --recipe-path recipe.json
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libssl3 \
-    ca-certificates \
+FROM chef AS backend-builder
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --locked --package sopho --recipe-path recipe.json
+COPY backend/ ./
+RUN cargo build --release --locked --package sopho
 
-# Copy frontend build output to /app/frontend/dist
-# (backend expects frontend at project_root/frontend/dist, where project_root is parent of CARGO_MANIFEST_DIR)
-RUN mkdir -p /app/frontend
-COPY --from=frontend-builder /app/dist /app/frontend/dist
-
-# Copy backend binary and demo data
+FROM debian:trixie-slim
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends ca-certificates libssl3t64 \
+    && rm -rf /var/lib/apt/lists/*
 ENV FRONTEND_DIR=/app/frontend/dist/
-
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 WORKDIR /app/backend
 COPY --from=backend-builder /app/target/release/sopho ./sopho
 COPY backend/demo /app/demo
-RUN chmod +x sopho
-
 EXPOSE 8000
 CMD ["./sopho"]
