@@ -5,7 +5,7 @@
 - [rustup](https://rustup.rs). The toolchain version comes from `backend/rust-toolchain.toml`.
 - The cargo tools: `make tools` installs cargo-nextest, cargo-llvm-cov, cargo-deny and cargo-shear.
 - Node 24, as pinned in `.nvmrc`.
-- Docker, for the Postgres-backed tests, the end-to-end suite and the image tests.
+- Docker, for the backend tests (they query a Postgres sample database even when the metadata database is SQLite), the end-to-end suite and the image tests.
 - [prek](https://github.com/j178/prek), which runs the git hooks.
 
 ## Setup
@@ -41,6 +41,8 @@ Fixers rewrite files and fail the commit, so review their changes, stage them an
 - `TEST_DB` selects the metadata database of the backend tests, `sqlite` or `postgres`. `backend/.cargo/config.toml` sets `sqlite` for local runs.
 - The Postgres-backed tests share one `postgres:17` container, which Testcontainers starts on first use. `TEST_POSTGRES_URL` points them at an existing server instead, for example `postgres://postgres:postgres@localhost:5432/postgres`.
 - `make test-clean` removes the shared test container.
+- The end-to-end suite serves Sopho on port 18080 and the fake LLM on port 18081. Free both ports before `make test-e2e`.
+- `make test-docker` pulls `ghcr.io/sopho-tech/sopho/sopho:latest` before the upgrade specs, so they always start from the latest release.
 - `make test-image SOPHO_IMAGE=<image> SOPHO_UPGRADE_FROM_IMAGE=<image>` tests an image you built yourself. Set `SOPHO_UPGRADE_FROM_IMAGE=none` only in a release that resets databases.
 
 ### Where new tests go
