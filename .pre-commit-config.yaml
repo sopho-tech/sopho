@@ -74,6 +74,18 @@ repos:
         entry: npx --no-install tombi lint
         language: system
         types: [toml]
+      - id: oxlint-frontend
+        name: oxlint (frontend)
+        entry: bash -c 'cd frontend && ../node_modules/.bin/oxlint'
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+      - id: oxlint-docs
+        name: oxlint (docs)
+        entry: bash -c 'cd docs && ../node_modules/.bin/oxlint'
+        language: system
+        files: ^docs/
+        pass_filenames: false
       - id: stylelint
         name: stylelint
         entry: npx --no-install stylelint "frontend/**/*.css" "docs/**/*.css"
