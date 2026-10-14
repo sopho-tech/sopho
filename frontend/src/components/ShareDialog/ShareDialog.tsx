@@ -19,7 +19,8 @@ import {
   useRevokeGrant,
   useUpdateVisibility,
 } from "src/api/grant/queries";
-import { TenantMemberDto, useTenantMembers } from "src/api/tenant/queries";
+import { TenantMemberDto } from "src/api/tenant/queries";
+import { useTenantMembers } from "src/api/member/queries";
 import {
   ACCESS_LEVEL_OPTIONS,
   DEFAULT_ACCESS_LEVEL,

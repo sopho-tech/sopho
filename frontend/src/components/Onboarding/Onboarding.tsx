@@ -1,35 +1,44 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router";
-import { Button, Flex, Form, Heading } from "src/components/design-system";
-import { useCreateTenant, useMemberships } from "src/api/tenant/queries";
+import {
+  BannerSlim,
+  Button,
+  Flex,
+  Heading,
+  Text,
+} from "src/components/design-system";
+import { useMemberships } from "src/api/tenant/queries";
+import { useReceivedInvitations } from "src/api/invitation/queries";
+import {
+  useDeleteSession,
+  usePlatformPermission,
+  useSignedInUser,
+} from "src/api/auth_api";
 import { APP_ROUTES } from "src/constants/app_routes";
-import { tenantPath } from "src/utils/tenant";
-
-const DEFAULT_FORM_VALUES = { name: "" };
+import { PLATFORM_PERMISSIONS } from "src/constants/platform_permissions";
+import { CreateWorkspaceForm } from "src/components/Onboarding/CreateWorkspaceForm";
+import { ReceivedInvitations } from "src/components/Onboarding/ReceivedInvitations";
 
 export function Onboarding() {
   const navigate = useNavigate();
+  const signedInUser = useSignedInUser();
   const memberships = useMemberships();
-  const createTenant = useCreateTenant({
-    onSuccess: (tenant) => {
-      navigate(tenantPath(tenant.id, APP_ROUTES.INDEX), { replace: true });
-    },
-  });
-
-  const handleSubmit = useCallback(
-    (values: Record<string, unknown>) => {
-      const name = values.name;
-      if (typeof name !== "string") {
-        throw new Error("Workspace name must be text");
-      }
-      createTenant.mutate(name.trim());
-    },
-    [createTenant],
+  const receivedInvitations = useReceivedInvitations();
+  const canCreateWorkspace = usePlatformPermission(
+    PLATFORM_PERMISSIONS.TENANT_CREATE,
   );
+  const signOut = useDeleteSession();
+  const { mutate: deleteSession } = signOut;
 
   const handleBack = useCallback(() => navigate(APP_ROUTES.INDEX), [navigate]);
+  const handleSignOut = useCallback(() => deleteSession(), [deleteSession]);
 
   const hasWorkspaces = (memberships.data?.length ?? 0) > 0;
+  const invitations = receivedInvitations.data;
+  const hasNothingToJoin =
+    invitations !== undefined &&
+    invitations.length === 0 &&
+    !canCreateWorkspace;
 
   return (
     <Flex
@@ -44,47 +53,61 @@ export function Onboarding() {
         borderRadius="lg"
         paddingX="xl"
         paddingY="xl"
-        gap="md"
+        gap="lg"
         backgroundColor="white"
       >
-        <Heading accessbilityLevel={1} size="xl" textAlign="center">
-          {hasWorkspaces ? "Create a workspace" : "Create your first workspace"}
-        </Heading>
-        <Heading
-          accessbilityLevel={2}
-          size="sm"
-          textAlign="center"
-          textColor="subtle"
-        >
-          Canvases, conversations and connections live inside a workspace
-        </Heading>
-        <Form
-          defaultValues={DEFAULT_FORM_VALUES}
-          onSubmit={handleSubmit}
-          submitOnEnter={true}
-        >
-          <Form.Fields>
-            <Form.Field
-              name="name"
-              required
-              errorMessage="Workspace name is required"
-            >
-              <Form.Input placeholder="Workspace name" />
-            </Form.Field>
-          </Form.Fields>
-          <Form.Actions>
-            {hasWorkspaces && (
-              <Button
-                label="Back"
-                shape="rectangle"
-                size="md"
-                backgroundColor="transparent"
-                onClick={handleBack}
-              />
-            )}
-            <Form.Submit label="Create workspace" />
-          </Form.Actions>
-        </Form>
+        <Flex direction="column" gap="xs">
+          <Heading accessbilityLevel={1} size="xl" textAlign="center">
+            {hasWorkspaces ? "Join or create a workspace" : "Welcome to Sopho"}
+          </Heading>
+          <Heading
+            accessbilityLevel={2}
+            size="sm"
+            textAlign="center"
+            textColor="subtle"
+          >
+            Canvases, conversations and connections live inside a workspace
+          </Heading>
+        </Flex>
+        {memberships.error && (
+          <BannerSlim type="error" message={memberships.error.message} />
+        )}
+        {receivedInvitations.error && (
+          <BannerSlim
+            type="error"
+            message={receivedInvitations.error.message}
+          />
+        )}
+        {invitations && invitations.length > 0 && (
+          <ReceivedInvitations invitations={invitations} />
+        )}
+        {canCreateWorkspace && <CreateWorkspaceForm />}
+        {hasNothingToJoin && (
+          <Text fontSize="sm" color="subtle">
+            {`You are not part of a workspace yet. Ask a workspace admin to invite ${signedInUser.email}.`}
+          </Text>
+        )}
+        <Flex direction="row" justifyContent="space-between" gap="sm">
+          {hasWorkspaces ? (
+            <Button
+              label="Back"
+              shape="rectangle"
+              size="md"
+              backgroundColor="transparent"
+              onClick={handleBack}
+            />
+          ) : (
+            <Flex />
+          )}
+          <Button
+            label="Sign out"
+            shape="rectangle"
+            size="md"
+            backgroundColor="transparent"
+            onClick={handleSignOut}
+            disabled={signOut.isPending}
+          />
+        </Flex>
       </Flex>
     </Flex>
   );

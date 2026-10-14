@@ -49,3 +49,6 @@ export class ApiError extends Error {
   }
 }
 
+export const isUnauthorizedError = (error: unknown): boolean =>
+  error instanceof ApiError && error.status === 401;
+

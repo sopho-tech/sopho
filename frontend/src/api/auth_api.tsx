@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
+import { PlatformPermission } from "src/constants/platform_permissions";
+import { APP_ROUTES } from "src/constants/app_routes";
 
 export type CreateSessionDto = {
   email: string;
@@ -12,12 +14,19 @@ export type UserDto = {
   username: string;
   email: string;
   full_name: string;
+  platform_permissions: string[];
+};
+
+export type OidcProviderDto = {
+  name: string;
+  display_name: string;
 };
 
 export const authKeys = {
   all: ["auth"] as const,
   session: () => [...authKeys.all, "session"] as const,
   currentUser: () => [...authKeys.all, "currentUser"] as const,
+  oidcProviders: () => [...authKeys.all, "oidcProviders"] as const,
 };
 
 export const authApi = {
@@ -46,6 +55,13 @@ export const authApi = {
   },
   deleteSession: async (): Promise<void> => {
     await ApiService.delete({ url: API_ENDPOINTS.AUTH.DELETE_SESSION });
+  },
+  getOidcProviders: async (): Promise<OidcProviderDto[]> => {
+    const response = await ApiService.get({
+      url: API_ENDPOINTS.AUTH.OIDC_PROVIDERS,
+      onlyBody: true,
+    });
+    return response as OidcProviderDto[];
   },
   refreshToken: async (): Promise<boolean> => {
     const url = API_ENDPOINTS.AUTH.REFRESH_TOKEN;
@@ -96,31 +112,44 @@ export const useCreateSession = (callbacks?: {
   });
 };
 
-export const useCurrentUser = () => {
+export const useCurrentUser = (enabled: boolean = true) => {
   return useQuery({
     queryKey: authKeys.currentUser(),
     queryFn: authApi.getCurrentUser,
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnMount: true, // Always refetch on mount to ensure fresh data after login
+    enabled,
+  });
+};
+
+export const useSignedInUser = (): UserDto => {
+  const currentUser = useCurrentUser();
+  if (!currentUser.data) {
+    throw new Error("The signed-in user is not loaded");
+  }
+  return currentUser.data;
+};
+
+export const usePlatformPermission = (
+  permission: PlatformPermission,
+): boolean => useSignedInUser().platform_permissions.includes(permission);
+
+export const useOidcProviders = () => {
+  return useQuery({
+    queryKey: authKeys.oidcProviders(),
+    queryFn: authApi.getOidcProviders,
+    staleTime: Infinity,
   });
 };
 
 export const useDeleteSession = (callbacks?: {
-  onSuccess?: () => void;
   onError?: (error: Error) => void;
 }) => {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: authApi.deleteSession,
     onSuccess: () => {
-      queryClient.clear();
-
-      // Call custom success callback if provided
-      if (callbacks?.onSuccess) {
-        callbacks.onSuccess();
-      }
+      window.location.replace(APP_ROUTES.SIGN_IN);
     },
     onError: (error) => {
       // Call custom error callback if provided

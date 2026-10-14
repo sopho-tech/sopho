@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
-import { tenantApiUrl, useTenantId } from "src/utils/tenant";
+import { useTenantId } from "src/utils/tenant";
 import { Permission } from "src/constants/permissions";
 
 export type TenantMembershipDto = {
@@ -25,7 +25,6 @@ export type CreatedTenantDto = {
 
 export const tenantKeys = {
   memberships: ["memberships"] as const,
-  members: (tenantId: string) => [tenantId, "members"] as const,
 };
 
 const tenantApi = {
@@ -44,14 +43,6 @@ const tenantApi = {
       headers: { "Content-Type": "application/json" },
     });
     return response as CreatedTenantDto;
-  },
-
-  listMembers: async (tenantId: string): Promise<TenantMemberDto[]> => {
-    const response = await ApiService.get({
-      url: tenantApiUrl(tenantId, API_ENDPOINTS.TENANT.MEMBERS),
-      onlyBody: true,
-    });
-    return response as TenantMemberDto[];
   },
 };
 
@@ -89,13 +80,5 @@ export const useCreateTenant = (callbacks?: {
       });
       callbacks?.onSuccess?.(tenant);
     },
-  });
-};
-
-export const useTenantMembers = () => {
-  const tenantId = useTenantId();
-  return useQuery({
-    queryKey: tenantKeys.members(tenantId),
-    queryFn: () => tenantApi.listMembers(tenantId),
   });
 };

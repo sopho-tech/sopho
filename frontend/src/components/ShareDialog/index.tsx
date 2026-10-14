@@ -1,1 +1,1 @@
-export { ShareDialog } from "./ShareDialog";
+export { ShareDialog } from "src/components/ShareDialog/ShareDialog";

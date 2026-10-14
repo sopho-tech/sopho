@@ -1,1 +1,1 @@
-export { Onboarding } from "./Onboarding";
+export { Onboarding } from "src/components/Onboarding/Onboarding";

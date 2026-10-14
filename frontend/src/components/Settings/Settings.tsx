@@ -29,6 +29,11 @@ export function Settings() {
         label: "AI Configurations",
         to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.AI_CONFIGURATIONS),
       },
+      {
+        id: "members",
+        label: "Members",
+        to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.MEMBERS),
+      },
     ],
     [toTenantPath],
   );

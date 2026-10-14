@@ -1,14 +1,55 @@
 import { useCallback, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router";
-import { Flex, Form, Heading } from "src/components/design-system";
+import { useNavigate, useSearchParams } from "react-router";
+import {
+  BannerSlim,
+  Button,
+  Flex,
+  Form,
+  Heading,
+  Text,
+} from "src/components/design-system";
 import styles from "src/components/SignIn/SignIn.module.css";
 import { MeshGradient } from "@paper-design/shaders-react";
 import { APP_ROUTES } from "src/constants/app_routes";
-import { useCreateSession, useSessionValid } from "src/api/auth_api";
+import {
+  OidcProviderDto,
+  useCreateSession,
+  useOidcProviders,
+  useSessionValid,
+} from "src/api/auth_api";
+import { API_ENDPOINTS } from "src/constants/api_endpoints";
+import {
+  SIGN_IN_ERROR_MESSAGES,
+  SIGN_IN_ERROR_PARAMETER,
+} from "src/components/SignIn/constants";
 import logo from "src/assets/images/logo.svg";
+
+function SingleSignOnButton({ provider }: { provider: OidcProviderDto }) {
+  const handleClick = useCallback(
+    () =>
+      window.location.assign(
+        API_ENDPOINTS.AUTH.OIDC_START.replace(":provider_name", provider.name),
+      ),
+    [provider.name],
+  );
+  return (
+    <Button
+      label={`Continue with ${provider.display_name}`}
+      shape="rectangle"
+      size="md"
+      backgroundColor="white"
+      fullWidth
+      onClick={handleClick}
+    />
+  );
+}
 
 export default function SignIn() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const errorCode = searchParams.get(SIGN_IN_ERROR_PARAMETER);
+  const errorMessage = errorCode ? SIGN_IN_ERROR_MESSAGES[errorCode] : undefined;
+  const providers = useOidcProviders();
   const { data: isAuthenticated, isLoading } = useSessionValid();
   const createSessionMutation = useCreateSession({
     onSuccess: () => {
@@ -91,6 +132,10 @@ export default function SignIn() {
         >
           Sign in with email and password
         </Heading>
+        {errorMessage && <BannerSlim type="error" message={errorMessage} />}
+        {providers.error && (
+          <BannerSlim type="error" message={providers.error.message} />
+        )}
         <Form
           defaultValues={defaultFormValues}
           onSubmit={handleSubmit}
@@ -119,6 +164,18 @@ export default function SignIn() {
             <Form.Submit label="Sign In" />
           </Form.Actions>
         </Form>
+        {providers.data && providers.data.length > 0 && (
+          <Flex direction="column" gap="sm">
+            <Flex justifyContent="center">
+              <Text fontSize="xs" color="subtle">
+                or
+              </Text>
+            </Flex>
+            {providers.data.map((provider) => (
+              <SingleSignOnButton key={provider.name} provider={provider} />
+            ))}
+          </Flex>
+        )}
       </Flex>
     </Flex>
   );

@@ -10,6 +10,7 @@ import { Profile } from "src/components/Profile";
 import { ProtectedRoute } from "src/components/ProtectedRoute";
 import { TenantIndexRedirect, TenantRoute } from "src/components/TenantRoute";
 import { Onboarding } from "src/components/Onboarding";
+import { Members } from "src/components/Settings/Members";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { ReactQueryClientProvider } from "./utils/react_query_provider";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -78,6 +79,10 @@ const router = createBrowserRouter([
               {
                 path: "ai-configurations",
                 element: <AIConfiguration />,
+              },
+              {
+                path: "members",
+                element: <Members />,
               },
               {
                 path: "connection/new",

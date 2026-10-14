@@ -8,6 +8,9 @@ import {
   useMemberships,
 } from "src/api/tenant/queries";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { PLATFORM_PERMISSIONS } from "src/constants/platform_permissions";
+import { usePlatformPermission } from "src/api/auth_api";
+import { useReceivedInvitations } from "src/api/invitation/queries";
 import { tenantPath, useTenantId } from "src/utils/tenant";
 import logo from "src/assets/images/logo.svg";
 
@@ -38,7 +41,11 @@ export function TenantSwitcher() {
   const tenantId = useTenantId();
   const memberships = useMemberships();
   const currentMembership = useCurrentMembership();
-  const handleCreateWorkspace = useCallback(
+  const canCreateWorkspace = usePlatformPermission(
+    PLATFORM_PERMISSIONS.TENANT_CREATE,
+  );
+  const receivedInvitations = useReceivedInvitations();
+  const handleOpenOnboarding = useCallback(
     () => navigate(APP_ROUTES.ONBOARDING),
     [navigate],
   );
@@ -63,9 +70,16 @@ export function TenantSwitcher() {
             isCurrent={membership.tenant_id === tenantId}
           />
         ))}
-        <DropdownMenu.Item icon="add" onClick={handleCreateWorkspace}>
-          Create workspace
-        </DropdownMenu.Item>
+        {receivedInvitations.data && receivedInvitations.data.length > 0 && (
+          <DropdownMenu.Item icon="email" onClick={handleOpenOnboarding}>
+            {`Invitations (${receivedInvitations.data.length})`}
+          </DropdownMenu.Item>
+        )}
+        {canCreateWorkspace && (
+          <DropdownMenu.Item icon="add" onClick={handleOpenOnboarding}>
+            Create workspace
+          </DropdownMenu.Item>
+        )}
       </DropdownMenu.Content>
     </DropdownMenu>
   );

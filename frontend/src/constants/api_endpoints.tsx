@@ -5,12 +5,22 @@ export const API_ENDPOINTS = {
     DELETE_SESSION: "/api/v1/auth/session",
     GET_PROFILE_DETAILS: "/api/v1/auth/me",
     REFRESH_TOKEN: "/api/v1/auth/refresh",
+    OIDC_PROVIDERS: "/api/v1/auth/oidc/provider",
+    OIDC_START: "/api/v1/auth/oidc/:provider_name/start",
+  },
+  INVITATION: {
+    RECEIVED: "/api/v1/invitation",
+    ACCEPT: "/api/v1/invitation/:invitation_id/accept",
+    TENANT: "/invitation",
+    REVOKE: "/invitation/:invitation_id",
   },
   TENANT: {
     LIST: "/api/v1/tenant",
     CREATE: "/api/v1/tenant",
     SCOPED_BASE: "/api/v1/tenant/:tenant_id",
     MEMBERS: "/member",
+    MEMBER: "/member/:user_id",
+    ROLES: "/role",
   },
   GRANT: {
     CREATE: "/grant",

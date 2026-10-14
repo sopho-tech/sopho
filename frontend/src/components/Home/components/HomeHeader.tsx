@@ -36,29 +36,31 @@ export function HomeHeader() {
         <SearchBar />
       </TopBar.Center>
       <TopBar.Right>
-        <DropdownMenu>
-          <DropdownMenu.Trigger>
-            <Button
-              label="New"
-              leadingIconName="add"
-              backgroundColor="accent"
-              shape="rectangle"
-              size="md"
-            />
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end" side="bottom">
-            {dropdownItems.map((item, index) => (
-              <DropdownMenu.Item
-                key={index}
-                icon={item.icon}
-                onClick={item.onClick}
-                disabled={item.disabled}
-              >
-                {item.label}
-              </DropdownMenu.Item>
-            ))}
-          </DropdownMenu.Content>
-        </DropdownMenu>
+        {dropdownItems.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenu.Trigger>
+              <Button
+                label="New"
+                leadingIconName="add"
+                backgroundColor="accent"
+                shape="rectangle"
+                size="md"
+              />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end" side="bottom">
+              {dropdownItems.map((item, index) => (
+                <DropdownMenu.Item
+                  key={index}
+                  icon={item.icon}
+                  onClick={item.onClick}
+                  disabled={item.disabled}
+                >
+                  {item.label}
+                </DropdownMenu.Item>
+              ))}
+            </DropdownMenu.Content>
+          </DropdownMenu>
+        )}
       </TopBar.Right>
     </TopBar>
   );

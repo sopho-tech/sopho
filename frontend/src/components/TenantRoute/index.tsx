@@ -1,1 +1,4 @@
-export { TenantRoute, TenantIndexRedirect } from "./TenantRoute";
+export {
+  TenantRoute,
+  TenantIndexRedirect,
+} from "src/components/TenantRoute/TenantRoute";

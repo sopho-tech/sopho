@@ -18,6 +18,7 @@ export const APP_ROUTES = {
   SETTINGS_ROUTES: {
     CONNECTIONS: "/settings/connections",
     AI_CONFIGURATIONS: "/settings/ai-configurations",
+    MEMBERS: "/settings/members",
   },
   CONNECTION_NEW: "/settings/connection/new",
   CONNECTION_EDIT: "/settings/connection/:id/edit",

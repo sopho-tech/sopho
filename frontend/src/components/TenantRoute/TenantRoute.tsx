@@ -1,13 +1,10 @@
 import { Navigate, Outlet } from "react-router";
-import { ApiError } from "src/api/dto";
+import { isUnauthorizedError } from "src/api/dto";
 import { useMemberships } from "src/api/tenant/queries";
 import { Sidebar } from "src/components/Sidebar/Sidebar";
 import { Flex } from "src/components/design-system";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { tenantPath, useTenantId } from "src/utils/tenant";
-
-const isUnauthorized = (error: unknown) =>
-  error instanceof ApiError && error.status === 401;
 
 export function TenantRoute() {
   const tenantId = useTenantId();
@@ -15,7 +12,7 @@ export function TenantRoute() {
 
   if (memberships.isPending) return null;
   if (memberships.isError) {
-    if (isUnauthorized(memberships.error)) return null;
+    if (isUnauthorizedError(memberships.error)) return null;
     throw memberships.error;
   }
 
@@ -41,7 +38,7 @@ export function TenantIndexRedirect() {
 
   if (memberships.isPending) return null;
   if (memberships.isError) {
-    if (isUnauthorized(memberships.error)) return null;
+    if (isUnauthorizedError(memberships.error)) return null;
     throw memberships.error;
   }
 
