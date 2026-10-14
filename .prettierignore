@@ -11,3 +11,4 @@ backend/data/
 **/coverage/
 **/playwright-report/
 **/test-results/
+frontend/src/test/msw/public/

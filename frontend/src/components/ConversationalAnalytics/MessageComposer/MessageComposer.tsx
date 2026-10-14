@@ -118,6 +118,9 @@ export function MessageComposer({
     editorProps: {
       attributes: {
         class: styles.tiptap,
+        role: "textbox",
+        "aria-label": placeholder,
+        "aria-multiline": "true",
       },
       handleKeyDown: (_view, event) => {
         if (event.key === "Enter" && !event.shiftKey) {

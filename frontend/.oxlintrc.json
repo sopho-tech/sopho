@@ -20,7 +20,7 @@
   "options": {
     "typeAware": true
   },
-  "ignorePatterns": ["dist"],
+  "ignorePatterns": ["dist", "src/test/msw/public"],
   "rules": {
     "for-direction": "error",
     "no-async-promise-executor": "error",

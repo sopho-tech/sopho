@@ -1,6 +1,7 @@
-.PHONY: install run dev tools setup hooks fmt lint lint-repo lint-backend typecheck test test-backend test-backend-postgres test-clean
+.PHONY: install run dev tools setup hooks fmt lint lint-repo lint-backend typecheck test test-backend test-backend-postgres test-frontend test-clean coverage coverage-backend coverage-frontend check
 
 CARGO_TOOLS := cargo-nextest cargo-llvm-cov cargo-deny cargo-shear
+BACKEND_COVERAGE_IGNORE := (src/entity/|migration/|fake-llm/)
 
 # Installation: Build both frontend and backend
 install:
@@ -48,6 +49,7 @@ setup:
 	cd frontend && npm ci
 	cd docs && npm ci
 	cd backend && cargo fetch
+	cd frontend && npx --no-install playwright install chromium
 
 hooks:
 	prek install
@@ -71,7 +73,7 @@ typecheck:
 	cd frontend && npx tsc -b
 	cd docs && npm run types:check
 
-test: test-backend
+test: test-backend test-frontend
 
 test-backend:
 	cd backend && TEST_DB=sqlite cargo nextest run --workspace
@@ -79,5 +81,18 @@ test-backend:
 test-backend-postgres:
 	cd backend && TEST_DB=postgres cargo nextest run --workspace
 
+test-frontend:
+	cd frontend && npx --no-install vitest run
+
 test-clean:
 	docker rm --force --volumes sopho-test-postgres
+
+coverage: coverage-backend coverage-frontend
+
+coverage-backend:
+	cd backend && cargo llvm-cov nextest --workspace --lcov --output-path lcov.info --ignore-filename-regex '$(BACKEND_COVERAGE_IGNORE)'
+
+coverage-frontend:
+	cd frontend && npx --no-install vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=junit.xml
+
+check: lint typecheck test
