@@ -108,11 +108,7 @@ export type JustifyContent =
   | "space-evenly";
 
 export type AlignItems =
-  | "flex-start"
-  | "flex-end"
-  | "center"
-  | "stretch"
-  | "baseline";
+  "flex-start" | "flex-end" | "center" | "stretch" | "baseline";
 
 export type AlignContent =
   | "flex-start"
@@ -124,12 +120,7 @@ export type AlignContent =
   | "stretch";
 
 export type ColorVariant =
-  | "default"
-  | "info"
-  | "error"
-  | "warning"
-  | "white"
-  | "grey";
+  "default" | "info" | "error" | "warning" | "white" | "grey";
 
 export type BorderVariant = "default" | "divider" | "warning";
 

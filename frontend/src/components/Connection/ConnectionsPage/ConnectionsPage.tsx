@@ -13,10 +13,10 @@ import { APP_ROUTES } from "src/constants/app_routes";
 export function Connections() {
   const navigate = useNavigate();
   const connectionDetailsPageState = useStore(
-    (state) => state.connection.connectionDetailsPageState
+    (state) => state.connection.connectionDetailsPageState,
   );
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
 
   const handleNewClick = useCallback(() => {

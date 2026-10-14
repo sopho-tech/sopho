@@ -2,11 +2,11 @@ use crate::canvas::dto;
 use crate::canvas::service;
 use crate::common::AppState;
 use crate::common::Pagination;
+use axum::Router;
 use axum::extract::Path;
 use axum::extract::{Json, Query, State};
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, post, put};
-use axum::Router;
 use uuid::Uuid;
 
 pub fn routes(app_state: AppState) -> Router {

@@ -14,7 +14,9 @@ export const dashboardKeys = {
 const dashboardApi = {
   getDashboard: async (dashboardId: string): Promise<DashboardDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.DASHBOARD.GET_BY_ID?.replace(":id", dashboardId) || `/dashboard/${dashboardId}`,
+      url:
+        API_ENDPOINTS.DASHBOARD.GET_BY_ID?.replace(":id", dashboardId) ||
+        `/dashboard/${dashboardId}`,
       onlyBody: true,
     });
     return response as DashboardDto;
@@ -22,7 +24,11 @@ const dashboardApi = {
 
   getDashboardByCanvasId: async (canvasId: string): Promise<DashboardDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.DASHBOARD.GET_BY_CANVAS_ID?.replace(":canvas_id", canvasId) || `/dashboard/canvas/${canvasId}`,
+      url:
+        API_ENDPOINTS.DASHBOARD.GET_BY_CANVAS_ID?.replace(
+          ":canvas_id",
+          canvasId,
+        ) || `/dashboard/canvas/${canvasId}`,
       onlyBody: true,
     });
     return response as DashboardDto;

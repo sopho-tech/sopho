@@ -30,7 +30,7 @@ export function NotebookToolbar() {
         cell_type: cellType,
       });
     },
-    [activeNotebookId, createCellMutation]
+    [activeNotebookId, createCellMutation],
   );
 
   const handleDeleteActiveCell = useCallback(() => {
@@ -47,37 +47,37 @@ export function NotebookToolbar() {
         reorderCellMutation.mutate({ cellId: activeCellId, movementType });
       }
     },
-    [reorderCellMutation]
+    [reorderCellMutation],
   );
 
   const sxTransform = useMemo(
     () => ({ transform: "translateX(calc(-50% + 25px))" }),
-    []
+    [],
   );
 
   const handleCreateSql = useCallback(
     () => handleCreateNewCell(CellType.SQL),
-    [handleCreateNewCell]
+    [handleCreateNewCell],
   );
   const handleCreateChart = useCallback(
     () => handleCreateNewCell(CellType.CHART),
-    [handleCreateNewCell]
+    [handleCreateNewCell],
   );
   const handleReorderUp = useCallback(
     () => handleReorderCell("UP"),
-    [handleReorderCell]
+    [handleReorderCell],
   );
   const handleReorderTop = useCallback(
     () => handleReorderCell("TOP"),
-    [handleReorderCell]
+    [handleReorderCell],
   );
   const handleReorderDown = useCallback(
     () => handleReorderCell("DOWN"),
-    [handleReorderCell]
+    [handleReorderCell],
   );
   const handleReorderBottom = useCallback(
     () => handleReorderCell("BOTTOM"),
-    [handleReorderCell]
+    [handleReorderCell],
   );
 
   return (

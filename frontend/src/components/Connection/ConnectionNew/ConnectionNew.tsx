@@ -21,7 +21,7 @@ export function ConnectionNew() {
   const [sourceType, setSourceType] = useState<string | null>(null);
   const createMutation = useCreateConnection();
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
   const navigate = useNavigate();
   const sourceTypeOptions = Object.values(SourceTypeEnum).map((type) => ({

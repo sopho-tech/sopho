@@ -15,7 +15,7 @@ export function CanvasCreateDialog() {
   const navigate = useNavigate();
   const canvasPageState = useStore((state) => state.canvas.canvasPageState);
   const setCanvasPageState = useStore(
-    (state) => state.canvas.setCanvasPageState
+    (state) => state.canvas.setCanvasPageState,
   );
 
   const handleDialogClose = useCallback(() => {
@@ -28,7 +28,7 @@ export function CanvasCreateDialog() {
         setCanvasPageState(CanvasesPageState.LIST);
       }
     },
-    [setCanvasPageState]
+    [setCanvasPageState],
   );
 
   const handleSuccess = useCallback(
@@ -41,7 +41,7 @@ export function CanvasCreateDialog() {
         throw Error("unexpected state");
       }
     },
-    [setCanvasPageState, navigate]
+    [setCanvasPageState, navigate],
   );
 
   const handleError = useCallback((error: Error) => {
@@ -67,7 +67,7 @@ export function CanvasCreateDialog() {
       };
       mutation.mutate(canvas);
     },
-    [mutation]
+    [mutation],
   );
 
   const shouldOpenDialog =
@@ -91,7 +91,9 @@ export function CanvasCreateDialog() {
           errorMessage="Please enter description"
           className={styles.formFieldContainer}
         >
-          <Form.Label className={styles.formLabelContainer}>Description</Form.Label>
+          <Form.Label className={styles.formLabelContainer}>
+            Description
+          </Form.Label>
           <Form.Input placeholder="Enter description" />
         </Form.Field>
       </Form.Fields>

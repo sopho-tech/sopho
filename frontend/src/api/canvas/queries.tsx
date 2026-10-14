@@ -24,7 +24,9 @@ export const canvasKeys = {
 const canvasApi = {
   getCanvas: async (canvasId: string): Promise<CanvasDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.CANVAS.GET_BY_ID?.replace(":id", canvasId) || `/canvas/${canvasId}`,
+      url:
+        API_ENDPOINTS.CANVAS.GET_BY_ID?.replace(":id", canvasId) ||
+        `/canvas/${canvasId}`,
       onlyBody: true,
     });
     return response as CanvasDto;
@@ -32,7 +34,7 @@ const canvasApi = {
 
   getAllCanvases: async (
     page?: number,
-    pageSize?: number
+    pageSize?: number,
   ): Promise<PaginatedData<CanvasDto>> => {
     const url = new URL(API_ENDPOINTS.CANVAS.GET_ALL, window.location.origin);
     if (page !== undefined) {
@@ -86,11 +88,12 @@ const canvasApi = {
 
   deleteCanvas: async (canvasId: string): Promise<void> => {
     const response = await fetch(
-      API_ENDPOINTS.CANVAS.DELETE?.replace(":id", canvasId) || `/canvas/${canvasId}`,
+      API_ENDPOINTS.CANVAS.DELETE?.replace(":id", canvasId) ||
+        `/canvas/${canvasId}`,
       {
         method: "DELETE",
         credentials: "include",
-      }
+      },
     );
 
     if (!response.ok) {

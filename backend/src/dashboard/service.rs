@@ -1,7 +1,7 @@
 use crate::ai_summary::service as ai_summary_service;
+use crate::common::AppState;
 use crate::common::errors::UpdateDashboardError;
 use crate::common::time_utils;
-use crate::common::AppState;
 use crate::dashboard::constants;
 use crate::dashboard::constants::DashboardStatus;
 use crate::dashboard::dto;

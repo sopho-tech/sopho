@@ -5,9 +5,7 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, Set,
 };
 
-pub async fn find(
-    db: &DatabaseConnection,
-) -> Result<Option<ai_configuration::Model>, DbErr> {
+pub async fn find(db: &DatabaseConnection) -> Result<Option<ai_configuration::Model>, DbErr> {
     ai_configuration::Entity::find_by_id(SENTINEL_ID.to_string())
         .one(db)
         .await

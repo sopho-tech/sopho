@@ -56,10 +56,7 @@ const router = createBrowserRouter([
           {
             index: true,
             element: (
-              <Navigate
-                to={APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS}
-                replace
-              />
+              <Navigate to={APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS} replace />
             ),
           },
           {

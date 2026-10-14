@@ -24,12 +24,12 @@ export function HorizontalProgressBar({
       const stepId = (e.currentTarget as HTMLDivElement).dataset.stepId;
       if (stepId) onStepClick?.(stepId);
     },
-    [onStepClick]
+    [onStepClick],
   );
 
   const stepStyle = useMemo(
     () => ({ cursor: onStepClick ? "pointer" : "default" }),
-    [onStepClick]
+    [onStepClick],
   );
 
   return (

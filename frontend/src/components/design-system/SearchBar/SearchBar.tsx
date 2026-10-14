@@ -30,7 +30,11 @@ export function SearchBar() {
         type="text"
         placeholder="Search"
         leadingIcon="search"
-        laggingElement={<Kbd>{getShortcutDisplayString(KEYBOARD_SHORTCUTS.OPEN_COMMAND_MENU)}</Kbd>}
+        laggingElement={
+          <Kbd>
+            {getShortcutDisplayString(KEYBOARD_SHORTCUTS.OPEN_COMMAND_MENU)}
+          </Kbd>
+        }
         className={styles.container}
       />
       <CommandMenu

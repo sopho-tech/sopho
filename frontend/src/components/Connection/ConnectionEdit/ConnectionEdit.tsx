@@ -20,7 +20,7 @@ export function ConnectionEdit() {
   const navigate = useNavigate();
   const updateMutation = useUpdateConnection();
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
   const {
     data: connection,

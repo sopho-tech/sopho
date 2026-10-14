@@ -30,11 +30,11 @@ use axum::http::HeaderValue;
 use axum::http::Method;
 use axum::response::Html;
 use axum::{
+    Router,
     extract::Request,
     http::StatusCode,
     middleware::{self, Next},
     response::{IntoResponse, Response},
-    Router,
 };
 use dotenv::dotenv;
 use http::header;

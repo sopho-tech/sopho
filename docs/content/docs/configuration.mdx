@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Configure Sopho using various properties 
+description: Configure Sopho using various properties
 icon: Cog
 ---
 
@@ -13,10 +13,13 @@ This is used to connect to the database for running Sopho. Sopho stores data nee
 Sopho currently supports PostgreSQL and SQLite as options for the database. PostgreSQL is recommended for production usage. SQLite is apt for demos, exploration and hobby use cases.
 
 The environment variable expects a database connection string as its value. For PostgreSQL, it should be in the following format:
+
 ```text
 postgresql://username:password@hostname:5432/dbname
 ```
+
 For SQLite, it should be in the following format:
+
 ```text
 sqlite:///Users/username/database.db?mode=rwc
 ```
@@ -42,17 +45,18 @@ For production usage, provide a cryptographically secure key via the environment
 ```bash
 openssl rand -base64 32
 ```
+
 The output of the above command can be set as the value of the environment variable.
 
 ## Admin Credentials
 
 The first time Sopho runs, the following four environment variables are used to seed the initial admin user so you can log in after bootup. The application fails to start if any of these are not set.
 
-| Variable | Purpose |
-|----------|---------|
-| `ADMIN_USERNAME` | Login username for the admin account |
-| `ADMIN_PASSWORD` | Password for the admin account |
-| `ADMIN_EMAIL` | Email used to identify the admin and enforce uniqueness |
-| `ADMIN_FULL_NAME` | Display name for the admin user |
+| Variable          | Purpose                                                 |
+| ----------------- | ------------------------------------------------------- |
+| `ADMIN_USERNAME`  | Login username for the admin account                    |
+| `ADMIN_PASSWORD`  | Password for the admin account                          |
+| `ADMIN_EMAIL`     | Email used to identify the admin and enforce uniqueness |
+| `ADMIN_FULL_NAME` | Display name for the admin user                         |
 
 Use a strong password in production.

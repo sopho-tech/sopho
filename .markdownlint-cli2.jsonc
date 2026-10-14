@@ -3,8 +3,17 @@
     "MD013": false,
     "MD041": false,
     "MD033": {
-      "allowed_elements": ["a", "br", "div", "h3", "img", "p", "picture", "source"]
-    }
+      "allowed_elements": [
+        "a",
+        "br",
+        "div",
+        "h3",
+        "img",
+        "p",
+        "picture",
+        "source",
+      ],
+    },
   },
-  "gitignore": true
+  "gitignore": true,
 }

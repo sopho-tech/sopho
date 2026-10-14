@@ -67,7 +67,7 @@ const cellApi = {
       {
         method: "DELETE",
         credentials: "include",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -260,7 +260,7 @@ export const useClearCellOutput = () => {
     (cellId: string) => {
       queryClient.setQueryData(cellKeys.execution(cellId), null);
     },
-    [queryClient]
+    [queryClient],
   );
 };
 

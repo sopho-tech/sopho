@@ -27,7 +27,7 @@ export default function SignIn() {
 
   const meshGradientColors = useMemo(
     () => ["#fcfcfd", "#fcfcfd", "#e8e8fc", "#c6bcfb", "#b5a9f4"],
-    []
+    [],
   );
 
   const defaultFormValues = { email: "", password: "" };
@@ -47,7 +47,7 @@ export default function SignIn() {
         password,
       });
     },
-    [createSessionMutation]
+    [createSessionMutation],
   );
 
   return (

@@ -1,6 +1,6 @@
 export function getErrorSummary(formFieldMeta: any): string | undefined {
   const invalidCount = Object.values(formFieldMeta || {}).filter(
-    (meta: any) => meta?.isValid === false
+    (meta: any) => meta?.isValid === false,
   ).length;
 
   if (invalidCount > 0) {

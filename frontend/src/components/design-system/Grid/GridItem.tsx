@@ -19,13 +19,13 @@ type GridItemProps = {
 function validateColSpan(value: number): void {
   if (value < 1 || value > 12) {
     throw new Error(
-      `GridItem colSpan must be between 1 and 12, received ${value}`
+      `GridItem colSpan must be between 1 and 12, received ${value}`,
     );
   }
 }
 
 function isResponsiveColSpan(
-  colSpan: ColSpanValue
+  colSpan: ColSpanValue,
 ): colSpan is ResponsiveColSpan {
   return typeof colSpan === "object" && colSpan !== null;
 }

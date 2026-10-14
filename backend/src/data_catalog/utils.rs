@@ -44,11 +44,7 @@ pub fn join_pruned_batches(batches: Vec<Database>) -> Database {
                         .map(|c| c.iter().map(|(_, col)| *col).collect())
                         .unwrap_or_default();
                     let included = table.should_select || !cols.is_empty();
-                    if included {
-                        Some((table, cols))
-                    } else {
-                        None
-                    }
+                    if included { Some((table, cols)) } else { None }
                 })
                 .collect();
 
@@ -365,12 +361,14 @@ mod tests {
             )],
         );
         let result = join_pruned_batches(vec![batch]);
-        assert!(result
-            .schemas
-            .get("public")
-            .unwrap()
-            .tables
-            .contains_key("empty_table"));
+        assert!(
+            result
+                .schemas
+                .get("public")
+                .unwrap()
+                .tables
+                .contains_key("empty_table")
+        );
     }
 
     #[test]
@@ -408,18 +406,22 @@ mod tests {
             )],
         );
         let result = join_pruned_batches(vec![batch]);
-        assert!(result
-            .schemas
-            .get("public")
-            .unwrap()
-            .tables
-            .contains_key("users"));
-        assert!(!result
-            .schemas
-            .get("public")
-            .unwrap()
-            .tables
-            .contains_key("empty_table"));
+        assert!(
+            result
+                .schemas
+                .get("public")
+                .unwrap()
+                .tables
+                .contains_key("users")
+        );
+        assert!(
+            !result
+                .schemas
+                .get("public")
+                .unwrap()
+                .tables
+                .contains_key("empty_table")
+        );
     }
 
     #[test]
@@ -655,14 +657,16 @@ mod tests {
             )],
         );
         let result = join_pruned_batches(vec![batch]);
-        assert!(result
-            .schemas
-            .get("public")
-            .unwrap()
-            .tables
-            .get("t1")
-            .unwrap()
-            .columns
-            .contains_key("id"));
+        assert!(
+            result
+                .schemas
+                .get("public")
+                .unwrap()
+                .tables
+                .get("t1")
+                .unwrap()
+                .columns
+                .contains_key("id")
+        );
     }
 }

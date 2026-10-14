@@ -52,7 +52,9 @@ export const CommandMenu = ({
   onOpenChange,
 }: CommandMenuProps) => {
   const navigate = useNavigate();
-  const setCanvasPageState = useStore((state) => state.canvas.setCanvasPageState);
+  const setCanvasPageState = useStore(
+    (state) => state.canvas.setCanvasPageState,
+  );
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -82,7 +84,7 @@ export const CommandMenu = ({
 
   useKeyboardShortcut(
     commandMenuCallback,
-    KEYBOARD_SHORTCUTS.OPEN_COMMAND_MENU
+    KEYBOARD_SHORTCUTS.OPEN_COMMAND_MENU,
   );
 
   useEffect(() => {
@@ -136,8 +138,8 @@ export const CommandMenu = ({
       navigate(
         APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION.replace(
           ":id",
-          item.id
-        )
+          item.id,
+        ),
       );
       return;
     }
@@ -146,7 +148,7 @@ export const CommandMenu = ({
     }
     handleOpenChange(false);
     navigate(
-      `${APP_ROUTES.CANVAS.replace(":id", item.canvas_id)}?${SEARCH_PARAMS.CELL}=${item.id}`
+      `${APP_ROUTES.CANVAS.replace(":id", item.canvas_id)}?${SEARCH_PARAMS.CELL}=${item.id}`,
     );
   };
 
@@ -165,7 +167,7 @@ export const CommandMenu = ({
 
   useKeyboardShortcut(
     () => handleCreateConversation(""),
-    KEYBOARD_SHORTCUTS.NEW_CONVERSATION
+    KEYBOARD_SHORTCUTS.NEW_CONVERSATION,
   );
 
   const renderContent = () => {

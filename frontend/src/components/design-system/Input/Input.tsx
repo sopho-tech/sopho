@@ -100,7 +100,7 @@ export function Input({
             [styles.inputWithLeadingIcon]: leadingIcon,
             [styles.inputWithLaggingElement]: laggingElement,
           },
-          className
+          className,
         )}
         {...restProps}
       />

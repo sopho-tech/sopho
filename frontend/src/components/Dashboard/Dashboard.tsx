@@ -13,7 +13,10 @@ import {
   DEFAULT_CHART_WIDTH,
   DEFAULT_CHART_HEIGHT,
 } from "src/components/Dashboard/dto";
-import { useDashboardSave, useDashboardReset } from "src/components/Dashboard/hooks";
+import {
+  useDashboardSave,
+  useDashboardReset,
+} from "src/components/Dashboard/hooks";
 import styles from "src/components/Dashboard/Dashboard.module.css";
 import "react-grid-layout/css/styles.css";
 import { EmptyState } from "src/components/EmptyState";
@@ -37,7 +40,7 @@ export function Dashboard() {
   const { handleEditSaveClick } = useDashboardReset(canvasId, true);
   const setMode = useStore((state) => state.dashboard.setMode);
   const setShowChartBrowser = useStore(
-    (state) => state.dashboard.setShowChartBrowser
+    (state) => state.dashboard.setShowChartBrowser,
   );
 
   useDashboardSave(dashboardQuery.data);
@@ -47,15 +50,15 @@ export function Dashboard() {
       setMode(DashboardMode.VIEWING);
       setShowChartBrowser(false);
     },
-    [setMode, setShowChartBrowser]
+    [setMode, setShowChartBrowser],
   );
 
   const handleNavigateToNotebook = useCallback(
     () =>
       navigate(
-        `${APP_ROUTES.CANVAS.replace(":id", canvasId)}/${APP_ROUTES.CANVAS_ROUTES.NOTEBOOK}`
+        `${APP_ROUTES.CANVAS.replace(":id", canvasId)}/${APP_ROUTES.CANVAS_ROUTES.NOTEBOOK}`,
       ),
-    [navigate, canvasId]
+    [navigate, canvasId],
   );
 
   const chartCellCount = cellsQuery.data?.cells?.length ?? 0;
@@ -79,7 +82,7 @@ export function Dashboard() {
         setLayout(newLayout);
       }
     },
-    [isEditing, setLayout]
+    [isEditing, setLayout],
   );
 
   const handleDrag = useCallback(() => {}, []);
@@ -95,7 +98,7 @@ export function Dashboard() {
 
   const handleOnDropDragOver = useCallback(
     () => ({ w: DEFAULT_CHART_WIDTH, h: DEFAULT_CHART_HEIGHT }),
-    []
+    [],
   );
 
   const handleOnDrop = useCallback(
@@ -120,7 +123,7 @@ export function Dashboard() {
       });
       setLayout(newLayout);
     },
-    [setLayout]
+    [setLayout],
   );
 
   const margin = useMemo<[number, number]>(() => [20, 20], []);

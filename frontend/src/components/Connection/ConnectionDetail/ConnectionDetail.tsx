@@ -12,10 +12,10 @@ import styles from "./ConnectionDetail.module.css";
 export function ConnectionDetail() {
   const connectionId = useStore((state) => state.connection.connectionId);
   const connectionDetailsPageState = useStore(
-    (state) => state.connection.connectionDetailsPageState
+    (state) => state.connection.connectionDetailsPageState,
   );
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
 
   const { data: connectionDetails } = useConnection(connectionId);
@@ -26,7 +26,7 @@ export function ConnectionDetail() {
         setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
       }
     },
-    [setConnectionDetailsPageState]
+    [setConnectionDetailsPageState],
   );
 
   const handleDialogClose = useCallback(() => {
@@ -55,7 +55,7 @@ export function ConnectionDetail() {
             updated_at: formatTimestamp(connectionDetails.updated_at),
           }
         : null,
-    [connectionDetails]
+    [connectionDetails],
   );
 
   const handleSubmit = useCallback(() => {}, []);

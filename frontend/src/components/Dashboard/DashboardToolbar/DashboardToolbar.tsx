@@ -10,10 +10,10 @@ const SEARCH_TOOLTIP = {
 export function DashboardToolbar() {
   const mode = useStore((state) => state.dashboard.mode);
   const showChartBrowser = useStore(
-    (state) => state.dashboard.showChartBrowser
+    (state) => state.dashboard.showChartBrowser,
   );
   const setShowChartBrowser = useStore(
-    (state) => state.dashboard.setShowChartBrowser
+    (state) => state.dashboard.setShowChartBrowser,
   );
 
   const handleSearchClick = useCallback(() => {

@@ -136,7 +136,7 @@ export function CanvasButtons({
   const { data: aiConfiguration } = useAiConfiguration();
   const { handleCancelClick, handleEditSaveClick } = useDashboardReset(
     canvasId,
-    isDashboardView
+    isDashboardView,
   );
 
   const dashboardId = dashboardQuery.data?.id;

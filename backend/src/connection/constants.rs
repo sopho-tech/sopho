@@ -60,8 +60,6 @@ impl SourceType {
         }
     }
 
-
-
     pub fn to_sql_dialect(&self) -> Option<SqlDialect> {
         match self {
             SourceType::Postgresql | SourceType::Supabase => Some(SqlDialect::Postgresql),

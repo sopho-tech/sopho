@@ -85,15 +85,15 @@ export const ConversationListHeader = ({
           size="sm"
           tooltip={{ text: "New conversation" }}
           onClick={onCreateConversation}
-          />
-          <Button
-            label="Select"
-            shape="rectangle"
-            size="sm"
-            backgroundColor="accent"
-            emphasis="primary"
-            onClick={onEnterSelectMode}
-          />
+        />
+        <Button
+          label="Select"
+          shape="rectangle"
+          size="sm"
+          backgroundColor="accent"
+          emphasis="primary"
+          onClick={onEnterSelectMode}
+        />
       </Flex>
     )}
   </Flex>

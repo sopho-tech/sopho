@@ -25,10 +25,13 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     public readonly body: ApiErrorBody,
-    message?: string
+    message?: string,
   ) {
     super(
-      message ?? body.message ?? body.message ?? `Request failed with ${status}`
+      message ??
+        body.message ??
+        body.message ??
+        `Request failed with ${status}`,
     );
     this.name = "ApiError";
   }
@@ -41,4 +44,3 @@ export class ApiError extends Error {
     return this.body.message ?? this.body.message ?? "";
   }
 }
-

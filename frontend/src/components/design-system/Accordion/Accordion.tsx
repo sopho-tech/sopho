@@ -31,10 +31,7 @@ export type AccordionItemProps = {
 };
 
 const AccordionItem = ({ children, value }: AccordionItemProps) => (
-  <RadixAccordion.Item
-    value={value}
-    className={styles.accordionItem}
-  >
+  <RadixAccordion.Item value={value} className={styles.accordionItem}>
     {children}
   </RadixAccordion.Item>
 );

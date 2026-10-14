@@ -7,5 +7,6 @@
 3. Vite for building
 
 ## Building
+
 1. Run the following command to create a `dist` folder with static files:
-`npm run build`
+   `npm run build`

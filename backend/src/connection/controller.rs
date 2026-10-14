@@ -1,13 +1,13 @@
+use crate::common::AppState;
 use crate::common::error_codes::codes;
 use crate::common::errors::{ExecuteQueryError, ExecuteSqlError, GetDatabaseConnectionError};
-use crate::common::AppState;
 use crate::connection::dto;
 use crate::connection::service;
+use axum::Router;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post, put};
-use axum::Router;
 use uuid::Uuid;
 
 pub fn routes(app_state: AppState) -> Router {

@@ -2,12 +2,12 @@ use crate::cell::constants::CellType;
 use crate::cell::dto;
 use crate::common::time_utils;
 use crate::entity::cell;
-use sea_orm::sea_query::{Expr, Func};
 use sea_orm::ColumnTrait;
 use sea_orm::Condition;
 use sea_orm::QueryFilter;
 use sea_orm::QueryOrder;
 use sea_orm::Set;
+use sea_orm::sea_query::{Expr, Func};
 use sea_orm::{
     ActiveModelTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
     Order, PaginatorTrait,

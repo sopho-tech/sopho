@@ -38,7 +38,7 @@ function isResponsiveGutter(gutter: GutterValue): gutter is ResponsiveGutter {
 function applyResponsiveVars(
   style: Record<string, string>,
   gutter: ResponsiveGutter,
-  prefix: string
+  prefix: string,
 ) {
   const defaultGutter = gutter.base ?? "sm";
   style[`--grid-${prefix}-gutter-default`] = `var(--space-${defaultGutter})`;
@@ -69,12 +69,12 @@ export function Grid({
 }: GridProps) {
   const childrenArray = React.Children.toArray(children);
   const invalidChildren = childrenArray.filter(
-    (child) => !isValidGridItem(child)
+    (child) => !isValidGridItem(child),
   );
 
   if (invalidChildren.length > 0) {
     throw new Error(
-      `Grid component only accepts GridItem as direct children. Found ${invalidChildren.length} invalid child(ren).`
+      `Grid component only accepts GridItem as direct children. Found ${invalidChildren.length} invalid child(ren).`,
     );
   }
 

@@ -20,7 +20,10 @@ export type ChartCellSlice = {
   };
 };
 
-export const createChartCellSlice: StateCreator<ChartCellSlice> = (set, get) => ({
+export const createChartCellSlice: StateCreator<ChartCellSlice> = (
+  set,
+  get,
+) => ({
   chartCell: {
     forms: {},
     outputs: {},
@@ -37,7 +40,10 @@ export const createChartCellSlice: StateCreator<ChartCellSlice> = (set, get) => 
       set((state) => ({
         chartCell: {
           ...state.chartCell,
-          outputStates: { ...state.chartCell.outputStates, [cellId]: outputState },
+          outputStates: {
+            ...state.chartCell.outputStates,
+            [cellId]: outputState,
+          },
         },
       })),
     getOutputState: (cellId) => get().chartCell.outputStates[cellId],
@@ -52,7 +58,7 @@ export const createChartCellSlice: StateCreator<ChartCellSlice> = (set, get) => 
     clearOutput: (cellId) =>
       set((state) => {
         const rest = Object.fromEntries(
-          Object.entries(state.chartCell.outputs).filter(([k]) => k !== cellId)
+          Object.entries(state.chartCell.outputs).filter(([k]) => k !== cellId),
         );
         return { chartCell: { ...state.chartCell, outputs: rest } };
       }),

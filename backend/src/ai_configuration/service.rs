@@ -1,17 +1,13 @@
 use crate::ai::agent_utils::{AgentName, ModelClient, ModelRole};
-use crate::ai_configuration::dto::{
-    AiConfigurationDto, Provider, TestAiConfigurationResponse,
-};
+use crate::ai_configuration::dto::{AiConfigurationDto, Provider, TestAiConfigurationResponse};
 use crate::ai_configuration::error::AiConfigurationError;
 use crate::ai_configuration::repository;
+use crate::common::AppState;
 use crate::common::cryptography_utils::{decrypt, encrypt};
 use crate::common::time_utils;
-use crate::common::AppState;
 use tracing::warn;
 
-pub async fn get_status(
-    app_state: &AppState,
-) -> Result<AiConfigurationDto, AiConfigurationError> {
+pub async fn get_status(app_state: &AppState) -> Result<AiConfigurationDto, AiConfigurationError> {
     match repository::find(&app_state.database_connection).await? {
         Some(model) => Ok(AiConfigurationDto::from_model(&model)),
         None => Ok(AiConfigurationDto::unconfigured()),

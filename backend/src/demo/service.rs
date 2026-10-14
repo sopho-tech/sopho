@@ -65,17 +65,61 @@ pub async fn seed_demo_data(app_state: &AppState) {
     let notebook_id = canvas_result.notebook.id;
 
     let sql_cells: Vec<(i32, &'static str, &'static str)> = vec![
-        (0, "Avg Review Score", "select AVG(review_score) from order_reviews"),
-        (2, "Total GMV", "select sum(oi.price + oi.freight_value) from order_items oi inner join orders o on oi.order_id = o.order_id"),
-        (4, "On-Time Delivery Rate", "SELECT CAST(SUM(CASE WHEN order_delivered_customer_date <= order_estimated_delivery_date THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(1) as on_time_delivery_percentage FROM orders WHERE order_delivered_customer_date IS NOT NULL"),
-        (7, "Monthly Revenue", "select SUM(op.payment_value) as revenue, strftime('%Y-%m', o.order_purchase_timestamp) as order_month from orders o inner join order_payments op on o.order_id = op.order_id group by order_month order by order_month asc"),
-        (9, "Orders by Status", "select count(1) as order_count, order_status from orders group by order_status"),
-        (11, "Avg Order Value", "select ROUND(AVG(op.payment_value),2) as avg_order_value, strftime('%Y-%m', o.order_purchase_timestamp) as order_month from orders o inner join order_payments op on o.order_id = op.order_id group by order_month"),
-        (13, "Top Products", "select p.product_id, SUM(oi.price) as total_revenue from order_items oi inner join products p on oi.product_id = p.product_id group by p.product_id order by total_revenue desc limit 10"),
-        (15, "Top Sellers GMV", "select seller_id, SUM(price) as gmv from order_items group by seller_id order by gmv desc limit 10"),
-        (17, "Revenue by Payment Type", "select payment_type, SUM(payment_value) as total_payment_value from order_payments group by payment_type"),
-        (19, "Review Score Distribution", "select review_score, count(1) as number_of_reviews from order_reviews group by review_score"),
-        (21, "Review Score Trend With Time", "select ROUND(AVG(review_score), 2) as avg_review_score, strftime('%Y-%m', review_creation_date) as review_month from order_reviews group by review_month"),
+        (
+            0,
+            "Avg Review Score",
+            "select AVG(review_score) from order_reviews",
+        ),
+        (
+            2,
+            "Total GMV",
+            "select sum(oi.price + oi.freight_value) from order_items oi inner join orders o on oi.order_id = o.order_id",
+        ),
+        (
+            4,
+            "On-Time Delivery Rate",
+            "SELECT CAST(SUM(CASE WHEN order_delivered_customer_date <= order_estimated_delivery_date THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(1) as on_time_delivery_percentage FROM orders WHERE order_delivered_customer_date IS NOT NULL",
+        ),
+        (
+            7,
+            "Monthly Revenue",
+            "select SUM(op.payment_value) as revenue, strftime('%Y-%m', o.order_purchase_timestamp) as order_month from orders o inner join order_payments op on o.order_id = op.order_id group by order_month order by order_month asc",
+        ),
+        (
+            9,
+            "Orders by Status",
+            "select count(1) as order_count, order_status from orders group by order_status",
+        ),
+        (
+            11,
+            "Avg Order Value",
+            "select ROUND(AVG(op.payment_value),2) as avg_order_value, strftime('%Y-%m', o.order_purchase_timestamp) as order_month from orders o inner join order_payments op on o.order_id = op.order_id group by order_month",
+        ),
+        (
+            13,
+            "Top Products",
+            "select p.product_id, SUM(oi.price) as total_revenue from order_items oi inner join products p on oi.product_id = p.product_id group by p.product_id order by total_revenue desc limit 10",
+        ),
+        (
+            15,
+            "Top Sellers GMV",
+            "select seller_id, SUM(price) as gmv from order_items group by seller_id order by gmv desc limit 10",
+        ),
+        (
+            17,
+            "Revenue by Payment Type",
+            "select payment_type, SUM(payment_value) as total_payment_value from order_payments group by payment_type",
+        ),
+        (
+            19,
+            "Review Score Distribution",
+            "select review_score, count(1) as number_of_reviews from order_reviews group by review_score",
+        ),
+        (
+            21,
+            "Review Score Trend With Time",
+            "select ROUND(AVG(review_score), 2) as avg_review_score, strftime('%Y-%m', review_creation_date) as review_month from order_reviews group by review_month",
+        ),
         (23, "Order Reviews", "select * from order_reviews"),
     ];
 

@@ -127,7 +127,9 @@ export const VERTICAL_CHART_MARGINS = {
 export type ChartOrientation = "HORIZONTAL" | "VERTICAL";
 
 export const getChartMargins = (orientation?: ChartOrientation) =>
-  orientation === "VERTICAL" ? VERTICAL_CHART_MARGINS : HORIZONTAL_CHART_MARGINS;
+  orientation === "VERTICAL"
+    ? VERTICAL_CHART_MARGINS
+    : HORIZONTAL_CHART_MARGINS;
 
 export const getRechartsLayout = (orientation?: ChartOrientation) =>
   orientation === "VERTICAL" ? ("vertical" as const) : ("horizontal" as const);
@@ -148,7 +150,7 @@ export const COMMON_LEGEND_PROPS: Partial<LegendProps> = {
 };
 
 export const renderToolTipContent = (
-  props: TooltipContentProps<ValueType, NameType>
+  props: TooltipContentProps<ValueType, NameType>,
 ) => {
   const { label, payload } = props;
   return (

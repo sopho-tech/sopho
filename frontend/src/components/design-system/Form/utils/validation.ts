@@ -18,7 +18,7 @@ function isEmptyValue(value: any): boolean {
 function validateField(
   field: FormField,
   value: any,
-  errorMap: Record<string, string>
+  errorMap: Record<string, string>,
 ): void {
   if (field.required && isEmptyValue(value)) {
     errorMap[field.key] = field.errorMessage || "Required";
@@ -31,7 +31,7 @@ function validateField(
 function validateFieldsRecursive(
   fields: FormField[],
   values: Record<string, any>,
-  errorMap: Record<string, string>
+  errorMap: Record<string, string>,
 ): void {
   for (const field of fields) {
     if (field.type === FormFieldType.COLLAPSIBLE) {
@@ -39,7 +39,7 @@ function validateFieldsRecursive(
         validateFieldsRecursive(
           field.collapsibleConfig.fields,
           values,
-          errorMap
+          errorMap,
         );
       }
     } else {
@@ -54,7 +54,7 @@ function validateFieldsRecursive(
  */
 export function validateFields(
   fields: FormField[],
-  values: Record<string, any>
+  values: Record<string, any>,
 ): ValidationResult {
   const errorMap: Record<string, string> = {};
   validateFieldsRecursive(fields, values, errorMap);
@@ -67,7 +67,7 @@ export function validateFields(
  */
 export function findAccordionsWithInvalidFields(
   invalidFields: string[],
-  fields: FormField[]
+  fields: FormField[],
 ): string[] {
   const shouldBeOpenAccordions = new Set<string>();
 
@@ -90,4 +90,3 @@ export function findAccordionsWithInvalidFields(
   checkFields(fields);
   return Array.from(shouldBeOpenAccordions);
 }
-

@@ -30,33 +30,35 @@ export function PasswordField({
   };
 
   return (
-    <div className={`${styles.passwordContainer} ${containerClassName ?? ""}`.trim()}>
-        <div className={styles.passwordInputWrapper}>
-          <Input
-            type={showPassword ? "text" : "password"}
-            value={field.state.value ?? ""}
-            onChange={(e) => field.handleChange(e.target.value)}
-            placeholder={placeholder}
-            leadingIcon={icon}
-            id={fieldName}
-            name={fieldName}
-            disabled={readonly}
-          />
-          {!readonly && (
-            <div className={styles.visibilityButton}>
-              <IconButton
-                type={showPassword ? "visibility_off" : "visibility"}
-                backgroundColor="transparent"
-                iconColor="grey"
-                iconSize="sm"
-                onClick={togglePasswordVisibility}
-                tabIndex={-1}
-              />
-            </div>
-          )}
-        </div>
+    <div
+      className={`${styles.passwordContainer} ${containerClassName ?? ""}`.trim()}
+    >
+      <div className={styles.passwordInputWrapper}>
+        <Input
+          type={showPassword ? "text" : "password"}
+          value={field.state.value ?? ""}
+          onChange={(e) => field.handleChange(e.target.value)}
+          placeholder={placeholder}
+          leadingIcon={icon}
+          id={fieldName}
+          name={fieldName}
+          disabled={readonly}
+        />
+        {!readonly && (
+          <div className={styles.visibilityButton}>
+            <IconButton
+              type={showPassword ? "visibility_off" : "visibility"}
+              backgroundColor="transparent"
+              iconColor="grey"
+              iconSize="sm"
+              onClick={togglePasswordVisibility}
+              tabIndex={-1}
+            />
+          </div>
+        )}
+      </div>
 
-        <FieldError errors={field.state.meta.errors} />
+      <FieldError errors={field.state.meta.errors} />
     </div>
   );
 }

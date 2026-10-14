@@ -15,7 +15,7 @@ export function useDashboardSave(dashboardData: DashboardDto | undefined) {
   const layout = useStore((state) => state.dashboard.layout);
   const setMode = useStore((state) => state.dashboard.setMode);
   const clearSaveRequest = useStore(
-    (state) => state.dashboard.clearSaveRequest
+    (state) => state.dashboard.clearSaveRequest,
   );
   const updateDashboardMutation = useUpdateDashboard();
 
@@ -44,7 +44,7 @@ export function useDashboardSave(dashboardData: DashboardDto | undefined) {
         onError: () => {
           setMode(DashboardMode.EDITING);
         },
-      }
+      },
     );
   }, [
     saveRequested,
@@ -67,13 +67,13 @@ export function useRefreshDashboardCharts() {
 
   const chartCellIds = useMemo(
     () => layout.map((item) => item.i).filter((id) => !id.startsWith("_")),
-    [layout]
+    [layout],
   );
 
   const isRefreshing = useStore((state) =>
     chartCellIds.some(
-      (cellId) => state.cell.executionStates[cellId] === ExecutionState.RUNNING
-    )
+      (cellId) => state.cell.executionStates[cellId] === ExecutionState.RUNNING,
+    ),
   );
 
   const refreshAll = useCallback(() => {
@@ -91,10 +91,10 @@ export function useDashboardReset(canvasId: string, isDashboardView: boolean) {
   const setMode = useStore((state) => state.dashboard.setMode);
   const requestSave = useStore((state) => state.dashboard.requestSave);
   const resetFromBackendData = useStore(
-    (state) => state.dashboard.resetFromBackendData
+    (state) => state.dashboard.resetFromBackendData,
   );
   const setShowChartBrowser = useStore(
-    (state) => state.dashboard.setShowChartBrowser
+    (state) => state.dashboard.setShowChartBrowser,
   );
   const dashboardQuery = useDashboardByCanvasId(canvasId);
   const isEditing = mode === DashboardMode.EDITING;

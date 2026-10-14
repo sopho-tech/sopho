@@ -6,13 +6,13 @@ use crate::ai_summary::dto::{AiSummaryDto, DashboardSummariesDto};
 use crate::ai_summary::repository;
 use crate::cell::dto::ChartExecution;
 use crate::cell::service as cell_service;
-use crate::common::time_utils;
 use crate::common::AppState;
+use crate::common::time_utils;
 use crate::dashboard::service as dashboard_service;
 use crate::database::constants::QueryResult;
-use sea_orm::prelude::DateTimeWithTimeZone;
 use crate::entity;
 use futures_util::stream::{self, StreamExt};
+use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::{ConnectionTrait, DatabaseConnection, DbErr};
 use tracing::{error, info};
 use uuid::Uuid;
@@ -248,7 +248,13 @@ pub async fn set_dashboard_prompt(
     dashboard_service::get_dashboard_entity(app_state, dashboard_id)
         .await
         .map_err(map_not_found)?;
-    set_prompt(app_state, SummaryEntityType::Dashboard, dashboard_id, user_prompt).await
+    set_prompt(
+        app_state,
+        SummaryEntityType::Dashboard,
+        dashboard_id,
+        user_prompt,
+    )
+    .await
 }
 
 pub async fn set_chart_prompt(
@@ -259,7 +265,13 @@ pub async fn set_chart_prompt(
     if !cell_service::does_cell_exist(app_state, cell_id).await {
         return Err(SummaryError::NotFound);
     }
-    set_prompt(app_state, SummaryEntityType::ChartCell, cell_id, user_prompt).await
+    set_prompt(
+        app_state,
+        SummaryEntityType::ChartCell,
+        cell_id,
+        user_prompt,
+    )
+    .await
 }
 
 async fn set_prompt(

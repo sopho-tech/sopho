@@ -7,18 +7,38 @@
 }
 
 /* Column gutter – simple string values */
-.grid[data-column-gutter="sm"] { --grid-column-gap: var(--space-sm); }
-.grid[data-column-gutter="md"] { --grid-column-gap: var(--space-md); }
-.grid[data-column-gutter="lg"] { --grid-column-gap: var(--space-lg); }
-.grid[data-column-gutter="xl"] { --grid-column-gap: var(--space-xl); }
-.grid[data-column-gutter="2xl"] { --grid-column-gap: var(--space-2xl); }
+.grid[data-column-gutter="sm"] {
+  --grid-column-gap: var(--space-sm);
+}
+.grid[data-column-gutter="md"] {
+  --grid-column-gap: var(--space-md);
+}
+.grid[data-column-gutter="lg"] {
+  --grid-column-gap: var(--space-lg);
+}
+.grid[data-column-gutter="xl"] {
+  --grid-column-gap: var(--space-xl);
+}
+.grid[data-column-gutter="2xl"] {
+  --grid-column-gap: var(--space-2xl);
+}
 
 /* Row gutter – simple string values */
-.grid[data-row-gutter="sm"] { --grid-row-gap: var(--space-sm); }
-.grid[data-row-gutter="md"] { --grid-row-gap: var(--space-md); }
-.grid[data-row-gutter="lg"] { --grid-row-gap: var(--space-lg); }
-.grid[data-row-gutter="xl"] { --grid-row-gap: var(--space-xl); }
-.grid[data-row-gutter="2xl"] { --grid-row-gap: var(--space-2xl); }
+.grid[data-row-gutter="sm"] {
+  --grid-row-gap: var(--space-sm);
+}
+.grid[data-row-gutter="md"] {
+  --grid-row-gap: var(--space-md);
+}
+.grid[data-row-gutter="lg"] {
+  --grid-row-gap: var(--space-lg);
+}
+.grid[data-row-gutter="xl"] {
+  --grid-row-gap: var(--space-xl);
+}
+.grid[data-row-gutter="2xl"] {
+  --grid-row-gap: var(--space-2xl);
+}
 
 /* Responsive column gutter */
 .grid[data-col-responsive="true"] {
@@ -49,7 +69,10 @@
       --grid-col-gutter-lg,
       var(
         --grid-col-gutter-md,
-        var(--grid-col-gutter-sm, var(--grid-col-gutter-default, var(--space-sm)))
+        var(
+          --grid-col-gutter-sm,
+          var(--grid-col-gutter-default, var(--space-sm))
+        )
       )
     );
   }
@@ -63,7 +86,10 @@
         --grid-col-gutter-lg,
         var(
           --grid-col-gutter-md,
-          var(--grid-col-gutter-sm, var(--grid-col-gutter-default, var(--space-sm)))
+          var(
+            --grid-col-gutter-sm,
+            var(--grid-col-gutter-default, var(--space-sm))
+          )
         )
       )
     );
@@ -80,7 +106,10 @@
           --grid-col-gutter-lg,
           var(
             --grid-col-gutter-md,
-            var(--grid-col-gutter-sm, var(--grid-col-gutter-default, var(--space-sm)))
+            var(
+              --grid-col-gutter-sm,
+              var(--grid-col-gutter-default, var(--space-sm))
+            )
           )
         )
       )
@@ -117,7 +146,10 @@
       --grid-row-gutter-lg,
       var(
         --grid-row-gutter-md,
-        var(--grid-row-gutter-sm, var(--grid-row-gutter-default, var(--space-sm)))
+        var(
+          --grid-row-gutter-sm,
+          var(--grid-row-gutter-default, var(--space-sm))
+        )
       )
     );
   }
@@ -131,7 +163,10 @@
         --grid-row-gutter-lg,
         var(
           --grid-row-gutter-md,
-          var(--grid-row-gutter-sm, var(--grid-row-gutter-default, var(--space-sm)))
+          var(
+            --grid-row-gutter-sm,
+            var(--grid-row-gutter-default, var(--space-sm))
+          )
         )
       )
     );
@@ -148,7 +183,10 @@
           --grid-row-gutter-lg,
           var(
             --grid-row-gutter-md,
-            var(--grid-row-gutter-sm, var(--grid-row-gutter-default, var(--space-sm)))
+            var(
+              --grid-row-gutter-sm,
+              var(--grid-row-gutter-default, var(--space-sm))
+            )
           )
         )
       )

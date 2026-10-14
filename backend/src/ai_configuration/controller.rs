@@ -4,11 +4,11 @@ use crate::ai_configuration::dto::{
 use crate::ai_configuration::error::AiConfigurationError;
 use crate::ai_configuration::service;
 use crate::common::AppState;
+use axum::Router;
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, post, put};
-use axum::Router;
 use serde_json::json;
 
 pub fn routes(app_state: AppState) -> Router {

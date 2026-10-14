@@ -97,7 +97,7 @@ pub async fn get_cells_by_notebook_id(
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 axum::Json(serde_json::json!({ "error": e.to_string() })),
-            )
+            );
         }
     };
 

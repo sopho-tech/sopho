@@ -3,8 +3,9 @@ use super::error::AppendUserMessageError;
 use super::error::ConversationError;
 use super::error::ExecuteCompletionError;
 use super::service;
-use crate::common::error_codes::codes;
 use crate::common::AppState;
+use crate::common::error_codes::codes;
+use axum::Router;
 use axum::extract::Json;
 use axum::extract::Path;
 use axum::extract::Query;
@@ -12,7 +13,6 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, post, put};
-use axum::Router;
 use serde_json::Value;
 use uuid::Uuid;
 

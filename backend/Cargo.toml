@@ -7,55 +7,55 @@ description = "Open-source analytics platform"
 license = "AGPL-3.0"
 publish = false
 
-[lints]
-workspace = true
-
 [workspace]
 members = [".", "migration"]
-
-[workspace.lints.rust]
-unsafe_code = "deny"
 
 [workspace.lints.clippy]
 allow_attributes_without_reason = "warn"
 dbg_macro = "warn"
 todo = "warn"
 
+[workspace.lints.rust]
+unsafe_code = "deny"
+
 [dependencies]
+aes-gcm = "0.10.3"
+anyhow = "1.0.97"
+argon2 = "0.5.3"
 axum = { version = "0.8.1", features = ["json"] }
-tokio = { version = "1.44.2", features = ["full"] }
-tokio-stream = {version = "0.1.18"}
-tower = "0.5.2"
-tower-http = { version = "0.6.2", features = ["fs", "cors", "trace"] }
-tower-cookies = "0.11.0"
+base64 = "0.22.1"
+chrono = { version = "0.4", features = ["serde"] }
+dotenv = "0.15"
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+getrandom = "0.3.2"
+hex = "0.4"
 http = "1.3.1"
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 http-body-util = "0.1.3"
+indoc = "2.0.7"
+migration = { path = "migration" }
+password-hash = "0.5.0"
+reqwest = "0.12.15"
+rig-core = "0.32.0"
+rust_decimal = { version = "1.36", features = ["serde-with-str"] }
+schemars = { version = "1.2", features = ["derive"] }
+sea-orm = { version = "1.1.19", features = ["debug-print", "macros", "runtime-async-std-native-tls", "sqlx-mysql", "sqlx-postgres", "sqlx-sqlite"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.140"
-schemars = { version = "1.2", features = ["derive"] }
-rig-core = "0.32.0"
-tuple-conv = "1.0.1"
-sea-orm = { version = "1.1.19", features = [ "sqlx-mysql", "sqlx-sqlite", "sqlx-postgres", "runtime-async-std-native-tls", "macros", "debug-print"] }
-dotenv = "0.15"
-uuid = { version = "1.4", features = ["v4", "serde"] }
-chrono = { version = "0.4", features = ["serde"] }
-reqwest = "0.12.15"
-anyhow = "1.0.97"
-getrandom = "0.3.2"
-base64 = "0.22.1"
-time = "0.3.47"
-sqlx = { version = "0.8", features = [ "runtime-tokio", "postgres", "sqlite" ] }
-thiserror = "=2.0.12"
-strum = { version = "0.27", features = ["derive"] }
-rust_decimal = { version = "1.36", features = ["serde-with-str"] }
-migration = { path = "migration" }
-argon2 = "0.5.3"
-password-hash = "0.5.0"
 sha2 = "0.10"
-hex = "0.4"
-aes-gcm = "0.10.3"
-indoc = "2.0.7"
-futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "sqlite"] }
+strum = { version = "0.27", features = ["derive"] }
+thiserror = "=2.0.12"
+time = "0.3.47"
+tokio = { version = "1.44.2", features = ["full"] }
 tokio-cron-scheduler = { version = "0.15.1", features = ["postgres_storage"] }
+tokio-stream = { version = "0.1.18" }
+tower = "0.5.2"
+tower-cookies = "0.11.0"
+tower-http = { version = "0.6.2", features = ["cors", "fs", "trace"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+tuple-conv = "1.0.1"
+uuid = { version = "1.4", features = ["serde", "v4"] }
+
+[lints]
+workspace = true

@@ -19,10 +19,7 @@ export const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 type PageItem = number | "ellipsis-left" | "ellipsis-right";
 
-function resolvePageSizeOptions(
-  options: number[],
-  pageSize: number
-): number[] {
+function resolvePageSizeOptions(options: number[], pageSize: number): number[] {
   const unique = new Set(options);
   unique.add(pageSize);
   return [...unique].sort((a, b) => a - b);
@@ -59,7 +56,7 @@ function getPageItems(currentPage: number, totalPages: number): PageItem[] {
 function renderPageButton(
   pageIndex: number,
   currentPage: number,
-  onPageClick: (newPage: number) => void
+  onPageClick: (newPage: number) => void,
 ): React.ReactElement {
   const isActive = pageIndex === currentPage;
   return (
@@ -80,7 +77,7 @@ function renderEllipsisButton(
   currentPage: number,
   totalPages: number,
   jumpAmount: number,
-  onPageClick: (newPage: number) => void
+  onPageClick: (newPage: number) => void,
 ): React.ReactElement {
   const newPage =
     direction === "left"
@@ -102,7 +99,7 @@ function renderEllipsisButton(
 function renderPages(
   currentPage: number,
   totalPages: number,
-  onPageClick: (newPage: number) => void
+  onPageClick: (newPage: number) => void,
 ): React.ReactElement[] {
   const jumpAmount = 5;
   const pageItems = getPageItems(currentPage, totalPages);
@@ -128,8 +125,8 @@ function renderPages(
             currentPage,
             totalPages,
             jumpAmount,
-            onPageClick
-          )
+            onPageClick,
+          ),
     ),
     <IconButton
       key="last"
@@ -160,7 +157,7 @@ export function Pagination({
   const pages = renderPages(currentPage, totalPages, onPageClick);
   const resolvedPageSizeOptions = resolvePageSizeOptions(
     pageSizeOptions,
-    pageSize
+    pageSize,
   );
 
   function handleValueChange(newValue: string) {

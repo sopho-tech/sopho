@@ -32,7 +32,9 @@ export function FormFieldRenderer({
       return (
         <form.AppField key={field.key} name={field.key}>
           {() => (
-            <div className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}>
+            <div
+              className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}
+            >
               {field.showLabel !== false && (
                 <FormLabel
                   infoIconToolTipMessage={field.infoIconToolTipMessage}
@@ -55,7 +57,9 @@ export function FormFieldRenderer({
       return (
         <form.AppField key={field.key} name={field.key}>
           {() => (
-            <div className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}>
+            <div
+              className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}
+            >
               {field.showLabel !== false && (
                 <FormLabel
                   infoIconToolTipMessage={field.infoIconToolTipMessage}
@@ -95,7 +99,9 @@ export function FormFieldRenderer({
                 options={field.options || []}
                 readonly={readonly}
               />
-              <FieldError errors={(fieldState.state.meta.errors || []) as string[]} />
+              <FieldError
+                errors={(fieldState.state.meta.errors || []) as string[]}
+              />
             </div>
           )}
         </form.AppField>

@@ -5,4 +5,3 @@ export type {
   AccordionTriggerProps,
   AccordionContentProps,
 } from "src/components/design-system/Accordion/Accordion";
-

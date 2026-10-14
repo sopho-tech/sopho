@@ -31,7 +31,7 @@ type UseDataTableReturn<T> = {
   setGlobalFilter: (value: string) => void;
   sorting: SortingState;
   setSorting: (
-    value: SortingState | ((prev: SortingState) => SortingState)
+    value: SortingState | ((prev: SortingState) => SortingState),
   ) => void;
   pagination: PaginationState | undefined;
   setPagination: (value: PaginationState | undefined) => void;
@@ -67,7 +67,7 @@ export function useDataTable<T>({
         };
       }
       return undefined;
-    }
+    },
   );
 
   const columnHelper = createColumnHelper<T>();
@@ -150,7 +150,7 @@ export function useDataTable<T>({
             cell:
               col.cell ||
               ((props: { getValue: () => unknown }) => props.getValue()),
-          }
+          },
         );
       } else {
         return columnHelper.display({
@@ -167,7 +167,7 @@ export function useDataTable<T>({
     setPagination(
       typeof updaterOrValue === "function"
         ? updaterOrValue(pagination ?? { pageIndex: 0, pageSize: 10 })
-        : updaterOrValue
+        : updaterOrValue,
     );
   };
 
@@ -183,7 +183,7 @@ export function useDataTable<T>({
     pagination,
     onPaginationChange,
     enableColumnResizing ?? true,
-    getRowId
+    getRowId,
   );
 
   return {

@@ -51,7 +51,7 @@ export function DataTable<T>({
   const rows = table.getRowModel().rows;
   const [hoveredColumnId, setHoveredColumnId] = useState<string | null>(null);
   const isResizingColumn = Boolean(
-    table.getState().columnSizingInfo?.isResizingColumn
+    table.getState().columnSizingInfo?.isResizingColumn,
   );
 
   if (data === undefined || data === null || data.length === 0) {
@@ -81,7 +81,7 @@ export function DataTable<T>({
           tableType,
           paginationConfig,
           table,
-          showRowsPerPage
+          showRowsPerPage,
         )}
       </Flex>
       <div

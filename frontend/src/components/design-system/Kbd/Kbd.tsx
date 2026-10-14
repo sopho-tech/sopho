@@ -16,7 +16,7 @@ export const Kbd = React.forwardRef<HTMLElement, KbdProps>(
         {children}
       </kbd>
     );
-  }
+  },
 );
 
 Kbd.displayName = "Kbd";
@@ -47,7 +47,7 @@ export const KbdGroup = React.forwardRef<HTMLSpanElement, KbdGroupProps>(
         })}
       </span>
     );
-  }
+  },
 );
 
 KbdGroup.displayName = "KbdGroup";

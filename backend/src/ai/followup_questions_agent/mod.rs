@@ -24,7 +24,9 @@ fn format_history(history: &ConversationHistory) -> String {
         .map(|turn| {
             let status = match turn.terminal_status {
                 ConversationHistoryTerminalStatus::Completed => "answered",
-                ConversationHistoryTerminalStatus::AwaitingClarification => "clarification requested",
+                ConversationHistoryTerminalStatus::AwaitingClarification => {
+                    "clarification requested"
+                }
                 ConversationHistoryTerminalStatus::Rejected => "rejected",
                 ConversationHistoryTerminalStatus::Failed => "failed",
             };

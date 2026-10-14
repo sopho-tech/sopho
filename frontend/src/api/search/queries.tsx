@@ -29,7 +29,7 @@ export const searchKeys = {
 const searchApi = {
   search: async (
     query: string,
-    filters: EntityType[]
+    filters: EntityType[],
   ): Promise<SearchResultItemDto[]> => {
     const url = new URL(API_ENDPOINTS.SEARCH.SEARCH, window.location.origin);
     if (query) {

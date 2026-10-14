@@ -27,7 +27,7 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
         });
       }
     },
-    [cellId, getCellQuery.data, updateCellMutation]
+    [cellId, getCellQuery.data, updateCellMutation],
   );
 
   return (

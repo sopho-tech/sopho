@@ -9,7 +9,7 @@ export function HomeHeader() {
 
   const dropdownItems = useMemo(
     () => createDropdownItems(handleCreateCanvas, handleCreateConnection),
-    [handleCreateCanvas, handleCreateConnection]
+    [handleCreateCanvas, handleCreateConnection],
   );
 
   return (

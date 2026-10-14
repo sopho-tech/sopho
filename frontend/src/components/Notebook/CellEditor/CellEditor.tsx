@@ -88,7 +88,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
               return true;
             },
           };
-        }
+        },
       );
 
       debouncedUpdate = debounce((content: string) => {

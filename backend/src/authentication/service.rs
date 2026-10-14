@@ -1,29 +1,29 @@
 use crate::authentication::constants::{
-    CookieName, SessionStatus, ACCESS_TOKEN_EXPIRY_HOURS, REFRESH_TOKEN_EXPIRY_DAYS,
+    ACCESS_TOKEN_EXPIRY_HOURS, CookieName, REFRESH_TOKEN_EXPIRY_DAYS, SessionStatus,
 };
 use crate::authentication::dto;
 use crate::authentication::repository;
 use crate::authentication::repository::{get_user, get_user_by_email};
+use crate::common::AppState;
 use crate::common::error_codes::codes;
 use crate::common::time_utils;
 use crate::common::token_utils;
-use crate::common::AppState;
 use crate::entity;
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Algorithm, Argon2, ParamsBuilder, Version,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
+use axum::Json;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use chrono::Utc;
 use getrandom;
 use sea_orm::DbErr;
 use time::OffsetDateTime;
+use tower_cookies::Cookies;
 use tower_cookies::cookie::Cookie;
 use tower_cookies::cookie::SameSite;
-use tower_cookies::Cookies;
 use uuid::Uuid;
 
 /// Result type for access token validation

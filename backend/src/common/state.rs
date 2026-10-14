@@ -3,7 +3,7 @@ use crate::ai_configuration;
 use crate::common::cryptography_utils::{
     generate_and_store_encryption_key, get_encryption_key_from_path,
 };
-use crate::database::pool::{new_database_pool_registry, DatabasePoolRegistry};
+use crate::database::pool::{DatabasePoolRegistry, new_database_pool_registry};
 use crate::db;
 use anyhow::bail;
 use sea_orm::DatabaseConnection;

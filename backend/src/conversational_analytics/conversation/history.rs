@@ -3,7 +3,7 @@ use crate::ai::dto::{
 };
 use crate::common::AppState;
 use crate::conversational_analytics::conversation::constants::{
-    MessageStatus, CONVERSATION_HISTORY_SCAN_MESSAGE_LIMIT, MAX_USER_MESSAGES_PER_CONVERSATION,
+    CONVERSATION_HISTORY_SCAN_MESSAGE_LIMIT, MAX_USER_MESSAGES_PER_CONVERSATION, MessageStatus,
 };
 use crate::conversational_analytics::message::constants::Sender;
 use crate::conversational_analytics::message::dto::ConversationMessageDto;

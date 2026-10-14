@@ -15,10 +15,7 @@ import type {
   IconType,
   IconColor,
 } from "src/components/design-system/datatypes";
-import {
-  Table,
-  type ColumnConfig,
-} from "src/components/Table/Table";
+import { Table, type ColumnConfig } from "src/components/Table/Table";
 import {
   AgentEventName,
   IN_PROGRESS_EVENTS,

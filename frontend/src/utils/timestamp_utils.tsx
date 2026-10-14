@@ -14,7 +14,7 @@ export function formatRelativeTime(timestamp: string | null): string | null {
 
 export function formatDate(
   timestamp: string | null,
-  timezoneOffset: number = 330
+  timezoneOffset: number = 330,
 ): string | null {
   if (!timestamp) {
     return null;
@@ -24,7 +24,7 @@ export function formatDate(
 
 export function formatTimestamp(
   timestamp: string | null,
-  timezoneOffset: number = 330
+  timezoneOffset: number = 330,
 ): string | null {
   if (!timestamp) {
     return null;

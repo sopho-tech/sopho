@@ -30,11 +30,11 @@ export function Notebook() {
   const createCellMutation = useCreateCell();
   const deleteCellMutation = useDeleteCell(
     activeNotebookId ?? undefined,
-    canvasId || undefined
+    canvasId || undefined,
   );
   const reorderCellMutation = useReorderCell(canvasId || undefined);
   const cellPendingDeletion = useStore(
-    (state) => state.notebook.cellPendingDeletion
+    (state) => state.notebook.cellPendingDeletion,
   );
 
   const clearCellOutput = useClearCellOutput();
@@ -59,7 +59,7 @@ export function Notebook() {
   }, [clearCellOutput]);
 
   const handleReorderCell = (
-    movementType: "UP" | "DOWN" | "TOP" | "BOTTOM"
+    movementType: "UP" | "DOWN" | "TOP" | "BOTTOM",
   ) => {
     const activeCellId = useStore.getState().notebook.activeCellId;
     if (activeCellId) {
@@ -105,59 +105,59 @@ export function Notebook() {
         cell_type: cellType,
       });
     },
-    [createCellMutation]
+    [createCellMutation],
   );
 
   useKeyboardShortcut(
     handleExecute,
     KEYBOARD_SHORTCUTS.EXECUTE_NOTEBOOK_CELL,
-    notebookRef
+    notebookRef,
   );
 
   useKeyboardShortcut(
     handleClearOutput,
     KEYBOARD_SHORTCUTS.CLEAR_NOTEBOOK_CELL,
-    notebookRef
+    notebookRef,
   );
 
   useKeyboardShortcut(
     () => handleReorderCell("UP"),
     KEYBOARD_SHORTCUTS.MOVE_CELL_UP,
-    notebookRef
+    notebookRef,
   );
 
   useKeyboardShortcut(
     () => handleReorderCell("TOP"),
     KEYBOARD_SHORTCUTS.MOVE_CELL_TOP,
-    notebookRef
+    notebookRef,
   );
 
   useKeyboardShortcut(
     () => handleReorderCell("DOWN"),
     KEYBOARD_SHORTCUTS.MOVE_CELL_DOWN,
-    notebookRef
+    notebookRef,
   );
 
   useKeyboardShortcut(
     () => handleReorderCell("BOTTOM"),
     KEYBOARD_SHORTCUTS.MOVE_CELL_BOTTOM,
-    notebookRef
+    notebookRef,
   );
 
   useKeyboardShortcut(
     () => handleCreateCell(CellType.SQL),
-    KEYBOARD_SHORTCUTS.ADD_SQL_CELL
+    KEYBOARD_SHORTCUTS.ADD_SQL_CELL,
   );
 
   useKeyboardShortcut(
     () => handleCreateCell(CellType.CHART),
-    KEYBOARD_SHORTCUTS.ADD_CHART_CELL
+    KEYBOARD_SHORTCUTS.ADD_CHART_CELL,
   );
 
   useKeyboardShortcut(
     handleRequestDeleteCell,
     KEYBOARD_SHORTCUTS.DELETE_CELL,
-    notebookRef
+    notebookRef,
   );
 
   const cellComponents = useMemo(() => {

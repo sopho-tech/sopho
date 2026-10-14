@@ -45,7 +45,9 @@ export function useCanvasesPagination() {
 export function useCanvasActions() {
   const navigate = useNavigate();
   const deleteMutation = useDeleteCanvas();
-  const setCanvasPageState = useStore((state) => state.canvas.setCanvasPageState);
+  const setCanvasPageState = useStore(
+    (state) => state.canvas.setCanvasPageState,
+  );
 
   const handleViewCanvas = (id: string) => {
     navigate(APP_ROUTES.CANVAS.replace(":id", id));

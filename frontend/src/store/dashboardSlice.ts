@@ -1,6 +1,9 @@
 import { StateCreator } from "zustand";
 import { Layout } from "react-grid-layout";
-import { DashboardDto, convertDtoToRGLayout } from "src/components/Dashboard/dto";
+import {
+  DashboardDto,
+  convertDtoToRGLayout,
+} from "src/components/Dashboard/dto";
 
 export enum DashboardMode {
   VIEWING = "VIEWING",
@@ -23,7 +26,10 @@ export type DashboardSlice = {
   };
 };
 
-export const createDashboardSlice: StateCreator<DashboardSlice> = (set, get) => ({
+export const createDashboardSlice: StateCreator<DashboardSlice> = (
+  set,
+  get,
+) => ({
   dashboard: {
     mode: DashboardMode.VIEWING,
     layout: [],
@@ -37,9 +43,13 @@ export const createDashboardSlice: StateCreator<DashboardSlice> = (set, get) => 
       set((state) => ({ dashboard: { ...state.dashboard, layout } })),
     getLayout: () => get().dashboard.layout,
     requestSave: () =>
-      set((state) => ({ dashboard: { ...state.dashboard, saveRequested: true } })),
+      set((state) => ({
+        dashboard: { ...state.dashboard, saveRequested: true },
+      })),
     clearSaveRequest: () =>
-      set((state) => ({ dashboard: { ...state.dashboard, saveRequested: false } })),
+      set((state) => ({
+        dashboard: { ...state.dashboard, saveRequested: false },
+      })),
     resetFromBackendData: (dashboardData) => {
       if (!dashboardData?.layout) {
         return;

@@ -7,8 +7,8 @@ use crate::canvas::dto;
 use crate::canvas::repository;
 use crate::cell::constants::{CellType, ChartType};
 use crate::cell::dto::{
-    series_alias, AxisChartContent, ChartContent, ChartSeries, CreateCellDto, MetricChartContent,
-    PieChartContent,
+    AxisChartContent, ChartContent, ChartSeries, CreateCellDto, MetricChartContent,
+    PieChartContent, series_alias,
 };
 use crate::cell::service as cell_service;
 use crate::common::time_utils;

@@ -10,8 +10,7 @@ export type SuggestedQuestionDto = {
 
 export const suggestedQuestionKeys = {
   all: ["suggested_questions"] as const,
-  forConnection: (id: string) =>
-    [...suggestedQuestionKeys.all, id] as const,
+  forConnection: (id: string) => [...suggestedQuestionKeys.all, id] as const,
 };
 
 const suggestedQuestionApi = {

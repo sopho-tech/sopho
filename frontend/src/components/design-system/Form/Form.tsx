@@ -36,7 +36,7 @@ type FormRootProps = {
   onChange?: (
     fieldName: string,
     value: string,
-    values: Record<string, unknown>
+    values: Record<string, unknown>,
   ) => void;
   className?: string;
   readonly?: boolean;
@@ -71,7 +71,7 @@ const FormRoot = ({
           onChange(
             fieldApi.name,
             String(fieldApi.state.value || ""),
-            currentValues
+            currentValues,
           );
         },
       },

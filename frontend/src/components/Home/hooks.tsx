@@ -10,10 +10,10 @@ import { useConnections } from "src/api/connection";
 export function useHomeNavigation() {
   const navigate = useNavigate();
   const setCanvasPageState = useStore(
-    (state) => state.canvas.setCanvasPageState
+    (state) => state.canvas.setCanvasPageState,
   );
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
 
   const handleCreateCanvas = useCallback(() => {
@@ -34,7 +34,7 @@ export function useHomeNavigation() {
 
 export function useRecentlyUpdatedCanvases(
   page: number = 0,
-  pageSize: number = 9
+  pageSize: number = 9,
 ) {
   return useAllCanvases(page, pageSize);
 }

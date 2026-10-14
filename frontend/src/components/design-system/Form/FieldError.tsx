@@ -11,4 +11,3 @@ export function FieldError({ errors }: FieldErrorProps) {
 
   return <div className={FormStyles.formMessage}>{errors[0]}</div>;
 }
-

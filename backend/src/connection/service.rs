@@ -1,6 +1,6 @@
+use crate::common::AppState;
 use crate::common::errors::{CreateConnectionError, ExecuteSqlError, GetDatabaseConnectionError};
 use crate::common::time_utils;
-use crate::common::AppState;
 use crate::connection::constants::ConnectionStatus;
 use crate::connection::constants::SourceType;
 use crate::connection::cryptography_utils;
@@ -189,7 +189,7 @@ pub async fn update_connection(
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 axum::Json(serde_json::json!({ "error": e.to_string() })),
-            )
+            );
         }
     };
 
@@ -201,7 +201,7 @@ pub async fn update_connection(
             return (
                 StatusCode::BAD_REQUEST,
                 axum::Json(serde_json::json!({ "error": e.to_string() })),
-            )
+            );
         }
     };
     payload.status = status;

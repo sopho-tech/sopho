@@ -22,7 +22,7 @@ export function ConnectionsTable() {
   const navigate = useNavigate();
   const setConnectionId = useStore((state) => state.connection.setConnectionId);
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
   const deleteMutation = useDeleteConnection();
   const { data: connectionsData, isLoading, isError } = useConnections();
@@ -33,14 +33,14 @@ export function ConnectionsTable() {
       setConnectionId(id);
       setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.DETAIL);
     },
-    [setConnectionId, setConnectionDetailsPageState]
+    [setConnectionId, setConnectionDetailsPageState],
   );
 
   const handleEditConnection = useCallback(
     (id: string) => {
       navigate(generatePath(APP_ROUTES.CONNECTION_EDIT, { id }));
     },
-    [navigate]
+    [navigate],
   );
 
   const handleDelete = useCallback(
@@ -49,7 +49,7 @@ export function ConnectionsTable() {
         deleteMutation.mutate(id);
       }
     },
-    [deleteMutation]
+    [deleteMutation],
   );
 
   const handleCreateConnection = useCallback(() => {
@@ -125,7 +125,7 @@ export function ConnectionsTable() {
         size: 100,
       },
     ],
-    [handleViewConnection, handleEditConnection, handleDelete]
+    [handleViewConnection, handleEditConnection, handleDelete],
   );
 
   const render = () => {

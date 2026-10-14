@@ -150,8 +150,8 @@ async fn execute_hypothesis_generation(
     channels.send(Event::GeneratingCandidateHypothesis).await?;
     let model_client = app_state.require_model_client().await?;
 
-    let generation_results: Vec<Result<LogicalPlanningResponse, _>> =
-        futures_util::stream::iter((0..LOGICAL_PLAN_HYPOTHESIS_GENERATION_ROUNDS).map(|_round| {
+    let generation_results: Vec<Result<LogicalPlanningResponse, _>> = futures_util::stream::iter(
+        (0..LOGICAL_PLAN_HYPOTHESIS_GENERATION_ROUNDS).map(|_round| {
             let model_client = model_client.clone();
             let question = question.to_string();
             async move {
@@ -167,10 +167,11 @@ async fn execute_hypothesis_generation(
                     .prompt_typed::<LogicalPlanningResponse>(prompt)
                     .await
             }
-        }))
-        .buffered(HYPOTHESIS_GENERATION_CONCURRENCY)
-        .collect()
-        .await;
+        }),
+    )
+    .buffered(HYPOTHESIS_GENERATION_CONCURRENCY)
+    .collect()
+    .await;
 
     let candidate_hypothesis: Vec<LogicalPlanningResponse> = generation_results
         .into_iter()
@@ -262,8 +263,7 @@ pub(crate) async fn execute_search_space_reduction(
         .collect()
         .await;
 
-    let pruned_batches: Vec<Database> =
-        pruning_results.into_iter().collect::<Result<Vec<_>>>()?;
+    let pruned_batches: Vec<Database> = pruning_results.into_iter().collect::<Result<Vec<_>>>()?;
     let pruned_data_catalog = join_pruned_batches(pruned_batches);
     Ok(pruned_data_catalog)
 }
@@ -275,7 +275,10 @@ pub(crate) async fn execute_hypothesis_verification(
     master_plan: &str,
     pruned_data_catalog: &Database,
     channels: &EventChannels,
-) -> Result<(Vec<(TableFunction, EmpericalObservation)>, FunctionalRoleAnalysisResult)> {
+) -> Result<(
+    Vec<(TableFunction, EmpericalObservation)>,
+    FunctionalRoleAnalysisResult,
+)> {
     channels
         .send(Event::ExecutingFunctionalRoleAnalysis)
         .await?;
@@ -511,8 +514,7 @@ pub(crate) async fn schema_linking_final_synthesis(
             SCHEMA_LINKING_MAX_REFINE_ROUNDS,
             queries.len()
         );
-        let query_results =
-            execute_sql_queries_in_parallel(app_state, connection, &queries).await;
+        let query_results = execute_sql_queries_in_parallel(app_state, connection, &queries).await;
 
         let results: String = result
             .exploration_queries
@@ -552,8 +554,7 @@ pub(crate) async fn schema_linking_final_synthesis(
     } else {
         info!(
             "schema_linking_final_synthesis: finished after {} refine rounds without CONFIRM (status={})",
-            SCHEMA_LINKING_MAX_REFINE_ROUNDS,
-            result.status
+            SCHEMA_LINKING_MAX_REFINE_ROUNDS, result.status
         );
     }
 
