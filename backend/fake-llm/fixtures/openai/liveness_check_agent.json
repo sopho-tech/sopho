@@ -1,0 +1,25 @@
+{
+  "match": "Respond with exactly the word OK and nothing else.",
+  "response": {
+    "id": "chatcmpl-fake-liveness-check",
+    "object": "chat.completion",
+    "created": 0,
+    "model": "gpt-4o-mini",
+    "system_fingerprint": null,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "OK"
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1,
+      "total_tokens": 2
+    }
+  }
+}

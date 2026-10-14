@@ -8,7 +8,7 @@ license = "AGPL-3.0"
 publish = false
 
 [workspace]
-members = [".", "migration"]
+members = [".", "fake-llm", "migration"]
 
 [workspace.lints.clippy]
 allow_attributes_without_reason = "warn"

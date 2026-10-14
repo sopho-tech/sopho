@@ -911,6 +911,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "fake-llm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "clap",
+ "serde",
+ "serde_json",
+ "strum 0.27.2",
+ "tokio",
+]
+
+[[package]]
 name = "fallible-iterator"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
