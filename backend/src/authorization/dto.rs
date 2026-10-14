@@ -63,7 +63,7 @@ pub struct PermissionSet {
 }
 
 impl PermissionSet {
-    pub(super) fn from_permissions(permissions: HashSet<Permission>) -> Self {
+    pub(crate) fn from_permissions(permissions: HashSet<Permission>) -> Self {
         Self { permissions }
     }
 
@@ -146,6 +146,19 @@ impl AuthorizationSubject {
     pub fn visibility(&self) -> Visibility {
         self.visibility
     }
+
+    pub fn ownership(&self) -> ResourceOwnership {
+        ResourceOwnership {
+            owner_user_id: self.owner_user_id,
+            visibility: self.visibility,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ResourceOwnership {
+    pub owner_user_id: Uuid,
+    pub visibility: Visibility,
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize)]

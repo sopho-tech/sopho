@@ -1,3 +1,4 @@
+use crate::authorization::dto::ResourceCapabilities;
 use crate::connection::constants::ConnectionStatus;
 use crate::connection::constants::SourceType;
 use crate::entity;
@@ -68,6 +69,8 @@ pub struct ConnectionDto {
     pub created_at: DateTime<FixedOffset>,
     pub updated_at: DateTime<FixedOffset>,
     pub status: ConnectionStatus,
+    #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
+    pub capabilities: Option<ResourceCapabilities>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -91,6 +94,7 @@ impl From<entity::connection::Model> for ConnectionDto {
             created_at: model.created_at,
             updated_at: model.updated_at,
             status: ConnectionStatus::from_str(&model.status).unwrap(),
+            capabilities: None,
         }
     }
 }

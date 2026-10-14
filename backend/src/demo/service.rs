@@ -77,7 +77,10 @@ pub async fn seed_demo_data(app_state: &AppState) {
     let canvas_result = match execute_create_canvas(
         app_state,
         tenant_id,
-        owner_user_id,
+        crate::authorization::dto::ResourceOwnership {
+            owner_user_id,
+            visibility: crate::authorization::constants::Visibility::Tenant,
+        },
         CreateCanvasDto {
             name: "Ecommerce Sales".to_string(),
             description: Some("Ecommerce sales analytics".to_string()),

@@ -34,16 +34,17 @@ pub async fn find_role_by_name(
         .await
 }
 
-pub async fn insert_system_role(
+pub async fn insert_role(
     database_connection: &DatabaseConnection,
     tenant_id: &TenantId,
     name: &str,
+    is_system: bool,
 ) -> Result<role::Model, DbErr> {
     role::ActiveModel {
         id: Set(Uuid::new_v4()),
         tenant_id: Set(tenant_id.get_uuid()),
         name: Set(name.to_string()),
-        is_system: Set(true),
+        is_system: Set(is_system),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }

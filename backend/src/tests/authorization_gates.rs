@@ -1,16 +1,18 @@
 use crate::authorization::constants::{
-    AccessLevel, Action, PrincipalType, ResourceType, SystemRole, Visibility,
+    AccessLevel, Action, Permission, PrincipalType, ResourceType, SystemRole, Visibility,
 };
-use crate::authorization::dto::{AuthorizationSubject, TenantContext, TenantId};
+use crate::authorization::dto::{AuthorizationSubject, TenantContext, TenantId, UserId};
 use crate::authorization::errors::AuthorizationError;
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::entity;
 use crate::tests::common::app_state::init_test_app_state;
 use crate::tests::common::resources::{
-    insert_canvas, insert_cell, insert_connection, insert_notebook,
+    insert_canvas, insert_cell, insert_connection, insert_conversation, insert_notebook,
 };
-use crate::tests::common::tenancy::{context_with_role, create_tenant};
+use crate::tests::common::tenancy::{
+    context_with_role, create_tenant, insert_user, resolve_context,
+};
 use sea_orm::{ActiveModelTrait, Set};
 use uuid::Uuid;
 
@@ -362,6 +364,79 @@ async fn capabilities_reflect_what_the_gates_allow() {
     assert!(!viewer_capabilities.can_edit);
     assert!(!viewer_capabilities.can_delete);
     assert!(!viewer_capabilities.can_share);
+}
+
+#[tokio::test]
+async fn conversation_and_connection_dtos_carry_capabilities() {
+    let app_state = init_test_app_state("gates_root_capabilities").await;
+    let tenant_id = create_tenant(&app_state, "t").await;
+    let owner = context_with_role(&app_state, tenant_id, SystemRole::Member, "owner").await;
+    let reader = context_with_role(&app_state, tenant_id, SystemRole::Member, "reader").await;
+
+    let connection_id = insert_connection(
+        &app_state,
+        tenant_id,
+        "shared connection",
+        owner.user_id().get_uuid(),
+        Visibility::Tenant,
+    )
+    .await;
+    let conversation_id = insert_conversation(
+        &app_state,
+        tenant_id,
+        "shared conversation",
+        owner.user_id().get_uuid(),
+        Visibility::Tenant,
+        connection_id,
+    )
+    .await;
+
+    let owner_conversation =
+        crate::conversational_analytics::conversation::service::get_conversation(
+            app_state.clone(),
+            &owner,
+            conversation_id,
+        )
+        .await
+        .unwrap();
+    let owner_capabilities = owner_conversation.conversation.capabilities.unwrap();
+    assert!(owner_capabilities.can_edit);
+    assert!(owner_capabilities.can_share);
+
+    let reader_conversation =
+        crate::conversational_analytics::conversation::service::get_conversation(
+            app_state.clone(),
+            &reader,
+            conversation_id,
+        )
+        .await
+        .unwrap();
+    let reader_capabilities = reader_conversation.conversation.capabilities.unwrap();
+    assert!(
+        !reader_capabilities.can_edit,
+        "tenant-visible is readable but not editable"
+    );
+    assert!(!reader_capabilities.can_share);
+
+    let owner_connection =
+        crate::connection::service::get_connection(app_state.clone(), &owner, connection_id)
+            .await
+            .unwrap();
+    assert!(
+        !owner_connection.capabilities.unwrap().can_edit,
+        "a member holds ConnectionRead but not ConnectionWrite, so owning one does not grant edit"
+    );
+
+    let administrator =
+        context_with_role(&app_state, tenant_id, SystemRole::Admin, "administrator").await;
+    let administrator_connection = crate::connection::service::get_connection(
+        app_state.clone(),
+        &administrator,
+        connection_id,
+    )
+    .await
+    .unwrap();
+    assert!(administrator_connection.capabilities.unwrap().can_edit);
 }
 
 #[tokio::test]
@@ -779,4 +854,171 @@ async fn search_does_not_surface_unreachable_conversations() {
         .collect();
     names.sort();
     assert_eq!(names, vec!["mine".to_string(), "shared".to_string()]);
+}
+
+#[tokio::test]
+async fn agent_created_canvas_inherits_conversation_owner_and_visibility() {
+    let app_state = init_test_app_state("gates_agent_canvas_inheritance").await;
+    let tenant_id = create_tenant(&app_state, "t").await;
+    let owner = context_with_role(&app_state, tenant_id, SystemRole::Member, "owner").await;
+    let other = context_with_role(&app_state, tenant_id, SystemRole::Member, "other").await;
+
+    let connection_id = insert_connection(
+        &app_state,
+        tenant_id,
+        "connection",
+        owner.user_id().get_uuid(),
+        Visibility::Private,
+    )
+    .await;
+    let conversation_id = insert_conversation(
+        &app_state,
+        tenant_id,
+        "private conversation",
+        owner.user_id().get_uuid(),
+        Visibility::Private,
+        connection_id,
+    )
+    .await;
+
+    let conversation_subject =
+        crate::conversational_analytics::conversation::service::load_authorization_subject(
+            &app_state,
+            owner.tenant_id(),
+            conversation_id,
+        )
+        .await
+        .unwrap();
+
+    let created = crate::canvas::service::execute_create_canvas(
+        &app_state,
+        owner.tenant_id(),
+        conversation_subject.ownership(),
+        crate::canvas::dto::CreateCanvasDto {
+            name: "agent canvas".to_string(),
+            description: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    let canvas_subject = crate::canvas::service::load_authorization_subject(
+        &app_state,
+        owner.tenant_id(),
+        created.canvas.id,
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(
+        canvas_subject.owner_user_id(),
+        owner.user_id().get_uuid(),
+        "the canvas must belong to the conversation owner, not whoever asked the question"
+    );
+    assert_eq!(
+        canvas_subject.visibility(),
+        Visibility::Private,
+        "a canvas generated from a private conversation must not become tenant visible"
+    );
+    assert!(!allowed(&app_state, &other, &canvas_subject, Action::Read).await);
+}
+
+#[tokio::test]
+async fn granted_editor_cannot_reshare_canvas() {
+    let app_state = init_test_app_state("gates_editor_cannot_reshare").await;
+    let tenant_id = create_tenant(&app_state, "t").await;
+    let owner = context_with_role(&app_state, tenant_id, SystemRole::Member, "owner").await;
+    let editor = context_with_role(&app_state, tenant_id, SystemRole::Member, "editor").await;
+
+    let subject = canvas_subject(tenant_id, owner.user_id().get_uuid(), Visibility::Private);
+    grant(
+        &app_state,
+        tenant_id,
+        &subject,
+        editor.user_id().get_uuid(),
+        AccessLevel::Editor,
+    )
+    .await;
+
+    assert!(allowed(&app_state, &editor, &subject, Action::Read).await);
+    assert!(allowed(&app_state, &editor, &subject, Action::Write).await);
+    assert!(
+        !allowed(&app_state, &editor, &subject, Action::Share).await,
+        "re-sharing stays with the owner or an administrator"
+    );
+}
+
+#[tokio::test]
+async fn removed_member_loses_access_immediately() {
+    let app_state = init_test_app_state("gates_removed_member").await;
+    let tenant_id = create_tenant(&app_state, "t").await;
+    let member = context_with_role(&app_state, tenant_id, SystemRole::Member, "member").await;
+    let subject = canvas_subject(tenant_id, member.user_id().get_uuid(), Visibility::Private);
+
+    assert!(allowed(&app_state, &member, &subject, Action::Read).await);
+
+    let membership = crate::authorization::service::find_membership(
+        &app_state,
+        tenant_id,
+        member.user_id().get_uuid(),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    let membership_active: crate::entity::tenant_membership::ActiveModel = membership.into();
+    membership_active
+        .delete(&app_state.database_connection)
+        .await
+        .unwrap();
+
+    let resolved = crate::authorization::service::resolve_tenant_context(
+        &app_state,
+        member.user_id(),
+        tenant_id,
+    )
+    .await;
+    assert!(
+        matches!(
+            resolved,
+            Err(crate::authorization::errors::TenantContextError::NotAMember)
+        ),
+        "a removed member must lose the tenant on the next request"
+    );
+}
+
+#[tokio::test]
+async fn custom_role_with_read_private_can_see_private_canvas() {
+    let app_state = init_test_app_state("gates_custom_role").await;
+    let tenant_id = create_tenant(&app_state, "t").await;
+    let scope = TenantId::from_system_unchecked(tenant_id);
+
+    crate::authorization::service::create_custom_role(
+        &app_state,
+        &scope,
+        "AUDITOR",
+        &[Permission::CanvasRead, Permission::CanvasReadPrivate],
+    )
+    .await
+    .unwrap();
+
+    let auditor_user_id = insert_user(&app_state, "auditor").await;
+    crate::tenant::service::add_member_with_role(
+        &app_state,
+        &scope,
+        UserId::from_system_unchecked(auditor_user_id),
+        "AUDITOR",
+    )
+    .await
+    .unwrap();
+    let auditor = resolve_context(&app_state, tenant_id, auditor_user_id).await;
+
+    let someone_elses = canvas_subject(tenant_id, Uuid::new_v4(), Visibility::Private);
+    assert!(
+        allowed(&app_state, &auditor, &someone_elses, Action::Read).await,
+        "a custom role holding CanvasReadPrivate reaches another member's private canvas"
+    );
+    assert!(
+        !allowed(&app_state, &auditor, &someone_elses, Action::Write).await,
+        "reading private does not imply writing"
+    );
 }

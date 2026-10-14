@@ -111,20 +111,39 @@ async fn authorize_conversation(
     Ok(conversation)
 }
 
+fn conversation_subject(
+    tenant_context: &TenantContext,
+    conversation: &entity::conversation::Model,
+) -> Result<AuthorizationSubject, ConversationError> {
+    authorization_service::subject_from_parts(
+        tenant_context.tenant_id(),
+        ResourceType::Conversation,
+        conversation.id,
+        conversation.owner_user_id,
+        &conversation.visibility,
+    )
+    .map_err(|_| ConversationError::NotFound)
+}
+
 pub async fn get_conversation(
     app_state: AppState,
     tenant_context: &TenantContext,
     conversation_id: Uuid,
 ) -> Result<dto::ConversationWithMessagesDto, ConversationError> {
-    authorize_conversation(&app_state, tenant_context, conversation_id, Action::Read).await?;
+    let authorized =
+        authorize_conversation(&app_state, tenant_context, conversation_id, Action::Read).await?;
     let tenant_id = tenant_context.tenant_id();
     let model =
         repository::get_conversation(&app_state.database_connection, tenant_id, conversation_id)
             .await
             .map_err(ConversationError::Database)?
             .ok_or(ConversationError::NotFound)?;
-    let conversation =
+    let mut conversation =
         dto::ConversationDto::try_from(model).map_err(ConversationError::Conversion)?;
+    let subject = conversation_subject(tenant_context, &authorized)?;
+    conversation.capabilities = Some(
+        authorization_service::resolve_capabilities(&app_state, tenant_context, &subject).await,
+    );
     let messages = message_service::list_messages_for_conversation(
         &app_state.database_connection,
         tenant_id,
@@ -213,20 +232,23 @@ pub async fn list_conversations(
     )
     .await?;
 
-    let items = models
-        .into_iter()
-        .map(|model| {
-            let user_message_count = user_message_counts
-                .get(&model.id)
-                .copied()
-                .unwrap_or_default();
-            dto::ConversationDto::try_from(model).map(|conversation| dto::ConversationListItemDto {
-                conversation,
-                user_message_count,
-            })
-        })
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(ConversationError::Conversion)?;
+    let mut items = Vec::with_capacity(models.len());
+    for model in models {
+        let user_message_count = user_message_counts
+            .get(&model.id)
+            .copied()
+            .unwrap_or_default();
+        let subject = conversation_subject(tenant_context, &model)?;
+        let mut conversation =
+            dto::ConversationDto::try_from(model).map_err(ConversationError::Conversion)?;
+        conversation.capabilities = Some(
+            authorization_service::resolve_capabilities(&app_state, tenant_context, &subject).await,
+        );
+        items.push(dto::ConversationListItemDto {
+            conversation,
+            user_message_count,
+        });
+    }
 
     Ok(dto::PaginatedConversationsDto {
         items,
@@ -451,6 +473,7 @@ pub async fn suggest_conversation_name(
         status: constants::ConversationStatus::Active,
         created_at: conversation.created_at,
         updated_at: conversation.updated_at,
+        capabilities: None,
     };
 
     let model = repository::update_conversation(
@@ -640,7 +663,6 @@ pub async fn execute_completion(
         .await
         .map_err(|_| ExecuteCompletionError::ConversationNotFound)?;
     let tenant_id = tenant_context.tenant_id();
-    let requesting_user_id = tenant_context.user_id().get_uuid();
     ensure_ai_live(&app_state, tenant_id).await?;
     let conversation =
         repository::get_conversation(&app_state.database_connection, tenant_id, conversation_id)
@@ -687,7 +709,6 @@ pub async fn execute_completion(
             run_pipeline(
                 &app_state,
                 tenant_id,
-                requesting_user_id,
                 &connection,
                 conversation_id,
                 &question,
@@ -763,7 +784,6 @@ fn resolve_command_decision(
 async fn run_pipeline(
     app_state: &AppState,
     tenant_id: &TenantId,
-    owner_user_id: Uuid,
     connection: &entity::connection::Model,
     conversation_id: Uuid,
     question: &str,
@@ -865,10 +885,14 @@ async fn run_pipeline(
             Ok(PipelineOutcome::Completed)
         }
         RouterCode::GenerateCanvas => {
+            let conversation_subject =
+                load_authorization_subject(app_state, tenant_id, conversation_id)
+                    .await
+                    .map_err(|error| anyhow::anyhow!(error))?;
             canvas::generate(
                 app_state,
                 tenant_id,
-                owner_user_id,
+                conversation_subject.ownership(),
                 conversation_id,
                 connection.id,
                 conversation_history,

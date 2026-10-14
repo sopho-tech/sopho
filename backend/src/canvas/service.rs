@@ -4,7 +4,7 @@ use crate::ai::dto::{
 };
 use crate::authorization::constants::{Action, ResourceType, Visibility};
 use crate::authorization::dto::TenantId;
-use crate::authorization::dto::{AuthorizationSubject, TenantContext};
+use crate::authorization::dto::{AuthorizationSubject, ResourceOwnership, TenantContext};
 use crate::authorization::service as authorization_service;
 use crate::canvas::constants::CanvasStatus;
 use crate::canvas::constants::{CANVAS_NOT_FOUND_MESSAGE, DASHBOARD_NOT_FOUND_FOR_CANVAS_MESSAGE};
@@ -176,7 +176,10 @@ pub async fn create_canvas(
     let created = execute_create_canvas(
         &app_state,
         tenant_context.tenant_id(),
-        owner_user_id,
+        ResourceOwnership {
+            owner_user_id,
+            visibility: Visibility::Tenant,
+        },
         payload,
     )
     .await?;
@@ -187,11 +190,11 @@ pub async fn create_canvas(
 pub async fn execute_create_canvas(
     app_state: &AppState,
     tenant_id: &TenantId,
-    owner_user_id: Uuid,
+    ownership: ResourceOwnership,
     payload: dto::CreateCanvasDto,
 ) -> Result<dto::CreateCanvasResult, sea_orm::DbErr> {
     let txn = app_state.database_connection.begin().await?;
-    let created = create_canvas_transaction(&txn, tenant_id, owner_user_id, payload).await?;
+    let created = create_canvas_transaction(&txn, tenant_id, ownership, payload).await?;
     txn.commit().await?;
     Ok(created)
 }
@@ -199,7 +202,7 @@ pub async fn execute_create_canvas(
 async fn create_canvas_transaction(
     txn: &sea_orm::DatabaseTransaction,
     tenant_id: &TenantId,
-    owner_user_id: Uuid,
+    ownership: ResourceOwnership,
     payload: dto::CreateCanvasDto,
 ) -> Result<dto::CreateCanvasResult, sea_orm::DbErr> {
     let canvas_id = Uuid::new_v4();
@@ -207,8 +210,8 @@ async fn create_canvas_transaction(
     let canvas_entity = entity::canvas::Model {
         id: canvas_id,
         tenant_id: tenant_id.get_uuid(),
-        owner_user_id,
-        visibility: Visibility::Tenant.as_str().to_string(),
+        owner_user_id: ownership.owner_user_id,
+        visibility: ownership.visibility.as_str().to_string(),
         name: payload.name.clone(),
         description: payload.description.clone(),
         status: CanvasStatus::Active.to_string(),
@@ -409,7 +412,7 @@ struct AppliedChanges {
 pub async fn apply_canvas_plan(
     app_state: &AppState,
     tenant_id: &TenantId,
-    owner_user_id: Uuid,
+    ownership: ResourceOwnership,
     connection_id: Uuid,
     plan: CanvasPlan,
     target_canvas_id: Option<Uuid>,
@@ -427,7 +430,7 @@ pub async fn apply_canvas_plan(
             let created = create_canvas_transaction(
                 &txn,
                 tenant_id,
-                owner_user_id,
+                ownership,
                 dto::CreateCanvasDto {
                     name: plan.name.clone(),
                     description: non_blank(&plan.description),

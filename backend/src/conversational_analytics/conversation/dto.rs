@@ -1,4 +1,5 @@
 use super::constants::ConversationStatus;
+use crate::authorization::dto::ResourceCapabilities;
 use crate::conversational_analytics::message::dto::ConversationMessageWithContentDto;
 use crate::conversational_analytics::segment::MessageSegment;
 use crate::entity;
@@ -20,6 +21,8 @@ pub struct ConversationDto {
     pub status: ConversationStatus,
     pub created_at: DateTime<FixedOffset>,
     pub updated_at: DateTime<FixedOffset>,
+    #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
+    pub capabilities: Option<ResourceCapabilities>,
 }
 
 impl TryFrom<entity::conversation::Model> for ConversationDto {
@@ -34,6 +37,7 @@ impl TryFrom<entity::conversation::Model> for ConversationDto {
             status,
             created_at: model.created_at,
             updated_at: model.updated_at,
+            capabilities: None,
         })
     }
 }

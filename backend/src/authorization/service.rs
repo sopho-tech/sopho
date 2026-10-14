@@ -26,7 +26,7 @@ pub async fn seed_system_roles_for_tenant(
         {
             Some(existing_role) => existing_role,
             None => {
-                repository::insert_system_role(&app_state.database_connection, tenant_id, role_name)
+                repository::insert_role(&app_state.database_connection, tenant_id, role_name, true)
                     .await?
             }
         };
@@ -90,6 +90,25 @@ pub async fn resolve_tenant_context(
     ))
 }
 
+pub async fn create_custom_role(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    name: &str,
+    permissions: &[Permission],
+) -> Result<crate::entity::role::Model, sea_orm::DbErr> {
+    let role =
+        repository::insert_role(&app_state.database_connection, tenant_id, name, false).await?;
+    for permission in permissions {
+        repository::insert_role_permission(
+            &app_state.database_connection,
+            role.id,
+            permission.as_str(),
+        )
+        .await?;
+    }
+    Ok(role)
+}
+
 pub async fn find_role_by_name(
     app_state: &AppState,
     tenant_id: &TenantId,
@@ -130,45 +149,94 @@ pub async fn require_access(
         return Err(AuthorizationError::WrongTenant);
     }
 
-    let resource_type = subject.resource_type();
-    require_capability(tenant_context, resource_type.permission_for(action))?;
+    let decision = decide_without_grant(
+        tenant_context.permissions(),
+        subject.resource_type(),
+        action,
+        subject.owner_user_id() == tenant_context.user_id().get_uuid(),
+        subject.visibility(),
+    );
 
-    if subject.owner_user_id() == tenant_context.user_id().get_uuid() {
-        return Ok(());
+    match decision {
+        AccessDecision::Allowed => Ok(()),
+        AccessDecision::MissingCapability => Err(AuthorizationError::MissingPermission(
+            subject
+                .resource_type()
+                .permission_for(action)
+                .as_str()
+                .to_string(),
+        )),
+        AccessDecision::NotReachable => Err(AuthorizationError::NotReachable),
+        AccessDecision::RequiresGrant => {
+            let granted = find_grant_for(app_state, tenant_context, subject)
+                .await?
+                .and_then(|found| AccessLevel::from_str(&found.access_level).ok());
+            if grant_satisfies(action, granted) {
+                Ok(())
+            } else {
+                Err(AuthorizationError::NotReachable)
+            }
+        }
     }
+}
 
-    let permissions = tenant_context.permissions();
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AccessDecision {
+    Allowed,
+    RequiresGrant,
+    MissingCapability,
+    NotReachable,
+}
+
+/// Both gates, minus the grant lookup, so the decision model can be exercised
+/// without a database. `RequiresGrant` means the caller must consult
+/// `resource_grant` and feed the result to `grant_satisfies`.
+pub fn decide_without_grant(
+    permissions: &PermissionSet,
+    resource_type: ResourceType,
+    action: Action,
+    is_owner: bool,
+    visibility: Visibility,
+) -> AccessDecision {
+    if !permissions.contains(resource_type.permission_for(action)) {
+        return AccessDecision::MissingCapability;
+    }
+    if is_owner {
+        return AccessDecision::Allowed;
+    }
     match action {
         Action::Read => {
-            if subject.visibility() == Visibility::Tenant
+            if visibility == Visibility::Tenant
                 || permissions.contains(resource_type.read_private_permission())
             {
-                return Ok(());
-            }
-            if find_grant_for(app_state, tenant_context, subject)
-                .await?
-                .is_some()
-            {
-                return Ok(());
+                AccessDecision::Allowed
+            } else {
+                AccessDecision::RequiresGrant
             }
         }
         Action::Write | Action::Delete => {
             if permissions.contains(resource_type.write_all_permission()) {
-                return Ok(());
-            }
-            let grant = find_grant_for(app_state, tenant_context, subject).await?;
-            if grant.is_some_and(|found| found.access_level == AccessLevel::Editor.as_str()) {
-                return Ok(());
+                AccessDecision::Allowed
+            } else {
+                AccessDecision::RequiresGrant
             }
         }
         Action::Share => {
             if permissions.contains(resource_type.write_all_permission()) {
-                return Ok(());
+                AccessDecision::Allowed
+            } else {
+                AccessDecision::NotReachable
             }
         }
     }
+}
 
-    Err(AuthorizationError::NotReachable)
+pub fn grant_satisfies(action: Action, granted: Option<AccessLevel>) -> bool {
+    match action {
+        Action::Read => granted.is_some(),
+        Action::Write | Action::Delete => granted == Some(AccessLevel::Editor),
+        Action::Share => false,
+    }
 }
 
 async fn find_grant_for(

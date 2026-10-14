@@ -71,13 +71,32 @@ pub async fn get_connection(
     tenant_context: &TenantContext,
     id: Uuid,
 ) -> Result<dto::ConnectionDto, ConnectionError> {
-    authorize_connection(&app_state, tenant_context, id, Action::Read).await?;
+    let authorized = authorize_connection(&app_state, tenant_context, id, Action::Read).await?;
 
     let connection = execute_get_connection(&app_state, tenant_context.tenant_id(), id)
         .await
         .map_err(|_| ConnectionError::NotFound)?;
 
-    Ok(dto::ConnectionDto::from(connection))
+    let subject = connection_subject(tenant_context, &authorized)?;
+    let mut response_dto = dto::ConnectionDto::from(connection);
+    response_dto.capabilities = Some(
+        authorization_service::resolve_capabilities(&app_state, tenant_context, &subject).await,
+    );
+    Ok(response_dto)
+}
+
+fn connection_subject(
+    tenant_context: &TenantContext,
+    connection: &entity::connection::Model,
+) -> Result<AuthorizationSubject, ConnectionError> {
+    authorization_service::subject_from_parts(
+        tenant_context.tenant_id(),
+        ResourceType::Connection,
+        connection.id,
+        connection.owner_user_id,
+        &connection.visibility,
+    )
+    .map_err(ConnectionError::Internal)
 }
 
 pub async fn execute_get_connection(
@@ -124,10 +143,16 @@ pub async fn get_all_connections(
         cryptography_utils::decrypt_connection(connection, &app_state.config.encryption_key);
     }
 
-    Ok(connections
-        .into_iter()
-        .map(dto::ConnectionDto::from)
-        .collect())
+    let mut response_dto_list = Vec::with_capacity(connections.len());
+    for connection in connections {
+        let subject = connection_subject(tenant_context, &connection)?;
+        let mut response_dto = dto::ConnectionDto::from(connection);
+        response_dto.capabilities = Some(
+            authorization_service::resolve_capabilities(&app_state, tenant_context, &subject).await,
+        );
+        response_dto_list.push(response_dto);
+    }
+    Ok(response_dto_list)
 }
 
 async fn get_connection_status(
