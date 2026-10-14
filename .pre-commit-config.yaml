@@ -6,7 +6,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        args: [--markdown-linebreak-ext=md, mdx]
+        args: [--markdown-linebreak-ext=md, --markdown-linebreak-ext=mdx]
         exclude: \.rs$
         stages: [pre-commit]
       - id: end-of-file-fixer
@@ -69,11 +69,13 @@ repos:
         entry: npx --no-install tombi format
         language: system
         types: [toml]
+        exclude: Cargo\.lock$
       - id: tombi-lint
         name: tombi lint
         entry: npx --no-install tombi lint
         language: system
         types: [toml]
+        exclude: Cargo\.lock$
       - id: oxlint-frontend
         name: oxlint (frontend)
         entry: bash -c 'cd frontend && ../node_modules/.bin/oxlint --max-warnings 428'
@@ -88,7 +90,7 @@ repos:
         pass_filenames: false
       - id: stylelint
         name: stylelint
-        entry: npx --no-install stylelint "frontend/**/*.css" "docs/**/*.css"
+        entry: npx --no-install stylelint "frontend/**/*.css" "docs/**/*.css" --max-warnings 17
         language: system
         types: [css]
         pass_filenames: false

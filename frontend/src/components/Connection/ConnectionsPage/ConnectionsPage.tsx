@@ -33,7 +33,7 @@ export function Connections() {
         gap="md"
       >
         <Flex direction="column" gap="2xs">
-          <Heading accessbilityLevel={2} size="2xl" textColor="black">
+          <Heading accessibilityLevel={2} size="2xl" textColor="black">
             Connections
           </Heading>
           <Text fontSize="sm" color="subtle">

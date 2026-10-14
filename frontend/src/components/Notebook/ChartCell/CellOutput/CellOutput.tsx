@@ -101,7 +101,7 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
             alignItems="center"
             sx={{ textAlign: "center" }}
           >
-            <Heading accessbilityLevel={2} textColor="default">
+            <Heading accessibilityLevel={2} textColor="default">
               No chart rendered
             </Heading>
             <Text as="p" color="subtle">

@@ -4,15 +4,15 @@
 
 1. Install sea-orm-cli
 
-```bash
-cargo install sea-orm-cli
-```
+   ```bash
+   cargo install sea-orm-cli
+   ```
 
 2. Generate Entities
 
-```bash
-sea-orm-cli generate entity --ignore-tables seaql_migrations,scheduler_job,scheduler_notification,scheduler_notification_state -u "<DB_URL>" -o src/entity
-```
+   ```bash
+   sea-orm-cli generate entity --ignore-tables seaql_migrations,scheduler_job,scheduler_notification,scheduler_notification_state -u "<DB_URL>" -o src/entity
+   ```
 
 ## Serving Frontend
 

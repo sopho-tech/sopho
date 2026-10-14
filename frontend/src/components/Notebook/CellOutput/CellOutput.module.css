@@ -1,15 +1,19 @@
 .tableHeaderCell {
   /* background-color: var(--color-grey-200); */
+
   /* padding: var(--space-xs); */
+
   /* font-size: var(--font-size-sm); */
 }
 
 .tableDataCell {
   /* padding: var(--space-xs); */
+
   /* font-size: var(--font-size-sm); */
 }
 
 .outputContainer {
   /* overflow-x: auto; */
+
   /* padding: var(--space-lg); */
 }

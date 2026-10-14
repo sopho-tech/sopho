@@ -37,7 +37,7 @@ export const ConversationListHeader = ({
     paddingY="lg"
     paddingX="2xs"
   >
-    <Heading accessbilityLevel={2} size="xl" weight="semibold">
+    <Heading accessibilityLevel={2} size="xl" weight="semibold">
       Conversations
     </Heading>
 

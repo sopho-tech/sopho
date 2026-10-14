@@ -21,7 +21,7 @@ export const CanvasCard = ({ canvas }: CanvasCardProps) => {
 
   return (
     <Card onClick={canvas.id ? handleClick : undefined}>
-      <Card.Header baseAccessbilityLevel={2}>
+      <Card.Header baseAccessibilityLevel={2}>
         <Card.Title>{canvas.name}</Card.Title>
         <Card.Description>{canvas.description}</Card.Description>
       </Card.Header>

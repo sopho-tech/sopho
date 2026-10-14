@@ -139,7 +139,7 @@ export function ConversationStreamProvider({
                   });
                   notify(store);
                 } catch {
-                  /* ignore unparseable frames */
+                  /* ignore unparsable frames */
                 }
               },
             },

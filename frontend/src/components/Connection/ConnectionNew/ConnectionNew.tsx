@@ -70,7 +70,7 @@ export function ConnectionNew() {
         gap="md"
       >
         <Flex direction="column" gap="2xs">
-          <Heading accessbilityLevel={2} size="2xl" textColor="black">
+          <Heading accessibilityLevel={2} size="2xl" textColor="black">
             New Connection
           </Heading>
           <Text fontSize="sm" color="subtle">
@@ -94,10 +94,10 @@ export function ConnectionNew() {
         <Form.Fields className={styles.formFields}>
           <Flex direction="row" gap="lg" justifyContent="space-between">
             <Flex direction="column" gap="sm" width={"100%"}>
-              <Heading accessbilityLevel={2} textColor="black" size="lg">
+              <Heading accessibilityLevel={2} textColor="black" size="lg">
                 Basic Details
               </Heading>
-              <Heading accessbilityLevel={3} textColor="subtle" size="base">
+              <Heading accessibilityLevel={3} textColor="subtle" size="base">
                 Set your basic connection details
               </Heading>
             </Flex>
@@ -136,10 +136,10 @@ export function ConnectionNew() {
           <Separator></Separator>
           <Flex direction="row" gap="lg" justifyContent="space-between">
             <Flex direction="column" gap="sm" width={"100%"}>
-              <Heading accessbilityLevel={2} textColor="black" size="lg">
+              <Heading accessibilityLevel={2} textColor="black" size="lg">
                 Specific Details
               </Heading>
-              <Heading accessbilityLevel={3} textColor="subtle" size="base">
+              <Heading accessibilityLevel={3} textColor="subtle" size="base">
                 {sourceType === null
                   ? "Select source type to see the specific details"
                   : sourceType === SourceTypeEnum.PostgreSQL

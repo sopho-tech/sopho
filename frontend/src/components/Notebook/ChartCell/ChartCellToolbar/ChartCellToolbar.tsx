@@ -38,7 +38,7 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
           onSave={handleSave}
           placeholder="Cell Name"
           defaultValue="Unnamed"
-          className={styles["toolbar__inlineEdit"]}
+          className={styles["toolbarInlineEdit"]}
         />
       </div>
       {showElapsed && startedAt && <ElapsedTime startedAt={startedAt} />}

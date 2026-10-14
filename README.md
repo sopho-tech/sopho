@@ -53,21 +53,21 @@ The preferred way for installing and using Sopho is through Docker.
 
 1. Run the following command to pull the Docker image:
 
-```bash
-docker pull ghcr.io/sopho-tech/sopho/sopho:latest
-```
+   ```bash
+   docker pull ghcr.io/sopho-tech/sopho/sopho:latest
+   ```
 
 2. After the image has been pulled, run the container:
 
-```bash
-docker run -d -p 8000:8000 \
-  --name sopho \
-  -e ADMIN_USERNAME="admin" \
-  -e ADMIN_PASSWORD="password" \
-  -e ADMIN_EMAIL="admin@admin.com" \
-  -e ADMIN_FULL_NAME="admin admin" \
-  ghcr.io/sopho-tech/sopho/sopho:latest
-```
+   ```bash
+   docker run -d -p 8000:8000 \
+     --name sopho \
+     -e ADMIN_USERNAME="admin" \
+     -e ADMIN_PASSWORD="password" \
+     -e ADMIN_EMAIL="admin@admin.com" \
+     -e ADMIN_FULL_NAME="admin admin" \
+     ghcr.io/sopho-tech/sopho/sopho:latest
+   ```
 
 The container will use SQLite as the backend database by default. SQLite is not recommended for production usage. Use PostgreSQL for production.
 

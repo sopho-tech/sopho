@@ -2,8 +2,8 @@
 
 ## Overview
 
-1. Tanstack Query for data fetching
-2. Tanstack Router for routing
+1. TanStack Query for data fetching
+2. React Router for routing
 3. Vite for building
 
 ## Building

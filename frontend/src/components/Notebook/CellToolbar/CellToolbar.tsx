@@ -118,7 +118,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
           onSave={handleSave}
           placeholder="Cell Name"
           defaultValue="Unnamed"
-          className={CellToolbarStyles["toolbar__inlineEdit"]}
+          className={CellToolbarStyles.toolbarInlineEdit}
         />
       </div>
       <Flex
@@ -135,7 +135,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
           <Toolbar.Button asChild>
             <Select.Trigger
               placeholder="Select a connection"
-              className={CellToolbarStyles["toolbar__select-trigger"]}
+              className={CellToolbarStyles.toolbarSelectTrigger}
             />
           </Toolbar.Button>
           <Select.Content>

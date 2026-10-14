@@ -31,7 +31,7 @@ export function NewAssetButton({
   const getButtonStyleClass = () => {
     switch (style) {
       case ButtonStyle.BackButton:
-        return NewAssetButtonStyles.back__buttonStyle;
+        return NewAssetButtonStyles.backButtonStyle;
       case ButtonStyle.AccentButton:
       default:
         return NewAssetButtonStyles.buttonStyle;

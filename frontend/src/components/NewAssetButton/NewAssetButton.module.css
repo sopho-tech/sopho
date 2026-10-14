@@ -1,6 +1,6 @@
 /* Common button styles */
 .buttonStyle,
-.back__buttonStyle {
+.backButtonStyle {
   background: transparent;
   border: none;
   cursor: pointer;
@@ -24,15 +24,15 @@
 }
 
 /* Back button variant */
-.back__buttonStyle {
+.backButtonStyle {
   color: var(--color-text);
   background-color: var(--color-background);
 }
 
-.back__buttonStyle:hover {
+.backButtonStyle:hover {
   background-color: var(--color-grey-300);
 }
 
-.back__buttonStyle:active {
+.backButtonStyle:active {
   background-color: var(--color-grey-600);
 }

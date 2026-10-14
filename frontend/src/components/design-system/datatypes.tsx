@@ -126,7 +126,7 @@ export type BorderVariant = "default" | "divider" | "warning";
 
 export type ShadowVariant = "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "scroll";
 
-export type Postition = "sticky" | "absolute" | "relative" | "fixed";
+export type Position = "sticky" | "absolute" | "relative" | "fixed";
 
 export type ZIndex = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10";
 
@@ -185,7 +185,7 @@ export type SharedLayoutProps = {
   bottom?: SpacingValue;
   left?: SpacingValue;
   right?: SpacingValue;
-  position?: Postition;
+  position?: Position;
   zIndex?: ZIndex;
   height?: NumberString;
   width?: NumberString;

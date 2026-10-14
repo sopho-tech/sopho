@@ -17,10 +17,10 @@ export type TextColor =
   | "warning"
   | "black";
 
-export type AccessbilityLevel = 1 | 2 | 3 | 4 | 5 | 6;
+export type AccessibilityLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
 type HeadingProps = {
-  accessbilityLevel: AccessbilityLevel;
+  accessibilityLevel: AccessibilityLevel;
   weight?: FontWeight;
   size?: FontSize;
   textAlign?: "left" | "center" | "right" | "justify" | "start" | "end";
@@ -68,14 +68,14 @@ function getTextColor(color: TextColor | undefined): string | undefined {
 }
 
 export function Heading({
-  accessbilityLevel,
+  accessibilityLevel,
   children,
   weight,
   size,
   textAlign,
   textColor,
 }: HeadingProps) {
-  const Component = headingComponents[accessbilityLevel];
+  const Component = headingComponents[accessibilityLevel];
 
   const style = useMemo(() => {
     const styles: React.CSSProperties = {};
@@ -100,7 +100,7 @@ export function Heading({
 
   const headingClass =
     size === undefined && weight === undefined
-      ? styles[`heading${accessbilityLevel}`]
+      ? styles[`heading${accessibilityLevel}`]
       : undefined;
 
   return (

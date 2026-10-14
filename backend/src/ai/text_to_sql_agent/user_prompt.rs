@@ -92,7 +92,7 @@ const DATA_PROFILING_AFTER: &str = indoc! {r#"
     - "relevance_reason": Explain the LOGICAL role of the column (e.g., "Provides the Join Key for X and Y", "Contains the target column Z").
     - "observations": Summarize FACTUAL findings from exploration for the column (e.g., "Column A contains integer codes 1-5", "Table is empty").
     - "table_summary": A concise summary of what this table represents in the context of the query.
-    - "relevant": Whether the table is relavent to the user question after analysis of all its columns.
+    - "relevant": Whether the table is relevant to the user question after analysis of all its columns.
 
     ## Output Format
     Always respond in this exact JSON format:

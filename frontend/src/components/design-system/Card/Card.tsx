@@ -1,7 +1,7 @@
 import { Duration, EASE, Scale } from "src/components/design-system/animation";
 import { Flex } from "src/components/design-system/Flex";
 import {
-  AccessbilityLevel,
+  AccessibilityLevel,
   Heading,
 } from "src/components/design-system/Heading/Heading";
 import { MotionFlex } from "src/components/design-system/MotionFlex";
@@ -65,11 +65,11 @@ CardRoot.displayName = "Card";
 
 type CardHeaderProps = {
   children: React.ReactNode;
-  baseAccessbilityLevel: AccessbilityLevel;
+  baseAccessibilityLevel: AccessibilityLevel;
 };
 
 type CardHeaderContextType = {
-  baseAccessbilityLevel: AccessbilityLevel;
+  baseAccessibilityLevel: AccessibilityLevel;
 };
 
 const CardHeaderContext = createContext<CardHeaderContextType | null>(null);
@@ -82,9 +82,9 @@ const useCardHeaderContext = () => {
   return context;
 };
 
-const CardHeader = ({ children, baseAccessbilityLevel }: CardHeaderProps) => {
+const CardHeader = ({ children, baseAccessibilityLevel }: CardHeaderProps) => {
   const contextValue = {
-    baseAccessbilityLevel: baseAccessbilityLevel,
+    baseAccessibilityLevel: baseAccessibilityLevel,
   };
   return (
     <CardHeaderContext value={contextValue}>
@@ -102,10 +102,10 @@ type CardTitleProps = {
 };
 
 const CardTitle = ({ children }: CardTitleProps) => {
-  const { baseAccessbilityLevel } = useCardHeaderContext();
+  const { baseAccessibilityLevel } = useCardHeaderContext();
   return (
     <Heading
-      accessbilityLevel={baseAccessbilityLevel}
+      accessibilityLevel={baseAccessibilityLevel}
       size="lg"
       weight="medium"
     >
@@ -119,11 +119,11 @@ CardTitle.displayName = "Card.Title";
 type CardDescriptionProps = CardTitleProps;
 
 const CardDescription = ({ children }: CardDescriptionProps) => {
-  const { baseAccessbilityLevel } = useCardHeaderContext();
-  const accessbilityLevel = (baseAccessbilityLevel + 1) as AccessbilityLevel;
+  const { baseAccessibilityLevel } = useCardHeaderContext();
+  const accessibilityLevel = (baseAccessibilityLevel + 1) as AccessibilityLevel;
   return (
     <Heading
-      accessbilityLevel={accessbilityLevel}
+      accessibilityLevel={accessibilityLevel}
       size="base"
       weight="normal"
       textColor="subtle"

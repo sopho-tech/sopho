@@ -80,11 +80,11 @@ export default function SignIn() {
         <Flex justifyContent="center" alignItems="center" marginBottom="md">
           <img src={logo} alt="Logo" className={styles.logo} />
         </Flex>
-        <Heading accessbilityLevel={1} size="xl" textAlign="center">
+        <Heading accessibilityLevel={1} size="xl" textAlign="center">
           Welcome !
         </Heading>
         <Heading
-          accessbilityLevel={2}
+          accessibilityLevel={2}
           size="sm"
           textAlign="center"
           textColor="subtle"

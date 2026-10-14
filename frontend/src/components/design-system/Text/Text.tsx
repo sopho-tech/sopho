@@ -30,7 +30,8 @@ export function Text({
   const Component = as;
   const classNames = [
     styles[color],
-    fontSize && styles[`fontSize-${fontSize}`],
+    fontSize &&
+      styles[`fontSize${fontSize.charAt(0).toUpperCase()}${fontSize.slice(1)}`],
     truncate && styles.truncate,
   ]
     .filter(Boolean)

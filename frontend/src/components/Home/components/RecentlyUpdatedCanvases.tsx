@@ -19,7 +19,7 @@ export function RecentlyUpdatedCanvases() {
   return (
     <Flex direction="column" gap="md" paddingTop="md">
       <Heading
-        accessbilityLevel={2}
+        accessibilityLevel={2}
         weight="medium"
         size="lg"
         textColor="subtle"

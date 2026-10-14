@@ -8,8 +8,11 @@ export default {
   ],
   rules: {
     "selector-class-pattern": [
-      "^[a-z][a-zA-Z0-9]*$",
-      { message: "Expected class selector to be camelCase" },
+      "^(?:[a-z][a-zA-Z0-9]*|react-(?:draggable|grid|resizable)(?:-[a-z]+)*|is-editor-empty)$",
+      {
+        message:
+          "Expected class selector to be camelCase (third-party react-grid-layout and tiptap classes excepted)",
+      },
     ],
     "keyframes-name-pattern": [
       "^[a-z][a-zA-Z0-9]*$",
@@ -17,5 +20,7 @@ export default {
     ],
     "at-rule-no-unknown": [true, { ignoreAtRules: ["theme", "value"] }],
     "import-notation": "string",
+    "block-no-empty": [true, { severity: "warning" }],
+    "no-descending-specificity": [true, { severity: "warning" }],
   },
 };

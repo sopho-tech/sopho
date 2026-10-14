@@ -1,23 +1,14 @@
 .gridItem {
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
   position: relative;
 }
 
 .gridItem * {
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
 }
 
 .layout {
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
   flex: 1;
   min-height: 100%;
   min-width: 0;

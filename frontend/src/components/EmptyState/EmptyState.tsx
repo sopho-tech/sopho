@@ -41,7 +41,7 @@ export function EmptyState({
         alignItems="center"
         sx={{ textAlign: "center" }}
       >
-        <Heading accessbilityLevel={2} textColor="default">
+        <Heading accessibilityLevel={2} textColor="default">
           {heading}
         </Heading>
         <Text as="p" color="subtle">

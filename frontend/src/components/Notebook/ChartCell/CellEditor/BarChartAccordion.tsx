@@ -100,7 +100,7 @@ export function BarChartAccordion({
           <Form.Field name="orientation">
             <Form.Label
               infoIconToolTipMessage={
-                <InfoTooltip message="Choose how the chart should be layed out" />
+                <InfoTooltip message="Choose how the chart should be laid out" />
               }
             >
               Orientation

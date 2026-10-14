@@ -337,7 +337,7 @@ export function extractFollowUpQuestions(
           return data?.questions ?? [];
         }
       } catch {
-        /* ignore unparseable content */
+        /* ignore unparsable content */
       }
     }
     return [];
@@ -410,7 +410,7 @@ export function extractArtifactsFromMessages(
         const artifact = toArtifact(JSON.parse(content.content) as AgentEvent);
         if (artifact) artifacts.push(artifact);
       } catch {
-        /* ignore unparseable content */
+        /* ignore unparsable content */
       }
     }
   }

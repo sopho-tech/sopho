@@ -217,7 +217,7 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
       <Flex direction="row" justifyContent="space-between" gap="sm">
         <Flex direction="row" gap="xs" alignItems="center" overflow="hidden">
           <Heading
-            accessbilityLevel={3}
+            accessibilityLevel={3}
             weight="semibold"
             size="sm"
             textColor="subtle"

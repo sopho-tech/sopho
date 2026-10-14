@@ -8,8 +8,7 @@
 .formElements {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  column-gap: var(--space-sm);
-  row-gap: var(--space-sm);
+  gap: var(--space-sm) var(--space-sm);
   grid-auto-rows: minmax(50px, auto);
   padding: var(--space-sm);
   overflow-y: auto;
@@ -56,12 +55,12 @@
 
 .formInput::-webkit-outer-spin-button,
 .formInput::-webkit-inner-spin-button {
-  -webkit-appearance: none;
+  appearance: none;
   margin: 0;
 }
 
 .formInput[type="number"] {
-  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .formInput:focus {
@@ -85,6 +84,7 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-md);
+
   /* margin-top: var(--space-xs);
   padding-top: var(--space-sm); */
 }

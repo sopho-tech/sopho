@@ -66,7 +66,7 @@ export function NewConversationPanel() {
         sx={{ maxWidth: "40rem", marginInline: "auto" }}
         gap="2xl"
       >
-        <Heading accessbilityLevel={2} weight="normal" textAlign="center">
+        <Heading accessibilityLevel={2} weight="normal" textAlign="center">
           Let's data
         </Heading>
         <MessageComposer

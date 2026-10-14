@@ -5,7 +5,7 @@ import { Flex } from "src/components/design-system/Flex";
 import { Text, type TextColor } from "src/components/design-system/Text/Text";
 import {
   Heading,
-  type AccessbilityLevel,
+  type AccessibilityLevel,
 } from "src/components/design-system/Heading/Heading";
 import { IconSize } from "src/components/design-system/datatypes";
 import headingStyles from "src/components/design-system/Heading/Heading.module.css";
@@ -15,7 +15,7 @@ import classNames from "classnames";
 type InlineEditProps = {
   value: string;
   onSave: (value: string) => void;
-  headingLevel?: AccessbilityLevel;
+  headingLevel?: AccessibilityLevel;
   placeholder?: string;
   clearButtonSize?: IconSize;
   defaultValue?: string;
@@ -79,7 +79,7 @@ export function InlineEdit({
               headingLevel !== undefined
                 ? headingStyles[`heading${headingLevel}`]
                 : undefined,
-              styles["inlineEdit__input"],
+              styles["inlineEditInput"],
             ])}
           />
         </div>
@@ -115,7 +115,7 @@ export function InlineEdit({
       onClick={handleClick}
     >
       {headingLevel !== undefined ? (
-        <Heading accessbilityLevel={headingLevel}>{displayValue}</Heading>
+        <Heading accessibilityLevel={headingLevel}>{displayValue}</Heading>
       ) : (
         <Text color={textColor}>{displayValue}</Text>
       )}

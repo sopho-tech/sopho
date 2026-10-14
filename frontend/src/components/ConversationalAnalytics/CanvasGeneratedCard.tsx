@@ -49,7 +49,7 @@ export function CanvasGeneratedCard({ data }: CanvasGeneratedCardProps) {
 
   return (
     <Card onClick={handleClick} sx={CARD_STYLE}>
-      <Card.Header baseAccessbilityLevel={2}>
+      <Card.Header baseAccessibilityLevel={2}>
         <Flex
           gap="md"
           width="100%"

@@ -199,7 +199,7 @@ export function AIConfiguration() {
   return (
     <Flex direction="column" gap="lg" width="100%" className={styles.page}>
       <Flex direction="column" gap="2xs">
-        <Heading accessbilityLevel={2} size="2xl" textColor="black">
+        <Heading accessibilityLevel={2} size="2xl" textColor="black">
           AI Configurations
         </Heading>
         <Text fontSize="sm" color="subtle">

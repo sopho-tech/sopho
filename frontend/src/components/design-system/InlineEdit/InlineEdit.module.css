@@ -32,7 +32,7 @@
   padding: var(--space-2xs);
 }
 
-.inlineEdit__input {
+.inlineEditInput {
   width: auto;
   field-sizing: content;
   min-width: 10ch;
