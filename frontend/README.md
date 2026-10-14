@@ -10,3 +10,7 @@
 
 1. Run the following command to create a `dist` folder with static files:
    `npm run build`
+
+## Contributing
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for the development setup, the git hooks and the tests.

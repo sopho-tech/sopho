@@ -19,3 +19,7 @@
 1. The location `FRONTEND_DIR` in the `.env` file should point to the directory containing the frontend build.
 2. The frontend build should be in the `dist` directory.
 3. The backend will serve the frontend build at `/`.
+
+## Contributing
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for the development setup, the git hooks and the tests.
