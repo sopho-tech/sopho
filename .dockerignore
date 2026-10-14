@@ -3,6 +3,8 @@
 **/coverage
 **/playwright-report
 **/test-results
+backend/.env
+backend/data
 backend/target
 frontend/dist
 docs
