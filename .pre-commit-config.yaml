@@ -144,3 +144,17 @@ repos:
         files: ^frontend/
         pass_filenames: false
         stages: [pre-push]
+      - id: docs-typecheck
+        name: docs typecheck
+        entry: bash -c 'cd docs && npm run types:check'
+        language: system
+        files: ^docs/
+        pass_filenames: false
+        stages: [pre-push]
+      - id: e2e-typecheck
+        name: e2e typecheck
+        entry: bash -c 'cd e2e && npx --no-install tsc --noEmit'
+        language: system
+        files: ^e2e/
+        pass_filenames: false
+        stages: [pre-push]

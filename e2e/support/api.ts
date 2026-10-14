@@ -167,3 +167,23 @@ export async function configureAnthropicProvider(
   );
   expect(configuration.status).toBe("live");
 }
+
+export async function getCanvas(
+  request: APIRequestContext,
+  canvasId: string,
+): Promise<IdentifiedRecord> {
+  return readJson<IdentifiedRecord>(
+    await request.get(API_ROUTES.CANVAS.replace(":canvasId", canvasId)),
+    200,
+  );
+}
+
+export async function executeCell(
+  request: APIRequestContext,
+  cellId: string,
+): Promise<{ data: Record<string, unknown>[] }> {
+  return readJson<{ data: Record<string, unknown>[] }>(
+    await request.post(API_ROUTES.EXECUTE_CELL.replace(":cellId", cellId)),
+    200,
+  );
+}

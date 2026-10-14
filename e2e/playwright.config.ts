@@ -33,7 +33,6 @@ export default defineConfig({
   ],
   globalSetup: "./global_setup.ts",
   use: {
-    baseURL: SOPHO_BASE_URL,
     trace: "on-first-retry",
   },
   projects: [

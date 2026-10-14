@@ -55,6 +55,8 @@ export const API_ROUTES = {
   DASHBOARD: "/api/v1/dashboard/:dashboardId",
   CELLS: "/api/v1/cell",
   AI_CONFIGURATION: "/api/v1/ai_configuration",
+  CANVAS: "/api/v1/canvas/:canvasId",
+  EXECUTE_CELL: "/api/v1/cell/:cellId/execute",
 } as const;
 
 export const DEMO_CONNECTION_NAME = "Ecommerce Sales Demo";
@@ -86,3 +88,17 @@ export const DASHBOARD_SUMMARY =
   "Most orders on this dashboard were delivered.";
 export const ORDER_COUNT_SQL = "SELECT COUNT(*) AS order_count FROM orders";
 export const DEMO_ORDER_COUNT = "10000";
+
+export const SOPHO_IMAGE_VARIABLE = "SOPHO_IMAGE";
+export const SOPHO_UPGRADE_FROM_IMAGE_VARIABLE = "SOPHO_UPGRADE_FROM_IMAGE";
+export const UPGRADE_SOURCE_NONE = "none";
+export const DATABASE_RESET_RELEASE_REASON = "database reset release";
+export const SOPHO_CONTAINER_PORT = 8000;
+export const SOPHO_CONTAINER_DATA_DIRECTORY = "/app/backend/data";
+export const SOPHO_CONTAINER_STARTUP_TIMEOUT_MILLISECONDS = 120_000;
+export const METADATA_POSTGRES_ALIAS = "metadata-postgres";
+export const METADATA_POSTGRES_DATABASE = "sopho";
+export const METADATA_POSTGRES_USERNAME = "sopho";
+export const METADATA_POSTGRES_PASSWORD = "sopho-metadata-password";
+export const METADATA_POSTGRES_URL = `postgresql://${METADATA_POSTGRES_USERNAME}:${METADATA_POSTGRES_PASSWORD}@${METADATA_POSTGRES_ALIAS}:5432/${METADATA_POSTGRES_DATABASE}`;
+export const CONTAINER_LOGS_ATTACHMENT_NAME = "sopho container logs";

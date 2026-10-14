@@ -1,7 +1,9 @@
-.PHONY: install run dev tools setup hooks fmt lint lint-repo lint-backend typecheck test test-backend test-backend-postgres test-frontend test-e2e test-clean coverage coverage-backend coverage-frontend check
+.PHONY: install run dev tools setup hooks fmt lint lint-repo lint-backend typecheck test test-backend test-backend-postgres test-frontend test-e2e test-docker test-image test-clean coverage coverage-backend coverage-frontend check
 
 CARGO_TOOLS := cargo-nextest cargo-llvm-cov cargo-deny cargo-shear
 BACKEND_COVERAGE_IGNORE := (src/entity/|migration/|fake-llm/)
+SOPHO_DEV_IMAGE := sopho:dev
+SOPHO_RELEASE_IMAGE := ghcr.io/sopho-tech/sopho/sopho:latest
 
 # Installation: Build both frontend and backend
 install:
@@ -91,6 +93,13 @@ test-e2e:
 	cd frontend && npx --no-install vite build
 	cd backend && cargo build -p sopho -p fake-llm
 	cd e2e && npx --no-install playwright test --project=native
+
+test-docker:
+	docker build --file docker/Dockerfile --tag $(SOPHO_DEV_IMAGE) .
+	$(MAKE) test-image SOPHO_IMAGE=$(SOPHO_DEV_IMAGE) SOPHO_UPGRADE_FROM_IMAGE=$(SOPHO_RELEASE_IMAGE)
+
+test-image:
+	cd e2e && SOPHO_IMAGE="$(SOPHO_IMAGE)" SOPHO_UPGRADE_FROM_IMAGE="$(SOPHO_UPGRADE_FROM_IMAGE)" npx --no-install playwright test --config playwright.image.config.ts
 
 test-clean:
 	docker rm --force --volumes sopho-test-postgres
