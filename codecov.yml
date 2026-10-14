@@ -1,0 +1,33 @@
+codecov:
+  require_ci_to_pass: false
+coverage:
+  status:
+    project:
+      default: { target: auto, threshold: 1%, informational: true }
+    patch:
+      default: { target: 60%, informational: true }
+flag_management:
+  default_rules:
+    carryforward: true
+  individual_flags:
+    - name: backend
+      paths: [backend/]
+    - name: frontend
+      paths: [frontend/]
+comment:
+  layout: "condensed_header, condensed_files, condensed_footer"
+  require_changes: "coverage_drop OR uncovered_patch"
+  hide_project_coverage: true
+github_checks:
+  annotations: false
+ignore:
+  - "backend/src/entity/**"
+  - "backend/migration/**"
+  - "backend/fake-llm/**"
+  - "backend/tests/**"
+  - "frontend/src/**/*.test.ts"
+  - "frontend/src/**/*.test.tsx"
+  - "frontend/src/test/**"
+  - "frontend/**/*.d.ts"
+  - "e2e/**"
+  - "docs/**"

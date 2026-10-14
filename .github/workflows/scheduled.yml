@@ -1,0 +1,106 @@
+name: Scheduled checks
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  advisories:
+    name: advisories
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Rust
+        uses: ./.github/actions/setup-rust
+      - name: Check the advisory database
+        id: audit
+        working-directory: backend
+        run: |
+          set +e
+          cargo deny --color never check advisories 2> "$RUNNER_TEMP/advisories-report.txt"
+          echo "exit-code=$?" >> "$GITHUB_OUTPUT"
+      - name: Track the advisories in an issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          AUDIT_EXIT_CODE: ${{ steps.audit.outputs.exit-code }}
+          REPORT_PATH: ${{ runner.temp }}/advisories-report.txt
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const fs = require("node:fs");
+            const issueTitle = "cargo-deny advisories";
+            const issueLabels = ["security", "dependencies"];
+            const advisoryPattern = /RUSTSEC-\d{4}-\d{4}/g;
+            const advisoriesIn = (text) => [...new Set(text.match(advisoryPattern) ?? [])].sort();
+            const auditFailed = process.env.AUDIT_EXIT_CODE !== "0";
+            const report = fs.readFileSync(process.env.REPORT_PATH, "utf8");
+            const body = [
+              `The daily \`cargo deny check advisories\` run failed: ${process.env.RUN_URL}`,
+              "",
+              "```text",
+              report.trim(),
+              "```",
+            ].join("\n");
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: issueLabels.join(","),
+            });
+            const trackingIssue = openIssues.find((issue) => issue.title === issueTitle);
+            if (!auditFailed) {
+              if (trackingIssue) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: trackingIssue.number,
+                  body: `The advisories are resolved: ${process.env.RUN_URL}`,
+                });
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: trackingIssue.number,
+                  state: "closed",
+                });
+              }
+              return;
+            }
+            if (!trackingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                labels: issueLabels,
+                body,
+              });
+              return;
+            }
+            const previousAdvisories = advisoriesIn(trackingIssue.body ?? "");
+            const currentAdvisories = advisoriesIn(report);
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: trackingIssue.number,
+              body,
+            });
+            if (previousAdvisories.join(",") !== currentAdvisories.join(",")) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: trackingIssue.number,
+                body: `The advisory set changed to: ${currentAdvisories.join(", ")}`,
+              });
+            }
+      - name: Fail when advisories are open
+        if: steps.audit.outputs.exit-code != '0'
+        run: exit 1
