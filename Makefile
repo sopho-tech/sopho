@@ -1,4 +1,4 @@
-.PHONY: install run dev tools setup hooks fmt lint lint-repo lint-backend typecheck test test-backend test-backend-postgres test-frontend test-clean coverage coverage-backend coverage-frontend check
+.PHONY: install run dev tools setup hooks fmt lint lint-repo lint-backend typecheck test test-backend test-backend-postgres test-frontend test-e2e test-clean coverage coverage-backend coverage-frontend check
 
 CARGO_TOOLS := cargo-nextest cargo-llvm-cov cargo-deny cargo-shear
 BACKEND_COVERAGE_IGNORE := (src/entity/|migration/|fake-llm/)
@@ -48,8 +48,10 @@ setup:
 	npm ci
 	cd frontend && npm ci
 	cd docs && npm ci
+	cd e2e && npm ci
 	cd backend && cargo fetch
 	cd frontend && npx --no-install playwright install chromium
+	cd e2e && npx --no-install playwright install chromium
 
 hooks:
 	prek install
@@ -72,6 +74,7 @@ lint-backend:
 typecheck:
 	cd frontend && npx tsc -b
 	cd docs && npm run types:check
+	cd e2e && npx --no-install tsc --noEmit
 
 test: test-backend test-frontend
 
@@ -83,6 +86,11 @@ test-backend-postgres:
 
 test-frontend:
 	cd frontend && npx --no-install vitest run
+
+test-e2e:
+	cd frontend && npx --no-install vite build
+	cd backend && cargo build -p sopho -p fake-llm
+	cd e2e && npx --no-install playwright test --project=native
 
 test-clean:
 	docker rm --force --volumes sopho-test-postgres

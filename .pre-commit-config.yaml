@@ -88,6 +88,12 @@ repos:
         language: system
         files: ^docs/
         pass_filenames: false
+      - id: oxlint-e2e
+        name: oxlint (e2e)
+        entry: bash -c 'cd e2e && ../node_modules/.bin/oxlint --max-warnings 0'
+        language: system
+        files: ^e2e/
+        pass_filenames: false
       - id: stylelint
         name: stylelint
         entry: npx --no-install stylelint "frontend/**/*.css" "docs/**/*.css" --max-warnings 17
