@@ -1,4 +1,4 @@
-.PHONY: install run dev tools setup hooks fmt lint lint-repo lint-backend
+.PHONY: install run dev tools setup hooks fmt lint lint-repo lint-backend typecheck
 
 CARGO_TOOLS := cargo-nextest cargo-llvm-cov cargo-deny cargo-shear
 
@@ -46,6 +46,7 @@ setup:
 	done
 	npm ci
 	cd frontend && npm ci
+	cd docs && npm ci
 	cd backend && cargo fetch
 
 hooks:
@@ -65,3 +66,7 @@ lint-backend:
 	cd backend && cargo clippy --workspace --all-targets --locked -- -D warnings
 	cd backend && cargo deny check bans licenses sources
 	cd backend && cargo shear
+
+typecheck:
+	cd frontend && npx tsc -b
+	cd docs && npm run types:check
