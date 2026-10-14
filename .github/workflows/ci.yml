@@ -61,6 +61,7 @@ jobs:
               - 'docker/**'
               - 'backend/**'
               - 'frontend/**'
+              - 'e2e/**'
               - '.dockerignore'
             docs_image:
               - *shared
@@ -307,6 +308,9 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           directory: e2e
+      - name: Type-check the end-to-end tests
+        working-directory: e2e
+        run: npx --no-install tsc --noEmit
       - name: Install Chromium
         working-directory: e2e
         run: npx --no-install playwright install --with-deps chromium

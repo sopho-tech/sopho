@@ -55,9 +55,10 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
-              labels: issueLabels.join(","),
             });
-            const trackingIssue = openIssues.find((issue) => issue.title === issueTitle);
+            const trackingIssue = openIssues.find(
+              (issue) => issue.title === issueTitle && !issue.pull_request,
+            );
             if (!auditFailed) {
               if (trackingIssue) {
                 await github.rest.issues.createComment({

@@ -85,7 +85,7 @@ repos:
         pass_filenames: false
       - id: oxlint-docs
         name: oxlint (docs)
-        entry: bash -c 'cd docs && ../node_modules/.bin/oxlint --max-warnings 6'
+        entry: bash -c 'cd docs && npx --no-install next typegen >/dev/null && ../node_modules/.bin/oxlint --max-warnings 6'
         language: system
         files: ^docs/
         pass_filenames: false
