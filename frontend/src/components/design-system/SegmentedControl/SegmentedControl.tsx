@@ -1,7 +1,7 @@
 import React from "react";
 import SegmentedControlStyles from "src/components/design-system/SegmentedControl/SegmentedControl.module.css";
 import { IconType } from "src/components/design-system/datatypes";
-import { Icon } from "../Icon";
+import { Icon } from "src/components/design-system/Icon";
 import { ToolTip } from "src/components/design-system/ToolTip";
 import { layoutSpringTransition } from "src/components/design-system/animation";
 import { motion } from "motion/react";

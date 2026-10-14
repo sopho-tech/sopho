@@ -7,7 +7,7 @@ export const ConversationLimitNotice = () => {
   const navigate = useNavigate();
 
   const handleStartNewConversation = useCallback(() => {
-    navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
+    void navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
   }, [navigate]);
 
   return (

@@ -5,7 +5,10 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
-import { queryErrorHandler, mutationErrorHandler } from "./error_handler";
+import {
+  queryErrorHandler,
+  mutationErrorHandler,
+} from "src/utils/error_handler";
 
 export const ReactQueryClientProvider = ({
   children,

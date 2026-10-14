@@ -53,13 +53,11 @@ export function Dashboard() {
     [setMode, setShowChartBrowser],
   );
 
-  const handleNavigateToNotebook = useCallback(
-    () =>
-      navigate(
-        `${APP_ROUTES.CANVAS.replace(":id", canvasId)}/${APP_ROUTES.CANVAS_ROUTES.NOTEBOOK}`,
-      ),
-    [navigate, canvasId],
-  );
+  const handleNavigateToNotebook = useCallback(() => {
+    void navigate(
+      `${APP_ROUTES.CANVAS.replace(":id", canvasId)}/${APP_ROUTES.CANVAS_ROUTES.NOTEBOOK}`,
+    );
+  }, [navigate, canvasId]);
 
   const chartCellCount = cellsQuery.data?.cells?.length ?? 0;
   const hasNoChartCells = chartCellCount === 0;

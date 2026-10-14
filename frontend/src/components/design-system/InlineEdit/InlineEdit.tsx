@@ -9,7 +9,7 @@ import {
 } from "src/components/design-system/Heading/Heading";
 import { IconSize } from "src/components/design-system/datatypes";
 import headingStyles from "src/components/design-system/Heading/Heading.module.css";
-import styles from "./InlineEdit.module.css";
+import styles from "src/components/design-system/InlineEdit/InlineEdit.module.css";
 import classNames from "classnames";
 
 type InlineEditProps = {

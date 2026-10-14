@@ -8,12 +8,12 @@ import {
   Separator,
 } from "src/components/design-system";
 import { SourceTypeEnum } from "src/constants/database_types";
-import styles from "./ConnectionEdit.module.css";
+import styles from "src/components/Connection/ConnectionEdit/ConnectionEdit.module.css";
 import { useParams, useNavigate } from "react-router";
 import { useConnection, useUpdateConnection } from "src/api/connection/queries";
 import { useStore } from "src/store";
 import { APP_ROUTES } from "src/constants/app_routes";
-import { ConnectionDetailsPageStateEnum } from "../dto";
+import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 
 export function ConnectionEdit() {
   const { id } = useParams<{ id: string }>();
@@ -47,12 +47,12 @@ export function ConnectionEdit() {
     };
     updateMutation.mutate({ connectionId: connection.id, payload });
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    void navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
   };
 
   const handleBack = () => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    void navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
   };
 
   if (isLoading) return <div>Loading connection details...</div>;

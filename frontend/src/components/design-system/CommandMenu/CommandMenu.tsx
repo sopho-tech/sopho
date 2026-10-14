@@ -15,9 +15,9 @@ import {
 import { useStore } from "src/store";
 import { CanvasesPageState } from "src/components/Canvases/dto";
 import { useDebouncedValue } from "src/utils/hooks";
-import { CommandMenuHomePage } from "./CommandMenuHomePage.tsx";
-import { CommandMenuSearchResults } from "./CommandMenuSearchResults.tsx";
-import { Page } from "./CommandMenu.types.ts";
+import { CommandMenuHomePage } from "src/components/design-system/CommandMenu/CommandMenuHomePage.tsx";
+import { CommandMenuSearchResults } from "src/components/design-system/CommandMenu/CommandMenuSearchResults.tsx";
+import { Page } from "src/components/design-system/CommandMenu/CommandMenu.types.ts";
 
 type CommandMenuProps = {
   open?: boolean;
@@ -130,12 +130,12 @@ export const CommandMenu = ({
   const handleSearchResultSelect = (item: SearchResultItemDto) => {
     if (item.entity_type === EntityType.Canvas) {
       handleOpenChange(false);
-      navigate(APP_ROUTES.CANVAS.replace(":id", item.id));
+      void navigate(APP_ROUTES.CANVAS.replace(":id", item.id));
       return;
     }
     if (item.entity_type === EntityType.Conversation) {
       handleOpenChange(false);
-      navigate(
+      void navigate(
         APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION.replace(
           ":id",
           item.id,
@@ -147,7 +147,7 @@ export const CommandMenu = ({
       return;
     }
     handleOpenChange(false);
-    navigate(
+    void navigate(
       `${APP_ROUTES.CANVAS.replace(":id", item.canvas_id)}?${SEARCH_PARAMS.CELL}=${item.id}`,
     );
   };
@@ -155,13 +155,13 @@ export const CommandMenu = ({
   const handleCreateCanvas = (value: string) => {
     handleOpenChange(false);
     setCanvasPageState(CanvasesPageState.CREATE_CANVAS_DIALOG);
-    navigate(APP_ROUTES.CANVASES);
+    void navigate(APP_ROUTES.CANVASES);
     return value;
   };
 
   const handleCreateConversation = (value: string) => {
     handleOpenChange(false);
-    navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
+    void navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
     return value;
   };
 

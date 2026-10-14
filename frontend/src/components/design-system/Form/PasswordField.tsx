@@ -3,8 +3,8 @@ import { useFieldContext } from "src/components/design-system/Form/form-context"
 import { IconButton } from "src/components/design-system/IconButton";
 import { Input } from "src/components/design-system/Input";
 import { IconType } from "src/components/design-system/datatypes";
-import styles from "./PasswordField.module.css";
-import { FieldError } from "./FieldError";
+import styles from "src/components/design-system/Form/PasswordField.module.css";
+import { FieldError } from "src/components/design-system/Form/FieldError";
 
 type PasswordFieldProps = {
   placeholder?: string;

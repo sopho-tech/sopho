@@ -7,7 +7,7 @@ import {
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { NotebookDto } from "src/components/Notebook/dto";
-import { PaginatedData, PaginatedDataResponse } from "../dto";
+import { PaginatedData, PaginatedDataResponse } from "src/api/dto";
 
 // Query keys for notebooks
 export const notebookKeys = {
@@ -189,7 +189,7 @@ export const useCreateNotebook = (callbacks?: {
       queryClient.setQueryData(notebookKeys.detail(data.id!), data);
 
       // Invalidate the notebooks list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: notebookKeys.lists(),
       });
 
@@ -219,7 +219,7 @@ export const useUpdateNotebook = () => {
       queryClient.setQueryData(notebookKeys.detail(notebookId), data);
 
       // Invalidate the notebooks list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: notebookKeys.lists(),
       });
     },
@@ -241,7 +241,7 @@ export const useDeleteNotebook = () => {
       });
 
       // Invalidate the notebooks list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: notebookKeys.lists(),
       });
     },

@@ -81,12 +81,12 @@ export const useCreateSession = (callbacks?: {
     mutationFn: authApi.createSession,
     onSuccess: () => {
       // Invalidate the session query to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: authKeys.session(),
       });
 
       // Invalidate the currentUser query to ensure it refetches when Profile component mounts
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: authKeys.currentUser(),
       });
 

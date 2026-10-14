@@ -1,4 +1,4 @@
 export {
   QueryResultChart,
   QueryResultChartContainer,
-} from "./QueryResultChart";
+} from "src/components/ConversationalAnalytics/QueryResultChart/QueryResultChart";

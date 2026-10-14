@@ -3,7 +3,7 @@ import { useConversations } from "src/api/conversational_analytics";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { RECENT_CONVERSATIONS_LIMIT } from "src/components/ConversationalAnalytics/constants";
-import { ConversationRow } from "./ConversationRow";
+import { ConversationRow } from "src/components/ConversationalAnalytics/Sidebar/ConversationRow";
 
 export const Sidebar = () => {
   const { id: activeConversationId } = useParams<{ id: string }>();
@@ -51,7 +51,9 @@ export const Sidebar = () => {
             backgroundColor="ghost"
             fullWidth
             onClick={() =>
-              navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATIONS)
+              void navigate(
+                APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATIONS,
+              )
             }
           />
         </Flex>

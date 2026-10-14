@@ -7,7 +7,7 @@ import { Dialog } from "src/components/Dialog/Dialog";
 import { Form } from "src/components/design-system/Form/Form";
 import { Grid, GridItem } from "src/components/design-system/Grid";
 import { formatTimestamp } from "src/utils/timestamp_utils";
-import styles from "./ConnectionDetail.module.css";
+import styles from "src/components/Connection/ConnectionDetail/ConnectionDetail.module.css";
 
 export function ConnectionDetail() {
   const connectionId = useStore((state) => state.connection.connectionId);

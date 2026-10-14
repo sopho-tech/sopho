@@ -126,7 +126,7 @@ export const useUpdateConnection = () => {
     onSuccess: (data, { connectionId }) => {
       queryClient.setQueryData(connectionKeys.detail(connectionId), data);
 
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: connectionKeys.lists(),
       });
     },
@@ -144,7 +144,7 @@ export const useCreateConnection = () => {
     onSuccess: (data) => {
       queryClient.setQueryData(connectionKeys.detail(data.id), data);
 
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: connectionKeys.lists(),
       });
     },
@@ -196,7 +196,7 @@ export const useDeleteConnection = () => {
         queryKey: connectionKeys.detail(connectionId),
       });
 
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: connectionKeys.lists(),
       });
     },

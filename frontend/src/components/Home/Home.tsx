@@ -3,7 +3,7 @@ import {
   HomeHeader,
   HomeEmptyState,
   RecentlyUpdatedCanvases,
-} from "./components";
+} from "src/components/Home/components";
 
 export function Home() {
   return (

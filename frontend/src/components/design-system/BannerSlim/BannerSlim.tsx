@@ -6,7 +6,7 @@ import type {
   IconColor,
   IconType,
 } from "src/components/design-system/datatypes";
-import styles from "./BannerSlim.module.css";
+import styles from "src/components/design-system/BannerSlim/BannerSlim.module.css";
 
 type BannerTextColor = NonNullable<ComponentProps<typeof Text>["color"]>;
 

@@ -9,10 +9,13 @@ import {
   Text,
 } from "src/components/design-system";
 import { SourceTypeEnum } from "src/constants/database_types";
-import styles from "./ConnectionNew.module.css";
+import styles from "src/components/Connection/ConnectionNew/ConnectionNew.module.css";
 import { useState } from "react";
 import { CreateConnectionDto, useCreateConnection } from "src/api/connection";
-import { ConnectionDetailsPageStateEnum, StatusType } from "../dto";
+import {
+  ConnectionDetailsPageStateEnum,
+  StatusType,
+} from "src/components/Connection/dto";
 import { useStore } from "src/store";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -44,7 +47,7 @@ export function ConnectionNew() {
     };
     createMutation.mutate(payload);
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    void navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
   };
 
   const onChangeHandler = (fieldName: string, value: string) => {
@@ -55,7 +58,7 @@ export function ConnectionNew() {
 
   const handleBack = () => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    void navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
   };
 
   return (

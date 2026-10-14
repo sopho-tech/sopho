@@ -6,7 +6,7 @@ import {
   KEYBOARD_SHORTCUTS,
   getShortcutDisplayString,
 } from "src/utils/keyboard_shortcuts";
-import styles from "./SearchBar.module.css";
+import styles from "src/components/design-system/SearchBar/SearchBar.module.css";
 
 export function SearchBar() {
   const [value, setValue] = useState("");

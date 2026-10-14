@@ -17,7 +17,7 @@ import {
   LineChartContent,
   MetricChartContent,
   PieChartContent,
-} from "../../Cell/dto";
+} from "src/components/Notebook/Cell/dto";
 import {
   BannerSlim,
   Flex,

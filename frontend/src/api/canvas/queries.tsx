@@ -7,7 +7,7 @@ import {
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { CanvasDto } from "src/components/Canvases/dto";
-import { PaginatedData, PaginatedDataResponse } from "../dto";
+import { PaginatedData, PaginatedDataResponse } from "src/api/dto";
 
 // Query keys for canvases
 export const canvasKeys = {
@@ -129,7 +129,7 @@ export const useUpdateCanvas = (callbacks?: {
     mutationFn: canvasApi.updateCanvas,
     onSuccess: (data) => {
       queryClient.setQueryData(canvasKeys.detail(data.id!), data);
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.lists(),
       });
       callbacks?.onSuccess?.(data);
@@ -154,7 +154,7 @@ export const useCreateCanvas = (callbacks?: {
       queryClient.setQueryData(canvasKeys.detail(data.id!), data);
 
       // Invalidate the canvases list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.lists(),
       });
 
@@ -189,7 +189,7 @@ export const useDeleteCanvas = (callbacks?: {
       });
 
       // Invalidate the canvases list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.lists(),
       });
 

@@ -1,1 +1,1 @@
-export { CanvasGenerationNote } from "./CanvasGenerationNote";
+export { CanvasGenerationNote } from "src/components/ConversationalAnalytics/CanvasGenerationNote/CanvasGenerationNote";

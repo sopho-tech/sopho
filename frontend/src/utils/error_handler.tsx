@@ -25,9 +25,9 @@ const refreshAndRetry = async (
     if (result) {
       failedQueue.forEach(({ query, mutation, variables }) => {
         if (query) {
-          query.fetch();
+          void query.fetch();
         } else if (mutation) {
-          mutation.execute(variables);
+          void mutation.execute(variables);
         }
       });
     } else {
@@ -49,9 +49,9 @@ const errorHandler = (
     const api_error = error as ApiError;
     if (api_error.status === 401) {
       if (query) {
-        refreshAndRetry(query);
+        void refreshAndRetry(query);
       } else if (mutation) {
-        refreshAndRetry(undefined, mutation, variables);
+        void refreshAndRetry(undefined, mutation, variables);
       }
     }
   }

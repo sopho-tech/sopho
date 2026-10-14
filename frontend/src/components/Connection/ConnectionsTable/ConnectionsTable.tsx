@@ -38,7 +38,7 @@ export function ConnectionsTable() {
 
   const handleEditConnection = useCallback(
     (id: string) => {
-      navigate(generatePath(APP_ROUTES.CONNECTION_EDIT, { id }));
+      void navigate(generatePath(APP_ROUTES.CONNECTION_EDIT, { id }));
     },
     [navigate],
   );

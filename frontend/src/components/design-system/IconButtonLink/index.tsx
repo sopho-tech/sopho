@@ -1,1 +1,4 @@
-export { IconButtonLink, State } from "./IconButtonLink";
+export {
+  IconButtonLink,
+  State,
+} from "src/components/design-system/IconButtonLink/IconButtonLink";

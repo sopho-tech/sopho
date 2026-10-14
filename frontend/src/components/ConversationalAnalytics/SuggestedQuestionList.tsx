@@ -1,5 +1,5 @@
 import { Flex, Text } from "src/components/design-system";
-import styles from "./SuggestedQuestionList.module.css";
+import styles from "src/components/ConversationalAnalytics/SuggestedQuestionList.module.css";
 
 type Question = { id: string; text: string };
 

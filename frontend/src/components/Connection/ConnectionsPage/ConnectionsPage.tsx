@@ -21,7 +21,7 @@ export function Connections() {
 
   const handleNewClick = useCallback(() => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW);
-    navigate(APP_ROUTES.CONNECTION_NEW);
+    void navigate(APP_ROUTES.CONNECTION_NEW);
   }, [setConnectionDetailsPageState, navigate]);
 
   return (

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
-import { EntityType } from "./constants";
+import { EntityType } from "src/api/search/constants";
 
 export type SearchRequestDto = {
   query?: string;

@@ -36,7 +36,7 @@ export function CanvasCreateDialog() {
       setCanvasPageState(CanvasesPageState.LIST);
       if (data.id) {
         const canvasPath = `${APP_ROUTES.CANVASES}/${data.id}`;
-        navigate(canvasPath);
+        void navigate(canvasPath);
       } else {
         throw Error("unexpected state");
       }

@@ -69,7 +69,7 @@ export const useUpdateAiConfiguration = () => {
   return useMutation({
     mutationFn: aiConfigurationApi.update,
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiConfigurationKeys.detail(),
       });
     },
@@ -81,7 +81,7 @@ export const useDeleteAiConfiguration = () => {
   return useMutation({
     mutationFn: aiConfigurationApi.remove,
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiConfigurationKeys.detail(),
       });
     },

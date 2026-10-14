@@ -18,7 +18,7 @@ import {
   useClearCellOutput,
 } from "src/api/cell";
 import { useParams } from "react-router";
-import { EmptyState } from "../EmptyState";
+import { EmptyState } from "src/components/EmptyState";
 
 export function Notebook() {
   const params = useParams();

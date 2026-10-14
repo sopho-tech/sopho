@@ -9,7 +9,7 @@ import {
   isAtLeast,
 } from "src/components/Notebook/Cell/useExecutionPhase";
 import { ElapsedTime } from "src/components/Notebook/ExecutionIndicator";
-import styles from "./ChartCellToolbar.module.css";
+import styles from "src/components/Notebook/ChartCell/ChartCellToolbar/ChartCellToolbar.module.css";
 
 export function ChartCellToolbar({ cellId }: { cellId: string }) {
   const updateCellMutation = useUpdateCell();

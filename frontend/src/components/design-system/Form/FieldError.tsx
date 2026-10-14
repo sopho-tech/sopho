@@ -1,4 +1,4 @@
-import FormStyles from "./Form.module.css";
+import FormStyles from "src/components/design-system/Form/Form.module.css";
 
 type FieldErrorProps = {
   errors: string[];

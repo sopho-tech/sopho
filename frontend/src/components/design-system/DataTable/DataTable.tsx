@@ -11,7 +11,7 @@ import { TableBody } from "src/components/design-system/DataTable/components/Tab
 import { Input } from "src/components/design-system/Input";
 import { Flex } from "src/components/design-system/Flex";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
-import { Text } from "../Text";
+import { Text } from "src/components/design-system/Text";
 
 export function DataTable<T>({
   tableType = TableType.FULL,

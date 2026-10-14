@@ -50,11 +50,11 @@ export function useCanvasActions() {
   );
 
   const handleViewCanvas = (id: string) => {
-    navigate(APP_ROUTES.CANVAS.replace(":id", id));
+    void navigate(APP_ROUTES.CANVAS.replace(":id", id));
   };
 
   const handleEditCanvas = (id: string) => {
-    navigate(APP_ROUTES.CANVAS.replace(":id", id));
+    void navigate(APP_ROUTES.CANVAS.replace(":id", id));
   };
 
   const handleDeleteCanvas = (id: string) => {

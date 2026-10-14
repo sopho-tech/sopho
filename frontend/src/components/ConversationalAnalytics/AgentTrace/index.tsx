@@ -1,1 +1,1 @@
-export { AgentTrace } from "./AgentTrace";
+export { AgentTrace } from "src/components/ConversationalAnalytics/AgentTrace/AgentTrace";

@@ -17,7 +17,7 @@ import {
 import type { Props as LegendContentProps } from "recharts/types/component/DefaultLegendContent";
 import { Flex } from "src/components/design-system";
 import { getCSSVariable } from "src/utils/css_util";
-import styles from "./ChartCommon.module.css";
+import styles from "src/components/Chart/ChartCommon.module.css";
 
 export type ChartContainerProps = {
   children: React.ReactNode;

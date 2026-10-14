@@ -54,8 +54,9 @@ export function Canvas() {
   );
 
   const handleViewTypeChange = useCallback(
-    (view: string) =>
-      navigate(`${APP_ROUTES.CANVAS.replace(":id", params.id!)}/${view}`),
+    (view: string) => {
+      void navigate(`${APP_ROUTES.CANVAS.replace(":id", params.id!)}/${view}`);
+    },
     [navigate, params.id],
   );
 

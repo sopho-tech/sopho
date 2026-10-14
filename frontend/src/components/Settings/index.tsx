@@ -1,1 +1,1 @@
-export { Settings } from "./Settings";
+export { Settings } from "src/components/Settings/Settings";

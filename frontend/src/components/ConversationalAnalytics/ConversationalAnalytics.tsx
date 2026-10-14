@@ -1,16 +1,16 @@
 import { Flex, IconButton, SearchBar } from "src/components/design-system";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
-import { TopBar } from "../TopBar";
+import { TopBar } from "src/components/TopBar";
 import { Sidebar } from "src/components/ConversationalAnalytics/Sidebar";
-import { ConversationSection } from "./ConversationSection";
-import { ConversationStreamProvider } from "./ConversationStreamContext";
+import { ConversationSection } from "src/components/ConversationalAnalytics/ConversationSection";
+import { ConversationStreamProvider } from "src/components/ConversationalAnalytics/ConversationStreamContext";
 
 export function ConversationalAnalytics() {
   const navigate = useNavigate();
 
   const handleCreateConversation = () => {
-    navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
+    void navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
   };
 
   return (

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { getCSSVariable } from "src/utils/css_util";
-import styles from "./Heading.module.css";
+import styles from "src/components/design-system/Heading/Heading.module.css";
 
 export type FontSize =
   "xs" | "sm" | "base" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl";

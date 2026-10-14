@@ -1,8 +1,8 @@
 import { useCallback } from "react";
-import { FormField } from "./types";
-import type { AppFormReturnType } from "./hooks";
+import { FormField } from "src/components/design-system/Form/types";
+import type { AppFormReturnType } from "src/components/design-system/Form/hooks";
 import { Accordion } from "src/components/design-system/Accordion";
-import { FormFieldRenderer } from "./FormFieldRenderer";
+import { FormFieldRenderer } from "src/components/design-system/Form/FormFieldRenderer";
 
 type CollapsibleFieldProps = {
   field: FormField;

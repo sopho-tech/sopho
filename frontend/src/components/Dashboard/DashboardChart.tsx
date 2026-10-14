@@ -15,7 +15,7 @@ import {
   findMissingSeriesColumns,
   toAxisChartProps,
 } from "src/components/Chart";
-import { getChartContent } from "../Notebook/Cell";
+import { getChartContent } from "src/components/Notebook/Cell";
 import { useCallback, useEffect } from "react";
 import {
   ExecuteCellResponseDto,
@@ -24,7 +24,7 @@ import {
   MetricChartContent,
   PieChartContent,
   getChartType,
-} from "../Notebook/Cell/dto";
+} from "src/components/Notebook/Cell/dto";
 import {
   BannerSlim,
   Box,

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router";
 import { Card, Text } from "src/components/design-system";
-import { CanvasStats } from "./CanvasStats";
+import { CanvasStats } from "src/components/Home/components/CanvasStats";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 import { APP_ROUTES } from "src/constants/app_routes";
 import type { CanvasDto } from "src/components/Canvases/dto";
@@ -15,7 +15,7 @@ export const CanvasCard = ({ canvas }: CanvasCardProps) => {
 
   const handleClick = useCallback(() => {
     if (canvas.id) {
-      navigate(APP_ROUTES.CANVAS.replace(":id", canvas.id));
+      void navigate(APP_ROUTES.CANVAS.replace(":id", canvas.id));
     }
   }, [canvas.id, navigate]);
 

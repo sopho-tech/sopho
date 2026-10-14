@@ -5,7 +5,7 @@ import {
   ChartLegend,
   ChartTooltip,
   ChartContainer,
-} from "../ChartCommon";
+} from "src/components/Chart/ChartCommon";
 
 export type PieChartProps = {
   category: string;

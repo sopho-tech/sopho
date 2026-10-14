@@ -40,7 +40,7 @@ export function CanvasGeneratedCard({ data }: CanvasGeneratedCardProps) {
 
   const handleClick = useCallback(() => {
     if (window.getSelection()?.toString()) return;
-    navigate(canvasPath);
+    void navigate(canvasPath);
   }, [canvasPath, navigate]);
 
   const handleLinkClick = useCallback((event: React.MouseEvent) => {

@@ -43,7 +43,7 @@ export function CanvasesTable() {
   const handleRowClick = useCallback(
     (row: CanvasDto) => {
       if (row.id) {
-        navigate(APP_ROUTES.CANVAS.replace(":id", row.id));
+        void navigate(APP_ROUTES.CANVAS.replace(":id", row.id));
       }
     },
     [navigate],

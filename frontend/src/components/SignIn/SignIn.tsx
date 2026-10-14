@@ -12,7 +12,7 @@ export default function SignIn() {
   const { data: isAuthenticated, isLoading } = useSessionValid();
   const createSessionMutation = useCreateSession({
     onSuccess: () => {
-      navigate(APP_ROUTES.INDEX, { replace: true });
+      void navigate(APP_ROUTES.INDEX, { replace: true });
     },
     onError: (error) => {
       console.error("Sign in failed", error);
@@ -21,7 +21,7 @@ export default function SignIn() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate(APP_ROUTES.INDEX, { replace: true });
+      void navigate(APP_ROUTES.INDEX, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
 
@@ -33,7 +33,7 @@ export default function SignIn() {
   const defaultFormValues = { email: "", password: "" };
 
   const handleSubmit = useCallback(
-    async (values: Record<string, unknown>) => {
+    (values: Record<string, unknown>) => {
       const email = values.email;
       const password = values.password;
 

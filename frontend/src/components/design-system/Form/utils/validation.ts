@@ -1,4 +1,7 @@
-import { FormField, FormFieldType } from "../types";
+import {
+  FormField,
+  FormFieldType,
+} from "src/components/design-system/Form/types";
 
 export type ValidationResult = {
   errorMap: Record<string, string>;

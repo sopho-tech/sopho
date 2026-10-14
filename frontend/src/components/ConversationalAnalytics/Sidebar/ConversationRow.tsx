@@ -25,7 +25,7 @@ export const ConversationRow = ({
   const triggerVisible = hovered || menuOpen;
 
   const handleClick = useCallback(() => {
-    navigate(
+    void navigate(
       generatePath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION, {
         id: conversation.id,
       }),

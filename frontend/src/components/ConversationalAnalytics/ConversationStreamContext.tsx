@@ -12,7 +12,10 @@ import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { conversationKeys } from "src/api/conversational_analytics/queries";
 import { useSuggestConversationName } from "src/api/conversational_analytics";
 import { streamSse } from "src/utils/fetch_sse";
-import { AgentEventName, type AgentEvent } from "./dto";
+import {
+  AgentEventName,
+  type AgentEvent,
+} from "src/components/ConversationalAnalytics/dto";
 
 const TERMINAL_EVENTS = new Set<string>([
   AgentEventName.Completed,
@@ -124,7 +127,7 @@ export function ConversationStreamProvider({
                     store.streams.delete(conversationId);
                     notify(store);
                     controller.abort();
-                    queryClient.invalidateQueries({
+                    void queryClient.invalidateQueries({
                       queryKey: conversationKeys.detail(conversationId),
                     });
                     return;

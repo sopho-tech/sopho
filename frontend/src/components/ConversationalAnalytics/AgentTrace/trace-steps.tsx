@@ -38,7 +38,7 @@ import {
 } from "src/components/ConversationalAnalytics/dto";
 import { MessageHoverFooter } from "src/components/ConversationalAnalytics/ExistingConversationPanel/MessageHoverFooter";
 import panelStyles from "src/components/ConversationalAnalytics/ExistingConversationPanel/ExistingConversationPanel.module.css";
-import styles from "./AgentTrace.module.css";
+import styles from "src/components/ConversationalAnalytics/AgentTrace/AgentTrace.module.css";
 
 const TRACE_STEP_ICON: IconType = "circle_dot";
 const TRACE_STEP_ICON_COLOR: IconColor = "grey";

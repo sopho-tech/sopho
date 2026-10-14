@@ -17,12 +17,12 @@ export function useHomeNavigation() {
   );
 
   const handleCreateCanvas = useCallback(() => {
-    navigate(APP_ROUTES.CANVASES);
+    void navigate(APP_ROUTES.CANVASES);
     setCanvasPageState(CanvasesPageState.CREATE_CANVAS_DIALOG);
   }, [navigate, setCanvasPageState]);
 
   const handleCreateConnection = useCallback(() => {
-    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    void navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW);
   }, [navigate, setConnectionDetailsPageState]);
 

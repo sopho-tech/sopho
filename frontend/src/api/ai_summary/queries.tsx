@@ -163,7 +163,7 @@ export const useGenerateDashboardSummary = (dashboardId: string) => {
   return useMutation({
     mutationFn: () => aiSummaryApi.generateForDashboard(dashboardId),
     onSettled: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiSummaryKeys.dashboard(dashboardId),
       });
     },
@@ -175,7 +175,7 @@ export const useGenerateChartSummary = (dashboardId: string) => {
   return useMutation({
     mutationFn: (cellId: string) => aiSummaryApi.generateForChart(cellId),
     onSettled: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiSummaryKeys.dashboard(dashboardId),
       });
     },
@@ -188,7 +188,7 @@ export const useUpdateDashboardPrompt = (dashboardId: string) => {
     mutationFn: (userPrompt: string | null) =>
       aiSummaryApi.setDashboardPrompt(dashboardId, userPrompt),
     onSettled: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiSummaryKeys.dashboard(dashboardId),
       });
     },
@@ -201,7 +201,7 @@ export const useUpdateChartPrompt = (dashboardId: string, cellId: string) => {
     mutationFn: (userPrompt: string | null) =>
       aiSummaryApi.setChartPrompt(cellId, userPrompt),
     onSettled: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiSummaryKeys.dashboard(dashboardId),
       });
     },
@@ -213,7 +213,7 @@ export const useGenerateAllChartSummaries = (dashboardId: string) => {
   return useMutation({
     mutationFn: () => aiSummaryApi.generateForAllCharts(dashboardId),
     onSettled: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiSummaryKeys.dashboard(dashboardId),
       });
     },

@@ -75,7 +75,7 @@ export const useUpdateDashboard = () => {
     mutationFn: dashboardApi.updateDashboard,
     onSuccess: (data, { dashboardId }) => {
       queryClient.setQueryData(dashboardKeys.detail(dashboardId), data);
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: dashboardKeys.all,
       });
     },
