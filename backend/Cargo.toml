@@ -32,7 +32,6 @@ hex = "0.4"
 http = "1.3.1"
 indoc = "2.0.7"
 migration = { path = "migration" }
-reqwest = "0.12.15"
 rig-core = "0.32.0"
 rust_decimal = { version = "1.36", features = ["serde-with-str"] }
 schemars = { version = "1.2", features = ["derive"] }

@@ -244,26 +244,19 @@ fn optional_environment_variable(name: &str) -> anyhow::Result<Option<Cow<'stati
 pub struct AppState {
     pub database_connection: DatabaseConnection,
     pub config: Configurations,
-    pub client: reqwest::Client,
     pub model_client: Arc<RwLock<Option<ModelClient>>>,
     pub database_pools: DatabasePoolRegistry,
 }
 
 impl AppState {
-    pub fn new(
-        database_connection: DatabaseConnection,
-        config: Configurations,
-        client: reqwest::Client,
-        model_client: Arc<RwLock<Option<ModelClient>>>,
-        database_pools: DatabasePoolRegistry,
-    ) -> Self {
-        Self {
+    pub async fn from_configurations(config: Configurations) -> anyhow::Result<Self> {
+        let database_connection = db::get_db(&config.database_url).await?;
+        Ok(Self {
             database_connection,
             config,
-            client,
-            model_client,
-            database_pools,
-        }
+            model_client: Arc::new(RwLock::new(None)),
+            database_pools: new_database_pool_registry(),
+        })
     }
 
     pub async fn current_model_client(&self) -> Option<ModelClient> {
@@ -277,18 +270,7 @@ impl AppState {
     }
 
     pub async fn from_env() -> anyhow::Result<Self> {
-        let config = Configurations::from_env()?;
-        let database_connection = db::get_db(&config.database_url).await.unwrap();
-        let client = reqwest::Client::new();
-        let model_client: Arc<RwLock<Option<ModelClient>>> = Arc::new(RwLock::new(None));
-        let database_pools = new_database_pool_registry();
-        Ok(Self::new(
-            database_connection,
-            config,
-            client,
-            model_client,
-            database_pools,
-        ))
+        Self::from_configurations(Configurations::from_env()?).await
     }
 
     pub async fn load_ai_configuration(&self) {
