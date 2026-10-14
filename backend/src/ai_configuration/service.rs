@@ -2,9 +2,9 @@ use crate::ai::agent_utils::{AgentName, ModelClient, ModelRole};
 use crate::ai_configuration::dto::{AiConfigurationDto, Provider, TestAiConfigurationResponse};
 use crate::ai_configuration::error::AiConfigurationError;
 use crate::ai_configuration::repository;
-use crate::common::AppState;
 use crate::common::cryptography_utils::{decrypt, encrypt};
 use crate::common::time_utils;
+use crate::common::{AppState, Configurations};
 use tracing::warn;
 
 pub async fn get_status(app_state: &AppState) -> Result<AiConfigurationDto, AiConfigurationError> {
@@ -27,7 +27,7 @@ pub async fn upsert(
     let encrypted = encrypt(encryption_key, api_key.clone())
         .map_err(|e| AiConfigurationError::Encryption(e.to_string()))?;
 
-    let liveness = run_liveness_ping(provider, &api_key).await;
+    let liveness = run_liveness_ping(provider, &api_key, &app_state.config).await;
     let liveness_db = match liveness {
         Ok(()) => "LIVE",
         Err(e) => {
@@ -46,7 +46,7 @@ pub async fn upsert(
     )
     .await?;
 
-    let new_client = build_client_for_provider(provider, &api_key)
+    let new_client = build_client_for_provider(provider, &api_key, &app_state.config)
         .map_err(|e| AiConfigurationError::ClientBuild(e.to_string()))?;
     {
         let mut slot = app_state.model_client.write().await;
@@ -64,13 +64,14 @@ pub async fn delete(app_state: &AppState) -> Result<(), AiConfigurationError> {
 }
 
 pub async fn test(
+    app_state: &AppState,
     provider: Provider,
     api_key: String,
 ) -> Result<TestAiConfigurationResponse, AiConfigurationError> {
     if api_key.trim().is_empty() {
         return Err(AiConfigurationError::EmptyApiKey);
     }
-    match run_liveness_ping(provider, &api_key).await {
+    match run_liveness_ping(provider, &api_key, &app_state.config).await {
         Ok(()) => Ok(TestAiConfigurationResponse {
             ok: true,
             error: None,
@@ -96,7 +97,7 @@ pub async fn load_at_startup(app_state: &AppState) -> Result<(), AiConfiguration
         );
         return Ok(());
     };
-    let client = build_client_for_provider(provider, &api_key)
+    let client = build_client_for_provider(provider, &api_key, &app_state.config)
         .map_err(|e| AiConfigurationError::ClientBuild(e.to_string()))?;
     let mut slot = app_state.model_client.write().await;
     *slot = Some(client);
@@ -106,15 +107,22 @@ pub async fn load_at_startup(app_state: &AppState) -> Result<(), AiConfiguration
 fn build_client_for_provider(
     provider: Provider,
     api_key: &str,
+    configurations: &Configurations,
 ) -> Result<ModelClient, rig::http_client::Error> {
     match provider {
-        Provider::Anthropic => ModelClient::anthropic(api_key),
-        Provider::Openai => ModelClient::openai(api_key),
+        Provider::Anthropic => {
+            ModelClient::anthropic(api_key, configurations.anthropic_base_url.as_deref())
+        }
+        Provider::Openai => ModelClient::openai(api_key, configurations.openai_base_url.as_deref()),
     }
 }
 
-async fn run_liveness_ping(provider: Provider, api_key: &str) -> anyhow::Result<()> {
-    let client = build_client_for_provider(provider, api_key)?;
+async fn run_liveness_ping(
+    provider: Provider,
+    api_key: &str,
+    configurations: &Configurations,
+) -> anyhow::Result<()> {
+    let client = build_client_for_provider(provider, api_key, configurations)?;
     let agent = client.build_agent(
         ModelRole::Default,
         AgentName::LivenessCheckAgent,

@@ -45,10 +45,10 @@ async fn delete_handler(State(app_state): State<AppState>) -> impl IntoResponse 
 }
 
 async fn test_handler(
-    State(_app_state): State<AppState>,
+    State(app_state): State<AppState>,
     Json(payload): Json<TestAiConfigurationRequest>,
 ) -> impl IntoResponse {
-    match service::test(payload.provider, payload.api_key).await {
+    match service::test(&app_state, payload.provider, payload.api_key).await {
         Ok(resp) => (StatusCode::OK, Json(json!(resp))).into_response(),
         Err(AiConfigurationError::EmptyApiKey) => (
             StatusCode::BAD_REQUEST,

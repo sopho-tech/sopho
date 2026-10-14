@@ -52,6 +52,14 @@ openssl rand -base64 32
 
 The output of the above command can be set as the value of the environment variable.
 
+## ANTHROPIC_BASE_URL
+
+Base URL for requests to Anthropic. Leave it unset to use Anthropic's API. Set it to send requests through a proxy or a compatible endpoint; Sopho calls `<ANTHROPIC_BASE_URL>/v1/messages`.
+
+## OPENAI_BASE_URL
+
+Base URL for requests to OpenAI, including the version path. Leave it unset to use OpenAI's API (`https://api.openai.com/v1`). Set it to send requests through a proxy or a compatible endpoint; Sopho calls `<OPENAI_BASE_URL>/chat/completions`.
+
 ## Admin Credentials
 
 The first time Sopho runs, the following four environment variables are used to seed the initial admin user so you can log in after bootup. The application fails to start if any of these are not set.

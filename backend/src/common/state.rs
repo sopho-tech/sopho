@@ -25,6 +25,8 @@ pub struct Configurations {
     pub admin_password: Cow<'static, str>,
     pub admin_email: Cow<'static, str>,
     pub admin_full_name: Cow<'static, str>,
+    pub anthropic_base_url: Option<Cow<'static, str>>,
+    pub openai_base_url: Option<Cow<'static, str>>,
 }
 
 pub struct ConfigurationsBuilder {
@@ -38,6 +40,8 @@ pub struct ConfigurationsBuilder {
     admin_password: Option<Cow<'static, str>>,
     admin_email: Option<Cow<'static, str>>,
     admin_full_name: Option<Cow<'static, str>>,
+    anthropic_base_url: Option<Cow<'static, str>>,
+    openai_base_url: Option<Cow<'static, str>>,
 }
 
 impl ConfigurationsBuilder {
@@ -53,6 +57,8 @@ impl ConfigurationsBuilder {
             admin_password: None,
             admin_email: None,
             admin_full_name: None,
+            anthropic_base_url: None,
+            openai_base_url: None,
         }
     }
 
@@ -106,6 +112,16 @@ impl ConfigurationsBuilder {
         self
     }
 
+    pub fn anthropic_base_url(mut self, v: impl Into<Cow<'static, str>>) -> Self {
+        self.anthropic_base_url = Some(v.into());
+        self
+    }
+
+    pub fn openai_base_url(mut self, v: impl Into<Cow<'static, str>>) -> Self {
+        self.openai_base_url = Some(v.into());
+        self
+    }
+
     pub fn build(self) -> anyhow::Result<Configurations> {
         Ok(Configurations {
             database_url: self
@@ -132,6 +148,8 @@ impl ConfigurationsBuilder {
             admin_full_name: self
                 .admin_full_name
                 .ok_or_else(|| anyhow::anyhow!("admin_full_name is required"))?,
+            anthropic_base_url: self.anthropic_base_url,
+            openai_base_url: self.openai_base_url,
         })
     }
 }
@@ -208,7 +226,17 @@ impl Configurations {
                 Ok(v) => v.into(),
                 Err(err) => bail!("missing ADMIN_FULL_NAME: {err}"),
             },
+            anthropic_base_url: optional_environment_variable("ANTHROPIC_BASE_URL")?,
+            openai_base_url: optional_environment_variable("OPENAI_BASE_URL")?,
         })
+    }
+}
+
+fn optional_environment_variable(name: &str) -> anyhow::Result<Option<Cow<'static, str>>> {
+    match dotenvy::var(name) {
+        Ok(value) => Ok(Some(value.into())),
+        Err(dotenvy::Error::EnvVar(std::env::VarError::NotPresent)) => Ok(None),
+        Err(err) => bail!("invalid {name}: {err}"),
     }
 }
 
