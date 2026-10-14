@@ -27,6 +27,8 @@ RUN mkdir -p /app/frontend
 COPY --from=frontend-builder /app/dist /app/frontend/dist
 
 # Copy backend binary and demo data
+ENV FRONTEND_DIR=/app/frontend/dist/
+
 WORKDIR /app/backend
 COPY --from=backend-builder /app/target/release/sopho ./sopho
 COPY backend/demo /app/demo

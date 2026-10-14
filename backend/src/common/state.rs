@@ -114,7 +114,7 @@ impl ConfigurationsBuilder {
             port: self.port.unwrap_or(8000),
             frontend_dir: self
                 .frontend_dir
-                .unwrap_or(Cow::Borrowed("/app/frontend/dist/")),
+                .ok_or_else(|| anyhow::anyhow!("frontend_dir is required"))?,
             environment: self.environment.unwrap_or(Cow::Borrowed("production")),
             cookie_secure: self.cookie_secure.unwrap_or(false),
             encryption_key: self
@@ -165,7 +165,10 @@ impl Configurations {
                 Ok(port) => port.parse()?,
                 _ => 8000,
             },
-            frontend_dir: Cow::Borrowed("/app/frontend/dist/"),
+            frontend_dir: match dotenvy::var("FRONTEND_DIR") {
+                Ok(v) => v.into(),
+                Err(err) => bail!("missing FRONTEND_DIR: {err}"),
+            },
             environment: match dotenvy::var("ENVIRONMENT") {
                 Ok(environment) => environment.into(),
                 Err(_err) => Cow::Borrowed("production"),

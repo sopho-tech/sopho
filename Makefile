@@ -19,6 +19,7 @@ run:
 	ENVIRONMENT="development" \
 	COOKIE_DOMAIN="localhost" \
 	COOKIE_SECURE="false" \
+	FRONTEND_DIR="../frontend/dist" \
 	cargo run --release
 
 # Dev: Run frontend and backend as separate processes
@@ -29,6 +30,7 @@ dev:
 	ENVIRONMENT="development" \
 	COOKIE_DOMAIN="localhost" \
 	COOKIE_SECURE="false" \
+	FRONTEND_DIR="../frontend/dist" \
 	cargo run) & \
 	(cd frontend && \
 	VITE_API_HOSTNAME=http://localhost:8000 \

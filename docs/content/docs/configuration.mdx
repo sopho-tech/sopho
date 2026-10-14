@@ -30,6 +30,10 @@ If the environment variable is not set, Sopho uses SQLite as the database by def
 
 Used for setting the network port on which Sopho will run. If the environment variable is not set, it uses the port `8000` by default.
 
+## FRONTEND_DIR
+
+Path to the directory containing the frontend build, which Sopho serves at `/`. The Docker image sets it to `/app/frontend/dist/`. Sopho fails to start if it is not set, so set it when running the binary outside the image.
+
 ## COOKIE_SECURE
 
 When enabled, session cookies are marked with the Secure attribute and sent only over HTTPS. Set to `true` when serving Sopho over HTTPS (e.g. in production). Keep `false` when serving over HTTP. Defaults to `false`. See [MDN](https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/Cookies#secure) for details.
