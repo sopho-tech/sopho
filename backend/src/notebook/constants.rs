@@ -10,16 +10,7 @@ pub enum NotebookStatus {
     Failed,
 }
 
-impl NotebookStatus {
-    pub fn from_str(s: &str) -> Result<Self, String> {
-        match s {
-            "ACTIVE" => Ok(NotebookStatus::Active),
-            "INACTIVE" => Ok(NotebookStatus::Inactive),
-            "FAILED" => Ok(NotebookStatus::Failed),
-            _ => Err(format!("Invalid connection status: {}", s)),
-        }
-    }
-}
+impl NotebookStatus {}
 
 impl fmt::Display for NotebookStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -16,6 +16,10 @@ pub enum ModelRole {
 
 #[derive(Clone, Copy, Debug, strum::IntoStaticStr)]
 #[strum(serialize_all = "snake_case")]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "variant names are the agent names given to rig and shown in logs"
+)]
 pub enum AgentName {
     CanvasGenerationAgent,
     ChartSummaryAgent,

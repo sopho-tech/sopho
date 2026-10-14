@@ -149,7 +149,7 @@ async fn create_canvas_transaction(
         payload.description.clone(),
     )
     .await?;
-    let dashboard = dashboard_service::create_dashboard_transaction(
+    dashboard_service::create_dashboard_transaction(
         txn,
         canvas_id,
         payload.name.clone(),
@@ -157,11 +157,7 @@ async fn create_canvas_transaction(
         None,
     )
     .await?;
-    Ok(dto::CreateCanvasResult {
-        canvas,
-        notebook,
-        dashboard,
-    })
+    Ok(dto::CreateCanvasResult { canvas, notebook })
 }
 
 fn axis_chart_content(cell_id: Uuid, axis: &PlannedAxisChart) -> AxisChartContent {
@@ -405,10 +401,10 @@ async fn apply_ops(
     let mut deleted_indices: std::collections::HashSet<usize> = std::collections::HashSet::new();
 
     for op in ops {
-        if let CanvasOp::Update { index, .. } | CanvasOp::Delete { index } = &op {
-            if deleted_indices.contains(index) {
-                continue;
-            }
+        if let CanvasOp::Update { index, .. } | CanvasOp::Delete { index } = &op
+            && deleted_indices.contains(index)
+        {
+            continue;
         }
         match op {
             CanvasOp::Create { title, sql, chart } => {

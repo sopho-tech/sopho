@@ -111,8 +111,7 @@ pub async fn update_dashboard(
             dashboard_entity.layout = Set(dto::Layout::to_json(payload.layout));
             dashboard_entity.updated_at = Set(time_utils::now_utc_into());
 
-            let dashboard_entity = dashboard_entity.update(db).await;
-            dashboard_entity
+            dashboard_entity.update(db).await
         }
         Err(e) => Err(e),
     }

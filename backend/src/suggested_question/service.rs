@@ -23,13 +23,6 @@ pub async fn list_for_connection(
     Ok(rows.into_iter().map(SuggestedQuestionDto::from).collect())
 }
 
-pub async fn delete_for_connection(
-    app_state: &AppState,
-    connection_id: Uuid,
-) -> Result<(), sea_orm::DbErr> {
-    repository::delete_for_connection(&app_state.database_connection, connection_id).await
-}
-
 fn is_stale(generated_at: sea_orm::prelude::DateTimeWithTimeZone) -> bool {
     let now = time_utils::now_utc();
     now.signed_duration_since(generated_at.with_timezone(&Utc))

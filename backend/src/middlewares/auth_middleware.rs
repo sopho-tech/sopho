@@ -64,14 +64,6 @@ pub async fn auth_middleware_fn(
                         codes::INVALID_ACCESS_TOKEN.as_str(),
                     )
                 }
-                Err(AccessTokenValidationError::Missing) => {
-                    // This shouldn't happen here, but handle it anyway
-                    create_error_response(
-                        StatusCode::UNAUTHORIZED,
-                        "Access token required",
-                        codes::INVALID_ACCESS_TOKEN.as_str(),
-                    )
-                }
             }
         }
         None => {

@@ -13,12 +13,6 @@ use axum::response::IntoResponse;
 use sea_orm::DatabaseTransaction;
 use uuid::Uuid;
 
-pub async fn does_dashboard_exist(app_state: &AppState, id: Uuid) -> bool {
-    repository::get_dashboard(&app_state.database_connection, id)
-        .await
-        .is_ok()
-}
-
 pub async fn get_dashboard(app_state: AppState, id: Uuid) -> impl IntoResponse {
     let dashboard = repository::get_dashboard(&app_state.database_connection, id).await;
     match dashboard {

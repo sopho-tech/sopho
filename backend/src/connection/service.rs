@@ -11,18 +11,11 @@ use crate::database::postgres;
 use crate::database::service as database_service;
 use crate::database::sqlite;
 use crate::entity;
-use crate::suggested_question;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 
 use tracing::info;
 use uuid::Uuid;
-
-pub async fn does_connection_exist(app_state: &AppState, id: Uuid) -> bool {
-    repository::get_connection(&app_state.database_connection, id)
-        .await
-        .is_ok()
-}
 
 pub async fn get_connection(app_state: AppState, id: Uuid) -> impl IntoResponse {
     let connection = execute_get_connection(&app_state, id).await;
@@ -168,14 +161,6 @@ pub async fn create_connection(
             axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
     }
-}
-
-pub async fn execute_delete_connection(
-    app_state: &AppState,
-    id: Uuid,
-) -> Result<sea_orm::DeleteResult, sea_orm::DbErr> {
-    suggested_question::service::delete_for_connection(app_state, id).await?;
-    repository::delete_connection(&app_state.database_connection, id).await
 }
 
 pub async fn update_connection(

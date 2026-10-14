@@ -43,19 +43,6 @@ pub struct DashboardSummaryInput {
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub struct TableRef {
-    pub database: String,
-    pub schema: String,
-    pub table: String,
-}
-
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub struct DatabaseSchemas {
-    pub database: String,
-    pub schemas: Vec<String>,
-}
-
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TableColumns {
     pub database: String,
     pub schema: String,
@@ -102,13 +89,7 @@ pub struct FunctionalRoleAnalysisResult {
     pub table_functions: Vec<TableFunction>,
 }
 
-impl FunctionalRoleAnalysisResult {
-    pub fn get_table_function(&self, table_name: &str) -> Option<&TableFunction> {
-        self.table_functions
-            .iter()
-            .find(|tf| tf.table == table_name)
-    }
-}
+impl FunctionalRoleAnalysisResult {}
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ExplorationQuery {
@@ -676,14 +657,14 @@ impl CanvasPlanChart {
         series.truncate(crate::cell::constants::MAX_CHART_SERIES);
 
         let sort_by_series_column = non_empty(&axis.sort_by_series_column);
-        if let Some(column) = &sort_by_series_column {
-            if !series.iter().any(|entry| &entry.column == column) {
-                anyhow::bail!(
-                    "{} chart sorts by {:?}, which is not one of its series",
-                    self.chart_type.as_str(),
-                    column
-                );
-            }
+        if let Some(column) = &sort_by_series_column
+            && !series.iter().any(|entry| &entry.column == column)
+        {
+            anyhow::bail!(
+                "{} chart sorts by {:?}, which is not one of its series",
+                self.chart_type.as_str(),
+                column
+            );
         }
 
         Ok(PlannedAxisChart {

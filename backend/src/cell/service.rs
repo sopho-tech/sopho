@@ -1006,7 +1006,6 @@ async fn execute_chart_for_cell(
     let chart_content = parse_chart_content(content)?;
     let result = execute_chart_content_data(app_state, &chart_content).await?;
     Ok(dto::ChartExecution {
-        cell_id: cell.id,
         chart_name: cell.name.clone().unwrap_or_default(),
         chart_type: chart_content.chart_type().as_str().to_string(),
         field_names: chart_content.field_names(),

@@ -68,7 +68,6 @@ fn error_response(e: AiConfigurationError) -> axum::response::Response {
         AiConfigurationError::Encryption(_) => StatusCode::INTERNAL_SERVER_ERROR,
         AiConfigurationError::ClientBuild(_) => StatusCode::INTERNAL_SERVER_ERROR,
         AiConfigurationError::EmptyApiKey => StatusCode::BAD_REQUEST,
-        AiConfigurationError::NotFound => StatusCode::NOT_FOUND,
     };
     (status, Json(json!({ "error": e.to_string() }))).into_response()
 }

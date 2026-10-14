@@ -28,9 +28,7 @@ use uuid::Uuid;
 
 /// Result type for access token validation
 #[derive(Debug)]
-#[allow(dead_code)] // Missing variant is handled in middleware but kept for completeness
 pub enum AccessTokenValidationError {
-    Missing,
     Invalid,
     Expired,
 }
