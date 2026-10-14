@@ -27,4 +27,5 @@ pub struct UserDto {
     pub username: String,
     pub email: String,
     pub full_name: String,
+    pub platform_permissions: Vec<String>,
 }

@@ -1,18 +1,11 @@
 use crate::authorization::constants::{MembershipStatus, TenantStatus};
-use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
-use crate::entity::{role, tenant, tenant_membership, user};
+use crate::entity::{role, tenant, tenant_membership};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait,
     QueryFilter, Set,
 };
 use uuid::Uuid;
-
-pub struct TenantMemberRow {
-    pub membership: tenant_membership::Model,
-    pub user: Option<user::Model>,
-    pub role: Option<role::Model>,
-}
 
 pub struct TenantMembershipRow {
     pub membership: tenant_membership::Model,
@@ -35,31 +28,22 @@ pub async fn insert_tenant(
     .await
 }
 
-pub async fn insert_membership(
-    database_connection: &DatabaseConnection,
-    tenant_id: Uuid,
-    user_id: Uuid,
-    role_id: Uuid,
-) -> Result<tenant_membership::Model, DbErr> {
-    tenant_membership::ActiveModel {
-        id: Set(Uuid::new_v4()),
-        tenant_id: Set(tenant_id),
-        user_id: Set(user_id),
-        role_id: Set(role_id),
-        status: Set(MembershipStatus::Active.as_str().to_string()),
-        created_at: Set(time_utils::now_utc_into()),
-        updated_at: Set(time_utils::now_utc_into()),
-    }
-    .insert(database_connection)
-    .await
-}
-
 pub async fn find_tenant_by_id(
     database_connection: &DatabaseConnection,
     tenant_id: Uuid,
 ) -> Result<Option<tenant::Model>, DbErr> {
     tenant::Entity::find_by_id(tenant_id)
         .one(database_connection)
+        .await
+}
+
+pub async fn find_tenants_by_ids(
+    database_connection: &DatabaseConnection,
+    tenant_ids: Vec<Uuid>,
+) -> Result<Vec<tenant::Model>, DbErr> {
+    tenant::Entity::find()
+        .filter(tenant::Column::Id.is_in(tenant_ids))
+        .all(database_connection)
         .await
 }
 
@@ -100,50 +84,5 @@ pub async fn list_all_tenant_ids(
         .await?
         .into_iter()
         .map(|found| found.id)
-        .collect())
-}
-
-pub async fn list_active_members(
-    database_connection: &DatabaseConnection,
-    tenant_id: &TenantId,
-) -> Result<Vec<TenantMemberRow>, DbErr> {
-    let memberships = tenant_membership::Entity::find()
-        .filter(tenant_membership::Column::TenantId.eq(tenant_id.get_uuid()))
-        .filter(tenant_membership::Column::Status.eq(MembershipStatus::Active.as_str().to_string()))
-        .all(database_connection)
-        .await?;
-
-    let user_ids: Vec<Uuid> = memberships
-        .iter()
-        .map(|membership| membership.user_id)
-        .collect();
-    let role_ids: Vec<Uuid> = memberships
-        .iter()
-        .map(|membership| membership.role_id)
-        .collect();
-
-    let users = user::Entity::find()
-        .filter(user::Column::Id.is_in(user_ids))
-        .all(database_connection)
-        .await?;
-    let roles = role::Entity::find()
-        .filter(role::Column::Id.is_in(role_ids))
-        .filter(role::Column::TenantId.eq(tenant_id.get_uuid()))
-        .all(database_connection)
-        .await?;
-
-    Ok(memberships
-        .into_iter()
-        .map(|membership| TenantMemberRow {
-            user: users
-                .iter()
-                .find(|candidate| candidate.id == membership.user_id)
-                .cloned(),
-            role: roles
-                .iter()
-                .find(|candidate| candidate.id == membership.role_id)
-                .cloned(),
-            membership,
-        })
         .collect())
 }

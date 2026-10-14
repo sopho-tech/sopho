@@ -1,5 +1,5 @@
 use crate::authorization::constants::{AccessLevel, Action, ResourceType, Visibility};
-use crate::authorization::dto::{AuthorizationSubject, TenantContext};
+use crate::authorization::dto::{AuthorizationSubject, TenantContext, TenantId};
 use crate::authorization::service as authorization_service;
 use crate::common::AppState;
 use crate::grant::constants::{PRINCIPAL_IS_OWNER_MESSAGE, PRINCIPAL_NOT_A_MEMBER_MESSAGE};
@@ -7,7 +7,7 @@ use crate::grant::dto::{CreateGrantDto, GrantDto, ResourceSharingDto, UpdateVisi
 use crate::grant::error::GrantError;
 use crate::grant::repository;
 use crate::tenant::dto::TenantMemberDto;
-use crate::tenant::service as tenant_service;
+use crate::tenant::membership::service as membership_service;
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -58,7 +58,7 @@ async fn members_by_user_id(
     app_state: &AppState,
     tenant_context: &TenantContext,
 ) -> Result<HashMap<Uuid, TenantMemberDto>, GrantError> {
-    let members = tenant_service::list_members(app_state, tenant_context)
+    let members = membership_service::list_member_identities(app_state, tenant_context.tenant_id())
         .await
         .map_err(|error| GrantError::Internal(error.to_string()))?;
     Ok(members
@@ -232,6 +232,14 @@ pub async fn update_visibility(
     let updated_subject =
         load_subject(&app_state, tenant_context, resource_type, resource_id).await?;
     sharing_state(&app_state, tenant_context, &updated_subject).await
+}
+
+pub async fn delete_grants_for_principal_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    tenant_id: &TenantId,
+    principal_id: Uuid,
+) -> Result<u64, sea_orm::DbErr> {
+    repository::delete_grants_for_principal_transaction(txn, tenant_id, principal_id).await
 }
 
 pub async fn revoke_grant(

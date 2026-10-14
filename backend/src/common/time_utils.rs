@@ -45,6 +45,13 @@ where
     (Utc::now() + ChronoDuration::hours(hours)).into()
 }
 
+pub fn now_plus_minutes_into<T>(minutes: i64) -> T
+where
+    T: From<DateTime<Utc>>,
+{
+    (Utc::now() + ChronoDuration::minutes(minutes)).into()
+}
+
 /// Converts a `DateTime<Utc>` to `OffsetDateTime` for cookie expiration
 /// Falls back to current time + 1 hour if conversion fails (should be rare)
 pub fn datetime_to_offset_datetime(dt: &DateTime<Utc>) -> OffsetDateTime {

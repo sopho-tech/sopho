@@ -1,7 +1,7 @@
 use crate::db::add_created_at_and_updated_at_timestamps;
 use sea_orm_migration::{
     prelude::*,
-    schema::{pk_uuid, string},
+    schema::{pk_uuid, string, string_null},
 };
 
 #[derive(DeriveMigrationName)]
@@ -16,9 +16,10 @@ impl MigrationTrait for Migration {
                     .table(User::Table)
                     .col(pk_uuid(User::Id))
                     .col(string(User::Username))
-                    .col(string(User::PasswordHash))
+                    .col(string_null(User::PasswordHash))
                     .col(string(User::Email))
                     .col(string(User::FullName))
+                    .col(string(User::PlatformRole))
                     .to_owned(),
             ))
             .await
@@ -39,4 +40,5 @@ pub enum User {
     PasswordHash,
     Email,
     FullName,
+    PlatformRole,
 }

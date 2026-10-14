@@ -1,1 +1,8 @@
 pub const API_PATH_PREFIX: &str = "/api/";
+pub const OIDC_PROVIDERS_VARIABLE: &str = "OIDC_PROVIDERS";
+pub const OIDC_PROVIDER_VARIABLE_PREFIX: &str = "OIDC_";
+pub const OIDC_DISPLAY_NAME_SUFFIX: &str = "_DISPLAY_NAME";
+pub const OIDC_ISSUER_URL_SUFFIX: &str = "_ISSUER_URL";
+pub const OIDC_CLIENT_ID_SUFFIX: &str = "_CLIENT_ID";
+pub const OIDC_CLIENT_SECRET_SUFFIX: &str = "_CLIENT_SECRET";
+pub const OIDC_REDIRECT_URI_SUFFIX: &str = "_REDIRECT_URI";

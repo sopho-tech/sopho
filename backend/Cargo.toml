@@ -47,3 +47,4 @@ aes-gcm = "0.10.3"
 indoc = "2.0.7"
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
 tokio-cron-scheduler = { version = "0.15.1", features = ["postgres_storage"] }
+openidconnect = { version = "4.0.1", default-features = false, features = ["reqwest", "native-tls", "accept-string-booleans"] }

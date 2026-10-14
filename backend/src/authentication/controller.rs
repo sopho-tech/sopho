@@ -16,6 +16,7 @@ pub fn routes(app_state: AppState) -> Router {
         .route("/session", delete(delete_session))
         .route("/refresh", post(refresh_token))
         .route("/me", get(get_current_user))
+        .nest("/oidc", crate::authentication::oidc::controller::routes())
         .with_state(app_state)
 }
 

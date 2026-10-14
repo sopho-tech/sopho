@@ -34,6 +34,26 @@ pub async fn find_role_by_name(
         .await
 }
 
+pub async fn list_roles(
+    database_connection: &DatabaseConnection,
+    tenant_id: &TenantId,
+) -> Result<Vec<role::Model>, DbErr> {
+    role::Entity::find()
+        .filter(role::Column::TenantId.eq(tenant_id.get_uuid()))
+        .all(database_connection)
+        .await
+}
+
+pub async fn find_roles_by_ids(
+    database_connection: &DatabaseConnection,
+    role_ids: Vec<Uuid>,
+) -> Result<Vec<role::Model>, DbErr> {
+    role::Entity::find()
+        .filter(role::Column::Id.is_in(role_ids))
+        .all(database_connection)
+        .await
+}
+
 pub async fn insert_role(
     database_connection: &DatabaseConnection,
     tenant_id: &TenantId,

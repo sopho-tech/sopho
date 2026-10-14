@@ -1,5 +1,4 @@
-use crate::authorization::constants::SystemRole;
-use crate::authorization::dto::TenantContext;
+use crate::authorization::constants::{PlatformPermission, SystemRole};
 use crate::authorization::dto::TenantId;
 use crate::authorization::dto::UserId;
 use crate::authorization::service as authorization_service;
@@ -7,7 +6,9 @@ use crate::common::AppState;
 use crate::configuration::constants::ConfigurationKey;
 use crate::entity::tenant;
 use crate::tenant::constants::DEFAULT_TENANT_NAME;
-use crate::tenant::dto::{TenantMemberDto, TenantMembershipDto};
+use crate::tenant::dto::TenantMembershipDto;
+use crate::tenant::error::TenantError;
+use crate::tenant::membership::service as membership_service;
 use crate::tenant::repository;
 use uuid::Uuid;
 
@@ -21,37 +22,45 @@ pub async fn create_tenant(app_state: &AppState, name: String) -> anyhow::Result
     Ok(created_tenant)
 }
 
-pub async fn add_member_with_role(
-    app_state: &AppState,
-    tenant_id: &TenantId,
-    user_id: UserId,
-    role_name: &str,
-) -> anyhow::Result<()> {
-    let role = authorization_service::find_role_by_name(app_state, tenant_id, role_name).await?;
-    repository::insert_membership(
-        &app_state.database_connection,
-        tenant_id.get_uuid(),
-        user_id.get_uuid(),
-        role.id,
-    )
-    .await?;
-    Ok(())
-}
-
 pub async fn create_tenant_for_user(
     app_state: &AppState,
     user_id: UserId,
     name: String,
-) -> anyhow::Result<tenant::Model> {
+) -> Result<tenant::Model, TenantError> {
+    let platform_role =
+        crate::authentication::service::find_platform_role(app_state, user_id).await?;
+    authorization_service::require_platform_permission(
+        platform_role,
+        PlatformPermission::TenantCreate,
+    )?;
+    let name = name.trim().to_string();
+    if name.is_empty() {
+        return Err(TenantError::NameRequired);
+    }
+
     let created_tenant = create_tenant(app_state, name).await?;
-    add_member_with_role(
+    membership_service::add_member_with_role_name(
         app_state,
         &TenantId::from_system_unchecked(created_tenant.id),
         user_id,
         SystemRole::Owner.as_str(),
     )
-    .await?;
+    .await
+    .map_err(anyhow::Error::from)?;
     Ok(created_tenant)
+}
+
+pub async fn find_tenant_names(
+    app_state: &AppState,
+    tenant_ids: Vec<Uuid>,
+) -> Result<std::collections::HashMap<Uuid, String>, sea_orm::DbErr> {
+    Ok(
+        repository::find_tenants_by_ids(&app_state.database_connection, tenant_ids)
+            .await?
+            .into_iter()
+            .map(|found| (found.id, found.name))
+            .collect(),
+    )
 }
 
 pub async fn list_tenants_for_user(
@@ -133,10 +142,10 @@ pub async fn ensure_default_tenant_membership(app_state: &AppState) -> anyhow::R
     )
     .await?;
 
-    repository::insert_membership(
-        &app_state.database_connection,
-        default_tenant_id,
-        admin_user.id,
+    membership_service::add_member(
+        app_state,
+        &TenantId::from_system_unchecked(default_tenant_id),
+        UserId::from_system_unchecked(admin_user.id),
         owner_role.id,
     )
     .await?;
@@ -161,31 +170,4 @@ pub async fn reconcile_system_roles_for_all_tenants(app_state: &AppState) -> any
         .await?;
     }
     Ok(())
-}
-
-pub async fn list_members(
-    app_state: &AppState,
-    tenant_context: &TenantContext,
-) -> anyhow::Result<Vec<TenantMemberDto>> {
-    let rows =
-        repository::list_active_members(&app_state.database_connection, tenant_context.tenant_id())
-            .await?;
-
-    let mut members = Vec::with_capacity(rows.len());
-    for row in rows {
-        let user = row.user.ok_or_else(|| {
-            anyhow::anyhow!("Membership {} points at a missing user", row.membership.id)
-        })?;
-        let role = row.role.ok_or_else(|| {
-            anyhow::anyhow!("Membership {} points at a missing role", row.membership.id)
-        })?;
-        members.push(TenantMemberDto {
-            user_id: user.id,
-            full_name: user.full_name,
-            email: user.email,
-            role_name: role.name,
-        });
-    }
-    members.sort_by(|first, second| first.full_name.cmp(&second.full_name));
-    Ok(members)
 }

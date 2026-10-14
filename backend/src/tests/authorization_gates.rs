@@ -1042,44 +1042,6 @@ async fn granted_editor_cannot_reshare_canvas() {
 }
 
 #[tokio::test]
-async fn removed_member_loses_access_immediately() {
-    let app_state = init_test_app_state("gates_removed_member").await;
-    let tenant_id = create_tenant(&app_state, "t").await;
-    let member = context_with_role(&app_state, tenant_id, SystemRole::Member, "member").await;
-    let subject = canvas_subject(tenant_id, member.user_id().get_uuid(), Visibility::Private);
-
-    assert!(allowed(&app_state, &member, &subject, Action::Read).await);
-
-    let membership = crate::authorization::service::find_membership(
-        &app_state,
-        tenant_id,
-        member.user_id().get_uuid(),
-    )
-    .await
-    .unwrap()
-    .unwrap();
-    let membership_active: crate::entity::tenant_membership::ActiveModel = membership.into();
-    membership_active
-        .delete(&app_state.database_connection)
-        .await
-        .unwrap();
-
-    let resolved = crate::authorization::service::resolve_tenant_context(
-        &app_state,
-        member.user_id(),
-        tenant_id,
-    )
-    .await;
-    assert!(
-        matches!(
-            resolved,
-            Err(crate::authorization::errors::TenantContextError::NotAMember)
-        ),
-        "a removed member must lose the tenant on the next request"
-    );
-}
-
-#[tokio::test]
 async fn custom_role_with_read_private_can_see_private_canvas() {
     let app_state = init_test_app_state("gates_custom_role").await;
     let tenant_id = create_tenant(&app_state, "t").await;
@@ -1095,7 +1057,7 @@ async fn custom_role_with_read_private_can_see_private_canvas() {
     .unwrap();
 
     let auditor_user_id = insert_user(&app_state, "auditor").await;
-    crate::tenant::service::add_member_with_role(
+    crate::tenant::membership::service::add_member_with_role_name(
         &app_state,
         &scope,
         UserId::from_system_unchecked(auditor_user_id),

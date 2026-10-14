@@ -1,14 +1,17 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-const ALLOWED_ESCAPE_HATCH_FILES: [&str; 8] = [
+const ALLOWED_ESCAPE_HATCH_FILES: [&str; 11] = [
     "src/ai_configuration/service.rs",
     "src/authorization/dto.rs",
     "src/demo/service.rs",
     "src/scheduler/mod.rs",
+    "src/tenant/invitation/service.rs",
     "src/tenant/service.rs",
     "src/tests/authorization_gates.rs",
     "src/tests/common/tenancy.rs",
+    "src/tests/invitations.rs",
+    "src/tests/platform.rs",
     "src/tests/startup.rs",
 ];
 

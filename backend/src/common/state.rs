@@ -1,6 +1,11 @@
 use crate::ai::agent_utils::ModelClient;
 use crate::ai_configuration;
 use crate::authorization::dto::TenantId;
+use crate::common::constants::{
+    OIDC_CLIENT_ID_SUFFIX, OIDC_CLIENT_SECRET_SUFFIX, OIDC_DISPLAY_NAME_SUFFIX,
+    OIDC_ISSUER_URL_SUFFIX, OIDC_PROVIDERS_VARIABLE, OIDC_PROVIDER_VARIABLE_PREFIX,
+    OIDC_REDIRECT_URI_SUFFIX,
+};
 use crate::common::cryptography_utils::{
     generate_and_store_encryption_key, get_encryption_key_from_path,
 };
@@ -17,6 +22,62 @@ use tracing::warn;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize)]
+pub struct OidcProviderConfiguration {
+    pub name: String,
+    pub display_name: String,
+    pub issuer_url: String,
+    pub client_id: String,
+    pub client_secret: String,
+    pub redirect_uri: String,
+}
+
+pub fn oidc_providers_from_variables(
+    read_variable: impl Fn(&str) -> Option<String>,
+) -> anyhow::Result<Vec<OidcProviderConfiguration>> {
+    let Some(provider_list) = read_variable(OIDC_PROVIDERS_VARIABLE) else {
+        return Ok(Vec::new());
+    };
+
+    let mut providers: Vec<OidcProviderConfiguration> = Vec::new();
+    for raw_name in provider_list.split(',') {
+        let name = raw_name.trim().to_lowercase();
+        if name.is_empty() {
+            continue;
+        }
+        let is_url_safe = name
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || character == '-');
+        if !is_url_safe {
+            bail!("OIDC provider name {name:?} may only contain letters, digits and dashes");
+        }
+        if providers.iter().any(|provider| provider.name == name) {
+            bail!("OIDC provider {name:?} is listed twice in {OIDC_PROVIDERS_VARIABLE}");
+        }
+
+        let variable_prefix = format!(
+            "{OIDC_PROVIDER_VARIABLE_PREFIX}{}",
+            name.to_uppercase().replace('-', "_")
+        );
+        let required = |suffix: &str| -> anyhow::Result<String> {
+            let variable = format!("{variable_prefix}{suffix}");
+            read_variable(&variable)
+                .map(|value| value.trim().to_string())
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| anyhow::anyhow!("missing {variable} for OIDC provider {name}"))
+        };
+        providers.push(OidcProviderConfiguration {
+            display_name: required(OIDC_DISPLAY_NAME_SUFFIX)?,
+            issuer_url: required(OIDC_ISSUER_URL_SUFFIX)?,
+            client_id: required(OIDC_CLIENT_ID_SUFFIX)?,
+            client_secret: required(OIDC_CLIENT_SECRET_SUFFIX)?,
+            redirect_uri: required(OIDC_REDIRECT_URI_SUFFIX)?,
+            name,
+        });
+    }
+    Ok(providers)
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct Configurations {
     pub database_url: Cow<'static, str>,
     pub port: u16,
@@ -28,6 +89,7 @@ pub struct Configurations {
     pub admin_password: Cow<'static, str>,
     pub admin_email: Cow<'static, str>,
     pub admin_full_name: Cow<'static, str>,
+    pub oidc_providers: Vec<OidcProviderConfiguration>,
 }
 
 pub struct ConfigurationsBuilder {
@@ -41,6 +103,7 @@ pub struct ConfigurationsBuilder {
     admin_password: Option<Cow<'static, str>>,
     admin_email: Option<Cow<'static, str>>,
     admin_full_name: Option<Cow<'static, str>>,
+    oidc_providers: Vec<OidcProviderConfiguration>,
 }
 
 impl ConfigurationsBuilder {
@@ -56,6 +119,7 @@ impl ConfigurationsBuilder {
             admin_password: None,
             admin_email: None,
             admin_full_name: None,
+            oidc_providers: Vec::new(),
         }
     }
 
@@ -109,6 +173,11 @@ impl ConfigurationsBuilder {
         self
     }
 
+    pub fn oidc_providers(mut self, providers: Vec<OidcProviderConfiguration>) -> Self {
+        self.oidc_providers = providers;
+        self
+    }
+
     pub fn build(self) -> anyhow::Result<Configurations> {
         Ok(Configurations {
             database_url: self
@@ -135,6 +204,7 @@ impl ConfigurationsBuilder {
             admin_full_name: self
                 .admin_full_name
                 .ok_or_else(|| anyhow::anyhow!("admin_full_name is required"))?,
+            oidc_providers: self.oidc_providers,
         })
     }
 }
@@ -208,6 +278,7 @@ impl Configurations {
                 Ok(v) => v.into(),
                 Err(err) => bail!("missing ADMIN_FULL_NAME: {err}"),
             },
+            oidc_providers: oidc_providers_from_variables(|variable| dotenv::var(variable).ok())?,
         })
     }
 }

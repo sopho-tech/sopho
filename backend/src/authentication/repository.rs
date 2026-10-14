@@ -1,11 +1,14 @@
 use crate::authentication::constants::SessionStatus;
 use crate::common::time_utils;
 use crate::entity;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DbErr, EntityTrait,
+    QueryFilter,
+};
 use uuid::Uuid;
 
 pub async fn save_user(
-    db: &DatabaseConnection,
+    db: &impl ConnectionTrait,
     user: entity::user::Model,
 ) -> Result<entity::user::Model, DbErr> {
     let user_active_model: entity::user::ActiveModel = user.into();
@@ -18,6 +21,16 @@ pub async fn get_user(
     id: Uuid,
 ) -> Result<Option<entity::user::Model>, DbErr> {
     entity::user::Entity::find_by_id(id).one(db).await
+}
+
+pub async fn get_users_by_ids(
+    db: &DatabaseConnection,
+    ids: Vec<Uuid>,
+) -> Result<Vec<entity::user::Model>, DbErr> {
+    entity::user::Entity::find()
+        .filter(entity::user::Column::Id.is_in(ids))
+        .all(db)
+        .await
 }
 
 pub async fn get_user_by_email(

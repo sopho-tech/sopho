@@ -1,5 +1,6 @@
 use crate::authorization::constants::{
-    AccessLevel, Action, MembershipStatus, Permission, ResourceType, SystemRole, Visibility,
+    AccessLevel, Action, MembershipStatus, Permission, PlatformPermission, PlatformRole,
+    ResourceType, SystemRole, Visibility,
 };
 use crate::authorization::dto::{
     AuthorizationSubject, PermissionSet, ResourceCapabilities, TenantContext, TenantId, UserId,
@@ -127,6 +128,20 @@ pub async fn find_role_by_name(
         .ok_or_else(|| sea_orm::DbErr::RecordNotFound(format!("Role not found: {}", name)))
 }
 
+pub async fn list_roles(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+) -> Result<Vec<crate::entity::role::Model>, sea_orm::DbErr> {
+    repository::list_roles(&app_state.database_connection, tenant_id).await
+}
+
+pub async fn find_roles_by_ids(
+    app_state: &AppState,
+    role_ids: Vec<Uuid>,
+) -> Result<Vec<crate::entity::role::Model>, sea_orm::DbErr> {
+    repository::find_roles_by_ids(&app_state.database_connection, role_ids).await
+}
+
 pub async fn find_membership(
     app_state: &AppState,
     tenant_id: uuid::Uuid,
@@ -140,6 +155,18 @@ pub fn require_capability(
     permission: Permission,
 ) -> Result<(), AuthorizationError> {
     if tenant_context.permissions().contains(permission) {
+        return Ok(());
+    }
+    Err(AuthorizationError::MissingPermission(
+        permission.as_str().to_string(),
+    ))
+}
+
+pub fn require_platform_permission(
+    platform_role: PlatformRole,
+    permission: PlatformPermission,
+) -> Result<(), AuthorizationError> {
+    if platform_role.permissions().contains(&permission) {
         return Ok(());
     }
     Err(AuthorizationError::MissingPermission(

@@ -2,7 +2,8 @@ use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::entity::resource_grant;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
+    QueryFilter, Set,
 };
 use uuid::Uuid;
 
@@ -74,6 +75,19 @@ pub async fn revoke_grant(
         .filter(resource_grant::Column::TenantId.eq(tenant_id.get_uuid()))
         .filter(resource_grant::Column::Id.eq(grant_id))
         .exec(db)
+        .await?;
+    Ok(result.rows_affected)
+}
+
+pub async fn delete_grants_for_principal_transaction(
+    txn: &DatabaseTransaction,
+    tenant_id: &TenantId,
+    principal_id: Uuid,
+) -> Result<u64, DbErr> {
+    let result = resource_grant::Entity::delete_many()
+        .filter(resource_grant::Column::TenantId.eq(tenant_id.get_uuid()))
+        .filter(resource_grant::Column::PrincipalId.eq(principal_id))
+        .exec(txn)
         .await?;
     Ok(result.rows_affected)
 }

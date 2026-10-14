@@ -71,6 +71,10 @@ impl PermissionSet {
         self.permissions.contains(&permission)
     }
 
+    pub fn is_subset_of(&self, other: &PermissionSet) -> bool {
+        self.permissions.is_subset(&other.permissions)
+    }
+
     pub fn as_strings(&self) -> Vec<String> {
         let mut values: Vec<String> = self
             .permissions

@@ -81,7 +81,15 @@ fn api_router(app_state: AppState) -> Router {
             suggested_question::routes(app_state.clone()),
         )
         .nest("/ai_summary", ai_summary::routes(app_state.clone()))
-        .nest("/member", tenant::member_routes(app_state.clone()))
+        .nest(
+            "/member",
+            tenant::membership::member_routes(app_state.clone()),
+        )
+        .nest("/role", tenant::membership::role_routes(app_state.clone()))
+        .nest(
+            "/invitation",
+            tenant::invitation::tenant_routes(app_state.clone()),
+        )
         .layer(axum::middleware::from_fn_with_state(
             app_state.clone(),
             middlewares::session_middleware_fn,
@@ -97,6 +105,15 @@ fn api_router(app_state: AppState) -> Router {
                 app_state.clone(),
                 middlewares::session_middleware_fn,
             )),
+        )
+        .nest(
+            "/api/v1/invitation",
+            tenant::invitation::user_routes(app_state.clone()).layer(
+                axum::middleware::from_fn_with_state(
+                    app_state.clone(),
+                    middlewares::session_middleware_fn,
+                ),
+            ),
         )
 }
 

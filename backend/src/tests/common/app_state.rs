@@ -1,4 +1,4 @@
-use crate::common::{AppState, Configurations};
+use crate::common::{AppState, Configurations, OidcProviderConfiguration};
 use crate::database::pool::new_database_pool_registry;
 use crate::db;
 use std::collections::HashMap;
@@ -20,6 +20,28 @@ pub fn absolute_test_database_path(test_name: &str) -> String {
 }
 
 pub async fn init_test_app_state(test_name: &str) -> AppState {
+    build_test_app_state(test_name, Vec::new()).await
+}
+
+pub async fn init_test_app_state_with_single_sign_on(test_name: &str) -> AppState {
+    build_test_app_state(
+        test_name,
+        vec![OidcProviderConfiguration {
+            name: "test".to_string(),
+            display_name: "Test".to_string(),
+            issuer_url: "https://identity.example.test".to_string(),
+            client_id: "client-id".to_string(),
+            client_secret: "client-secret".to_string(),
+            redirect_uri: "https://app.example.test/api/v1/auth/oidc/test/callback".to_string(),
+        }],
+    )
+    .await
+}
+
+async fn build_test_app_state(
+    test_name: &str,
+    oidc_providers: Vec<OidcProviderConfiguration>,
+) -> AppState {
     let database_path = test_database_path(test_name);
     if let Some(parent) = Path::new(&database_path).parent() {
         std::fs::create_dir_all(parent).ok();
@@ -39,6 +61,7 @@ pub async fn init_test_app_state(test_name: &str) -> AppState {
             .admin_password("test_password")
             .admin_email("admin@test.local")
             .admin_full_name("Test Admin")
+            .oidc_providers(oidc_providers)
             .build()
             .unwrap(),
         reqwest::Client::new(),

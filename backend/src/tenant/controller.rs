@@ -1,6 +1,8 @@
-use crate::authorization::dto::{AuthenticatedUser, TenantContext};
+use crate::authorization::dto::AuthenticatedUser;
 use crate::common::AppState;
+use crate::tenant::constants::TENANT_NOT_FOUND_MESSAGE;
 use crate::tenant::dto::CreateTenantDto;
+use crate::tenant::error::TenantError;
 use crate::tenant::service;
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
@@ -43,26 +45,17 @@ async fn create_tenant(
                 "name": created_tenant.name,
             })),
         ),
-        Err(error) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
+        Err(TenantError::Unauthorized(authorization_error)) => {
+            crate::authorization::service::authorization_error_response(
+                authorization_error,
+                TENANT_NOT_FOUND_MESSAGE,
+            )
+        }
+        Err(error @ TenantError::NameRequired) => (
+            StatusCode::BAD_REQUEST,
             axum::Json(serde_json::json!({ "error": error.to_string() })),
         ),
-    }
-}
-
-pub fn member_routes(app_state: AppState) -> Router {
-    Router::new()
-        .route("/", get(list_members))
-        .with_state(app_state)
-}
-
-async fn list_members(
-    State(app_state): State<AppState>,
-    tenant_context: TenantContext,
-) -> impl IntoResponse {
-    match service::list_members(&app_state, &tenant_context).await {
-        Ok(members) => (StatusCode::OK, axum::Json(serde_json::json!(members))),
-        Err(error) => (
+        Err(TenantError::Internal(error)) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": error.to_string() })),
         ),

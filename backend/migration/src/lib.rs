@@ -20,6 +20,7 @@ mod m20260818_000001_create_tenancy_tables;
 mod m20260818_000002_add_tenant_id_columns;
 mod m20260824_000001_add_unique_constraints;
 mod m20260824_000002_add_ownership_and_grants;
+mod m20261014_000001_create_identity_tables;
 
 pub struct Migrator;
 
@@ -46,6 +47,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260818_000002_add_tenant_id_columns::Migration),
             Box::new(m20260824_000001_add_unique_constraints::Migration),
             Box::new(m20260824_000002_add_ownership_and_grants::Migration),
+            Box::new(m20261014_000001_create_identity_tables::Migration),
         ]
     }
 }

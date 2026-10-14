@@ -149,6 +149,43 @@ impl SystemRole {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Display, EnumString, IntoStaticStr)]
+pub enum PlatformPermission {
+    #[strum(serialize = "tenant:create")]
+    TenantCreate,
+}
+
+impl PlatformPermission {
+    pub fn as_str(&self) -> &'static str {
+        self.into()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumString, IntoStaticStr)]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
+pub enum PlatformRole {
+    Administrator,
+    Member,
+}
+
+impl PlatformRole {
+    pub fn as_str(&self) -> &'static str {
+        self.into()
+    }
+
+    pub fn from_str(value: &str) -> Result<Self, String> {
+        <Self as std::str::FromStr>::from_str(value)
+            .map_err(|_| format!("Invalid platform role: {}", value))
+    }
+
+    pub fn permissions(&self) -> Vec<PlatformPermission> {
+        match self {
+            PlatformRole::Administrator => vec![PlatformPermission::TenantCreate],
+            PlatformRole::Member => Vec::new(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumString, IntoStaticStr)]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum MembershipStatus {

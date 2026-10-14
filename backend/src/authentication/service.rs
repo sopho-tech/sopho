@@ -1,11 +1,15 @@
 use crate::authentication::constants::{
     CookieName, SessionStatus, ACCESS_TOKEN_EXPIRY_HOURS, REFRESH_TOKEN_EXPIRY_DAYS,
 };
-use crate::authentication::constants::{SESSION_NOT_FOUND_MESSAGE, USER_NOT_FOUND_MESSAGE};
+use crate::authentication::constants::{
+    INVALID_CREDENTIALS_MESSAGE, SESSION_NOT_FOUND_MESSAGE, USER_NOT_FOUND_MESSAGE,
+};
 use crate::authentication::dto;
+use crate::authentication::error::CredentialsError;
 use crate::authentication::repository;
 use crate::authentication::repository::{get_user, get_user_by_email};
-use crate::authorization::dto::AuthenticatedUser;
+use crate::authorization::constants::PlatformRole;
+use crate::authorization::dto::{AuthenticatedUser, UserId};
 use crate::common::error_codes::codes;
 use crate::common::time_utils;
 use crate::common::token_utils;
@@ -154,31 +158,128 @@ pub async fn get_current_user(cookies: Cookies, app_state: AppState) -> impl Int
         Err(err_response) => return err_response,
     };
 
-    let user = match get_user(&app_state.database_connection, session.user_id)
-        .await
-        .map(|user| user.ok_or(DbErr::RecordNotFound(USER_NOT_FOUND_MESSAGE.into())))
-        .and_then(|user| user)
+    match current_user_profile(
+        &app_state,
+        AuthenticatedUser::from_validated_session(session.user_id).user_id(),
+    )
+    .await
     {
-        Ok(u) => u,
-        Err(e) => {
-            tracing::error!("Failed to get user: {:?}", e);
-            return (
+        Ok(user_dto) => (StatusCode::OK, Json(serde_json::json!(user_dto))),
+        Err(error) => {
+            tracing::error!("Failed to get user: {:?}", error);
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({
                     "message": "Failed to retrieve user"
                 })),
-            );
+            )
         }
-    };
+    }
+}
 
-    let user_dto = dto::UserDto {
+pub async fn find_optional_user_by_email(
+    app_state: &AppState,
+    email: &str,
+) -> Result<Option<entity::user::Model>, DbErr> {
+    get_user_by_email(&app_state.database_connection, normalize_email(email)).await
+}
+
+pub async fn find_users_by_ids(
+    app_state: &AppState,
+    user_ids: Vec<Uuid>,
+) -> Result<Vec<entity::user::Model>, DbErr> {
+    repository::get_users_by_ids(&app_state.database_connection, user_ids).await
+}
+
+pub async fn find_user_by_id(
+    app_state: &AppState,
+    user_id: UserId,
+) -> Result<entity::user::Model, DbErr> {
+    get_user(&app_state.database_connection, user_id.get_uuid())
+        .await?
+        .ok_or_else(|| DbErr::RecordNotFound(USER_NOT_FOUND_MESSAGE.into()))
+}
+
+pub fn platform_role_of(user: &entity::user::Model) -> anyhow::Result<PlatformRole> {
+    PlatformRole::from_str(&user.platform_role).map_err(anyhow::Error::msg)
+}
+
+pub async fn find_platform_role(
+    app_state: &AppState,
+    user_id: UserId,
+) -> anyhow::Result<PlatformRole> {
+    platform_role_of(&find_user_by_id(app_state, user_id).await?)
+}
+
+pub async fn current_user_profile(
+    app_state: &AppState,
+    user_id: UserId,
+) -> anyhow::Result<dto::UserDto> {
+    let user = find_user_by_id(app_state, user_id).await?;
+    let platform_permissions = platform_role_of(&user)?
+        .permissions()
+        .into_iter()
+        .map(|permission| permission.as_str().to_string())
+        .collect();
+    Ok(dto::UserDto {
         id: user.id,
         username: user.username,
         email: user.email,
         full_name: user.full_name,
-    };
+        platform_permissions,
+    })
+}
 
-    (StatusCode::OK, Json(serde_json::json!(user_dto)))
+pub async fn start_session_for_user(
+    app_state: &AppState,
+    cookies: &Cookies,
+    user_id: Uuid,
+) -> Result<(), DbErr> {
+    let session_dto = create_new_session(app_state, user_id).await?;
+    set_session_cookies(cookies, &session_dto, app_state);
+    Ok(())
+}
+
+pub async fn create_sso_user_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    email: &str,
+    full_name: &str,
+) -> Result<entity::user::Model, DbErr> {
+    let email = normalize_email(email);
+    repository::save_user(
+        txn,
+        entity::user::Model {
+            id: Uuid::new_v4(),
+            username: email.clone(),
+            password_hash: None,
+            email,
+            full_name: full_name.to_string(),
+            platform_role: PlatformRole::Member.as_str().to_string(),
+            created_at: time_utils::now_utc_into(),
+            updated_at: time_utils::now_utc_into(),
+        },
+    )
+    .await
+}
+
+pub fn normalize_email(email: &str) -> String {
+    email.trim().to_lowercase()
+}
+
+pub async fn verify_credentials(
+    app_state: &AppState,
+    email: &str,
+    password: &str,
+) -> Result<entity::user::Model, CredentialsError> {
+    let user = get_user_by_email(&app_state.database_connection, normalize_email(email))
+        .await?
+        .ok_or(CredentialsError::InvalidCredentials)?;
+    let password_hash = user
+        .password_hash
+        .as_deref()
+        .ok_or(CredentialsError::InvalidCredentials)?;
+    verify_password(password, password_hash).map_err(|_| CredentialsError::InvalidCredentials)?;
+    Ok(user)
 }
 
 pub async fn create_session(
@@ -186,32 +287,27 @@ pub async fn create_session(
     payload: dto::CreateSessionDto,
     cookies: Cookies,
 ) -> impl IntoResponse {
-    let user = match get_user_by_email(&app_state.database_connection, payload.email.clone())
-        .await
-        .map(|user| user.ok_or(DbErr::RecordNotFound(USER_NOT_FOUND_MESSAGE.into())))
-        .and_then(|user| user)
-    {
-        Ok(u) => u,
-        Err(e) => {
-            tracing::error!("Failed to get user by email: {:?}", e);
+    let user = match verify_credentials(&app_state, &payload.email, &payload.password).await {
+        Ok(user) => user,
+        Err(CredentialsError::InvalidCredentials) => {
+            tracing::warn!("Rejected sign-in for {}", payload.email);
             return (
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({
-                    "message": "Invalid credentials"
+                    "message": INVALID_CREDENTIALS_MESSAGE
+                })),
+            );
+        }
+        Err(CredentialsError::Database(error)) => {
+            tracing::error!("Failed to look up user for sign-in: {:?}", error);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({
+                    "message": "Failed to sign in"
                 })),
             );
         }
     };
-
-    if verify_password(&payload.password, &user.password_hash).is_err() {
-        tracing::error!("Invalid password for user: {}", payload.email);
-        return (
-            StatusCode::UNAUTHORIZED,
-            Json(serde_json::json!({
-                "message": "Invalid credentials"
-            })),
-        );
-    }
 
     let session_dto = match create_new_session(&app_state, user.id).await {
         Ok(session) => session,
@@ -516,10 +612,10 @@ pub async fn seed_admin_user(app_state: &AppState) -> anyhow::Result<()> {
 
     let username = app_state.config.admin_username.as_ref();
     let password = app_state.config.admin_password.as_ref();
-    let email = app_state.config.admin_email.as_ref();
+    let email = normalize_email(app_state.config.admin_email.as_ref());
     let full_name = app_state.config.admin_full_name.as_ref();
 
-    if get_user_by_email(&app_state.database_connection, email.to_string())
+    if get_user_by_email(&app_state.database_connection, email.clone())
         .await?
         .is_some()
     {
@@ -537,9 +633,10 @@ pub async fn seed_admin_user(app_state: &AppState) -> anyhow::Result<()> {
     let user = entity::user::Model {
         id: Uuid::new_v4(),
         username: username.to_string(),
-        password_hash,
-        email: email.to_string(),
+        password_hash: Some(password_hash),
+        email,
         full_name: full_name.to_string(),
+        platform_role: PlatformRole::Administrator.as_str().to_string(),
         created_at: time_utils::now_utc_into(),
         updated_at: time_utils::now_utc_into(),
     };
@@ -554,7 +651,7 @@ pub async fn find_user_by_email(
     app_state: &AppState,
     email: &str,
 ) -> Result<entity::user::Model, DbErr> {
-    get_user_by_email(&app_state.database_connection, email.to_string())
+    get_user_by_email(&app_state.database_connection, normalize_email(email))
         .await?
         .ok_or_else(|| DbErr::RecordNotFound(USER_NOT_FOUND_MESSAGE.into()))
 }

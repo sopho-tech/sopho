@@ -458,7 +458,7 @@ async fn user_belonging_to_two_tenants_is_scoped_to_each_separately() {
     let first = create_tenant_with_owner(&app_state, "first").await;
     let second = create_tenant_with_owner(&app_state, "second").await;
 
-    crate::tenant::service::add_member_with_role(
+    crate::tenant::membership::service::add_member_with_role_name(
         &app_state,
         &second.scope(),
         first.user(),

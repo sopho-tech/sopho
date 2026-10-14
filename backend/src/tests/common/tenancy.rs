@@ -1,4 +1,4 @@
-use crate::authorization::constants::SystemRole;
+use crate::authorization::constants::{PlatformRole, SystemRole};
 use crate::authorization::dto::{TenantContext, TenantId, UserId};
 use crate::common::time_utils;
 use crate::common::AppState;
@@ -26,9 +26,10 @@ pub async fn insert_user(app_state: &AppState, label: &str) -> Uuid {
     entity::user::ActiveModel {
         id: Set(user_id),
         username: Set(format!("{}_{}", label, user_id)),
-        password_hash: Set("unused".to_string()),
+        password_hash: Set(None),
         email: Set(format!("{}_{}@example.test", label, user_id)),
         full_name: Set(label.to_string()),
+        platform_role: Set(PlatformRole::Member.as_str().to_string()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }
@@ -46,7 +47,7 @@ pub async fn create_tenant(app_state: &AppState, name: &str) -> Uuid {
 }
 
 pub async fn add_member(app_state: &AppState, tenant_id: Uuid, user_id: Uuid, role: SystemRole) {
-    crate::tenant::service::add_member_with_role(
+    crate::tenant::membership::service::add_member_with_role_name(
         app_state,
         &TenantId::from_system_unchecked(tenant_id),
         UserId::from_system_unchecked(user_id),
