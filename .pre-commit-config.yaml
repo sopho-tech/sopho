@@ -6,6 +6,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md, mdx]
         exclude: \.rs$
         stages: [pre-commit]
       - id: end-of-file-fixer
@@ -38,6 +39,7 @@ repos:
     rev: v2.15.1
     hooks:
       - id: hadolint-docker
+        entry: ghcr.io/hadolint/hadolint:v2.15.1 hadolint
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1
@@ -54,7 +56,7 @@ repos:
     hooks:
       - id: rustfmt
         name: rustfmt
-        entry: cargo fmt --manifest-path backend/Cargo.toml --all
+        entry: bash -c 'cd backend && cargo fmt --all'
         language: system
         types: [rust]
         pass_filenames: false
@@ -62,7 +64,6 @@ repos:
         name: prettier
         entry: npx --no-install prettier --write --ignore-unknown
         language: system
-        files: \.(c?js|mjs|jsx|ts|tsx|json|css|md|mdx|ya?ml)$
       - id: tombi-format
         name: tombi format
         entry: npx --no-install tombi format
@@ -97,14 +98,14 @@ repos:
         stages: [commit-msg]
       - id: clippy
         name: clippy
-        entry: cargo clippy --manifest-path backend/Cargo.toml --workspace --all-targets --locked -- -D warnings
+        entry: bash -c 'cd backend && cargo clippy --workspace --all-targets --locked -- -D warnings'
         language: system
         files: ^backend/
         pass_filenames: false
         stages: [pre-push]
       - id: backend-unit-tests
         name: backend unit tests
-        entry: cargo nextest run --manifest-path backend/Cargo.toml --workspace --lib
+        entry: bash -c 'cd backend && cargo nextest run --workspace --lib'
         language: system
         files: ^backend/
         pass_filenames: false

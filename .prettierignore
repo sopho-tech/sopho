@@ -4,3 +4,10 @@ frontend/dist/
 docs/.next/
 docs/.source/
 docs/next-env.d.ts
+docs/out/
+docs/build/
+frontend/dist-ssr/
+backend/data/
+**/coverage/
+**/playwright-report/
+**/test-results/

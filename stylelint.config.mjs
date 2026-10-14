@@ -1,5 +1,11 @@
 export default {
   extends: ["stylelint-config-standard", "stylelint-config-css-modules"],
+  ignoreFiles: [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.next/**",
+    "**/coverage/**",
+  ],
   rules: {
     "selector-class-pattern": [
       "^[a-z][a-zA-Z0-9]*$",
@@ -9,6 +15,7 @@ export default {
       "^[a-z][a-zA-Z0-9]*$",
       { message: "Expected keyframe name to be camelCase" },
     ],
-    "at-rule-no-unknown": [true, { ignoreAtRules: ["theme"] }],
+    "at-rule-no-unknown": [true, { ignoreAtRules: ["theme", "value"] }],
+    "import-notation": "string",
   },
 };
