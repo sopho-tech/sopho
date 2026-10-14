@@ -1,4 +1,6 @@
-.PHONY: install run dev
+.PHONY: install run dev tools setup hooks fmt lint lint-repo lint-backend
+
+CARGO_TOOLS := cargo-nextest cargo-llvm-cov cargo-deny cargo-shear
 
 # Installation: Build both frontend and backend
 install:
@@ -33,3 +35,31 @@ dev:
 	npm run dev) & \
 	wait
 
+tools:
+	cd backend && cargo install --locked $(CARGO_TOOLS)
+
+setup:
+	@for cargo_tool in $(CARGO_TOOLS); do \
+		command -v $$cargo_tool >/dev/null || { echo "$$cargo_tool is missing. Run: make tools"; exit 1; }; \
+	done
+	npm ci
+	cd frontend && npm ci
+	cd backend && cargo fetch
+
+hooks:
+	prek install
+
+fmt:
+	cd backend && cargo fmt --all
+	npx --no-install prettier --write .
+	npx --no-install tombi format
+
+lint: lint-repo lint-backend
+
+lint-repo:
+	prek run --all-files --show-diff-on-failure
+
+lint-backend:
+	cd backend && cargo clippy --workspace --all-targets --locked -- -D warnings
+	cd backend && cargo deny check bans licenses sources
+	cd backend && cargo shear

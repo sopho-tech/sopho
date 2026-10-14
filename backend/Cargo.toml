@@ -5,9 +5,21 @@ edition = "2024"
 authors = ["Athul T R <athultr1997@gmail.com>"]
 description = "Open-source analytics platform"
 license = "AGPL-3.0"
+publish = false
+
+[lints]
+workspace = true
 
 [workspace]
 members = [".", "migration"]
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+allow_attributes_without_reason = "warn"
+dbg_macro = "warn"
+todo = "warn"
 
 [dependencies]
 axum = { version = "0.8.1", features = ["json"] }

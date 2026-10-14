@@ -1,0 +1,104 @@
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.rs$
+        stages: [pre-commit]
+      - id: end-of-file-fixer
+        exclude: \.rs$
+        stages: [pre-commit]
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.51.1
+    hooks:
+      - id: typos
+        args: [--force-exclude]
+        stages: [pre-commit]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.30.1
+    hooks:
+      - id: zizmor
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.15.1
+    hooks:
+      - id: hadolint-docker
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.14.1-1
+    hooks:
+      - id: shfmt
+        stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: rustfmt
+        name: rustfmt
+        entry: cargo fmt --manifest-path backend/Cargo.toml --all
+        language: system
+        types: [rust]
+        pass_filenames: false
+      - id: prettier
+        name: prettier
+        entry: npx --no-install prettier --write --ignore-unknown
+        language: system
+        files: \.(c?js|mjs|jsx|ts|tsx|json|css|md|mdx|ya?ml)$
+      - id: tombi-format
+        name: tombi format
+        entry: npx --no-install tombi format
+        language: system
+        types: [toml]
+      - id: tombi-lint
+        name: tombi lint
+        entry: npx --no-install tombi lint
+        language: system
+        types: [toml]
+      - id: stylelint
+        name: stylelint
+        entry: npx --no-install stylelint "frontend/**/*.css" "docs/**/*.css"
+        language: system
+        types: [css]
+        pass_filenames: false
+      - id: markdownlint
+        name: markdownlint
+        entry: npx --no-install markdownlint-cli2
+        language: system
+        types: [markdown]
+      - id: docker-compose-config
+        name: docker compose config
+        entry: docker compose --file docker/docker-compose.yaml --file docker/docker-compose.override.yaml config --quiet
+        language: system
+        files: ^docker/docker-compose
+        pass_filenames: false
+      - id: commitlint
+        name: commitlint
+        entry: npx --no-install commitlint --edit
+        language: system
+        stages: [commit-msg]
+      - id: clippy
+        name: clippy
+        entry: cargo clippy --manifest-path backend/Cargo.toml --workspace --all-targets --locked -- -D warnings
+        language: system
+        files: ^backend/
+        pass_filenames: false
+        stages: [pre-push]
