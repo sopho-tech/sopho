@@ -20,6 +20,10 @@ export default {
     ],
     "at-rule-no-unknown": [true, { ignoreAtRules: ["theme", "value"] }],
     "import-notation": "string",
+    "property-no-vendor-prefix": [
+      true,
+      { ignoreProperties: ["-webkit-user-select"] },
+    ],
     "block-no-empty": [true, { severity: "warning" }],
     "no-descending-specificity": [true, { severity: "warning" }],
   },
