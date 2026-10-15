@@ -9,10 +9,13 @@ import {
   Text,
 } from "src/components/design-system";
 import { SourceTypeEnum } from "src/constants/database_types";
-import styles from "./ConnectionNew.module.css";
+import styles from "src/components/Connection/ConnectionNew/ConnectionNew.module.css";
 import { useState } from "react";
 import { CreateConnectionDto, useCreateConnection } from "src/api/connection";
-import { ConnectionDetailsPageStateEnum, StatusType } from "../dto";
+import {
+  ConnectionDetailsPageStateEnum,
+  StatusType,
+} from "src/components/Connection/dto";
 import { useStore } from "src/store";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -21,7 +24,7 @@ export function ConnectionNew() {
   const [sourceType, setSourceType] = useState<string | null>(null);
   const createMutation = useCreateConnection();
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
   const navigate = useNavigate();
   const sourceTypeOptions = Object.values(SourceTypeEnum).map((type) => ({
@@ -44,7 +47,7 @@ export function ConnectionNew() {
     };
     createMutation.mutate(payload);
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    void navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
   };
 
   const onChangeHandler = (fieldName: string, value: string) => {
@@ -55,7 +58,7 @@ export function ConnectionNew() {
 
   const handleBack = () => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    void navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
   };
 
   return (
@@ -67,7 +70,7 @@ export function ConnectionNew() {
         gap="md"
       >
         <Flex direction="column" gap="2xs">
-          <Heading accessbilityLevel={2} size="2xl" textColor="black">
+          <Heading accessibilityLevel={2} size="2xl" textColor="black">
             New Connection
           </Heading>
           <Text fontSize="sm" color="subtle">
@@ -91,10 +94,10 @@ export function ConnectionNew() {
         <Form.Fields className={styles.formFields}>
           <Flex direction="row" gap="lg" justifyContent="space-between">
             <Flex direction="column" gap="sm" width={"100%"}>
-              <Heading accessbilityLevel={2} textColor="black" size="lg">
+              <Heading accessibilityLevel={2} textColor="black" size="lg">
                 Basic Details
               </Heading>
-              <Heading accessbilityLevel={3} textColor="subtle" size="base">
+              <Heading accessibilityLevel={3} textColor="subtle" size="base">
                 Set your basic connection details
               </Heading>
             </Flex>
@@ -133,10 +136,10 @@ export function ConnectionNew() {
           <Separator></Separator>
           <Flex direction="row" gap="lg" justifyContent="space-between">
             <Flex direction="column" gap="sm" width={"100%"}>
-              <Heading accessbilityLevel={2} textColor="black" size="lg">
+              <Heading accessibilityLevel={2} textColor="black" size="lg">
                 Specific Details
               </Heading>
-              <Heading accessbilityLevel={3} textColor="subtle" size="base">
+              <Heading accessibilityLevel={3} textColor="subtle" size="base">
                 {sourceType === null
                   ? "Select source type to see the specific details"
                   : sourceType === SourceTypeEnum.PostgreSQL

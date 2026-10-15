@@ -1,0 +1,5 @@
+---
+source: src/ai/text_to_sql_agent/user_prompt.rs
+expression: "UserPrompt::SqlGenerationRefineResult\n{ next_action: RefineNextAction::GenerateSql, }.render()"
+---
+Perform GENERATE_SQL

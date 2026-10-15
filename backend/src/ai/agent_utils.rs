@@ -16,6 +16,10 @@ pub enum ModelRole {
 
 #[derive(Clone, Copy, Debug, strum::IntoStaticStr)]
 #[strum(serialize_all = "snake_case")]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "variant names are the agent names given to rig and shown in logs"
+)]
 pub enum AgentName {
     CanvasGenerationAgent,
     ChartSummaryAgent,
@@ -50,16 +54,22 @@ pub enum ModelClient {
 }
 
 impl ModelClient {
-    pub fn anthropic(api_key: &str) -> Result<Self, Error> {
-        let client = anthropic::Client::builder().api_key(api_key).build()?;
-        Ok(Self::Anthropic(client))
+    pub fn anthropic(api_key: &str, base_url: Option<&str>) -> Result<Self, Error> {
+        let builder = anthropic::Client::builder().api_key(api_key);
+        let builder = match base_url {
+            Some(base_url) => builder.base_url(base_url),
+            None => builder,
+        };
+        Ok(Self::Anthropic(builder.build()?))
     }
 
-    pub fn openai(api_key: &str) -> Result<Self, Error> {
-        let client = openai::CompletionsClient::builder()
-            .api_key(api_key)
-            .build()?;
-        Ok(Self::OpenAI(client))
+    pub fn openai(api_key: &str, base_url: Option<&str>) -> Result<Self, Error> {
+        let builder = openai::CompletionsClient::builder().api_key(api_key);
+        let builder = match base_url {
+            Some(base_url) => builder.base_url(base_url),
+            None => builder,
+        };
+        Ok(Self::OpenAI(builder.build()?))
     }
 
     pub fn build_agent(

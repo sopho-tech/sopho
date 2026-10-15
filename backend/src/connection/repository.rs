@@ -27,13 +27,6 @@ pub async fn get_all_connections(db: &DatabaseConnection) -> Result<Vec<connecti
     Ok(connections)
 }
 
-pub async fn delete_connection(
-    db: &DatabaseConnection,
-    id: Uuid,
-) -> Result<sea_orm::DeleteResult, DbErr> {
-    connection::Entity::delete_by_id(id).exec(db).await
-}
-
 pub async fn update_connection(
     db: &DatabaseConnection,
     connection_id: Uuid,

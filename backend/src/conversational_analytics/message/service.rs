@@ -1,5 +1,4 @@
 use crate::common::time_utils;
-use crate::common::AppState;
 use crate::conversational_analytics::conversation::error::ConversationError;
 use crate::conversational_analytics::message::constants::Sender;
 use crate::conversational_analytics::message::dto;
@@ -25,14 +24,6 @@ pub async fn create_message(
     };
     let saved = repository::save_message_transaction(txn, message).await?;
     Ok(dto::ConversationMessageDto::from(saved))
-}
-
-pub async fn get_message(
-    app_state: AppState,
-    id: Uuid,
-) -> Result<dto::ConversationMessageDto, ConversationError> {
-    let model = repository::get_message(&app_state.database_connection, id).await?;
-    Ok(dto::ConversationMessageDto::from(model))
 }
 
 pub async fn get_last_message_for_conversation(

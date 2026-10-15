@@ -7,11 +7,11 @@ import Suggestion, {
 import { PluginKey } from "@tiptap/pm/state";
 import { createRoot, type Root } from "react-dom/client";
 import { createElement, createRef } from "react";
-import { SlashCommandBadge } from "./SlashCommandBadge";
+import { SlashCommandBadge } from "src/components/ConversationalAnalytics/MessageComposer/SlashCommandBadge";
 import {
   SlashCommandList,
   type SlashCommandListHandle,
-} from "./SlashCommandList";
+} from "src/components/ConversationalAnalytics/MessageComposer/SlashCommandList";
 import {
   findMatchingSlashCommands,
   type SlashCommand,

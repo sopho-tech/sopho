@@ -43,42 +43,42 @@
   color: var(--color-grey-900);
 }
 
-.fontSize-xs {
+.fontSizeXs {
   font-size: var(--font-size-xs);
 }
 
-.fontSize-sm {
+.fontSizeSm {
   font-size: var(--font-size-sm);
 }
 
-.fontSize-base {
+.fontSizeBase {
   font-size: var(--font-size-base);
 }
 
-.fontSize-lg {
+.fontSizeLg {
   font-size: var(--font-size-lg);
 }
 
-.fontSize-xl {
+.fontSizeXl {
   font-size: var(--font-size-xl);
 }
 
-.fontSize-2xl {
+.fontSize2xl {
   font-size: var(--font-size-2xl);
 }
 
-.fontSize-3xl {
+.fontSize3xl {
   font-size: var(--font-size-3xl);
 }
 
-.fontSize-4xl {
+.fontSize4xl {
   font-size: var(--font-size-4xl);
 }
 
-.fontSize-5xl {
+.fontSize5xl {
   font-size: var(--font-size-5xl);
 }
 
-.fontSize-6xl {
+.fontSize6xl {
   font-size: var(--font-size-6xl);
 }

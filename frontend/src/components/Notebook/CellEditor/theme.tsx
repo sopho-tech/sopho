@@ -118,7 +118,7 @@ const editorTheme = EditorView.theme(
       },
     },
   },
-  { dark: true }
+  { dark: true },
 );
 
 export const highlightStyle = HighlightStyle.define([

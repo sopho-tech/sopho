@@ -2,8 +2,7 @@ import { ChartType } from "src/components/Chart";
 import { ExecuteCellResponseDto } from "src/components/Notebook/Cell/dto";
 
 export type MessageSegment =
-  | { type: "TEXT"; text: string }
-  | { type: "COMMAND"; name: string };
+  { type: "TEXT"; text: string } | { type: "COMMAND"; name: string };
 
 export type CreateConversationDto = {
   connection_id: string;
@@ -338,7 +337,7 @@ export function extractFollowUpQuestions(
           return data?.questions ?? [];
         }
       } catch {
-        /* ignore unparseable content */
+        /* ignore unparsable content */
       }
     }
     return [];
@@ -411,7 +410,7 @@ export function extractArtifactsFromMessages(
         const artifact = toArtifact(JSON.parse(content.content) as AgentEvent);
         if (artifact) artifacts.push(artifact);
       } catch {
-        /* ignore unparseable content */
+        /* ignore unparsable content */
       }
     }
   }

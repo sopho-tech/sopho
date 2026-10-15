@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
-import { EntityType } from "./constants";
+import { EntityType } from "src/api/search/constants";
 
 export type SearchRequestDto = {
   query?: string;
@@ -29,7 +29,7 @@ export const searchKeys = {
 const searchApi = {
   search: async (
     query: string,
-    filters: EntityType[]
+    filters: EntityType[],
   ): Promise<SearchResultItemDto[]> => {
     const url = new URL(API_ENDPOINTS.SEARCH.SEARCH, window.location.origin);
     if (query) {
@@ -52,7 +52,7 @@ const searchApi = {
 export const useSearch = (
   query: string,
   filters: EntityType[],
-  isEnabled: boolean
+  isEnabled: boolean,
 ) => {
   return useQuery({
     queryKey: searchKeys.search(query, filters),

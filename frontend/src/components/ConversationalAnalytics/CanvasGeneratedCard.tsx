@@ -1,12 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router";
-import {
-  Card,
-  Flex,
-  Badge,
-  Icon,
-  ToolTip,
-} from "src/components/design-system";
+import { Card, Flex, Badge, Icon, ToolTip } from "src/components/design-system";
 import type { IconType } from "src/components/design-system/datatypes";
 import { APP_ROUTES } from "src/constants/app_routes";
 import type { CanvasGeneratedData } from "src/components/ConversationalAnalytics/dto";
@@ -46,7 +40,7 @@ export function CanvasGeneratedCard({ data }: CanvasGeneratedCardProps) {
 
   const handleClick = useCallback(() => {
     if (window.getSelection()?.toString()) return;
-    navigate(canvasPath);
+    void navigate(canvasPath);
   }, [canvasPath, navigate]);
 
   const handleLinkClick = useCallback((event: React.MouseEvent) => {
@@ -55,7 +49,7 @@ export function CanvasGeneratedCard({ data }: CanvasGeneratedCardProps) {
 
   return (
     <Card onClick={handleClick} sx={CARD_STYLE}>
-      <Card.Header baseAccessbilityLevel={2}>
+      <Card.Header baseAccessibilityLevel={2}>
         <Flex
           gap="md"
           width="100%"

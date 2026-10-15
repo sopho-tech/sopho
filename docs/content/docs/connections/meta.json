@@ -1,5 +1,5 @@
 {
   "title": "Connections",
   "icon": "Plug",
-  "pages": ["postgresql", "supabase", "sqlite" ]
+  "pages": ["postgresql", "supabase", "sqlite"]
 }

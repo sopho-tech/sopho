@@ -1,1 +1,1 @@
-export { ResultNarration } from "./ResultNarration";
+export { ResultNarration } from "src/components/ConversationalAnalytics/ResultNarration/ResultNarration";

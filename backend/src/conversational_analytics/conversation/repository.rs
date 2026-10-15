@@ -42,9 +42,8 @@ pub async fn list_conversations(
     let mut query = conversation::Entity::find();
     if let Some(term) = search {
         let pattern = format!("%{}%", escape_like_pattern(&term.to_lowercase()));
-        query = query.filter(
-            Expr::expr(Func::lower(Expr::col(conversation::Column::Name))).like(pattern),
-        );
+        query = query
+            .filter(Expr::expr(Func::lower(Expr::col(conversation::Column::Name))).like(pattern));
     }
     let paginator = query
         .order_by(conversation::Column::UpdatedAt, sea_orm::Order::Desc)

@@ -1,8 +1,8 @@
 use super::dto::SuggestedQuestionDto;
 use super::repository;
 use crate::ai::suggested_questions_agent;
-use crate::common::time_utils;
 use crate::common::AppState;
+use crate::common::time_utils;
 use crate::connection::service as connection_service;
 use crate::data_catalog;
 use crate::entity;
@@ -18,15 +18,9 @@ pub async fn list_for_connection(
     app_state: &AppState,
     connection_id: Uuid,
 ) -> Result<Vec<SuggestedQuestionDto>, sea_orm::DbErr> {
-    let rows = repository::find_for_connection(&app_state.database_connection, connection_id).await?;
+    let rows =
+        repository::find_for_connection(&app_state.database_connection, connection_id).await?;
     Ok(rows.into_iter().map(SuggestedQuestionDto::from).collect())
-}
-
-pub async fn delete_for_connection(
-    app_state: &AppState,
-    connection_id: Uuid,
-) -> Result<(), sea_orm::DbErr> {
-    repository::delete_for_connection(&app_state.database_connection, connection_id).await
 }
 
 fn is_stale(generated_at: sea_orm::prelude::DateTimeWithTimeZone) -> bool {
@@ -86,7 +80,8 @@ async fn regenerate(
     connection: &entity::connection::Model,
 ) -> anyhow::Result<()> {
     let catalog = data_catalog::get_data_catalog_of_connection(app_state, connection).await?;
-    let questions = suggested_questions_agent::suggest_questions(app_state, connection, &catalog).await?;
+    let questions =
+        suggested_questions_agent::suggest_questions(app_state, connection, &catalog).await?;
     if questions.is_empty() {
         anyhow::bail!("no questions generated");
     }

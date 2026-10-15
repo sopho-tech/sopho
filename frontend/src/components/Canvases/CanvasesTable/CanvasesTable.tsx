@@ -43,29 +43,26 @@ export function CanvasesTable() {
   const handleRowClick = useCallback(
     (row: CanvasDto) => {
       if (row.id) {
-        navigate(APP_ROUTES.CANVAS.replace(":id", row.id));
+        void navigate(APP_ROUTES.CANVAS.replace(":id", row.id));
       }
     },
-    [navigate]
+    [navigate],
   );
 
-  const tableData = useMemo(
-    () => canvases?.data ?? [],
-    [canvases?.data]
-  );
+  const tableData = useMemo(() => canvases?.data ?? [], [canvases?.data]);
 
   const paginationConfig = useMemo(
     () => ({
-          pagination,
-          totalItems: canvases?.totalItems ?? 0,
-          totalPages: canvases?.totalPages ?? 0,
-          currentPage: pagination.pageIndex,
-          pageSize: pagination.pageSize,
-          onPaginationChange: handlePaginationChange,
-          onChangePageSize: handleChangePageSize,
-          onPageClick: handlePageClick,
-          paginationContainerClassName: styles.paginationContainer,
-        }),
+      pagination,
+      totalItems: canvases?.totalItems ?? 0,
+      totalPages: canvases?.totalPages ?? 0,
+      currentPage: pagination.pageIndex,
+      pageSize: pagination.pageSize,
+      onPaginationChange: handlePaginationChange,
+      onChangePageSize: handleChangePageSize,
+      onPageClick: handlePageClick,
+      paginationContainerClassName: styles.paginationContainer,
+    }),
     [
       pagination,
       canvases?.totalItems,
@@ -73,13 +70,10 @@ export function CanvasesTable() {
       handlePaginationChange,
       handleChangePageSize,
       handlePageClick,
-    ]
+    ],
   );
 
-  const isEmpty =
-    !isLoading &&
-    !isError &&
-    (canvases?.totalItems ?? 0) === 0;
+  const isEmpty = !isLoading && !isError && (canvases?.totalItems ?? 0) === 0;
 
   if (isEmpty) {
     return (

@@ -1,5 +1,6 @@
 .sidebar {
   /* padding: var(--space-xs); */
+
   /* margin: var(--space-xs); */
   background-color: var(--color-grey-100);
   flex: 1.5;

@@ -1,35 +1,447 @@
 name: CI
 
-on: [pull_request, workflow_dispatch]
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  SOPHO_UPGRADE_FROM_IMAGE: ghcr.io/sopho-tech/sopho/sopho:latest
 
 jobs:
-  commitlint:
-    runs-on: ubuntu-latest
+  changes:
+    name: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true' }}
+      frontend: ${{ github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true' }}
+      docs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
+      e2e: ${{ github.event_name != 'pull_request' || steps.filter.outputs.e2e == 'true' }}
+      image: ${{ github.event_name != 'pull_request' || steps.filter.outputs.image == 'true' }}
+      docs_image: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs_image == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Detect changed areas
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            shared: &shared
+              - '.github/**'
+              - 'Makefile'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.pre-commit-config.yaml'
+              - '.nvmrc'
+            backend:
+              - *shared
+              - 'backend/**'
+            frontend:
+              - *shared
+              - 'frontend/**'
+            docs:
+              - *shared
+              - 'docs/**'
+            e2e:
+              - *shared
+              - 'e2e/**'
+            image:
+              - *shared
+              - 'docker/**'
+              - 'backend/**'
+              - 'frontend/**'
+              - 'e2e/**'
+              - '.dockerignore'
+            docs_image:
+              - *shared
+              - 'docs/Dockerfile'
+              - 'docs/package.json'
+              - 'docs/package-lock.json'
+
+  commitlint:
+    name: commitlint
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: Setup node
-        uses: actions/setup-node@v4
+          persist-credentials: false
+      - name: Set up Node
+        uses: ./.github/actions/setup-node
         with:
-          node-version: lts/*
-      - name: Install commitlint
-        timeout-minutes: 15
-        run: npm install --save-dev @commitlint/cli @commitlint/config-conventional --no-audit --no-fund
-      - name: Print versions
+          directory: .
+      - name: Lint the commit messages
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: npx --no-install commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Rust
+        uses: ./.github/actions/setup-rust
+      - name: Install prek
+        uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
+        with:
+          install-only: true
+          prek-version: 0.5.5
+      - name: Install the root tooling
+        uses: ./.github/actions/setup-node
+        with:
+          directory: .
+      - name: Install the frontend dependencies
+        uses: ./.github/actions/setup-node
+        with:
+          directory: frontend
+      - name: Install the docs dependencies
+        uses: ./.github/actions/setup-node
+        with:
+          directory: docs
+      - name: Install the e2e dependencies
+        uses: ./.github/actions/setup-node
+        with:
+          directory: e2e
+      - name: Run the repository linters
+        run: make lint-repo
+      - name: Install gitleaks
         run: |
-          git --version
-          node --version
-          npm --version
-          npx commitlint --version
-
-      - name: Validate current commit (last commit) with commitlint
-        if: github.event_name == 'push'
-        run: npx commitlint --last --verbose
-
-      - name: Validate PR commits with commitlint
+          curl --silent --show-error --fail --location --output gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum --check
+          tar --extract --gzip --file gitleaks.tar.gz gitleaks
+          rm gitleaks.tar.gz
+      - name: Scan the pull request commits for secrets
         if: github.event_name == 'pull_request'
-        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: ./gitleaks git --redact --log-opts="${BASE_SHA}..${HEAD_SHA}"
+      - name: Scan the pushed commits for secrets
+        if: github.event_name == 'push'
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.event.after }}
+        run: ./gitleaks git --redact --log-opts="${BEFORE_SHA}..${AFTER_SHA}"
+
+  backend-lint:
+    name: backend-lint
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Rust
+        uses: ./.github/actions/setup-rust
+      - name: Lint the backend
+        run: make lint-backend
+
+  backend-test:
+    name: backend-test (${{ matrix.test-database }})
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        test-database: [sqlite, postgres]
+    env:
+      TEST_DB: ${{ matrix.test-database }}
+      NEXTEST_PROFILE: ci
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Rust
+        uses: ./.github/actions/setup-rust
+      - name: Test the backend with coverage
+        run: make coverage-backend
+      - name: Upload the coverage
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          files: backend/lcov.info
+          flags: backend
+          fail_ci_if_error: false
+      - name: Upload the test results
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          report_type: test_results
+          disable_search: true
+          files: backend/target/nextest/ci/junit.xml
+          flags: backend
+          fail_ci_if_error: false
+
+  frontend:
+    name: frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: ./.github/actions/setup-node
+        with:
+          directory: frontend
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Type-check the frontend
+        working-directory: frontend
+        run: npx --no-install tsc -b
+      - name: Test the frontend with coverage
+        run: make coverage-frontend
+      - name: Build the frontend
+        working-directory: frontend
+        run: npx --no-install vite build
+      - name: Upload the coverage
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          files: frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: false
+      - name: Upload the test results
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          report_type: test_results
+          disable_search: true
+          files: frontend/junit.xml
+          flags: frontend
+          fail_ci_if_error: false
+
+  docs:
+    name: docs
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: ./.github/actions/setup-node
+        with:
+          directory: docs
+      - name: Type-check the docs
+        working-directory: docs
+        run: npm run types:check
+      - name: Build the docs
+        working-directory: docs
+        run: npm run build
+
+  e2e:
+    name: e2e
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Rust
+        uses: ./.github/actions/setup-rust
+      - name: Install the frontend dependencies
+        uses: ./.github/actions/setup-node
+        with:
+          directory: frontend
+      - name: Install the e2e dependencies
+        uses: ./.github/actions/setup-node
+        with:
+          directory: e2e
+      - name: Type-check the end-to-end tests
+        working-directory: e2e
+        run: npx --no-install tsc --noEmit
+      - name: Install Chromium
+        working-directory: e2e
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Run the end-to-end tests
+        run: make test-e2e
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report-e2e
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 14
+
+  docker:
+    name: docker (${{ matrix.architecture }})
+    needs: changes
+    if: needs.changes.outputs.image == 'true'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: amd64
+            runner: ubuntu-24.04
+          - architecture: arm64
+            runner: ubuntu-24.04-arm
+    env:
+      SOPHO_IMAGE: sopho:ci
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build the image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/Dockerfile
+          load: true
+          push: false
+          tags: ${{ env.SOPHO_IMAGE }}
+          cache-from: type=gha,scope=sopho-${{ matrix.architecture }}
+          cache-to: ${{ github.ref == 'refs/heads/main' && format('type=gha,mode=max,scope=sopho-{0}', matrix.architecture) || '' }}
+      - name: Install the e2e dependencies
+        uses: ./.github/actions/setup-node
+        with:
+          directory: e2e
+      - name: Install Chromium
+        working-directory: e2e
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Test the image
+        run: make test-image
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report-image-${{ matrix.architecture }}
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 14
+
+  docs-image:
+    name: docs-image
+    needs: changes
+    if: needs.changes.outputs.docs_image == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build the docs image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: docs
+          file: docs/Dockerfile
+          push: false
+
+  dependency-review:
+    name: dependency-review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Review the dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs:
+      - changes
+      - commitlint
+      - lint
+      - backend-lint
+      - backend-test
+      - frontend
+      - docs
+      - e2e
+      - docker
+      - docs-image
+      - dependency-review
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Check every job result
+        env:
+          JOB_RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          for job_result in $JOB_RESULTS; do
+            if [ "$job_result" = "failure" ] || [ "$job_result" = "cancelled" ]; then
+              echo "A required job finished with result: $job_result"
+              exit 1
+            fi
+          done

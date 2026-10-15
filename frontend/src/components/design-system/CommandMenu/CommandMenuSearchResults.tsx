@@ -2,8 +2,8 @@ import { Command } from "cmdk";
 import { EntityType } from "src/api/search";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 import { Badge } from "src/components/design-system";
-import styles from "./CommandMenu.module.css";
-import { CommandMenuSearchResultsProps } from "./CommandMenu.types";
+import styles from "src/components/design-system/CommandMenu/CommandMenu.module.css";
+import { CommandMenuSearchResultsProps } from "src/components/design-system/CommandMenu/CommandMenu.types";
 
 const EntityNameMap: Record<EntityType, string> = {
   [EntityType.Canvas]: "Canvas",

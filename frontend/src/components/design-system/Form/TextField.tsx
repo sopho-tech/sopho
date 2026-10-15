@@ -1,7 +1,7 @@
 import { useFieldContext } from "src/components/design-system/Form/form-context";
 import { Input } from "src/components/design-system/Input";
 import { IconType } from "src/components/design-system/datatypes";
-import { FieldError } from "./FieldError";
+import { FieldError } from "src/components/design-system/Form/FieldError";
 
 type TextFieldProps = {
   placeholder?: string;

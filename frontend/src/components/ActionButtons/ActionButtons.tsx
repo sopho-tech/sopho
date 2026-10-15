@@ -16,11 +16,23 @@ export function ActionButtons({
   onEditClick,
   onDeleteClick,
 }: ActionButtonsProps) {
-  const handleViewClick = useCallback(() => onViewClick(connectionId), [connectionId, onViewClick]);
-  const handleEditClick = useCallback(() => onEditClick(connectionId), [connectionId, onEditClick]);
-  const handleDeleteClick = useCallback(() => onDeleteClick(connectionId), [connectionId, onDeleteClick]);
+  const handleViewClick = useCallback(
+    () => onViewClick(connectionId),
+    [connectionId, onViewClick],
+  );
+  const handleEditClick = useCallback(
+    () => onEditClick(connectionId),
+    [connectionId, onEditClick],
+  );
+  const handleDeleteClick = useCallback(
+    () => onDeleteClick(connectionId),
+    [connectionId, onDeleteClick],
+  );
 
-  const handleStopPropagation = useCallback((e: React.MouseEvent) => e.stopPropagation(), []);
+  const handleStopPropagation = useCallback(
+    (e: React.MouseEvent) => e.stopPropagation(),
+    [],
+  );
 
   const items: DropdownMenuItem[] = useMemo(
     () => [
@@ -28,7 +40,7 @@ export function ActionButtons({
       { icon: "edit", label: "Edit", onClick: handleEditClick },
       { icon: "delete", label: "Delete", onClick: handleDeleteClick },
     ],
-    [handleViewClick, handleEditClick, handleDeleteClick]
+    [handleViewClick, handleEditClick, handleDeleteClick],
   );
 
   return (

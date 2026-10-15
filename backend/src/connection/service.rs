@@ -1,6 +1,6 @@
+use crate::common::AppState;
 use crate::common::errors::{CreateConnectionError, ExecuteSqlError, GetDatabaseConnectionError};
 use crate::common::time_utils;
-use crate::common::AppState;
 use crate::connection::constants::ConnectionStatus;
 use crate::connection::constants::SourceType;
 use crate::connection::cryptography_utils;
@@ -11,18 +11,11 @@ use crate::database::postgres;
 use crate::database::service as database_service;
 use crate::database::sqlite;
 use crate::entity;
-use crate::suggested_question;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 
 use tracing::info;
 use uuid::Uuid;
-
-pub async fn does_connection_exist(app_state: &AppState, id: Uuid) -> bool {
-    repository::get_connection(&app_state.database_connection, id)
-        .await
-        .is_ok()
-}
 
 pub async fn get_connection(app_state: AppState, id: Uuid) -> impl IntoResponse {
     let connection = execute_get_connection(&app_state, id).await;
@@ -146,7 +139,7 @@ pub async fn execute_create_connection(
 pub async fn create_connection(
     app_state: &AppState,
     payload: dto::CreateConnectionDto,
-) -> impl IntoResponse {
+) -> impl IntoResponse + use<> {
     match execute_create_connection(app_state, payload).await {
         Ok(connection) => {
             let response_dto = dto::ConnectionDto::from(connection);
@@ -170,14 +163,6 @@ pub async fn create_connection(
     }
 }
 
-pub async fn execute_delete_connection(
-    app_state: &AppState,
-    id: Uuid,
-) -> Result<sea_orm::DeleteResult, sea_orm::DbErr> {
-    suggested_question::service::delete_for_connection(app_state, id).await?;
-    repository::delete_connection(&app_state.database_connection, id).await
-}
-
 pub async fn update_connection(
     app_state: AppState,
     id: Uuid,
@@ -189,7 +174,7 @@ pub async fn update_connection(
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 axum::Json(serde_json::json!({ "error": e.to_string() })),
-            )
+            );
         }
     };
 
@@ -201,7 +186,7 @@ pub async fn update_connection(
             return (
                 StatusCode::BAD_REQUEST,
                 axum::Json(serde_json::json!({ "error": e.to_string() })),
-            )
+            );
         }
     };
     payload.status = status;

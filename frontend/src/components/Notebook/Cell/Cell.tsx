@@ -18,7 +18,7 @@ export function Cell({ cell_id }: { cell_id: string }) {
   const styleClassName = useCellContainerClassName(
     cell_id,
     styles.cellContainer,
-    activeCellStyles.activeCell
+    activeCellStyles.activeCell,
   );
   const setActiveCellId = useStore((state) => state.notebook.setActiveCellId);
   const handleActivate = useCallback(() => {

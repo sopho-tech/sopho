@@ -1,11 +1,7 @@
 import { SearchResultItemDto } from "src/api/search/queries";
 
 export type Page =
-  | "home"
-  | "canvases"
-  | "sql_cells"
-  | "chart_cells"
-  | "conversations";
+  "home" | "canvases" | "sql_cells" | "chart_cells" | "conversations";
 
 export type CommandMenuHomePageProps = {
   onSelect: (page: Page) => void;

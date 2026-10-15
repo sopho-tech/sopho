@@ -7,7 +7,7 @@ import {
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { CanvasDto } from "src/components/Canvases/dto";
-import { PaginatedData, PaginatedDataResponse } from "../dto";
+import { PaginatedData, PaginatedDataResponse } from "src/api/dto";
 
 // Query keys for canvases
 export const canvasKeys = {
@@ -24,7 +24,9 @@ export const canvasKeys = {
 const canvasApi = {
   getCanvas: async (canvasId: string): Promise<CanvasDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.CANVAS.GET_BY_ID?.replace(":id", canvasId) || `/canvas/${canvasId}`,
+      url:
+        API_ENDPOINTS.CANVAS.GET_BY_ID?.replace(":id", canvasId) ||
+        `/canvas/${canvasId}`,
       onlyBody: true,
     });
     return response as CanvasDto;
@@ -32,7 +34,7 @@ const canvasApi = {
 
   getAllCanvases: async (
     page?: number,
-    pageSize?: number
+    pageSize?: number,
   ): Promise<PaginatedData<CanvasDto>> => {
     const url = new URL(API_ENDPOINTS.CANVAS.GET_ALL, window.location.origin);
     if (page !== undefined) {
@@ -86,11 +88,12 @@ const canvasApi = {
 
   deleteCanvas: async (canvasId: string): Promise<void> => {
     const response = await fetch(
-      API_ENDPOINTS.CANVAS.DELETE?.replace(":id", canvasId) || `/canvas/${canvasId}`,
+      API_ENDPOINTS.CANVAS.DELETE?.replace(":id", canvasId) ||
+        `/canvas/${canvasId}`,
       {
         method: "DELETE",
         credentials: "include",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -126,7 +129,7 @@ export const useUpdateCanvas = (callbacks?: {
     mutationFn: canvasApi.updateCanvas,
     onSuccess: (data) => {
       queryClient.setQueryData(canvasKeys.detail(data.id!), data);
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.lists(),
       });
       callbacks?.onSuccess?.(data);
@@ -151,7 +154,7 @@ export const useCreateCanvas = (callbacks?: {
       queryClient.setQueryData(canvasKeys.detail(data.id!), data);
 
       // Invalidate the canvases list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.lists(),
       });
 
@@ -186,7 +189,7 @@ export const useDeleteCanvas = (callbacks?: {
       });
 
       // Invalidate the canvases list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.lists(),
       });
 

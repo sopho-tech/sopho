@@ -1,5 +1,4 @@
 use crate::common::time_utils;
-use crate::common::AppState;
 use crate::conversational_analytics::conversation::error::ConversationError;
 use crate::conversational_analytics::message_content::dto;
 use crate::conversational_analytics::message_content::repository;
@@ -43,14 +42,6 @@ pub async fn create_message_content_connection(
     };
     let saved = repository::save_message_content_connection(db, row).await?;
     Ok(dto::ConversationMessageContentDto::from(saved))
-}
-
-pub async fn get_message_content(
-    app_state: AppState,
-    id: Uuid,
-) -> Result<dto::ConversationMessageContentDto, ConversationError> {
-    let model = repository::get_message_content(&app_state.database_connection, id).await?;
-    Ok(dto::ConversationMessageContentDto::from(model))
 }
 
 pub async fn get_first_message_content(

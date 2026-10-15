@@ -63,15 +63,6 @@ pub async fn save_canvas_transaction(
     Ok(canvas_active_model)
 }
 
-pub async fn save_canvas_connection(
-    db: &DatabaseConnection,
-    canvas: canvas::Model,
-) -> Result<canvas::Model, DbErr> {
-    let canvas_active_model: canvas::ActiveModel = canvas.into();
-    let canvas_active_model = canvas_active_model.insert(db).await?;
-    Ok(canvas_active_model)
-}
-
 pub async fn delete_canvas_transaction(txn: &DatabaseTransaction, id: Uuid) -> Result<(), DbErr> {
     canvas::Entity::delete_by_id(id).exec(txn).await?;
     Ok(())

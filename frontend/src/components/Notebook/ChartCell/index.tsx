@@ -1,1 +1,1 @@
-export { ChartCell } from "./ChartCell";
+export { ChartCell } from "src/components/Notebook/ChartCell/ChartCell";

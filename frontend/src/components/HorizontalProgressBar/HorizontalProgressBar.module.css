@@ -59,7 +59,7 @@
   transition: color 0.3s ease;
 }
 
-.progressStep:not(.active):not(.completed) .stepNumber {
+.progressStep:not(.active, .completed) .stepNumber {
   color: var(--color-grey-800);
 }
 

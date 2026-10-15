@@ -1,15 +1,16 @@
+use crate::ai_summary::service as ai_summary_service;
 use crate::cell::constants::AggregateFunction;
 use crate::cell::constants::CellDisplayOrderMovement;
 use crate::cell::constants::CellStatus;
+use crate::cell::constants::CellType;
 use crate::cell::constants::MAX_CELLS_PER_NOTEBOOK;
 use crate::cell::constants::MAX_CHART_SERIES;
 use crate::cell::constants::MAX_IDENTIFIER_LEN;
-use crate::cell::constants::CellType;
 use crate::cell::constants::SortOrder;
 use crate::cell::dto;
 use crate::cell::dto::CellContent;
-use crate::ai_summary::service as ai_summary_service;
 use crate::cell::repository;
+use crate::common::AppState;
 use crate::common::error_codes::codes;
 use crate::common::errors::CreateCellError;
 use crate::common::errors::ExecuteChartError;
@@ -18,7 +19,6 @@ use crate::common::errors::ExecuteSqlError;
 use crate::common::errors::GetDatabaseConnectionError;
 use crate::common::errors::SophoError;
 use crate::common::time_utils;
-use crate::common::AppState;
 use crate::connection::service as connection_service;
 use crate::dashboard::service as dashboard_service;
 use crate::database::constants::QueryResult;
@@ -283,7 +283,7 @@ pub async fn delete_cell(app_state: AppState, id: Uuid) -> impl IntoResponse {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 axum::Json(serde_json::json!({ "error": e.to_string() })),
-            )
+            );
         }
     };
     let cell = match repository::get_cell_transaction(&txn, id).await {
@@ -418,7 +418,7 @@ pub async fn reorder_cell(
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 axum::Json(serde_json::json!({ "error": e.to_string() })),
-            )
+            );
         }
     };
     let mut response_cell = cell.clone();
@@ -488,7 +488,7 @@ pub async fn execute_cell(app_state: AppState, id: Uuid) -> impl IntoResponse {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 axum::Json(serde_json::json!({ "error": e.to_string() })),
-            )
+            );
         }
     };
     match cell_type {
@@ -1006,7 +1006,6 @@ async fn execute_chart_for_cell(
     let chart_content = parse_chart_content(content)?;
     let result = execute_chart_content_data(app_state, &chart_content).await?;
     Ok(dto::ChartExecution {
-        cell_id: cell.id,
         chart_name: cell.name.clone().unwrap_or_default(),
         chart_type: chart_content.chart_type().as_str().to_string(),
         field_names: chart_content.field_names(),
@@ -1039,9 +1038,7 @@ pub async fn execute_chart_cells_data(
             let cell = cells_by_id.get(&cell_id);
             dto::ChartExecutionOutcome {
                 cell_id,
-                chart_name: cell
-                    .and_then(|cell| cell.name.clone())
-                    .unwrap_or_default(),
+                chart_name: cell.and_then(|cell| cell.name.clone()).unwrap_or_default(),
                 result: match cell {
                     Some(cell) => execute_chart_for_cell(app_state, cell).await,
                     None => Err(ExecuteChartError::CellNotFound),

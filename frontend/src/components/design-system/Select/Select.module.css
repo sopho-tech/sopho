@@ -32,9 +32,11 @@
 .selectTrigger:hover {
   background-color: var(--color-grey-200);
 }
+
 .selectTrigger:focus {
   box-shadow: var(--shadow-2xs);
 }
+
 .selectTrigger[data-placeholder] {
   color: var(--inactive-color-normal);
 }
@@ -71,6 +73,7 @@
   color: var(--inactive-color-normal);
   pointer-events: none;
 }
+
 .selectItem[data-highlighted] {
   outline: none;
   background-color: var(--color-grey-200);

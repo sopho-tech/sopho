@@ -12,7 +12,7 @@ export default function SignIn() {
   const { data: isAuthenticated, isLoading } = useSessionValid();
   const createSessionMutation = useCreateSession({
     onSuccess: () => {
-      navigate(APP_ROUTES.INDEX, { replace: true });
+      void navigate(APP_ROUTES.INDEX, { replace: true });
     },
     onError: (error) => {
       console.error("Sign in failed", error);
@@ -21,19 +21,19 @@ export default function SignIn() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate(APP_ROUTES.INDEX, { replace: true });
+      void navigate(APP_ROUTES.INDEX, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
 
   const meshGradientColors = useMemo(
     () => ["#fcfcfd", "#fcfcfd", "#e8e8fc", "#c6bcfb", "#b5a9f4"],
-    []
+    [],
   );
 
   const defaultFormValues = { email: "", password: "" };
 
   const handleSubmit = useCallback(
-    async (values: Record<string, unknown>) => {
+    (values: Record<string, unknown>) => {
       const email = values.email;
       const password = values.password;
 
@@ -47,7 +47,7 @@ export default function SignIn() {
         password,
       });
     },
-    [createSessionMutation]
+    [createSessionMutation],
   );
 
   return (
@@ -80,11 +80,11 @@ export default function SignIn() {
         <Flex justifyContent="center" alignItems="center" marginBottom="md">
           <img src={logo} alt="Logo" className={styles.logo} />
         </Flex>
-        <Heading accessbilityLevel={1} size="xl" textAlign="center">
+        <Heading accessibilityLevel={1} size="xl" textAlign="center">
           Welcome !
         </Heading>
         <Heading
-          accessbilityLevel={2}
+          accessibilityLevel={2}
           size="sm"
           textAlign="center"
           textColor="subtle"

@@ -3,11 +3,11 @@ use crate::common::Pagination;
 use crate::notebook::constants::QueryFilters;
 use crate::notebook::dto;
 use crate::notebook::service;
+use axum::Router;
 use axum::extract::Path;
 use axum::extract::{Json, Query, State};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
-use axum::Router;
 use uuid::Uuid;
 
 pub fn routes(app_state: AppState) -> Router {

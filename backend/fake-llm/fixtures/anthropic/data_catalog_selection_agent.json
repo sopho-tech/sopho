@@ -1,0 +1,21 @@
+{
+  "match": "\"title\":\"SelectionSet\"",
+  "response": {
+    "id": "msg_fake_data_catalog_selection_agent",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-haiku-4-5",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"relevant_tables\":[],\"relevant_columns\":[]}"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 1,
+      "output_tokens": 1
+    }
+  }
+}

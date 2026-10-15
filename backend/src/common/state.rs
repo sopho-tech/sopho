@@ -3,7 +3,7 @@ use crate::ai_configuration;
 use crate::common::cryptography_utils::{
     generate_and_store_encryption_key, get_encryption_key_from_path,
 };
-use crate::database::pool::{new_database_pool_registry, DatabasePoolRegistry};
+use crate::database::pool::{DatabasePoolRegistry, new_database_pool_registry};
 use crate::db;
 use anyhow::bail;
 use sea_orm::DatabaseConnection;
@@ -25,6 +25,8 @@ pub struct Configurations {
     pub admin_password: Cow<'static, str>,
     pub admin_email: Cow<'static, str>,
     pub admin_full_name: Cow<'static, str>,
+    pub anthropic_base_url: Option<Cow<'static, str>>,
+    pub openai_base_url: Option<Cow<'static, str>>,
 }
 
 pub struct ConfigurationsBuilder {
@@ -38,6 +40,8 @@ pub struct ConfigurationsBuilder {
     admin_password: Option<Cow<'static, str>>,
     admin_email: Option<Cow<'static, str>>,
     admin_full_name: Option<Cow<'static, str>>,
+    anthropic_base_url: Option<Cow<'static, str>>,
+    openai_base_url: Option<Cow<'static, str>>,
 }
 
 impl ConfigurationsBuilder {
@@ -53,56 +57,68 @@ impl ConfigurationsBuilder {
             admin_password: None,
             admin_email: None,
             admin_full_name: None,
+            anthropic_base_url: None,
+            openai_base_url: None,
         }
     }
 
-    pub fn database_url(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.database_url = Some(v.into());
+    pub fn database_url(mut self, database_url: impl Into<Cow<'static, str>>) -> Self {
+        self.database_url = Some(database_url.into());
         self
     }
 
-    pub fn port(mut self, v: u16) -> Self {
-        self.port = Some(v);
+    pub fn port(mut self, port: u16) -> Self {
+        self.port = Some(port);
         self
     }
 
-    pub fn frontend_dir(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.frontend_dir = Some(v.into());
+    pub fn frontend_dir(mut self, frontend_dir: impl Into<Cow<'static, str>>) -> Self {
+        self.frontend_dir = Some(frontend_dir.into());
         self
     }
 
-    pub fn environment(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.environment = Some(v.into());
+    pub fn environment(mut self, environment: impl Into<Cow<'static, str>>) -> Self {
+        self.environment = Some(environment.into());
         self
     }
 
-    pub fn cookie_secure(mut self, v: bool) -> Self {
-        self.cookie_secure = Some(v);
+    pub fn cookie_secure(mut self, cookie_secure: bool) -> Self {
+        self.cookie_secure = Some(cookie_secure);
         self
     }
 
-    pub fn encryption_key(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.encryption_key = Some(v.into());
+    pub fn encryption_key(mut self, encryption_key: impl Into<Cow<'static, str>>) -> Self {
+        self.encryption_key = Some(encryption_key.into());
         self
     }
 
-    pub fn admin_username(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.admin_username = Some(v.into());
+    pub fn admin_username(mut self, admin_username: impl Into<Cow<'static, str>>) -> Self {
+        self.admin_username = Some(admin_username.into());
         self
     }
 
-    pub fn admin_password(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.admin_password = Some(v.into());
+    pub fn admin_password(mut self, admin_password: impl Into<Cow<'static, str>>) -> Self {
+        self.admin_password = Some(admin_password.into());
         self
     }
 
-    pub fn admin_email(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.admin_email = Some(v.into());
+    pub fn admin_email(mut self, admin_email: impl Into<Cow<'static, str>>) -> Self {
+        self.admin_email = Some(admin_email.into());
         self
     }
 
-    pub fn admin_full_name(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.admin_full_name = Some(v.into());
+    pub fn admin_full_name(mut self, admin_full_name: impl Into<Cow<'static, str>>) -> Self {
+        self.admin_full_name = Some(admin_full_name.into());
+        self
+    }
+
+    pub fn anthropic_base_url(mut self, anthropic_base_url: impl Into<Cow<'static, str>>) -> Self {
+        self.anthropic_base_url = Some(anthropic_base_url.into());
+        self
+    }
+
+    pub fn openai_base_url(mut self, openai_base_url: impl Into<Cow<'static, str>>) -> Self {
+        self.openai_base_url = Some(openai_base_url.into());
         self
     }
 
@@ -114,7 +130,7 @@ impl ConfigurationsBuilder {
             port: self.port.unwrap_or(8000),
             frontend_dir: self
                 .frontend_dir
-                .unwrap_or(Cow::Borrowed("/app/frontend/dist/")),
+                .ok_or_else(|| anyhow::anyhow!("frontend_dir is required"))?,
             environment: self.environment.unwrap_or(Cow::Borrowed("production")),
             cookie_secure: self.cookie_secure.unwrap_or(false),
             encryption_key: self
@@ -132,6 +148,8 @@ impl ConfigurationsBuilder {
             admin_full_name: self
                 .admin_full_name
                 .ok_or_else(|| anyhow::anyhow!("admin_full_name is required"))?,
+            anthropic_base_url: validated_base_url("anthropic_base_url", self.anthropic_base_url)?,
+            openai_base_url: validated_base_url("openai_base_url", self.openai_base_url)?,
         })
     }
 }
@@ -148,10 +166,10 @@ impl Configurations {
     }
 
     pub fn from_env() -> anyhow::Result<Self> {
-        dotenv::dotenv().ok();
+        dotenvy::dotenv().ok();
 
         Ok(Self {
-            database_url: match dotenv::var("DATABASE_URL") {
+            database_url: match dotenvy::var("DATABASE_URL") {
                 Ok(url) => url.into(),
                 Err(_) => {
                     let database_url = Cow::Owned(db::get_sqlite_database_file_path());
@@ -161,20 +179,23 @@ impl Configurations {
                     database_url
                 }
             },
-            port: match dotenv::var("PORT") {
+            port: match dotenvy::var("PORT") {
                 Ok(port) => port.parse()?,
                 _ => 8000,
             },
-            frontend_dir: Cow::Borrowed("/app/frontend/dist/"),
-            environment: match dotenv::var("ENVIRONMENT") {
+            frontend_dir: match dotenvy::var("FRONTEND_DIR") {
+                Ok(v) => v.into(),
+                Err(err) => bail!("missing FRONTEND_DIR: {err}"),
+            },
+            environment: match dotenvy::var("ENVIRONMENT") {
                 Ok(environment) => environment.into(),
                 Err(_err) => Cow::Borrowed("production"),
             },
-            cookie_secure: match dotenv::var("COOKIE_SECURE") {
+            cookie_secure: match dotenvy::var("COOKIE_SECURE") {
                 Ok(cookie_secure) => cookie_secure.parse()?,
                 Err(_err) => false,
             },
-            encryption_key: match dotenv::var("ENCRYPTION_KEY") {
+            encryption_key: match dotenvy::var("ENCRYPTION_KEY") {
                 Ok(v) => v.into(),
                 Err(_) => {
                     if let Some(key) = get_encryption_key_from_path()? {
@@ -189,23 +210,56 @@ impl Configurations {
                     }
                 }
             },
-            admin_username: match dotenv::var("ADMIN_USERNAME") {
+            admin_username: match dotenvy::var("ADMIN_USERNAME") {
                 Ok(v) => v.into(),
                 Err(err) => bail!("missing ADMIN_USERNAME: {err}"),
             },
-            admin_password: match dotenv::var("ADMIN_PASSWORD") {
+            admin_password: match dotenvy::var("ADMIN_PASSWORD") {
                 Ok(v) => v.into(),
                 Err(err) => bail!("missing ADMIN_PASSWORD: {err}"),
             },
-            admin_email: match dotenv::var("ADMIN_EMAIL") {
+            admin_email: match dotenvy::var("ADMIN_EMAIL") {
                 Ok(v) => v.into(),
                 Err(err) => bail!("missing ADMIN_EMAIL: {err}"),
             },
-            admin_full_name: match dotenv::var("ADMIN_FULL_NAME") {
+            admin_full_name: match dotenvy::var("ADMIN_FULL_NAME") {
                 Ok(v) => v.into(),
                 Err(err) => bail!("missing ADMIN_FULL_NAME: {err}"),
             },
+            anthropic_base_url: validated_base_url(
+                "ANTHROPIC_BASE_URL",
+                optional_environment_variable("ANTHROPIC_BASE_URL")?,
+            )?,
+            openai_base_url: validated_base_url(
+                "OPENAI_BASE_URL",
+                optional_environment_variable("OPENAI_BASE_URL")?,
+            )?,
         })
+    }
+}
+
+fn validated_base_url(
+    setting_name: &str,
+    base_url: Option<Cow<'static, str>>,
+) -> anyhow::Result<Option<Cow<'static, str>>> {
+    let Some(base_url) = base_url else {
+        return Ok(None);
+    };
+    let parsed_base_url: http::Uri = base_url
+        .parse()
+        .map_err(|error| anyhow::anyhow!("invalid {setting_name} {base_url}: {error}"))?;
+    let uses_http_scheme = matches!(parsed_base_url.scheme_str(), Some("http" | "https"));
+    if !uses_http_scheme || parsed_base_url.authority().is_none() {
+        bail!("invalid {setting_name} {base_url}: expected an http or https URL");
+    }
+    Ok(Some(base_url))
+}
+
+fn optional_environment_variable(name: &str) -> anyhow::Result<Option<Cow<'static, str>>> {
+    match dotenvy::var(name) {
+        Ok(value) => Ok(Some(value.into())),
+        Err(dotenvy::Error::EnvVar(std::env::VarError::NotPresent)) => Ok(None),
+        Err(err) => bail!("invalid {name}: {err}"),
     }
 }
 
@@ -213,26 +267,19 @@ impl Configurations {
 pub struct AppState {
     pub database_connection: DatabaseConnection,
     pub config: Configurations,
-    pub client: reqwest::Client,
     pub model_client: Arc<RwLock<Option<ModelClient>>>,
     pub database_pools: DatabasePoolRegistry,
 }
 
 impl AppState {
-    pub fn new(
-        database_connection: DatabaseConnection,
-        config: Configurations,
-        client: reqwest::Client,
-        model_client: Arc<RwLock<Option<ModelClient>>>,
-        database_pools: DatabasePoolRegistry,
-    ) -> Self {
-        Self {
+    pub async fn from_configurations(config: Configurations) -> anyhow::Result<Self> {
+        let database_connection = db::get_db(&config.database_url).await?;
+        Ok(Self {
             database_connection,
             config,
-            client,
-            model_client,
-            database_pools,
-        }
+            model_client: Arc::new(RwLock::new(None)),
+            database_pools: new_database_pool_registry(),
+        })
     }
 
     pub async fn current_model_client(&self) -> Option<ModelClient> {
@@ -246,18 +293,7 @@ impl AppState {
     }
 
     pub async fn from_env() -> anyhow::Result<Self> {
-        let config = Configurations::from_env()?;
-        let database_connection = db::get_db(&config.database_url).await.unwrap();
-        let client = reqwest::Client::new();
-        let model_client: Arc<RwLock<Option<ModelClient>>> = Arc::new(RwLock::new(None));
-        let database_pools = new_database_pool_registry();
-        Ok(Self::new(
-            database_connection,
-            config,
-            client,
-            model_client,
-            database_pools,
-        ))
+        Self::from_configurations(Configurations::from_env()?).await
     }
 
     pub async fn load_ai_configuration(&self) {

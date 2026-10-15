@@ -1,1 +1,1 @@
-export { ChartCellToolbar } from "./ChartCellToolbar";
+export { ChartCellToolbar } from "src/components/Notebook/ChartCell/ChartCellToolbar/ChartCellToolbar";

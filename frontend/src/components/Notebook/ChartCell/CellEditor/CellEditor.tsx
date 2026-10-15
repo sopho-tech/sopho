@@ -12,17 +12,17 @@ import {
 } from "src/components/Notebook/ChartCell/CellEditor/hooks";
 import { useExecutionPhase } from "src/components/Notebook/Cell/useExecutionPhase";
 import { Form } from "src/components/design-system";
-import { getChartType } from "../../Cell/dto";
+import { getChartType } from "src/components/Notebook/Cell/dto";
 import {
   getDefaultValuesForChart,
   extractChartData,
   InfoTooltip,
-} from "./utils";
-import { BarChartAccordion } from "./BarChartAccordion";
-import { LineChartAccordion } from "./LineChartAccordion";
-import { PieChartFields } from "./PieChartFields";
-import { MetricChartFields } from "./MetricChartFields";
-import { ChartRunButton } from "./ChartRunButton";
+} from "src/components/Notebook/ChartCell/CellEditor/utils";
+import { BarChartAccordion } from "src/components/Notebook/ChartCell/CellEditor/BarChartAccordion";
+import { LineChartAccordion } from "src/components/Notebook/ChartCell/CellEditor/LineChartAccordion";
+import { PieChartFields } from "src/components/Notebook/ChartCell/CellEditor/PieChartFields";
+import { MetricChartFields } from "src/components/Notebook/ChartCell/CellEditor/MetricChartFields";
+import { ChartRunButton } from "src/components/Notebook/ChartCell/CellEditor/ChartRunButton";
 import { ChartType } from "src/components/Chart";
 import { useCallback, useMemo, useState } from "react";
 

@@ -53,12 +53,12 @@ async function generate(url: string): Promise<AiSummaryDto | null> {
 
 const aiSummaryApi = {
   getForDashboard: async (
-    dashboardId: string
+    dashboardId: string,
   ): Promise<DashboardSummariesDto> => {
     const response = await ApiService.get({
       url: API_ENDPOINTS.AI_SUMMARY.GET_BY_DASHBOARD.replace(
         ":dashboard_id",
-        dashboardId
+        dashboardId,
       ),
       onlyBody: true,
     });
@@ -69,23 +69,23 @@ const aiSummaryApi = {
     generate(
       API_ENDPOINTS.AI_SUMMARY.GENERATE_DASHBOARD.replace(
         ":dashboard_id",
-        dashboardId
-      )
+        dashboardId,
+      ),
     ),
 
   generateForChart: (cellId: string) =>
     generate(
-      API_ENDPOINTS.AI_SUMMARY.GENERATE_CHART.replace(":cell_id", cellId)
+      API_ENDPOINTS.AI_SUMMARY.GENERATE_CHART.replace(":cell_id", cellId),
     ),
 
   setDashboardPrompt: async (
     dashboardId: string,
-    userPrompt: string | null
+    userPrompt: string | null,
   ): Promise<AiSummaryDto> =>
     (await ApiService.put<AiSummaryDto>({
       url: API_ENDPOINTS.AI_SUMMARY.SET_DASHBOARD_PROMPT.replace(
         ":dashboard_id",
-        dashboardId
+        dashboardId,
       ),
       data: { user_prompt: userPrompt },
       headers: { "Content-Type": "application/json" },
@@ -93,19 +93,24 @@ const aiSummaryApi = {
 
   setChartPrompt: async (
     cellId: string,
-    userPrompt: string | null
+    userPrompt: string | null,
   ): Promise<AiSummaryDto> =>
     (await ApiService.put<AiSummaryDto>({
-      url: API_ENDPOINTS.AI_SUMMARY.SET_CHART_PROMPT.replace(":cell_id", cellId),
+      url: API_ENDPOINTS.AI_SUMMARY.SET_CHART_PROMPT.replace(
+        ":cell_id",
+        cellId,
+      ),
       data: { user_prompt: userPrompt },
       headers: { "Content-Type": "application/json" },
     })) as AiSummaryDto,
 
-  generateForAllCharts: async (dashboardId: string): Promise<AiSummaryDto[]> => {
+  generateForAllCharts: async (
+    dashboardId: string,
+  ): Promise<AiSummaryDto[]> => {
     const response = await ApiService.post<AiSummaryDto[]>({
       url: API_ENDPOINTS.AI_SUMMARY.GENERATE_ALL_CHARTS.replace(
         ":dashboard_id",
-        dashboardId
+        dashboardId,
       ),
     });
     return response as AiSummaryDto[];
@@ -158,7 +163,7 @@ export const useGenerateDashboardSummary = (dashboardId: string) => {
   return useMutation({
     mutationFn: () => aiSummaryApi.generateForDashboard(dashboardId),
     onSettled: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiSummaryKeys.dashboard(dashboardId),
       });
     },
@@ -170,7 +175,7 @@ export const useGenerateChartSummary = (dashboardId: string) => {
   return useMutation({
     mutationFn: (cellId: string) => aiSummaryApi.generateForChart(cellId),
     onSettled: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiSummaryKeys.dashboard(dashboardId),
       });
     },
@@ -183,7 +188,7 @@ export const useUpdateDashboardPrompt = (dashboardId: string) => {
     mutationFn: (userPrompt: string | null) =>
       aiSummaryApi.setDashboardPrompt(dashboardId, userPrompt),
     onSettled: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiSummaryKeys.dashboard(dashboardId),
       });
     },
@@ -196,7 +201,7 @@ export const useUpdateChartPrompt = (dashboardId: string, cellId: string) => {
     mutationFn: (userPrompt: string | null) =>
       aiSummaryApi.setChartPrompt(cellId, userPrompt),
     onSettled: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiSummaryKeys.dashboard(dashboardId),
       });
     },
@@ -208,7 +213,7 @@ export const useGenerateAllChartSummaries = (dashboardId: string) => {
   return useMutation({
     mutationFn: () => aiSummaryApi.generateForAllCharts(dashboardId),
     onSettled: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiSummaryKeys.dashboard(dashboardId),
       });
     },

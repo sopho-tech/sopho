@@ -38,23 +38,22 @@ export function TableBody<T>({
         </tr>
       ) : (
         rows.map((row) => {
-        const isDragging = draggingRowId === row.id;
-        return (
-          <TableRow
-            key={row.id}
-            row={row}
-            columnConfigMap={columnConfigMap}
-            hoveredColumnId={hoveredColumnId}
-            tableDataCellStyle={tableDataCellStyle}
-            isDragging={isDragging}
-            enableRowDragging={enableRowDragging}
-            onDragStart={(e) => onDragStart(e, row)}
-          onDragEnd={onDragEnd}
-        />
-        );
-      })
+          const isDragging = draggingRowId === row.id;
+          return (
+            <TableRow
+              key={row.id}
+              row={row}
+              columnConfigMap={columnConfigMap}
+              hoveredColumnId={hoveredColumnId}
+              tableDataCellStyle={tableDataCellStyle}
+              isDragging={isDragging}
+              enableRowDragging={enableRowDragging}
+              onDragStart={(e) => onDragStart(e, row)}
+              onDragEnd={onDragEnd}
+            />
+          );
+        })
       )}
     </tbody>
   );
 }
-

@@ -8,14 +8,19 @@ export type CommandMenuSlice = {
   };
 };
 
-export const createCommandMenuSlice: StateCreator<CommandMenuSlice> = (set) => ({
+export const createCommandMenuSlice: StateCreator<CommandMenuSlice> = (
+  set,
+) => ({
   commandMenu: {
     isOpen: false,
     setIsOpen: (isOpen) =>
       set((state) => ({ commandMenu: { ...state.commandMenu, isOpen } })),
     toggleIsOpen: () =>
       set((state) => ({
-        commandMenu: { ...state.commandMenu, isOpen: !state.commandMenu.isOpen },
+        commandMenu: {
+          ...state.commandMenu,
+          isOpen: !state.commandMenu.isOpen,
+        },
       })),
   },
 });

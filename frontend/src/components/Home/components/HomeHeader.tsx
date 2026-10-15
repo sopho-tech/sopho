@@ -1,15 +1,15 @@
 import { useMemo } from "react";
 import { SearchBar, Button, DropdownMenu } from "src/components/design-system";
 import { TopBar } from "src/components/TopBar";
-import { useHomeNavigation } from "../hooks";
-import { createDropdownItems } from "../utils";
+import { useHomeNavigation } from "src/components/Home/hooks";
+import { createDropdownItems } from "src/components/Home/utils";
 
 export function HomeHeader() {
   const { handleCreateCanvas, handleCreateConnection } = useHomeNavigation();
 
   const dropdownItems = useMemo(
     () => createDropdownItems(handleCreateCanvas, handleCreateConnection),
-    [handleCreateCanvas, handleCreateConnection]
+    [handleCreateCanvas, handleCreateConnection],
   );
 
   return (

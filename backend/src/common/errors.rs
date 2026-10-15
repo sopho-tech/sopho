@@ -60,20 +60,10 @@ pub enum ExecuteSqlError {
 
 #[derive(Debug, thiserror::Error)]
 pub enum GetDataCatalogError {
-    #[error("Unsupported source type: {0}")]
-    UnsupportedSourceType(String),
-    #[error("Failed to parse source type: {0}")]
-    SourceTypeParse(String),
     #[error("Failed to fetch data catalog: {0}")]
     DatabaseConnection(#[from] sqlx::Error),
     #[error("{0}")]
     GetConnection(#[from] GetDatabaseConnectionError),
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum TextToSqlError {
-    #[error("Tables in pruned data catalog missing from functional role analysis: {0}")]
-    MissingTablesInFunctionalRoleAnalysis(String),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -116,8 +106,6 @@ pub enum SophoError {
     Validation(#[from] ValidationError),
     #[error("Database error: {0}")]
     DatabaseError(#[from] sea_orm::DbErr),
-    #[error("Notebook not found")]
-    NotebookNotFound,
     #[error("JSON error: {0}")]
     JsonError(#[from] serde_json::Error),
     #[error("Unsupported cell type for content parsing")]

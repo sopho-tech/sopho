@@ -26,7 +26,9 @@ export const connectionKeys = {
 const connectionApi = {
   getConnection: async (connectionId: string): Promise<ConnectionDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.CONNECTION.GET_BY_ID?.replace(":id", connectionId) || `/api/v1/connection/${connectionId}`,
+      url:
+        API_ENDPOINTS.CONNECTION.GET_BY_ID?.replace(":id", connectionId) ||
+        `/api/v1/connection/${connectionId}`,
       onlyBody: true,
     });
     return response as ConnectionDto;
@@ -58,7 +60,7 @@ const connectionApi = {
   },
 
   createConnection: async (
-    payload: CreateConnectionDto
+    payload: CreateConnectionDto,
   ): Promise<ConnectionDto> => {
     const response = await ApiService.post({
       url: API_ENDPOINTS.CONNECTION.CREATE,
@@ -87,11 +89,12 @@ const connectionApi = {
 
   deleteConnection: async (connectionId: string): Promise<void> => {
     const response = await fetch(
-      API_ENDPOINTS.CONNECTION.DELETE?.replace(":id", connectionId) || `/api/v1/connection/${connectionId}`,
+      API_ENDPOINTS.CONNECTION.DELETE?.replace(":id", connectionId) ||
+        `/api/v1/connection/${connectionId}`,
       {
         method: "DELETE",
         credentials: "include",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -123,7 +126,7 @@ export const useUpdateConnection = () => {
     onSuccess: (data, { connectionId }) => {
       queryClient.setQueryData(connectionKeys.detail(connectionId), data);
 
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: connectionKeys.lists(),
       });
     },
@@ -141,7 +144,7 @@ export const useCreateConnection = () => {
     onSuccess: (data) => {
       queryClient.setQueryData(connectionKeys.detail(data.id), data);
 
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: connectionKeys.lists(),
       });
     },
@@ -193,7 +196,7 @@ export const useDeleteConnection = () => {
         queryKey: connectionKeys.detail(connectionId),
       });
 
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: connectionKeys.lists(),
       });
     },

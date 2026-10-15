@@ -24,21 +24,6 @@ pub async fn save_message_content_connection(
     Ok(inserted)
 }
 
-pub async fn get_message_content(
-    db: &DatabaseConnection,
-    id: Uuid,
-) -> Result<conversation_message_content::Model, DbErr> {
-    match conversation_message_content::Entity::find_by_id(id)
-        .one(db)
-        .await?
-    {
-        Some(m) => Ok(m),
-        None => Err(DbErr::RecordNotFound(
-            "Conversation message content not found".into(),
-        )),
-    }
-}
-
 pub async fn get_first_message_content_by_conversation_message_id(
     db: &DatabaseConnection,
     conversation_message_id: Uuid,

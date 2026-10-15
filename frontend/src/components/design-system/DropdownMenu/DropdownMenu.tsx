@@ -22,9 +22,7 @@ export type DropdownMenuRootProps = {
 };
 
 function DropdownMenuRoot({ children, ...props }: DropdownMenuRootProps) {
-  return (
-    <RadixDropdownMenu.Root {...props}>{children}</RadixDropdownMenu.Root>
-  );
+  return <RadixDropdownMenu.Root {...props}>{children}</RadixDropdownMenu.Root>;
 }
 
 type DropdownMenuTriggerProps = {

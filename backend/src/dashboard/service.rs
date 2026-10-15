@@ -1,7 +1,7 @@
 use crate::ai_summary::service as ai_summary_service;
+use crate::common::AppState;
 use crate::common::errors::UpdateDashboardError;
 use crate::common::time_utils;
-use crate::common::AppState;
 use crate::dashboard::constants;
 use crate::dashboard::constants::DashboardStatus;
 use crate::dashboard::dto;
@@ -12,12 +12,6 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use sea_orm::DatabaseTransaction;
 use uuid::Uuid;
-
-pub async fn does_dashboard_exist(app_state: &AppState, id: Uuid) -> bool {
-    repository::get_dashboard(&app_state.database_connection, id)
-        .await
-        .is_ok()
-}
 
 pub async fn get_dashboard(app_state: AppState, id: Uuid) -> impl IntoResponse {
     let dashboard = repository::get_dashboard(&app_state.database_connection, id).await;

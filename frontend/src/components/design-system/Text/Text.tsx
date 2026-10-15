@@ -15,16 +15,7 @@ type TextProps = {
   as?: "span" | "div" | "label" | "p";
   color?: TextColor;
   fontSize?:
-    | "xs"
-    | "sm"
-    | "base"
-    | "lg"
-    | "xl"
-    | "2xl"
-    | "3xl"
-    | "4xl"
-    | "5xl"
-    | "6xl";
+    "xs" | "sm" | "base" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl";
   truncate?: boolean;
   children: React.ReactNode;
 };
@@ -39,7 +30,8 @@ export function Text({
   const Component = as;
   const classNames = [
     styles[color],
-    fontSize && styles[`fontSize-${fontSize}`],
+    fontSize &&
+      styles[`fontSize${fontSize.charAt(0).toUpperCase()}${fontSize.slice(1)}`],
     truncate && styles.truncate,
   ]
     .filter(Boolean)

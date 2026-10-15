@@ -15,9 +15,9 @@ import {
 import { useStore } from "src/store";
 import { CanvasesPageState } from "src/components/Canvases/dto";
 import { useDebouncedValue } from "src/utils/hooks";
-import { CommandMenuHomePage } from "./CommandMenuHomePage.tsx";
-import { CommandMenuSearchResults } from "./CommandMenuSearchResults.tsx";
-import { Page } from "./CommandMenu.types.ts";
+import { CommandMenuHomePage } from "src/components/design-system/CommandMenu/CommandMenuHomePage.tsx";
+import { CommandMenuSearchResults } from "src/components/design-system/CommandMenu/CommandMenuSearchResults.tsx";
+import { Page } from "src/components/design-system/CommandMenu/CommandMenu.types.ts";
 
 const RECENT_ITEMS_LIMIT = 5;
 
@@ -44,11 +44,13 @@ const PageToFiltersMap: Record<Page, EntityType[]> = {
 
 export const CommandMenu = () => {
   const navigate = useNavigate();
-  const setCanvasPageState = useStore((state) => state.canvas.setCanvasPageState);
+  const setCanvasPageState = useStore(
+    (state) => state.canvas.setCanvasPageState,
+  );
   const isCommandMenuOpen = useStore((state) => state.commandMenu.isOpen);
   const setIsCommandMenuOpen = useStore((state) => state.commandMenu.setIsOpen);
   const toggleIsCommandMenuOpen = useStore(
-    (state) => state.commandMenu.toggleIsOpen
+    (state) => state.commandMenu.toggleIsOpen,
   );
   const [inputValue, setInputValue] = useState<string>("");
   const debouncedInputValue = useDebouncedValue(inputValue);
@@ -59,12 +61,12 @@ export const CommandMenu = () => {
   const searchQuery = useSearch(
     debouncedInputValue,
     filters,
-    isCommandMenuOpen
+    isCommandMenuOpen,
   );
 
   useKeyboardShortcut(
     toggleIsCommandMenuOpen,
-    KEYBOARD_SHORTCUTS.OPEN_COMMAND_MENU
+    KEYBOARD_SHORTCUTS.OPEN_COMMAND_MENU,
   );
 
   useEffect(() => {
@@ -110,16 +112,16 @@ export const CommandMenu = () => {
   const handleSearchResultSelect = (item: SearchResultItemDto) => {
     if (item.entity_type === EntityType.Canvas) {
       setIsCommandMenuOpen(false);
-      navigate(APP_ROUTES.CANVAS.replace(":id", item.id));
+      void navigate(APP_ROUTES.CANVAS.replace(":id", item.id));
       return;
     }
     if (item.entity_type === EntityType.Conversation) {
       setIsCommandMenuOpen(false);
-      navigate(
+      void navigate(
         APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION.replace(
           ":id",
-          item.id
-        )
+          item.id,
+        ),
       );
       return;
     }
@@ -127,27 +129,27 @@ export const CommandMenu = () => {
       return;
     }
     setIsCommandMenuOpen(false);
-    navigate(
-      `${APP_ROUTES.CANVAS.replace(":id", item.canvas_id)}?${SEARCH_PARAMS.CELL}=${item.id}`
+    void navigate(
+      `${APP_ROUTES.CANVAS.replace(":id", item.canvas_id)}?${SEARCH_PARAMS.CELL}=${item.id}`,
     );
   };
 
   const handleCreateCanvas = (value: string) => {
     setIsCommandMenuOpen(false);
     setCanvasPageState(CanvasesPageState.CREATE_CANVAS_DIALOG);
-    navigate(APP_ROUTES.CANVASES);
+    void navigate(APP_ROUTES.CANVASES);
     return value;
   };
 
   const handleCreateConversation = (value: string) => {
     setIsCommandMenuOpen(false);
-    navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
+    void navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
     return value;
   };
 
   useKeyboardShortcut(
     () => handleCreateConversation(""),
-    KEYBOARD_SHORTCUTS.NEW_CONVERSATION
+    KEYBOARD_SHORTCUTS.NEW_CONVERSATION,
   );
 
   const renderContent = () => {

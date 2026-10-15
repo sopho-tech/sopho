@@ -15,7 +15,7 @@ import {
   findMissingSeriesColumns,
   toAxisChartProps,
 } from "src/components/Chart";
-import { getChartContent } from "../Notebook/Cell";
+import { getChartContent } from "src/components/Notebook/Cell";
 import { useCallback, useEffect } from "react";
 import {
   ExecuteCellResponseDto,
@@ -24,7 +24,7 @@ import {
   MetricChartContent,
   PieChartContent,
   getChartType,
-} from "../Notebook/Cell/dto";
+} from "src/components/Notebook/Cell/dto";
 import {
   BannerSlim,
   Box,
@@ -67,10 +67,7 @@ function ChartRenderer({
   output,
 }: {
   chartContent:
-    | BarChartContent
-    | PieChartContent
-    | LineChartContent
-    | MetricChartContent;
+    BarChartContent | PieChartContent | LineChartContent | MetricChartContent;
   output: ExecuteCellResponseDto;
 }) {
   const chartType = getChartType(chartContent);
@@ -167,10 +164,8 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
   const { data: summary } = useChartSummary(dashboardId, cellId);
   const { mutate: generateSummary, isPending } =
     useGenerateChartSummary(dashboardId);
-  const { mutate: savePrompt, isPending: isSavingPrompt } = useUpdateChartPrompt(
-    dashboardId,
-    cellId
-  );
+  const { mutate: savePrompt, isPending: isSavingPrompt } =
+    useUpdateChartPrompt(dashboardId, cellId);
   const isAiConfigured = aiConfiguration?.status === "live";
   const isSummarizing = summary?.status === "GENERATING" || isPending;
 
@@ -222,7 +217,7 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
       <Flex direction="row" justifyContent="space-between" gap="sm">
         <Flex direction="row" gap="xs" alignItems="center" overflow="hidden">
           <Heading
-            accessbilityLevel={3}
+            accessibilityLevel={3}
             weight="semibold"
             size="sm"
             textColor="subtle"

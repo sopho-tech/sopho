@@ -1,0 +1,21 @@
+{
+  "match": "\"title\":\"RouterDecision\"",
+  "response": {
+    "id": "msg_fake_router_agent",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-haiku-4-5",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"code\":\"text_to_sql\",\"message\":\"How many orders are in each status?\"}"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 1,
+      "output_tokens": 1
+    }
+  }
+}

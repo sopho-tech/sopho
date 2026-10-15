@@ -18,11 +18,11 @@ export function Canvas() {
   const notebooksQuery = useNotebooksByCanvasId(params.id!);
   const updateCanvas = useUpdateCanvas();
   const setActiveNotebookId = useStore(
-    (state) => state.canvas.setActiveNotebookId
+    (state) => state.canvas.setActiveNotebookId,
   );
 
   const isDashboardView = pathname.endsWith(
-    `/${APP_ROUTES.CANVAS_ROUTES.DASHBOARD}`
+    `/${APP_ROUTES.CANVAS_ROUTES.DASHBOARD}`,
   );
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export function Canvas() {
         canvasId: params.id!,
         payload: { ...query.data!, name },
       }),
-    [params.id, query.data, updateCanvas]
+    [params.id, query.data, updateCanvas],
   );
 
   const handleDescriptionSave = useCallback(
@@ -50,13 +50,14 @@ export function Canvas() {
         canvasId: params.id!,
         payload: { ...query.data!, description },
       }),
-    [params.id, query.data, updateCanvas]
+    [params.id, query.data, updateCanvas],
   );
 
   const handleViewTypeChange = useCallback(
-    (view: string) =>
-      navigate(`${APP_ROUTES.CANVAS.replace(":id", params.id!)}/${view}`),
-    [navigate, params.id]
+    (view: string) => {
+      void navigate(`${APP_ROUTES.CANVAS.replace(":id", params.id!)}/${view}`);
+    },
+    [navigate, params.id],
   );
 
   if (!query.data) {

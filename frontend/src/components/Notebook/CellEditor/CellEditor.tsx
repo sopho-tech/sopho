@@ -38,7 +38,7 @@ import {
   registerEditorView,
   unregisterEditorView,
 } from "src/components/Notebook/CellEditor/editorRegistry";
-import { theme } from "./theme";
+import { theme } from "src/components/Notebook/CellEditor/theme";
 
 /**
  * Component for editing a SQL cell.
@@ -88,7 +88,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
               return true;
             },
           };
-        }
+        },
       );
 
       debouncedUpdate = debounce((content: string) => {

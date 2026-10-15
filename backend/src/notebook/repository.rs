@@ -1,7 +1,4 @@
-use crate::common::time_utils;
 use crate::entity::notebook;
-use crate::notebook::dto;
-use sea_orm::ActiveValue::Set;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait};
 use sea_orm::{ColumnTrait, DatabaseTransaction, QueryFilter, QueryOrder};
 use uuid::Uuid;
@@ -46,11 +43,6 @@ pub async fn get_notebooks_by_ids(
     Ok(notebooks)
 }
 
-pub async fn get_all_notebooks(db: &DatabaseConnection) -> Result<Vec<notebook::Model>, DbErr> {
-    let notebooks = notebook::Entity::find().all(db).await?;
-    Ok(notebooks)
-}
-
 pub async fn get_paginated_notebooks(
     db: &DatabaseConnection,
     page: u64,
@@ -63,29 +55,6 @@ pub async fn get_paginated_notebooks(
     let notebooks = paginator.fetch_page(page).await?;
     let total_pages = paginator.num_pages().await?;
     Ok((notebooks, total_items, total_pages))
-}
-
-pub async fn update_notebook(
-    db: &DatabaseConnection,
-    txn: &DatabaseTransaction,
-    notebook_id: Uuid,
-    payload: &dto::NotebookDto,
-) -> Result<notebook::Model, DbErr> {
-    let notebook = get_notebook(db, notebook_id).await;
-    match notebook {
-        Ok(notebook) => {
-            let mut notebook_entity: notebook::ActiveModel = notebook.into();
-            notebook_entity.name = Set(payload.name.clone());
-            notebook_entity.description = Set(payload.description.clone());
-            notebook_entity.status = Set(payload.status.to_string());
-            notebook_entity.updated_at = Set(time_utils::now_utc_into());
-            notebook_entity.created_at = Set(payload.created_at);
-
-            let notebook_entity = notebook_entity.update(txn).await;
-            notebook_entity
-        }
-        Err(e) => Err(e),
-    }
 }
 
 pub async fn get_notebook_transaction(

@@ -197,4 +197,3 @@ pub enum CellDisplayOrderMovement {
     Top,
     Bottom,
 }
-

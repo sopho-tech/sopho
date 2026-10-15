@@ -1,7 +1,7 @@
-use crate::common::errors::{ExecuteSqlError, GetDatabaseConnectionError};
 use crate::common::AppState;
+use crate::common::errors::{ExecuteSqlError, GetDatabaseConnectionError};
 use crate::database::constants::QueryResult;
-use crate::database::pool::{get_database_pool, DatabasePool};
+use crate::database::pool::{DatabasePool, get_database_pool};
 use crate::database::{postgres, sqlite};
 use crate::entity;
 use futures_util::future::join_all;

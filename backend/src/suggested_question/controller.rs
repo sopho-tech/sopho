@@ -1,10 +1,10 @@
 use crate::common::AppState;
 use crate::suggested_question::service;
+use axum::Router;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::Router;
 use uuid::Uuid;
 
 pub fn routes(app_state: AppState) -> Router {

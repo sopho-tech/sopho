@@ -7,7 +7,6 @@
 
 .dialogContent {
   background-color: var(--color-grey-200);
-  border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-xl);
   position: fixed;
   top: 50%;

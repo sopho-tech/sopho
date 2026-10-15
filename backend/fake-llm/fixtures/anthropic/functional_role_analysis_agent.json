@@ -1,0 +1,21 @@
+{
+  "match": "\"title\":\"FunctionalRoleAnalysisResult\"",
+  "response": {
+    "id": "msg_fake_functional_role_analysis_agent",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-haiku-4-5",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"database_structure\":\"Orders belong to customers.\",\"query_specific_content_analysis\":\"The orders table records the status of every order.\",\"table_functions\":[{\"database\":\"Ecommerce demo copy\",\"schema\":\"main\",\"table\":\"orders\",\"table_function\":\"Fact table with one row per order\"},{\"database\":\"Postgres sample\",\"schema\":\"public\",\"table\":\"orders\",\"table_function\":\"Fact table with one row per order\"}]}"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 1,
+      "output_tokens": 1
+    }
+  }
+}

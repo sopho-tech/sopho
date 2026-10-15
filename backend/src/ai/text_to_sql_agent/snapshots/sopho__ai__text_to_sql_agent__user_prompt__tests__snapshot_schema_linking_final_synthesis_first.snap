@@ -1,0 +1,30 @@
+---
+source: src/ai/text_to_sql_agent/user_prompt.rs
+expression: "UserPrompt::SchemaLinkingFinalSynthesisFirst\n{\n    question: \"How many orders were placed per month?\".to_string(),\n    semantic_analysis: ecommerce_semantic_analysis(), schema_status:\n    \"orders: order_id, order_purchase_timestamp\".to_string(),\n    max_refine_rounds: 3, sql_dialect: SqlDialect::Sqlite,\n}.render()"
+---
+### USER QUESTION
+How many orders were placed per month?
+
+### SEMANTIC ANALYSIS
+{
+  "database_structure": "One ecommerce schema with orders and customers",
+  "query_specific_content_analysis": "Orders carry the purchase timestamp",
+  "table_functions": [
+    {
+      "database": "ecommerce",
+      "schema": "main",
+      "table": "orders",
+      "table_function": "Target Table for order counts"
+    }
+  ]
+}
+
+### SCHEMA STATUS
+orders: order_id, order_purchase_timestamp
+
+### MAX_REFINE_ROUNDS
+3
+
+### SQL_DIALECT: SQLite
+
+Begin refinement

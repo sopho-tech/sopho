@@ -23,7 +23,9 @@ impl MigrationTrait for Migration {
                     .col(string(AiConfiguration::Provider))
                     .col(string(AiConfiguration::ApiKeyEncrypted))
                     .col(string(AiConfiguration::LivenessStatus))
-                    .col(timestamp_with_time_zone_null(AiConfiguration::LastCheckedAt))
+                    .col(timestamp_with_time_zone_null(
+                        AiConfiguration::LastCheckedAt,
+                    ))
                     .to_owned(),
             ))
             .await

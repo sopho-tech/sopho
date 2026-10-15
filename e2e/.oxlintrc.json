@@ -1,0 +1,40 @@
+{
+  "$schema": "../node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "warn"
+  },
+  "env": {
+    "builtin": true,
+    "node": true,
+    "es2022": true
+  },
+  "options": {
+    "typeAware": true
+  },
+  "ignorePatterns": ["playwright-report", "test-results", "blob-report"],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "regex": "^\\.{1,2}/",
+            "message": "Use absolute e2e/... imports."
+          }
+        ]
+      }
+    ],
+    "typescript/await-thenable": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-unsafe-argument": "warn",
+    "typescript/no-unsafe-assignment": "warn",
+    "typescript/no-unsafe-call": "warn",
+    "typescript/no-unsafe-member-access": "warn",
+    "typescript/no-unsafe-return": "warn",
+    "typescript/only-throw-error": "warn",
+    "typescript/require-await": "warn",
+    "typescript/restrict-template-expressions": "warn"
+  }
+}

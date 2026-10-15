@@ -22,7 +22,9 @@ export const CanvasGenerationNote = ({ data }: CanvasGenerationNoteProps) => {
   const reasoning = data.reasoning?.trim();
   if (!reasoning) return null;
 
-  const outcome = data.reused ? "Updated existing canvas" : "Created a new canvas";
+  const outcome = data.reused
+    ? "Updated existing canvas"
+    : "Created a new canvas";
   const counts = changeCounts(data);
 
   return (

@@ -10,19 +10,19 @@ import { useConnections } from "src/api/connection";
 export function useHomeNavigation() {
   const navigate = useNavigate();
   const setCanvasPageState = useStore(
-    (state) => state.canvas.setCanvasPageState
+    (state) => state.canvas.setCanvasPageState,
   );
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
 
   const handleCreateCanvas = useCallback(() => {
-    navigate(APP_ROUTES.CANVASES);
+    void navigate(APP_ROUTES.CANVASES);
     setCanvasPageState(CanvasesPageState.CREATE_CANVAS_DIALOG);
   }, [navigate, setCanvasPageState]);
 
   const handleCreateConnection = useCallback(() => {
-    navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    void navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW);
   }, [navigate, setConnectionDetailsPageState]);
 
@@ -34,7 +34,7 @@ export function useHomeNavigation() {
 
 export function useRecentlyUpdatedCanvases(
   page: number = 0,
-  pageSize: number = 9
+  pageSize: number = 9,
 ) {
   return useAllCanvases(page, pageSize);
 }

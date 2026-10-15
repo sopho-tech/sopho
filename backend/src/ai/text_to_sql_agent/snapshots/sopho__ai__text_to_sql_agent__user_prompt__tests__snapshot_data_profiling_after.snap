@@ -1,0 +1,35 @@
+---
+source: src/ai/text_to_sql_agent/user_prompt.rs
+expression: "UserPrompt::DataProfilingAfter\n{\n    table_name: \"orders\".to_string(), observations:\n    vec![ExplorationQueryResult\n    {\n        sql: \"SELECT MIN(order_purchase_timestamp) FROM orders\".to_string(),\n        sql_result: \"2016-09-04 21:15:19\".to_string(),\n    }],\n}.render()"
+---
+Based on the exploration history and results below, determine if table "orders" is RELEVANT to the User Question.
+
+## EXPLORATION EVIDENCE
+SQL: SELECT MIN(order_purchase_timestamp) FROM orders
+Result: 2016-09-04 21:15:19
+
+## DECISION GUIDELINES
+- **Direct Match**: Contains the specific answer data.
+- **Bridge Table**: Contains IDs needed to join other relevant tables (CRITICAL: Keep even if no other useful data).
+- **Filter Source**: Contains columns needed to restrict the result.
+- **Calculation Support**: Contains numerical columns needed for aggregation (e.g., "score" for AVG, "price" for SUM).
+
+## OUTPUT GUIDELINES
+- "relevance_reason": Explain the LOGICAL role of the column (e.g., "Provides the Join Key for X and Y", "Contains the target column Z").
+- "observations": Summarize FACTUAL findings from exploration for the column (e.g., "Column A contains integer codes 1-5", "Table is empty").
+- "table_summary": A concise summary of what this table represents in the context of the query.
+- "relevant": Whether the table is relevant to the user question after analysis of all its columns.
+
+## Output Format
+Always respond in this exact JSON format:
+{
+    "relevant": true/false,
+    "relevant_columns: [
+        {
+            "column_name": "col1",
+            "relevance_reason": "...",
+            observations: "...",
+        }
+    ],
+    "table_summary": "..."
+}

@@ -10,7 +10,7 @@ export function CanvasIndexRedirect() {
       pathname: `${APP_ROUTES.CANVAS.replace(":id", params.id!)}/${APP_ROUTES.CANVAS_ROUTES.NOTEBOOK}`,
       search,
     }),
-    [params.id, search]
+    [params.id, search],
   );
 
   return <Navigate to={to} replace />;

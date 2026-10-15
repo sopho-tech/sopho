@@ -5,7 +5,7 @@ import {
   ChartLegend,
   ChartTooltip,
   ChartContainer,
-} from "../ChartCommon";
+} from "src/components/Chart/ChartCommon";
 
 export type PieChartProps = {
   category: string;
@@ -43,7 +43,7 @@ export const PieChart = ({ category, value, data }: PieChartProps) => {
 
   const totalCategoryValue = useMemo(
     () => calculateTotal(data, value),
-    [data, value]
+    [data, value],
   );
 
   const renderLabelContent = useCallback(
@@ -80,7 +80,7 @@ export const PieChart = ({ category, value, data }: PieChartProps) => {
         </text>
       );
     },
-    [totalCategoryValue]
+    [totalCategoryValue],
   );
 
   return (

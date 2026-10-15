@@ -3,13 +3,13 @@ import { Button } from "src/components/design-system/Button";
 import { createContext, useContext } from "react";
 import FormStyles from "src/components/design-system/Form/Form.module.css";
 import { SubscribeButton } from "src/components/design-system/Form/SubscribeButton";
-import { TextField } from "./TextField";
-import { SelectField } from "./SelectField";
-import { PasswordField } from "./PasswordField";
-import { FormLabel } from "./FormLabel";
-import { BannerSlim } from "../BannerSlim";
+import { TextField } from "src/components/design-system/Form/TextField";
+import { SelectField } from "src/components/design-system/Form/SelectField";
+import { PasswordField } from "src/components/design-system/Form/PasswordField";
+import { FormLabel } from "src/components/design-system/Form/FormLabel";
+import { BannerSlim } from "src/components/design-system/BannerSlim";
 import { revalidateLogic, useStore } from "@tanstack/react-form";
-import { getErrorSummary } from "./utils/errorSummary";
+import { getErrorSummary } from "src/components/design-system/Form/utils/errorSummary";
 import { SelectOption } from "src/components/design-system";
 import { ButtonSize, IconType } from "src/components/design-system/datatypes";
 
@@ -36,7 +36,7 @@ type FormRootProps = {
   onChange?: (
     fieldName: string,
     value: string,
-    values: Record<string, unknown>
+    values: Record<string, unknown>,
   ) => void;
   className?: string;
   readonly?: boolean;
@@ -71,7 +71,7 @@ const FormRoot = ({
           onChange(
             fieldApi.name,
             String(fieldApi.state.value || ""),
-            currentValues
+            currentValues,
           );
         },
       },
@@ -83,7 +83,7 @@ const FormRoot = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (submitOnEnter && e.key === "Enter") {
       e.preventDefault();
-      form.handleSubmit();
+      void form.handleSubmit();
     }
   };
 

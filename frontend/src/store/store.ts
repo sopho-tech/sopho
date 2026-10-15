@@ -1,11 +1,17 @@
 import { create } from "zustand";
-import { createDashboardSlice, DashboardSlice } from "./dashboardSlice";
-import { createCanvasSlice, CanvasSlice } from "./canvasSlice";
-import { createNotebookSlice, NotebookSlice } from "./notebookSlice";
-import { createCellSlice, CellSlice } from "./cellSlice";
-import { createChartCellSlice, ChartCellSlice } from "./chartCellSlice";
-import { createConnectionSlice, ConnectionSlice } from "./connectionSlice";
-import { createCommandMenuSlice, CommandMenuSlice } from "./commandMenuSlice";
+import { createDashboardSlice, DashboardSlice } from "src/store/dashboardSlice";
+import { createCanvasSlice, CanvasSlice } from "src/store/canvasSlice";
+import { createNotebookSlice, NotebookSlice } from "src/store/notebookSlice";
+import { createCellSlice, CellSlice } from "src/store/cellSlice";
+import { createChartCellSlice, ChartCellSlice } from "src/store/chartCellSlice";
+import {
+  createConnectionSlice,
+  ConnectionSlice,
+} from "src/store/connectionSlice";
+import {
+  createCommandMenuSlice,
+  CommandMenuSlice,
+} from "src/store/commandMenuSlice";
 
 export type Store = DashboardSlice &
   CanvasSlice &

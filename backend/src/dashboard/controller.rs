@@ -3,9 +3,9 @@ use crate::dashboard::dto;
 use crate::dashboard::service;
 use axum::extract::State;
 use axum::{
+    Router,
     response::IntoResponse,
     routing::{get, post, put},
-    Router,
 };
 use uuid::Uuid;
 

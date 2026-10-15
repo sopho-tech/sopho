@@ -1,0 +1,21 @@
+{
+  "match": "\"title\":\"CanvasPlan\"",
+  "response": {
+    "id": "msg_fake_canvas_generation_agent",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-haiku-4-5",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"target_canvas_index\":null,\"reasoning\":\"A bar chart shows how the orders split across statuses.\",\"name\":\"Order statuses\",\"description\":\"How many orders are in each status\",\"cells\":[{\"action\":\"create\",\"title\":\"Orders by status\",\"sql\":\"SELECT order_status, COUNT(*) AS order_count FROM orders GROUP BY order_status ORDER BY order_count DESC, order_status\",\"chart\":{\"chart_type\":\"BAR\",\"axis\":{\"x_axis\":\"order_status\",\"series\":[{\"column\":\"order_count\",\"aggregate_function\":\"SUM\",\"label\":\"Orders\"}],\"sort_by_series_column\":\"order_count\",\"sort_order\":\"DESC\"}}}]}"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 1,
+      "output_tokens": 1
+    }
+  }
+}

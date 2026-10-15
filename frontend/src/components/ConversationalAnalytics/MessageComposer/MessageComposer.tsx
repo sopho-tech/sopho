@@ -35,11 +35,11 @@ import {
   EditorNodeName,
   SlashCommandExtension,
   isSlashSuggestionActive,
-} from "./SlashCommandExtension";
-import { SlashCommandTrigger } from "./SlashCommandTrigger";
+} from "src/components/ConversationalAnalytics/MessageComposer/SlashCommandExtension";
+import { SlashCommandTrigger } from "src/components/ConversationalAnalytics/MessageComposer/SlashCommandTrigger";
 import type { MessageSegment } from "src/components/ConversationalAnalytics/dto";
 import type { SlashCommand } from "src/constants/slash_commands";
-import styles from "./MessageComposer.module.css";
+import styles from "src/components/ConversationalAnalytics/MessageComposer/MessageComposer.module.css";
 
 export type MessageComposerHandle = {
   setText: (text: string) => void;
@@ -118,6 +118,9 @@ export function MessageComposer({
     editorProps: {
       attributes: {
         class: styles.tiptap,
+        role: "textbox",
+        "aria-label": placeholder,
+        "aria-multiline": "true",
       },
       handleKeyDown: (_view, event) => {
         if (event.key === "Enter" && !event.shiftKey) {

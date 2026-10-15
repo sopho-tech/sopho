@@ -196,10 +196,10 @@ export const useCreateConversation = () => {
   return useMutation({
     mutationFn: conversationalAnalyticsApi.createConversation,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: conversationKeys.detail(data.id),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: conversationKeys.lists(),
       });
     },
@@ -257,7 +257,7 @@ export const useDeleteConversation = () => {
       queryClient.removeQueries({
         queryKey: conversationKeys.detail(conversationId),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: conversationKeys.lists(),
       });
     },
@@ -275,7 +275,7 @@ export const useBulkDeleteConversations = () => {
           queryKey: conversationKeys.detail(conversationId),
         });
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: conversationKeys.lists(),
       });
     },
@@ -293,7 +293,7 @@ export const useAppendUserMessage = (conversationId: string) => {
         conversationKeys.detail(conversationId),
         data,
       );
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: conversationKeys.lists(),
       });
     },

@@ -1,5 +1,7 @@
 html {
   box-sizing: border-box;
+  font: var(--font-primary);
+  font-size: var(--font-size-base);
 }
 
 *,
@@ -21,6 +23,9 @@ html {
 body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  font-family: var(--font-family-primary);
 }
 
 img,
@@ -66,8 +71,7 @@ h6 {
   text-wrap: balance;
 }
 
-#root,
-#__next {
+#root {
   isolation: isolate;
 }
 
@@ -80,76 +84,67 @@ ul ul li {
   list-style-type: none;
 }
 
-button {
-  /* background-color: unset; */
-}
-
 :root {
   /* Color System */
   --color-primary-base: 250, 23%, 26%;
-  --color-primary-900: hsla(250, 23%, 26%, 1);
-  --color-primary-800: hsla(250, 31%, 40%, 1);
-  --color-primary-700: hsla(250, 40%, 51%, 1);
-  --color-primary-600: hsla(250, 49%, 58%, 1);
-  --color-primary-500: hsla(250, 59%, 67%, 1);
-  --color-primary-400: hsla(250, 70%, 75%, 1);
-  --color-primary-300: hsla(250, 78%, 81%, 1);
-  --color-primary-200: hsla(250, 88%, 86%, 1);
-  --color-primary-100: hsla(240, 80%, 95%, 1);
+  --color-primary-900: hsl(250deg 23% 26% / 100%);
+  --color-primary-800: hsl(250deg 31% 40% / 100%);
+  --color-primary-700: hsl(250deg 40% 51% / 100%);
+  --color-primary-600: hsl(250deg 49% 58% / 100%);
+  --color-primary-500: hsl(250deg 59% 67% / 100%);
+  --color-primary-400: hsl(250deg 70% 75% / 100%);
+  --color-primary-300: hsl(250deg 78% 81% / 100%);
+  --color-primary-200: hsl(250deg 88% 86% / 100%);
+  --color-primary-100: hsl(240deg 80% 95% / 100%);
 
   /* Greys */
-  --color-grey-900: hsla(252, 5%, 16%, 1);
-  --color-grey-800: hsla(251, 5%, 26%, 1);
-  --color-grey-700: hsla(250, 5%, 40%, 1);
-  --color-grey-600: hsla(253, 5%, 55%, 1);
-  --color-grey-500: hsla(250, 5%, 68%, 1);
-  --color-grey-400: hsla(250, 5%, 76%, 1);
-  --color-grey-300: hsla(248, 5%, 86%, 1);
-  --color-grey-200: hsla(245, 5%, 95%, 1);
-  --color-grey-100: hsla(250, 5%, 99%, 1);
-
-  --color-green-900: hsl(84, 67%, 5%, 1);
-  --color-green-800: hsl(84, 73%, 12%, 1);
-  --color-green-700: hsl(84, 64%, 20%, 1);
-  --color-green-600: hsl(84, 61%, 31%, 1);
-  --color-green-500: hsl(84, 57%, 42%, 1);
-  --color-green-400: hsl(84, 62%, 52%, 1);
-  --color-green-300: hsl(84, 96%, 64%, 1);
-  --color-green-200: hsl(84, 70%, 85%, 1);
-  --color-green-100: hsl(84, 65%, 95%, 1);
-
-  --color-red-100: hsl(0, 55%, 98%, 1);
-  --color-red-200: hsl(0, 65%, 94%, 1);
-  --color-red-300: hsl(0, 70%, 90%, 1);
-  --color-red-400: hsl(0, 75%, 85%, 1);
-  --color-red-500: hsl(0, 84%, 60%, 1);
-  --color-red-600: hsl(0, 72%, 50%, 1);
-  --color-red-700: hsl(0, 75%, 40%, 1);
-  --color-red-800: hsl(0, 78%, 30%, 1);
-  --color-red-900: hsl(0, 85%, 12%, 1);
-
+  --color-grey-900: hsl(252deg 5% 16% / 100%);
+  --color-grey-800: hsl(251deg 5% 26% / 100%);
+  --color-grey-700: hsl(250deg 5% 40% / 100%);
+  --color-grey-600: hsl(253deg 5% 55% / 100%);
+  --color-grey-500: hsl(250deg 5% 68% / 100%);
+  --color-grey-400: hsl(250deg 5% 76% / 100%);
+  --color-grey-300: hsl(248deg 5% 86% / 100%);
+  --color-grey-200: hsl(245deg 5% 95% / 100%);
+  --color-grey-100: hsl(250deg 5% 99% / 100%);
+  --color-green-900: hsl(84deg 67% 5% / 100%);
+  --color-green-800: hsl(84deg 73% 12% / 100%);
+  --color-green-700: hsl(84deg 64% 20% / 100%);
+  --color-green-600: hsl(84deg 61% 31% / 100%);
+  --color-green-500: hsl(84deg 57% 42% / 100%);
+  --color-green-400: hsl(84deg 62% 52% / 100%);
+  --color-green-300: hsl(84deg 96% 64% / 100%);
+  --color-green-200: hsl(84deg 70% 85% / 100%);
+  --color-green-100: hsl(84deg 65% 95% / 100%);
+  --color-red-100: hsl(0deg 55% 98% / 100%);
+  --color-red-200: hsl(0deg 65% 94% / 100%);
+  --color-red-300: hsl(0deg 70% 90% / 100%);
+  --color-red-400: hsl(0deg 75% 85% / 100%);
+  --color-red-500: hsl(0deg 84% 60% / 100%);
+  --color-red-600: hsl(0deg 72% 50% / 100%);
+  --color-red-700: hsl(0deg 75% 40% / 100%);
+  --color-red-800: hsl(0deg 78% 30% / 100%);
+  --color-red-900: hsl(0deg 85% 12% / 100%);
   --color-blue-base: 217, 91%, 60%;
-  --color-blue-900: hsla(217, 80%, 20%, 1);
-  --color-blue-800: hsla(217, 78%, 30%, 1);
-  --color-blue-700: hsla(217, 75%, 40%, 1);
-  --color-blue-600: hsla(217, 72%, 50%, 1);
-  --color-blue-500: hsla(217, 91%, 60%, 1);
-  --color-blue-400: hsla(217, 80%, 70%, 1);
-  --color-blue-300: hsla(217, 75%, 80%, 1);
-  --color-blue-200: hsla(217, 70%, 85%, 1);
-  --color-blue-100: hsla(217, 65%, 95%, 1);
-
+  --color-blue-900: hsl(217deg 80% 20% / 100%);
+  --color-blue-800: hsl(217deg 78% 30% / 100%);
+  --color-blue-700: hsl(217deg 75% 40% / 100%);
+  --color-blue-600: hsl(217deg 72% 50% / 100%);
+  --color-blue-500: hsl(217deg 91% 60% / 100%);
+  --color-blue-400: hsl(217deg 80% 70% / 100%);
+  --color-blue-300: hsl(217deg 75% 80% / 100%);
+  --color-blue-200: hsl(217deg 70% 85% / 100%);
+  --color-blue-100: hsl(217deg 65% 95% / 100%);
   --color-yellow-base: 48, 96%, 64%;
-  --color-yellow-900: hsla(48, 64%, 20%, 1);
-  --color-yellow-800: hsla(48, 61%, 31%, 1);
-  --color-yellow-700: hsla(48, 57%, 42%, 1);
-  --color-yellow-600: hsla(48, 62%, 52%, 1);
-  --color-yellow-500: hsla(48, 96%, 64%, 1);
-  --color-yellow-400: hsla(48, 80%, 70%, 1);
-  --color-yellow-300: hsla(48, 75%, 80%, 1);
-  --color-yellow-200: hsla(48, 70%, 85%, 1);
-  --color-yellow-100: hsla(48, 65%, 95%, 1);
-
+  --color-yellow-900: hsl(48deg 64% 20% / 100%);
+  --color-yellow-800: hsl(48deg 61% 31% / 100%);
+  --color-yellow-700: hsl(48deg 57% 42% / 100%);
+  --color-yellow-600: hsl(48deg 62% 52% / 100%);
+  --color-yellow-500: hsl(48deg 96% 64% / 100%);
+  --color-yellow-400: hsl(48deg 80% 70% / 100%);
+  --color-yellow-300: hsl(48deg 75% 80% / 100%);
+  --color-yellow-200: hsl(48deg 70% 85% / 100%);
+  --color-yellow-100: hsl(48deg 65% 95% / 100%);
   --color-chart-1: var(--color-primary-500);
   --color-chart-2: var(--color-primary-800);
   --color-chart-3: var(--color-primary-400);
@@ -162,46 +157,35 @@ button {
   --color-hover: var(--color-grey-200);
   --color-text: var(--color-grey-900);
   --color-text-placeholder: var(--color-grey-500);
-  --overlay-color: hsla(0, 0%, 0%, 0.6);
-  --inactive-color-normal: rgba(0, 0, 0, 0.5);
-  --inactive-color-high: rgba(0, 0, 0, 0.1);
-  --shadow-color: hsla(0, 0%, 0%, 0.2);
+  --overlay-color: hsl(0deg 0% 0% / 60%);
+  --inactive-color-normal: rgb(0 0 0 / 50%);
+  --inactive-color-high: rgb(0 0 0 / 10%);
+  --shadow-color: hsl(0deg 0% 0% / 20%);
   --font-color: var(--color-grey-900);
   --label-color: var(--color-grey-900);
   --label-value-color: var(--color-grey-700);
-
   --label-font-weight: var(--font-weight-medium);
 
   /* Font Families */
   --font-family-primary: "Roboto", sans-serif;
   --font-family-secondary: "Playfair Display", serif;
   --font-family-mono:
-    "JetBrains Mono", "Fira Code", "SF Mono", Menlo, monospace;
+    "JetBrains Mono", "Fira Code", "SF Mono", menlo, monospace;
   --font-primary: normal 400 var(--font-size-base) var(--font-family-primary);
   --font-secondary: normal 400 var(--font-size-base)
     var(--font-family-secondary);
 
   /* Typography Scale */
-  --font-size-xs: 0.75rem;
-  /* 12px */
-  --font-size-sm: 0.875rem;
-  /* 14px */
-  --font-size-base: 1rem;
-  /* 16px */
-  --font-size-lg: 1.125rem;
-  /* 18px */
-  --font-size-xl: 1.25rem;
-  /* 20px */
-  --font-size-2xl: 1.5rem;
-  /* 24px */
-  --font-size-3xl: 1.875rem;
-  /* 30px */
-  --font-size-4xl: 2.25rem;
-  /* 36px */
-  --font-size-5xl: 3rem;
-  /* 48px */
-  --font-size-6xl: 3.75rem;
-  /* 60px */
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-2xl: 1.5rem; /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem; /* 36px */
+  --font-size-5xl: 3rem; /* 48px */
+  --font-size-6xl: 3.75rem; /* 60px */
 
   /* Line Heights */
   --line-height-tightest: 1;
@@ -262,22 +246,14 @@ button {
 
   /* Spacing System */
   --space-3xs: 0.125rem;
-  --space-2xs: 0.25rem;
-  /* 4px */
-  --space-xs: 0.5rem;
-  /* 8px */
-  --space-sm: 0.75rem;
-  /* 12px */
-  --space-md: 1rem;
-  /* 16px */
-  --space-lg: 1.5rem;
-  /* 24px */
-  --space-xl: 2rem;
-  /* 32px */
-  --space-2xl: 3rem;
-  /* 48px */
-  --space-3xl: 4rem;
-  /* 64px */
+  --space-2xs: 0.25rem; /* 4px */
+  --space-xs: 0.5rem; /* 8px */
+  --space-sm: 0.75rem; /* 12px */
+  --space-md: 1rem; /* 16px */
+  --space-lg: 1.5rem; /* 24px */
+  --space-xl: 2rem; /* 32px */
+  --space-2xl: 3rem; /* 48px */
+  --space-3xl: 4rem; /* 64px */
 
   /* button sizes */
   --button-size-small: 0.5rem;
@@ -311,7 +287,6 @@ button {
     var(--border-color-default);
   --border-input-focus: var(--border-width-medium) var(--border-style-solid)
     var(--border-color-focus);
-
   --border-section: var(--border-width-medium) var(--border-style-solid)
     var(--border-color-default);
   --border-card: var(--border-width-thin) var(--border-style-solid)
@@ -343,16 +318,11 @@ button {
 
   /* Border Radius */
   --border-radius-none: 0;
-  --border-radius-sm: 0.125rem;
-  /* 2px */
-  --border-radius-md: 0.25rem;
-  /* 4px */
-  --border-radius-lg: 0.5rem;
-  /* 8px */
-  --border-radius-xl: 1rem;
-  /* 16px */
-  --border-radius-2xl: 1.5rem;
-  /* 24px */
+  --border-radius-sm: 0.125rem; /* 2px */
+  --border-radius-md: 0.25rem; /* 4px */
+  --border-radius-lg: 0.5rem; /* 8px */
+  --border-radius-xl: 1rem; /* 16px */
+  --border-radius-2xl: 1.5rem; /* 24px */
   --border-radius-full: 9999px;
 
   /* Icon Sizes */
@@ -363,21 +333,17 @@ button {
   --icon-2xl: 3rem;
 
   /* Shadow System */
-  --shadow-2xs:
-    0 1px 2px hsla(0, 0%, 0%, 0.08), 0 1px 1px hsla(0, 0%, 0%, 0.12);
-  --shadow-xs: 0 1px 3px hsla(0, 0%, 0%, 0.12), 0 1px 2px hsla(0, 0%, 0%, 0.24);
-  --shadow-sm: 0 3px 6px hsla(0, 0%, 0%, 0.15), 0 2px 4px hsla(0, 0%, 0%, 0.12);
+  --shadow-2xs: 0 1px 2px hsl(0deg 0% 0% / 8%), 0 1px 1px hsl(0deg 0% 0% / 12%);
+  --shadow-xs: 0 1px 3px hsl(0deg 0% 0% / 12%), 0 1px 2px hsl(0deg 0% 0% / 24%);
+  --shadow-sm: 0 3px 6px hsl(0deg 0% 0% / 15%), 0 2px 4px hsl(0deg 0% 0% / 12%);
   --shadow-md:
-    0 3px 6px hsla(0, 0%, 0%, 0.1), 0 10px 20px hsla(0, 0%, 0%, 0.15);
+    0 3px 6px hsl(0deg 0% 0% / 10%), 0 10px 20px hsl(0deg 0% 0% / 15%);
   --shadow-lg:
-    0 5px 10px hsla(0, 0%, 0%, 0.05), 0 15px 25px hsla(0, 0%, 0%, 0.15);
-  --shadow-xl: 0 20px 40px hsla(0, 0%, 0%, 0.2);
-
-  --shadow-scroll: 0 6px 6px -6px hsla(0, 0%, 0%, 0.18);
-
+    0 5px 10px hsl(0deg 0% 0% / 5%), 0 15px 25px hsl(0deg 0% 0% / 15%);
+  --shadow-xl: 0 20px 40px hsl(0deg 0% 0% / 20%);
+  --shadow-scroll: 0 6px 6px -6px hsl(0deg 0% 0% / 18%);
   --shadow-primary-inset: inset 0 1px 0 var(--color-primary-100);
   --shadow-green-inset: inset 0 1px 0 var(--color-green-300);
-
   --shadow-border-medium: 0 0 0 var(--border-width-medium)
     var(--border-color-light);
 
@@ -397,22 +363,10 @@ button {
   --transition-duration-short: 0.2s;
   --transition-easing-default: ease;
   --transition-easing-standard-decelerate: cubic-bezier(0.4, 0, 0.2, 1);
-
   --transition-bg-color:
     background-color var(--transition-duration-short)
       var(--transition-easing-default),
     transform var(--transition-duration-short) var(--transition-easing-default);
-}
-
-html {
-  font: var(--font-primary);
-  font-size: var(--font-size-base);
-}
-
-body {
-  color: var(--color-text);
-  background-color: var(--color-background);
-  font-family: var(--font-family-primary);
 }
 
 h1 {

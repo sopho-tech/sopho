@@ -17,8 +17,8 @@ use crate::ai::text_to_sql_agent;
 use crate::ai::visualization_agent;
 use crate::ai_configuration::dto::AiConfigurationStatus;
 use crate::ai_configuration::service as ai_config_service;
-use crate::common::time_utils;
 use crate::common::AppState;
+use crate::common::time_utils;
 use crate::connection::service as connection_service;
 use crate::conversational_analytics::command::constants::{self as command_constants, Command};
 use crate::conversational_analytics::conversation::constants::ContentType;
@@ -43,8 +43,8 @@ use sea_orm::TransactionTrait;
 use std::collections::HashMap;
 use std::{convert::Infallible, time::Duration};
 use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt as _;
+use tokio_stream::wrappers::ReceiverStream;
 use uuid::Uuid;
 
 async fn ensure_ai_live(app_state: &AppState) -> Result<(), ConversationError> {
@@ -635,11 +635,7 @@ async fn run_pipeline(
         RouterCode::TextToSql | RouterCode::Followup => {
             let effective_question = {
                 let m = decision.message.trim();
-                if m.is_empty() {
-                    question
-                } else {
-                    m
-                }
+                if m.is_empty() { question } else { m }
             };
             let sql =
                 text_to_sql_agent::execute(app_state, connection, effective_question, channels)

@@ -22,7 +22,10 @@ pub async fn latest_generated_at(
 ) -> Result<Option<sea_orm::prelude::DateTimeWithTimeZone>, DbErr> {
     let row = suggested_question::Entity::find()
         .filter(suggested_question::Column::ConnectionId.eq(connection_id))
-        .order_by(suggested_question::Column::GeneratedAt, sea_orm::Order::Desc)
+        .order_by(
+            suggested_question::Column::GeneratedAt,
+            sea_orm::Order::Desc,
+        )
         .one(db)
         .await?;
     Ok(row.map(|m| m.generated_at))

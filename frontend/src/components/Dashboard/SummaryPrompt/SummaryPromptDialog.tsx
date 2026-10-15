@@ -39,8 +39,9 @@ export function SummaryPromptDialog({
   const isTooLong = trimmed.length > MAX_PROMPT_LENGTH;
 
   const handleChange = useCallback(
-    (event: React.ChangeEvent<HTMLTextAreaElement>) => setValue(event.target.value),
-    []
+    (event: React.ChangeEvent<HTMLTextAreaElement>) =>
+      setValue(event.target.value),
+    [],
   );
 
   const handleSave = useCallback(() => {
@@ -70,7 +71,11 @@ export function SummaryPromptDialog({
               disabled={isSaving}
             />
             <Flex direction="row" justifyContent="flex-end">
-              <Text as="span" fontSize="xs" color={isTooLong ? "error" : "subtle"}>
+              <Text
+                as="span"
+                fontSize="xs"
+                color={isTooLong ? "error" : "subtle"}
+              >
                 {`${trimmed.length} / ${MAX_PROMPT_LENGTH}`}
               </Text>
             </Flex>

@@ -1,7 +1,7 @@
-use crate::authentication::service::{validate_access_token, AccessTokenValidationError};
 use crate::authentication::CookieName;
-use crate::common::error_codes::codes;
+use crate::authentication::service::{AccessTokenValidationError, validate_access_token};
 use crate::common::AppState;
+use crate::common::error_codes::codes;
 use axum::body::Body;
 use axum::extract::Request;
 use axum::http::{Response, StatusCode};
@@ -61,14 +61,6 @@ pub async fn auth_middleware_fn(
                     create_error_response(
                         StatusCode::UNAUTHORIZED,
                         "Invalid access token",
-                        codes::INVALID_ACCESS_TOKEN.as_str(),
-                    )
-                }
-                Err(AccessTokenValidationError::Missing) => {
-                    // This shouldn't happen here, but handle it anyway
-                    create_error_response(
-                        StatusCode::UNAUTHORIZED,
-                        "Access token required",
                         codes::INVALID_ACCESS_TOKEN.as_str(),
                     )
                 }

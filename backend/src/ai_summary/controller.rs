@@ -1,11 +1,11 @@
 use crate::ai_summary::dto;
 use crate::ai_summary::service::{self, GenerateOutcome, SummaryError};
 use crate::common::AppState;
+use axum::Router;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post, put};
-use axum::Router;
 use uuid::Uuid;
 
 pub fn routes(app_state: AppState) -> Router {
@@ -20,7 +20,10 @@ pub fn routes(app_state: AppState) -> Router {
             post(generate_all_chart_summaries),
         )
         .route("/chart/{cell_id}", post(generate_chart_summary))
-        .route("/dashboard/{dashboard_id}/prompt", put(set_dashboard_prompt))
+        .route(
+            "/dashboard/{dashboard_id}/prompt",
+            put(set_dashboard_prompt),
+        )
         .route("/chart/{cell_id}/prompt", put(set_chart_prompt))
         .with_state(app_state)
 }

@@ -1,0 +1,21 @@
+{
+  "match": "\"title\":\"Array_of_ExplorationQuery\"",
+  "response": {
+    "id": "msg_fake_data_profiling_exploration_agent",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-haiku-4-5",
+    "content": [
+      {
+        "type": "text",
+        "text": "[{\"motivation\":\"Measure how many orders exist\",\"sql\":\"SELECT COUNT(*) AS order_count FROM orders\"}]"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 1,
+      "output_tokens": 1
+    }
+  }
+}

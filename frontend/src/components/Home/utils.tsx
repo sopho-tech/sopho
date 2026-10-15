@@ -2,7 +2,7 @@ import type { DropdownMenuItem } from "src/components/design-system";
 
 export function createDropdownItems(
   onCreateCanvas: () => void,
-  onCreateConnection: () => void
+  onCreateConnection: () => void,
 ): DropdownMenuItem[] {
   return [
     {

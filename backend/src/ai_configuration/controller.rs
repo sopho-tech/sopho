@@ -4,11 +4,11 @@ use crate::ai_configuration::dto::{
 use crate::ai_configuration::error::AiConfigurationError;
 use crate::ai_configuration::service;
 use crate::common::AppState;
+use axum::Router;
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, post, put};
-use axum::Router;
 use serde_json::json;
 
 pub fn routes(app_state: AppState) -> Router {
@@ -45,10 +45,10 @@ async fn delete_handler(State(app_state): State<AppState>) -> impl IntoResponse 
 }
 
 async fn test_handler(
-    State(_app_state): State<AppState>,
+    State(app_state): State<AppState>,
     Json(payload): Json<TestAiConfigurationRequest>,
 ) -> impl IntoResponse {
-    match service::test(payload.provider, payload.api_key).await {
+    match service::test(&app_state, payload.provider, payload.api_key).await {
         Ok(resp) => (StatusCode::OK, Json(json!(resp))).into_response(),
         Err(AiConfigurationError::EmptyApiKey) => (
             StatusCode::BAD_REQUEST,
@@ -68,7 +68,6 @@ fn error_response(e: AiConfigurationError) -> axum::response::Response {
         AiConfigurationError::Encryption(_) => StatusCode::INTERNAL_SERVER_ERROR,
         AiConfigurationError::ClientBuild(_) => StatusCode::INTERNAL_SERVER_ERROR,
         AiConfigurationError::EmptyApiKey => StatusCode::BAD_REQUEST,
-        AiConfigurationError::NotFound => StatusCode::NOT_FOUND,
     };
     (status, Json(json!({ "error": e.to_string() }))).into_response()
 }

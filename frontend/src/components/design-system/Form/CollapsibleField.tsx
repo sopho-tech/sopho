@@ -1,8 +1,8 @@
 import { useCallback } from "react";
-import { FormField } from "./types";
-import type { AppFormReturnType } from "./hooks";
+import { FormField } from "src/components/design-system/Form/types";
+import type { AppFormReturnType } from "src/components/design-system/Form/hooks";
 import { Accordion } from "src/components/design-system/Accordion";
-import { FormFieldRenderer } from "./FormFieldRenderer";
+import { FormFieldRenderer } from "src/components/design-system/Form/FormFieldRenderer";
 
 type CollapsibleFieldProps = {
   field: FormField;
@@ -29,7 +29,7 @@ export function CollapsibleField({
       newState.set(field.key, newValues.includes(field.key));
       setAccordionState(newState);
     },
-    [accordionState, field.key, setAccordionState]
+    [accordionState, field.key, setAccordionState],
   );
 
   if (!field.collapsibleConfig) {
@@ -41,10 +41,7 @@ export function CollapsibleField({
     .map(([key]) => key);
 
   return (
-    <Accordion
-      value={accordionValues}
-      onValueChange={handleValueChange}
-    >
+    <Accordion value={accordionValues} onValueChange={handleValueChange}>
       <Accordion.Item value={field.key}>
         <Accordion.Trigger>{field.name}</Accordion.Trigger>
         <Accordion.Content>

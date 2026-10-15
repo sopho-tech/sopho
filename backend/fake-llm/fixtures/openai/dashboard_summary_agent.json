@@ -1,0 +1,25 @@
+{
+  "match": "\"title\":\"DashboardSummaryResponse\"",
+  "response": {
+    "id": "chatcmpl-fake-dashboard-summary-agent",
+    "object": "chat.completion",
+    "created": 0,
+    "model": "gpt-4o-mini",
+    "system_fingerprint": null,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"summary\":\"Most orders on this dashboard were delivered.\"}"
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1,
+      "total_tokens": 2
+    }
+  }
+}

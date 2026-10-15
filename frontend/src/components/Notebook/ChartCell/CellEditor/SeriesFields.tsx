@@ -47,7 +47,7 @@ function SeriesRow({
     >
       <Flex direction="row" justifyContent="space-between" alignItems="center">
         <Heading
-          accessbilityLevel={4}
+          accessibilityLevel={4}
           size="sm"
           weight="semibold"
           textColor="subtle"

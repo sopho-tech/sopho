@@ -4,7 +4,7 @@ import { APP_ROUTES } from "src/constants/app_routes";
 import { useSessionValid } from "src/api/auth_api";
 import { Sidebar } from "src/components/Sidebar/Sidebar";
 import { CommandMenu } from "src/components/design-system/CommandMenu/CommandMenu";
-import { Flex } from "../design-system/Flex/Flex";
+import { Flex } from "src/components/design-system/Flex/Flex";
 
 export function ProtectedRoute() {
   const { data: isAuthenticated, isLoading } = useSessionValid();

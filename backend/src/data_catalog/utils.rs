@@ -37,18 +37,14 @@ pub fn join_pruned_batches(batches: Vec<Database>) -> Database {
 
             let tables_included: Vec<(&Table, Vec<&Column>)> = schema
                 .tables
-                .iter()
-                .filter_map(|(_, table)| {
+                .values()
+                .filter_map(|table| {
                     let cols: Vec<&Column> = columns_included
                         .get(&table.name)
                         .map(|c| c.iter().map(|(_, col)| *col).collect())
                         .unwrap_or_default();
                     let included = table.should_select || !cols.is_empty();
-                    if included {
-                        Some((table, cols))
-                    } else {
-                        None
-                    }
+                    if included { Some((table, cols)) } else { None }
                 })
                 .collect();
 
@@ -155,7 +151,7 @@ pub async fn get_data_catalog_batches(
 ) -> Result<Vec<Database>, GetDataCatalogError> {
     let catalog = get_data_catalog_of_connection(app_state, connection).await?;
     let mut table_entries: Vec<(String, String, bool, bool, String, Table)> = Vec::new();
-    for (_, schema) in catalog.schemas.iter() {
+    for schema in catalog.schemas.values() {
         for (table_name, table) in schema.tables.iter() {
             table_entries.push((
                 schema.name.clone(),
@@ -365,12 +361,14 @@ mod tests {
             )],
         );
         let result = join_pruned_batches(vec![batch]);
-        assert!(result
-            .schemas
-            .get("public")
-            .unwrap()
-            .tables
-            .contains_key("empty_table"));
+        assert!(
+            result
+                .schemas
+                .get("public")
+                .unwrap()
+                .tables
+                .contains_key("empty_table")
+        );
     }
 
     #[test]
@@ -408,18 +406,22 @@ mod tests {
             )],
         );
         let result = join_pruned_batches(vec![batch]);
-        assert!(result
-            .schemas
-            .get("public")
-            .unwrap()
-            .tables
-            .contains_key("users"));
-        assert!(!result
-            .schemas
-            .get("public")
-            .unwrap()
-            .tables
-            .contains_key("empty_table"));
+        assert!(
+            result
+                .schemas
+                .get("public")
+                .unwrap()
+                .tables
+                .contains_key("users")
+        );
+        assert!(
+            !result
+                .schemas
+                .get("public")
+                .unwrap()
+                .tables
+                .contains_key("empty_table")
+        );
     }
 
     #[test]
@@ -655,14 +657,16 @@ mod tests {
             )],
         );
         let result = join_pruned_batches(vec![batch]);
-        assert!(result
-            .schemas
-            .get("public")
-            .unwrap()
-            .tables
-            .get("t1")
-            .unwrap()
-            .columns
-            .contains_key("id"));
+        assert!(
+            result
+                .schemas
+                .get("public")
+                .unwrap()
+                .tables
+                .get("t1")
+                .unwrap()
+                .columns
+                .contains_key("id")
+        );
     }
 }

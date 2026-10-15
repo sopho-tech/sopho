@@ -7,7 +7,7 @@ import {
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { NotebookDto } from "src/components/Notebook/dto";
-import { PaginatedData, PaginatedDataResponse } from "../dto";
+import { PaginatedData, PaginatedDataResponse } from "src/api/dto";
 
 // Query keys for notebooks
 export const notebookKeys = {
@@ -39,7 +39,7 @@ const notebookApi = {
 
   getAllNotebooks: async (
     page?: number,
-    pageSize?: number
+    pageSize?: number,
   ): Promise<PaginatedData<NotebookDto>> => {
     const url = new URL(API_ENDPOINTS.NOTEBOOK.GET_ALL, window.location.origin);
     if (page !== undefined) {
@@ -64,7 +64,7 @@ const notebookApi = {
   },
 
   createNotebook: async (
-    payload: Omit<NotebookDto, "id">
+    payload: Omit<NotebookDto, "id">,
   ): Promise<NotebookDto> => {
     const response = await ApiService.post({
       url: API_ENDPOINTS.NOTEBOOK.CREATE,
@@ -100,7 +100,7 @@ const notebookApi = {
       {
         method: "DELETE",
         credentials: "include",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -113,7 +113,7 @@ const notebookApi = {
       url:
         API_ENDPOINTS.NOTEBOOK.GET_BY_CANVAS_ID?.replace(
           ":canvas_id",
-          canvasId
+          canvasId,
         ) || `/notebooks/canvas/${canvasId}`,
       onlyBody: true,
     });
@@ -122,14 +122,14 @@ const notebookApi = {
 
   getCellsByNotebookId: async (
     notebookId: string,
-    cellType?: string
+    cellType?: string,
   ): Promise<NotebookDto> => {
     const url = new URL(
       API_ENDPOINTS.NOTEBOOK.GET_CELLS_BY_NOTEBOOK_ID?.replace(
         ":id",
-        notebookId
+        notebookId,
       ) || `/notebooks/${notebookId}/cells`,
-      window.location.origin
+      window.location.origin,
     );
     if (cellType) {
       url.searchParams.set("cell_type", cellType);
@@ -189,7 +189,7 @@ export const useCreateNotebook = (callbacks?: {
       queryClient.setQueryData(notebookKeys.detail(data.id!), data);
 
       // Invalidate the notebooks list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: notebookKeys.lists(),
       });
 
@@ -219,7 +219,7 @@ export const useUpdateNotebook = () => {
       queryClient.setQueryData(notebookKeys.detail(notebookId), data);
 
       // Invalidate the notebooks list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: notebookKeys.lists(),
       });
     },
@@ -241,7 +241,7 @@ export const useDeleteNotebook = () => {
       });
 
       // Invalidate the notebooks list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: notebookKeys.lists(),
       });
     },

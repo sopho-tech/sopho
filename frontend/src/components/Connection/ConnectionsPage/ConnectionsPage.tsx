@@ -13,15 +13,15 @@ import { APP_ROUTES } from "src/constants/app_routes";
 export function Connections() {
   const navigate = useNavigate();
   const connectionDetailsPageState = useStore(
-    (state) => state.connection.connectionDetailsPageState
+    (state) => state.connection.connectionDetailsPageState,
   );
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
 
   const handleNewClick = useCallback(() => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW);
-    navigate(APP_ROUTES.CONNECTION_NEW);
+    void navigate(APP_ROUTES.CONNECTION_NEW);
   }, [setConnectionDetailsPageState, navigate]);
 
   return (
@@ -33,7 +33,7 @@ export function Connections() {
         gap="md"
       >
         <Flex direction="column" gap="2xs">
-          <Heading accessbilityLevel={2} size="2xl" textColor="black">
+          <Heading accessibilityLevel={2} size="2xl" textColor="black">
             Connections
           </Heading>
           <Text fontSize="sm" color="subtle">

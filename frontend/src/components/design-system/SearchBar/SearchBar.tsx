@@ -6,7 +6,7 @@ import {
   getShortcutDisplayString,
 } from "src/utils/keyboard_shortcuts";
 import { useStore } from "src/store";
-import styles from "./SearchBar.module.css";
+import styles from "src/components/design-system/SearchBar/SearchBar.module.css";
 
 export function SearchBar() {
   const [value, setValue] = useState("");
@@ -25,7 +25,11 @@ export function SearchBar() {
       type="text"
       placeholder="Search"
       leadingIcon="search"
-      laggingElement={<Kbd>{getShortcutDisplayString(KEYBOARD_SHORTCUTS.OPEN_COMMAND_MENU)}</Kbd>}
+      laggingElement={
+        <Kbd>
+          {getShortcutDisplayString(KEYBOARD_SHORTCUTS.OPEN_COMMAND_MENU)}
+        </Kbd>
+      }
       className={styles.container}
     />
   );

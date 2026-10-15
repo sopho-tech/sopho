@@ -132,7 +132,7 @@ async fn run_search(
         results.append(&mut entity_results);
     }
 
-    results.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
+    results.sort_by_key(|search_result| std::cmp::Reverse(search_result.updated_at));
     Ok(results)
 }
 

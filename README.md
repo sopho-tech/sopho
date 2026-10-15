@@ -12,15 +12,13 @@
 </h3>
 
 <p align="center">
-  <a href="https://github.com/sopho-tech/sopho/pkgs/container/sopho%2Fsopho">
-    <img src="https://img.shields.io/badge/Docker-ghcr.io%2Fsopho--tech%2Fsopho%2Fsopho-blue?logo=docker&logoColor=white" alt="Docker Image" />
-  </a>
-  <a href="https://github.com/sopho-tech/sopho/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/sopho-tech/sopho" alt="License" />
-  </a>
-  <a href="https://github.com/sopho-tech/sopho/stargazers">
-    <img src="https://img.shields.io/github/stars/sopho-tech/sopho" alt="Stars" />
-  </a>
+  <a href="https://github.com/sopho-tech/sopho/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/sopho-tech/sopho/ci.yml?branch=main&event=push&label=CI&logo=github" alt="CI" /></a>
+  <a href="https://codecov.io/gh/sopho-tech/sopho"><img src="https://img.shields.io/codecov/c/github/sopho-tech/sopho?logo=codecov&label=coverage" alt="Coverage" /></a>
+  <a href="https://github.com/sopho-tech/sopho/blob/main/LICENSE"><img src="https://img.shields.io/github/license/sopho-tech/sopho" alt="License" /></a>
+  <br />
+  <a href="https://github.com/sopho-tech/sopho/pkgs/container/sopho%2Fsopho"><img src="https://img.shields.io/badge/Docker-ghcr.io%2Fsopho--tech%2Fsopho%2Fsopho-blue?logo=docker&logoColor=white" alt="Docker Image" /></a>
+  <a href="https://docs.sopho.io"><img src="https://img.shields.io/badge/docs-docs.sopho.io-blue" alt="Docs" /></a>
+  <a href="https://github.com/sopho-tech/sopho/stargazers"><img src="https://img.shields.io/github/stars/sopho-tech/sopho" alt="Stars" /></a>
 </p>
 
 <img src="assets/dashboard.webp" alt="Sopho Dashboard" style="border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);" />
@@ -53,27 +51,31 @@ The preferred way for installing and using Sopho is through Docker.
 
 1. Run the following command to pull the Docker image:
 
-```bash
-docker pull ghcr.io/sopho-tech/sopho/sopho:latest
-```
+   ```bash
+   docker pull ghcr.io/sopho-tech/sopho/sopho:latest
+   ```
 
 2. After the image has been pulled, run the container:
 
-```bash
-docker run -d -p 8000:8000 \
-  --name sopho \
-  -e ADMIN_USERNAME="admin" \
-  -e ADMIN_PASSWORD="password" \
-  -e ADMIN_EMAIL="admin@admin.com" \
-  -e ADMIN_FULL_NAME="admin admin" \
-  ghcr.io/sopho-tech/sopho/sopho:latest
-```
+   ```bash
+   docker run -d -p 8000:8000 \
+     --name sopho \
+     -e ADMIN_USERNAME="admin" \
+     -e ADMIN_PASSWORD="password" \
+     -e ADMIN_EMAIL="admin@admin.com" \
+     -e ADMIN_FULL_NAME="admin admin" \
+     ghcr.io/sopho-tech/sopho/sopho:latest
+   ```
 
 The container will use SQLite as the backend database by default. SQLite is not recommended for production usage. Use PostgreSQL for production.
 
 ## Documentation
 
 For setup guides, configuration, and API reference, see the [official documentation](https://docs.sopho.io/).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, the git hooks and the test suites.
 
 ## License
 

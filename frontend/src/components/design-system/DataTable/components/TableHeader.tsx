@@ -1,6 +1,10 @@
 import { flexRender, Table, HeaderGroup } from "@tanstack/react-table";
 import { ColumnConfig } from "src/components/design-system/DataTable/types";
-import { getHeaderAlignmentClass, getHeaderJustifyContent, getColumnWidthStyle } from "src/components/design-system/DataTable/utils";
+import {
+  getHeaderAlignmentClass,
+  getHeaderJustifyContent,
+  getColumnWidthStyle,
+} from "src/components/design-system/DataTable/utils";
 import { Icon } from "src/components/design-system/Icon/Icon";
 import { Flex } from "src/components/design-system/Flex";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
@@ -76,7 +80,7 @@ export function TableHeader<T>({
                   >
                     {flexRender(
                       header.column.columnDef.header,
-                      header.getContext()
+                      header.getContext(),
                     )}
                     {(() => {
                       const sortState = header.column.getIsSorted();
@@ -114,30 +118,29 @@ export function TableHeader<T>({
                     })()}
                   </Flex>
                 )}
-                {table.options.enableColumnResizing && header.column.getCanResize() && (
-                  <div
-                    onDoubleClick={() => header.column.resetSize()}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      header.getResizeHandler()(e);
-                    }}
-                    onTouchStart={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      header.getResizeHandler()(e);
-                    }}
-                    className={`${styles.resizer} ${
-                      table.options.columnResizeDirection === "ltr"
-                        ? styles.ltr
-                        : styles.rtl
-                    } ${
-                      header.column.getIsResizing()
-                        ? styles.isResizing
-                        : ""
-                    }`}
-                  ></div>
-                )}
+                {table.options.enableColumnResizing &&
+                  header.column.getCanResize() && (
+                    <div
+                      onDoubleClick={() => header.column.resetSize()}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        header.getResizeHandler()(e);
+                      }}
+                      onTouchStart={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        header.getResizeHandler()(e);
+                      }}
+                      className={`${styles.resizer} ${
+                        table.options.columnResizeDirection === "ltr"
+                          ? styles.ltr
+                          : styles.rtl
+                      } ${
+                        header.column.getIsResizing() ? styles.isResizing : ""
+                      }`}
+                    ></div>
+                  )}
               </th>
             );
           })}
@@ -146,4 +149,3 @@ export function TableHeader<T>({
     </thead>
   );
 }
-
