@@ -4,9 +4,12 @@ import {
   createOrderStatusChart,
   createSqlCell,
   findDemoConnection,
+  lastMessageEventNames,
   placeChartOnDashboard,
 } from "e2e/support/api";
 import {
+  ANSWER_PERSISTED_TIMEOUT_MILLISECONDS,
+  COMPLETED_EVENT_NAME,
   DASHBOARD_SUMMARY,
   DEMO_CONNECTION_NAME,
   FAKE_LLM_API_KEY,
@@ -15,7 +18,11 @@ import {
   ORDER_STATUS_SQL,
 } from "e2e/support/constants";
 import { expect, test } from "e2e/support/fixtures";
-import { APP_URLS, canvasDashboardUrl } from "e2e/support/navigation";
+import {
+  APP_URLS,
+  CONVERSATION_URL_PATTERN,
+  canvasDashboardUrl,
+} from "e2e/support/navigation";
 
 test("configures the Anthropic provider", async ({ signedInPage: page }) => {
   await page.goto(APP_URLS.AI_CONFIGURATIONS);
@@ -45,6 +52,19 @@ test("answers a question with SQL and a chart", async ({
   });
   await composer.fill(ORDER_STATUS_QUESTION);
   await composer.press("Enter");
+  await expect(page).toHaveURL(CONVERSATION_URL_PATTERN);
+  const conversationId = CONVERSATION_URL_PATTERN.exec(
+    new URL(page.url()).pathname,
+  )?.groups?.conversationId;
+  if (!conversationId) {
+    throw new Error(`no conversation id in ${page.url()}`);
+  }
+  await expect
+    .poll(() => lastMessageEventNames(page.request, conversationId), {
+      timeout: ANSWER_PERSISTED_TIMEOUT_MILLISECONDS,
+    })
+    .toContain(COMPLETED_EVENT_NAME);
+  await page.reload();
 
   await expect(page.getByText(ORDER_STATUS_NARRATION)).toBeVisible();
   await expect(

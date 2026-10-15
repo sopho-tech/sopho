@@ -15,3 +15,6 @@ export function canvasNotebookUrl(canvasId: string): string {
 export function canvasDashboardUrl(canvasId: string): string {
   return `/canvas/${canvasId}/dashboard`;
 }
+
+export const CONVERSATION_URL_PATTERN =
+  /\/conversational_analytics\/conversation\/(?<conversationId>[^/]+)$/;
