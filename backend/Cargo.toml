@@ -23,7 +23,7 @@ aes-gcm = "0.10.3"
 anyhow = "1.0.97"
 argon2 = "0.5.3"
 axum = { version = "0.8.1", features = ["json"] }
-base64 = "0.22.1"
+base64 = "0.23.1"
 chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
