@@ -206,5 +206,3 @@ impl From<entity::cell::Model> for CellDto {
         }
     }
 }
-
-impl CellDto {}

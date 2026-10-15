@@ -89,8 +89,6 @@ pub struct FunctionalRoleAnalysisResult {
     pub table_functions: Vec<TableFunction>,
 }
 
-impl FunctionalRoleAnalysisResult {}
-
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ExplorationQuery {
     pub motivation: String,

@@ -62,63 +62,63 @@ impl ConfigurationsBuilder {
         }
     }
 
-    pub fn database_url(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.database_url = Some(v.into());
+    pub fn database_url(mut self, database_url: impl Into<Cow<'static, str>>) -> Self {
+        self.database_url = Some(database_url.into());
         self
     }
 
-    pub fn port(mut self, v: u16) -> Self {
-        self.port = Some(v);
+    pub fn port(mut self, port: u16) -> Self {
+        self.port = Some(port);
         self
     }
 
-    pub fn frontend_dir(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.frontend_dir = Some(v.into());
+    pub fn frontend_dir(mut self, frontend_dir: impl Into<Cow<'static, str>>) -> Self {
+        self.frontend_dir = Some(frontend_dir.into());
         self
     }
 
-    pub fn environment(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.environment = Some(v.into());
+    pub fn environment(mut self, environment: impl Into<Cow<'static, str>>) -> Self {
+        self.environment = Some(environment.into());
         self
     }
 
-    pub fn cookie_secure(mut self, v: bool) -> Self {
-        self.cookie_secure = Some(v);
+    pub fn cookie_secure(mut self, cookie_secure: bool) -> Self {
+        self.cookie_secure = Some(cookie_secure);
         self
     }
 
-    pub fn encryption_key(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.encryption_key = Some(v.into());
+    pub fn encryption_key(mut self, encryption_key: impl Into<Cow<'static, str>>) -> Self {
+        self.encryption_key = Some(encryption_key.into());
         self
     }
 
-    pub fn admin_username(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.admin_username = Some(v.into());
+    pub fn admin_username(mut self, admin_username: impl Into<Cow<'static, str>>) -> Self {
+        self.admin_username = Some(admin_username.into());
         self
     }
 
-    pub fn admin_password(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.admin_password = Some(v.into());
+    pub fn admin_password(mut self, admin_password: impl Into<Cow<'static, str>>) -> Self {
+        self.admin_password = Some(admin_password.into());
         self
     }
 
-    pub fn admin_email(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.admin_email = Some(v.into());
+    pub fn admin_email(mut self, admin_email: impl Into<Cow<'static, str>>) -> Self {
+        self.admin_email = Some(admin_email.into());
         self
     }
 
-    pub fn admin_full_name(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.admin_full_name = Some(v.into());
+    pub fn admin_full_name(mut self, admin_full_name: impl Into<Cow<'static, str>>) -> Self {
+        self.admin_full_name = Some(admin_full_name.into());
         self
     }
 
-    pub fn anthropic_base_url(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.anthropic_base_url = Some(v.into());
+    pub fn anthropic_base_url(mut self, anthropic_base_url: impl Into<Cow<'static, str>>) -> Self {
+        self.anthropic_base_url = Some(anthropic_base_url.into());
         self
     }
 
-    pub fn openai_base_url(mut self, v: impl Into<Cow<'static, str>>) -> Self {
-        self.openai_base_url = Some(v.into());
+    pub fn openai_base_url(mut self, openai_base_url: impl Into<Cow<'static, str>>) -> Self {
+        self.openai_base_url = Some(openai_base_url.into());
         self
     }
 
@@ -148,8 +148,8 @@ impl ConfigurationsBuilder {
             admin_full_name: self
                 .admin_full_name
                 .ok_or_else(|| anyhow::anyhow!("admin_full_name is required"))?,
-            anthropic_base_url: self.anthropic_base_url,
-            openai_base_url: self.openai_base_url,
+            anthropic_base_url: validated_base_url("anthropic_base_url", self.anthropic_base_url)?,
+            openai_base_url: validated_base_url("openai_base_url", self.openai_base_url)?,
         })
     }
 }
@@ -226,10 +226,33 @@ impl Configurations {
                 Ok(v) => v.into(),
                 Err(err) => bail!("missing ADMIN_FULL_NAME: {err}"),
             },
-            anthropic_base_url: optional_environment_variable("ANTHROPIC_BASE_URL")?,
-            openai_base_url: optional_environment_variable("OPENAI_BASE_URL")?,
+            anthropic_base_url: validated_base_url(
+                "ANTHROPIC_BASE_URL",
+                optional_environment_variable("ANTHROPIC_BASE_URL")?,
+            )?,
+            openai_base_url: validated_base_url(
+                "OPENAI_BASE_URL",
+                optional_environment_variable("OPENAI_BASE_URL")?,
+            )?,
         })
     }
+}
+
+fn validated_base_url(
+    setting_name: &str,
+    base_url: Option<Cow<'static, str>>,
+) -> anyhow::Result<Option<Cow<'static, str>>> {
+    let Some(base_url) = base_url else {
+        return Ok(None);
+    };
+    let parsed_base_url: http::Uri = base_url
+        .parse()
+        .map_err(|error| anyhow::anyhow!("invalid {setting_name} {base_url}: {error}"))?;
+    let uses_http_scheme = matches!(parsed_base_url.scheme_str(), Some("http" | "https"));
+    if !uses_http_scheme || parsed_base_url.authority().is_none() {
+        bail!("invalid {setting_name} {base_url}: expected an http or https URL");
+    }
+    Ok(Some(base_url))
 }
 
 fn optional_environment_variable(name: &str) -> anyhow::Result<Option<Cow<'static, str>>> {

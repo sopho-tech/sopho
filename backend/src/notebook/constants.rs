@@ -10,8 +10,6 @@ pub enum NotebookStatus {
     Failed,
 }
 
-impl NotebookStatus {}
-
 impl fmt::Display for NotebookStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
