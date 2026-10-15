@@ -2,14 +2,14 @@ use crate::authorization::constants::{SystemRole, Visibility};
 use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantContext;
 use crate::authorization::errors::TenantContextError;
-use crate::common::time_utils;
 use crate::common::AppState;
+use crate::common::time_utils;
 use crate::entity;
 use crate::tests::common::app_state::init_test_app_state;
 use crate::tests::common::resources::{
     insert_canvas, insert_connection, insert_conversation, insert_dashboard, insert_notebook,
 };
-use crate::tests::common::tenancy::{create_tenant_with_owner, resolve_context, TenantFixture};
+use crate::tests::common::tenancy::{TenantFixture, create_tenant_with_owner, resolve_context};
 use sea_orm::{ActiveModelTrait, Set};
 use uuid::Uuid;
 
@@ -194,13 +194,11 @@ async fn dashboard_of_another_tenant_is_not_readable() {
     let first_context = tenant_context_for(&app_state, &first).await;
     let second_context = tenant_context_for(&app_state, &second).await;
 
-    assert!(crate::dashboard::service::get_dashboard(
-        app_state.clone(),
-        &first_context,
-        dashboard_id
-    )
-    .await
-    .is_ok());
+    assert!(
+        crate::dashboard::service::get_dashboard(app_state.clone(), &first_context, dashboard_id)
+            .await
+            .is_ok()
+    );
 
     assert_unreachable(
         crate::dashboard::service::get_dashboard(app_state.clone(), &second_context, dashboard_id)
@@ -226,13 +224,15 @@ async fn connection_of_another_tenant_is_not_readable() {
     let first_context = tenant_context_for(&app_state, &first).await;
     let second_context = tenant_context_for(&app_state, &second).await;
 
-    assert!(crate::connection::service::get_connection(
-        app_state.clone(),
-        &first_context,
-        connection_id
-    )
-    .await
-    .is_ok());
+    assert!(
+        crate::connection::service::get_connection(
+            app_state.clone(),
+            &first_context,
+            connection_id
+        )
+        .await
+        .is_ok()
+    );
 
     assert_unreachable(
         crate::connection::service::get_connection(

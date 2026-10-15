@@ -2,11 +2,11 @@ use crate::authorization::dto::TenantContext;
 use crate::common::AppState;
 use crate::suggested_question::errors::SuggestedQuestionError;
 use crate::suggested_question::service;
+use axum::Router;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::Router;
 use uuid::Uuid;
 
 #[derive(serde::Deserialize)]

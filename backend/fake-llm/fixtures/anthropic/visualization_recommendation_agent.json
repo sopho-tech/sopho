@@ -1,0 +1,21 @@
+{
+  "match": "\"title\":\"VisualizationRecommendation\"",
+  "response": {
+    "id": "msg_fake_visualization_recommendation_agent",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-haiku-4-5",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"chart_type\":\"BAR\",\"x_axis\":\"order_status\",\"series\":[\"order_count\"]}"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 1,
+      "output_tokens": 1
+    }
+  }
+}

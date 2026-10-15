@@ -1,5 +1,5 @@
 import * as RadixCollapsible from "@radix-ui/react-collapsible";
-import styles from "./Collapsible.module.css";
+import styles from "src/components/design-system/Collapsible/Collapsible.module.css";
 
 export type CollapsibleRootProps = {
   children: React.ReactNode;

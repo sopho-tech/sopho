@@ -3,7 +3,7 @@ import styles from "src/components/design-system/DataTable/DataTable.module.css"
 
 export function createDragPreview<T>(
   rowElement: HTMLTableRowElement,
-  table: Table<T>
+  table: Table<T>,
 ): HTMLDivElement {
   const tableWidth = table.getCenterTotalSize();
 
@@ -37,4 +37,3 @@ export function createDragPreview<T>(
 
   return dragPreviewContainer;
 }
-

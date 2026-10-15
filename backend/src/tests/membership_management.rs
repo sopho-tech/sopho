@@ -233,9 +233,11 @@ async fn member_capabilities_match_what_the_rules_allow() {
     assert_eq!(seen_by_admin[&user_of(&member)], (true, true));
 
     let seen_by_member = capabilities_seen_by(&app_state, &member).await;
-    assert!(seen_by_member
-        .values()
-        .all(|capabilities| *capabilities == (false, false)));
+    assert!(
+        seen_by_member
+            .values()
+            .all(|capabilities| *capabilities == (false, false))
+    );
     assert!(matches!(
         membership_service::update_member_role(
             &app_state,
@@ -299,9 +301,11 @@ async fn member_capabilities_match_what_the_rules_allow() {
             (SystemRole::Viewer.as_str().to_string(), true),
         ]
     );
-    assert!(membership_service::list_roles(&app_state, &owner)
-        .await
-        .unwrap()
-        .iter()
-        .all(|role| role.assignable));
+    assert!(
+        membership_service::list_roles(&app_state, &owner)
+            .await
+            .unwrap()
+            .iter()
+            .all(|role| role.assignable)
+    );
 }

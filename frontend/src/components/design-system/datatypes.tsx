@@ -108,11 +108,7 @@ export type JustifyContent =
   | "space-evenly";
 
 export type AlignItems =
-  | "flex-start"
-  | "flex-end"
-  | "center"
-  | "stretch"
-  | "baseline";
+  "flex-start" | "flex-end" | "center" | "stretch" | "baseline";
 
 export type AlignContent =
   | "flex-start"
@@ -124,18 +120,13 @@ export type AlignContent =
   | "stretch";
 
 export type ColorVariant =
-  | "default"
-  | "info"
-  | "error"
-  | "warning"
-  | "white"
-  | "grey";
+  "default" | "info" | "error" | "warning" | "white" | "grey";
 
 export type BorderVariant = "default" | "divider" | "warning";
 
 export type ShadowVariant = "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "scroll";
 
-export type Postition = "sticky" | "absolute" | "relative" | "fixed";
+export type Position = "sticky" | "absolute" | "relative" | "fixed";
 
 export type ZIndex = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10";
 
@@ -194,7 +185,7 @@ export type SharedLayoutProps = {
   bottom?: SpacingValue;
   left?: SpacingValue;
   right?: SpacingValue;
-  position?: Postition;
+  position?: Position;
   zIndex?: ZIndex;
   height?: NumberString;
   width?: NumberString;

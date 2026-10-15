@@ -65,7 +65,6 @@ impl ChartContent {
 
 #[derive(Debug)]
 pub struct ChartExecution {
-    pub cell_id: Uuid,
     pub chart_name: String,
     pub chart_type: String,
     pub field_names: Vec<String>,
@@ -155,10 +154,6 @@ impl CellContent {
             _ => Err(SophoError::UnsupportedCellType),
         }
     }
-
-    pub fn to_json(&self) -> Result<String, serde_json::Error> {
-        serde_json::to_string(self)
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -215,16 +210,6 @@ impl From<entity::cell::Model> for CellDto {
             updated_at: model.updated_at,
             created_by: None,
             modified_by: None,
-        }
-    }
-}
-
-impl CellDto {
-    pub fn parse_content(&self) -> Result<Option<CellContent>, SophoError> {
-        if let Some(content) = &self.content {
-            CellContent::parse(content, &self.cell_type).map(Some)
-        } else {
-            Ok(None)
         }
     }
 }

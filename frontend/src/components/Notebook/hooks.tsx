@@ -11,7 +11,7 @@ const INITIAL_PAGE_SIZE = 20;
 export function useCellContainerClassName(
   cellId: string,
   baseClassName: string,
-  activeClassName: string
+  activeClassName: string,
 ) {
   const activeCellId = useStore((state) => state.notebook.activeCellId);
   return classNames(cellId === activeCellId && activeClassName, baseClassName);
@@ -32,7 +32,7 @@ export function useScrollToCellFromUrl() {
         params.delete(SEARCH_PARAMS.CELL);
         return params;
       },
-      { replace: true }
+      { replace: true },
     );
   }, [cellId, setActiveCellId, setSearchParams]);
 
@@ -51,7 +51,7 @@ export function useNotebooksPagination() {
     setPagination((prev) =>
       typeof updaterOrValue === "function"
         ? updaterOrValue(prev)
-        : updaterOrValue
+        : updaterOrValue,
     );
   };
 

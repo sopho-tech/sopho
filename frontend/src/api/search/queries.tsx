@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
-import { EntityType } from "./constants";
+import { EntityType } from "src/api/search/constants";
 import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
 export type SearchRequestDto = {
@@ -31,7 +31,7 @@ const searchApi = {
   search: async (
     tenantId: string,
     query: string,
-    filters: EntityType[]
+    filters: EntityType[],
   ): Promise<SearchResultItemDto[]> => {
     const url = new URL(
       tenantApiUrl(tenantId, API_ENDPOINTS.SEARCH.SEARCH),
@@ -54,11 +54,15 @@ const searchApi = {
   },
 };
 
-export const useSearch = (query: string, filters: EntityType[]) => {
+export const useSearch = (
+  query: string,
+  filters: EntityType[],
+  isEnabled: boolean,
+) => {
   const tenantId = useTenantId();
   return useQuery({
     queryKey: searchKeys.search(tenantId, query, filters),
     queryFn: () => searchApi.search(tenantId, query, filters),
-    enabled: filters.length > 0,
+    enabled: isEnabled && filters.length > 0,
   });
 };

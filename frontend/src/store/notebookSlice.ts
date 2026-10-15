@@ -13,7 +13,9 @@ export const createNotebookSlice: StateCreator<NotebookSlice> = (set) => ({
   notebook: {
     activeCellId: "",
     setActiveCellId: (cellId) =>
-      set((state) => ({ notebook: { ...state.notebook, activeCellId: cellId } })),
+      set((state) => ({
+        notebook: { ...state.notebook, activeCellId: cellId },
+      })),
     cellPendingDeletion: "",
     setCellPendingDeletion: (cellId) =>
       set((state) => ({

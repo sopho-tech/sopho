@@ -19,12 +19,12 @@ export function useHomeNavigation() {
   );
 
   const handleCreateCanvas = useCallback(() => {
-    navigate(toTenantPath(APP_ROUTES.CANVASES));
+    void navigate(toTenantPath(APP_ROUTES.CANVASES));
     setCanvasPageState(CanvasesPageState.CREATE_CANVAS_DIALOG);
   }, [navigate, setCanvasPageState, toTenantPath]);
 
   const handleCreateConnection = useCallback(() => {
-    navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
+    void navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW);
   }, [navigate, setConnectionDetailsPageState, toTenantPath]);
 

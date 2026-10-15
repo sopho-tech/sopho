@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { BannerSlim, Button, Flex, Text } from "src/components/design-system";
+import { UNSTYLED_LIST_STYLE } from "src/components/Settings/Members/constants";
 import {
   InvitationDto,
   useRevokeInvitation,
@@ -21,11 +22,11 @@ function PendingInvitationRow({
   );
   return (
     <Flex
+      as="li"
       direction="row"
       justifyContent="space-between"
       alignItems="center"
       gap="md"
-      role="group"
       aria-label={invitation.email}
     >
       <Flex direction="column">
@@ -73,14 +74,16 @@ export function PendingInvitations() {
       {revokeInvitation.error && (
         <BannerSlim type="error" message={revokeInvitation.error.message} />
       )}
-      {invitations.data.map((invitation) => (
-        <PendingInvitationRow
-          key={invitation.id}
-          invitation={invitation}
-          onRevoke={revoke}
-          isRevoking={revokeInvitation.isPending}
-        />
-      ))}
+      <Flex as="ul" direction="column" gap="sm" sx={UNSTYLED_LIST_STYLE}>
+        {invitations.data.map((invitation) => (
+          <PendingInvitationRow
+            key={invitation.id}
+            invitation={invitation}
+            onRevoke={revoke}
+            isRevoking={revokeInvitation.isPending}
+          />
+        ))}
+      </Flex>
     </Flex>
   );
 }

@@ -1,7 +1,7 @@
 use super::canvas;
 use super::constants;
-use super::constants::{ConversationStatus, PipelineOutcome};
 use super::constants::{CONNECTION_NOT_FOUND_MESSAGE, CONVERSATION_NOT_FOUND_MESSAGE};
+use super::constants::{ConversationStatus, PipelineOutcome};
 use super::dto;
 use super::error::AppendUserMessageError;
 use super::error::ConversationError;
@@ -25,8 +25,8 @@ use crate::authorization::dto::{AuthorizationSubject, TenantContext, TenantId};
 use crate::authorization::errors::AuthorizationError;
 use crate::authorization::service as authorization_service;
 use crate::canvas::dto::CanvasAuthorship;
-use crate::common::time_utils;
 use crate::common::AppState;
+use crate::common::time_utils;
 use crate::connection::service as connection_service;
 use crate::conversational_analytics::command::constants::{self as command_constants, Command};
 use crate::conversational_analytics::conversation::constants::ContentType;
@@ -50,8 +50,8 @@ use sea_orm::TransactionTrait;
 use std::collections::HashMap;
 use std::{convert::Infallible, time::Duration};
 use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt as _;
+use tokio_stream::wrappers::ReceiverStream;
 use uuid::Uuid;
 
 async fn ensure_ai_live(
@@ -719,8 +719,10 @@ pub async fn execute_completion(
     app_state: AppState,
     tenant_context: &TenantContext,
     conversation_id: Uuid,
-) -> Result<Sse<impl futures_util::Stream<Item = Result<Event, Infallible>>>, ExecuteCompletionError>
-{
+) -> Result<
+    Sse<impl futures_util::Stream<Item = Result<Event, Infallible>> + use<>>,
+    ExecuteCompletionError,
+> {
     authorize_conversation(&app_state, tenant_context, conversation_id, Action::Write)
         .await
         .map_err(|_| ExecuteCompletionError::ConversationNotFound)?;
@@ -775,9 +777,11 @@ pub async fn execute_completion(
                 tenant_id,
                 &connection,
                 conversation_id,
-                &question,
-                &commands,
-                &conversation_history,
+                PipelineRequest {
+                    question: &question,
+                    commands: &commands,
+                    conversation_history: &conversation_history,
+                },
                 &channels,
                 &ai_actor,
             )
@@ -853,17 +857,26 @@ fn resolve_command_decision(
     }
 }
 
+struct PipelineRequest<'a> {
+    question: &'a str,
+    commands: &'a [Command],
+    conversation_history: &'a ConversationHistory,
+}
+
 async fn run_pipeline(
     app_state: &AppState,
     tenant_id: &TenantId,
     connection: &entity::connection::Model,
     conversation_id: Uuid,
-    question: &str,
-    commands: &[Command],
-    conversation_history: &ConversationHistory,
+    request: PipelineRequest<'_>,
     channels: &EventChannels,
     actor: &Actor,
 ) -> anyhow::Result<PipelineOutcome> {
+    let PipelineRequest {
+        question,
+        commands,
+        conversation_history,
+    } = request;
     channels.send(crate::ai::dto::Event::Starting).await?;
     channels.send(crate::ai::dto::Event::Routing).await?;
     let decision = if let Some(command) = commands.first() {
@@ -881,11 +894,7 @@ async fn run_pipeline(
         RouterCode::TextToSql | RouterCode::Followup => {
             let effective_question = {
                 let m = decision.message.trim();
-                if m.is_empty() {
-                    question
-                } else {
-                    m
-                }
+                if m.is_empty() { question } else { m }
             };
             let sql = text_to_sql_agent::execute(
                 app_state,

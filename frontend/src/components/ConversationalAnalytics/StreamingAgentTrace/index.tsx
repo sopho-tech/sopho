@@ -1,1 +1,1 @@
-export { StreamingAgentTrace } from "./StreamingAgentTrace";
+export { StreamingAgentTrace } from "src/components/ConversationalAnalytics/StreamingAgentTrace/StreamingAgentTrace";

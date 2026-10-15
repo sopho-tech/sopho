@@ -13,7 +13,10 @@ import { conversationKeys } from "src/api/conversational_analytics/queries";
 import { useSuggestConversationName } from "src/api/conversational_analytics";
 import { streamSse } from "src/utils/fetch_sse";
 import { tenantApiUrl, useTenantId } from "src/utils/tenant";
-import { AgentEventName, type AgentEvent } from "./dto";
+import {
+  AgentEventName,
+  type AgentEvent,
+} from "src/components/ConversationalAnalytics/dto";
 
 const TERMINAL_EVENTS = new Set<string>([
   AgentEventName.Completed,
@@ -128,7 +131,7 @@ export function ConversationStreamProvider({
                     store.streams.delete(conversationId);
                     notify(store);
                     controller.abort();
-                    queryClient.invalidateQueries({
+                    void queryClient.invalidateQueries({
                       queryKey: conversationKeys.detail(
                         tenantId,
                         conversationId,
@@ -143,7 +146,7 @@ export function ConversationStreamProvider({
                   });
                   notify(store);
                 } catch {
-                  /* ignore unparseable frames */
+                  /* ignore unparsable frames */
                 }
               },
             },

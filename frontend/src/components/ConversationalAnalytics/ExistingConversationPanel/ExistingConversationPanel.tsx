@@ -13,12 +13,12 @@ import { ConversationActionsMenu } from "src/components/ConversationalAnalytics/
 import { Flex, Icon, Text } from "src/components/design-system";
 import { ConversationLimitNotice } from "src/components/ConversationalAnalytics/ExistingConversationPanel/ConversationLimitNotice";
 import { AttributionLine } from "src/components/Attribution";
-import { MessageHoverFooter } from "./MessageHoverFooter";
+import { MessageHoverFooter } from "src/components/ConversationalAnalytics/ExistingConversationPanel/MessageHoverFooter";
 import {
   getFollowUpDisabledTooltip,
   useCanSendFollowUp,
-} from "./useCanSendFollowUp";
-import styles from "./ExistingConversationPanel.module.css";
+} from "src/components/ConversationalAnalytics/ExistingConversationPanel/useCanSendFollowUp";
+import styles from "src/components/ConversationalAnalytics/ExistingConversationPanel/ExistingConversationPanel.module.css";
 import { useEffect, useMemo, useRef } from "react";
 import { AgentTrace } from "src/components/ConversationalAnalytics/AgentTrace";
 import { StreamingAgentTrace } from "src/components/ConversationalAnalytics/StreamingAgentTrace";
@@ -108,7 +108,7 @@ export const ExistingConversationPanel = () => {
 
   useEffect(() => {
     if (!isNotFound) return;
-    navigate(
+    void navigate(
       toTenantPath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATIONS),
       {
         replace: true,

@@ -5,7 +5,7 @@ const ELEMENT_LOOKUP_TIMEOUT_MS = 3000;
 
 export function useScrollToElement(
   elementId: string | null,
-  onScrolled?: () => void
+  onScrolled?: () => void,
 ) {
   useEffect(() => {
     if (!elementId) {
@@ -38,7 +38,7 @@ export function useDebouncedValue<T>(value: T, delay: number = 300): T {
 
   const debouncedSetValue = useMemo(
     () => debounce((val: T) => setDebouncedValue(val), delay),
-    [delay]
+    [delay],
   );
 
   useEffect(() => {

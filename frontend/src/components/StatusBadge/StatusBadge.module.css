@@ -17,8 +17,8 @@
 
 .inactive {
   background-color: #f0f0f0;
-  color: #666666;
-  border-color: #cccccc;
+  color: #666;
+  border-color: #ccc;
 }
 
 .failed {

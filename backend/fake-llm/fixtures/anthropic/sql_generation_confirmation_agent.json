@@ -1,0 +1,21 @@
+{
+  "match": "Results of executing the generated SQL is:",
+  "response": {
+    "id": "msg_fake_sql_generation_confirmation_agent",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-haiku-4-5",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"action\":\"CONFIRM\",\"query_description\":\"Counts the orders in each status\"}"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 1,
+      "output_tokens": 1
+    }
+  }
+}

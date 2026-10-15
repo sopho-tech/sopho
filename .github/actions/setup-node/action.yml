@@ -1,0 +1,19 @@
+name: Set up Node
+description: Installs Node from .nvmrc and the npm dependencies of one package
+inputs:
+  directory:
+    description: Directory that holds the package.json and package-lock.json to install
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install Node
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version-file: .nvmrc
+        cache: npm
+        cache-dependency-path: ${{ inputs.directory }}/package-lock.json
+    - name: Install npm dependencies
+      shell: bash
+      working-directory: ${{ inputs.directory }}
+      run: npm ci

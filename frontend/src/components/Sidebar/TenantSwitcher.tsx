@@ -22,10 +22,9 @@ function WorkspaceMenuItem({
   isCurrent: boolean;
 }) {
   const navigate = useNavigate();
-  const handleSelect = useCallback(
-    () => navigate(tenantPath(membership.tenant_id, APP_ROUTES.INDEX)),
-    [navigate, membership.tenant_id],
-  );
+  const handleSelect = useCallback(() => {
+    void navigate(tenantPath(membership.tenant_id, APP_ROUTES.INDEX));
+  }, [navigate, membership.tenant_id]);
   return (
     <DropdownMenu.ItemWithDescription
       label={membership.tenant_name}
@@ -45,10 +44,9 @@ export function TenantSwitcher() {
     PLATFORM_PERMISSIONS.TENANT_CREATE,
   );
   const receivedInvitations = useReceivedInvitations();
-  const handleOpenOnboarding = useCallback(
-    () => navigate(APP_ROUTES.ONBOARDING),
-    [navigate],
-  );
+  const handleOpenOnboarding = useCallback(() => {
+    void navigate(APP_ROUTES.ONBOARDING);
+  }, [navigate]);
 
   return (
     <DropdownMenu>

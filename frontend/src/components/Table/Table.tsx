@@ -73,7 +73,7 @@ function useCreateReactTable<T>(
   tableType: TableType,
   reactTableColumns: ColumnDef<T, unknown>[],
   data: T[],
-  paginationConfig: PaginationConfig | undefined
+  paginationConfig: PaginationConfig | undefined,
 ) {
   const paginationState = (() => {
     if (tableType === TableType.PAGINATED) {
@@ -137,14 +137,15 @@ export function Table<T>({
 
   const reactTableColumns: ColumnDef<T, unknown>[] = columns.map((col) => {
     if (col.type === "accessor") {
-        return columnHelper.accessor(
-          col.accessor as Parameters<typeof columnHelper.accessor>[0],
-          {
-            header: col.header,
-            cell: col.cell || ((props: CellContext<T, unknown>) => props.getValue()),
-            size: col.size,
-          }
-        );
+      return columnHelper.accessor(
+        col.accessor as Parameters<typeof columnHelper.accessor>[0],
+        {
+          header: col.header,
+          cell:
+            col.cell || ((props: CellContext<T, unknown>) => props.getValue()),
+          size: col.size,
+        },
+      );
     } else {
       return columnHelper.display({
         id: col.key,
@@ -159,7 +160,7 @@ export function Table<T>({
     tableType,
     reactTableColumns,
     data,
-    paginationConfig
+    paginationConfig,
   );
 
   if (isLoading) {
@@ -181,32 +182,35 @@ export function Table<T>({
           className={`${styles.table} ${isPlain ? styles.tablePlain : ""}`}
         >
           {showHeader && (
-          <thead className={styles.thead}>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header, index) => {
-                  const isFirst = index === 0;
-                  const isLast = index === headerGroup.headers.length - 1;
-                  return (
-                    <th
-                      key={header.id}
-                      className={`${styles.tableHeaderCell} ${isCompact ? styles.tableHeaderCellCompact : ""} ${tableHeaderCellStyle || ""} ${isFirst && tableFirstHeaderCellStyle ? tableFirstHeaderCellStyle : ""} ${isLast && tableLastHeaderCellStyle ? tableLastHeaderCellStyle : ""}`}
-                      style={{
-                        width: getColumnWidth(header.column.id, header.getSize()),
-                      }}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </th>
-                  );
-                })}
-              </tr>
-            ))}
-          </thead>
+            <thead className={styles.thead}>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header, index) => {
+                    const isFirst = index === 0;
+                    const isLast = index === headerGroup.headers.length - 1;
+                    return (
+                      <th
+                        key={header.id}
+                        className={`${styles.tableHeaderCell} ${isCompact ? styles.tableHeaderCellCompact : ""} ${tableHeaderCellStyle || ""} ${isFirst && tableFirstHeaderCellStyle ? tableFirstHeaderCellStyle : ""} ${isLast && tableLastHeaderCellStyle ? tableLastHeaderCellStyle : ""}`}
+                        style={{
+                          width: getColumnWidth(
+                            header.column.id,
+                            header.getSize(),
+                          ),
+                        }}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                      </th>
+                    );
+                  })}
+                </tr>
+              ))}
+            </thead>
           )}
           <tbody className={styles.tableBody}>
             {table.getRowModel().rows.map((row) => (
@@ -223,7 +227,7 @@ export function Table<T>({
                     style={{
                       width: getColumnWidth(
                         cell.column.id,
-                        cell.column.getSize()
+                        cell.column.getSize(),
                       ),
                     }}
                   >

@@ -1,7 +1,7 @@
 import { Command } from "cmdk";
 import React from "react";
-import { CommandMenuItem } from "./CommandMenuItem";
-import { CommandMenuHomePageProps } from "./CommandMenu.types";
+import { CommandMenuItem } from "src/components/design-system/CommandMenu/CommandMenuItem";
+import { CommandMenuHomePageProps } from "src/components/design-system/CommandMenu/CommandMenu.types";
 import { KEYBOARD_SHORTCUTS } from "src/utils/keyboard_shortcuts";
 
 export const CommandMenuHomePage = ({

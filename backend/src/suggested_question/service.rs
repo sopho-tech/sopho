@@ -6,8 +6,8 @@ use crate::authorization::dto::Actor;
 use crate::authorization::dto::{TenantContext, TenantId};
 use crate::authorization::errors::AuthorizationError;
 use crate::authorization::service as authorization_service;
-use crate::common::time_utils;
 use crate::common::AppState;
+use crate::common::time_utils;
 use crate::connection::service as connection_service;
 use crate::data_catalog;
 use crate::entity;
@@ -42,15 +42,6 @@ pub async fn list_for_connection(
     )
     .await?;
     Ok(rows.into_iter().map(SuggestedQuestionDto::from).collect())
-}
-
-pub async fn delete_for_connection(
-    app_state: &AppState,
-    tenant_id: &TenantId,
-    connection_id: Uuid,
-) -> Result<(), sea_orm::DbErr> {
-    repository::delete_for_connection(&app_state.database_connection, tenant_id, connection_id)
-        .await
 }
 
 fn is_stale(generated_at: sea_orm::prelude::DateTimeWithTimeZone) -> bool {

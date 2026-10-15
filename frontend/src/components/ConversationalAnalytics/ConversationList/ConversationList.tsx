@@ -15,10 +15,10 @@ import {
   CONVERSATION_SEARCH_DEBOUNCE_MS,
 } from "src/components/ConversationalAnalytics/constants";
 import { useDebouncedValue } from "src/utils/hooks";
-import { ConversationListHeader } from "./ConversationListHeader";
-import { BulkDeleteConversationsDialog } from "./BulkDeleteConversationsDialog";
-import { createConversationListColumns } from "./conversationListColumns";
-import { useConversationSelection } from "./useConversationSelection";
+import { ConversationListHeader } from "src/components/ConversationalAnalytics/ConversationList/ConversationListHeader";
+import { BulkDeleteConversationsDialog } from "src/components/ConversationalAnalytics/ConversationList/BulkDeleteConversationsDialog";
+import { createConversationListColumns } from "src/components/ConversationalAnalytics/ConversationList/conversationListColumns";
+import { useConversationSelection } from "src/components/ConversationalAnalytics/ConversationList/useConversationSelection";
 
 export const ConversationList = () => {
   const navigate = useNavigate();
@@ -63,7 +63,7 @@ export const ConversationList = () => {
         toggle(conversation.id);
         return;
       }
-      navigate(
+      void navigate(
         toTenantPath(
           generatePath(
             APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION,
@@ -134,7 +134,7 @@ export const ConversationList = () => {
         }
         onDeleteSelected={() => setIsDeleteDialogOpen(true)}
         onCreateConversation={() =>
-          navigate(
+          void navigate(
             toTenantPath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX),
           )
         }

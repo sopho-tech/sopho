@@ -10,8 +10,6 @@ pub enum AiConfigurationError {
     ClientBuild(String),
     #[error("API key must not be empty")]
     EmptyApiKey,
-    #[error("AI configuration not found")]
-    NotFound,
     #[error("{0}")]
     Unauthorized(#[from] crate::authorization::errors::AuthorizationError),
 }

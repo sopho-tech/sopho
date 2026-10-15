@@ -1,0 +1,21 @@
+{
+  "match": "Generate a concise title for this data analysis conversation.",
+  "response": {
+    "id": "msg_fake_conversation_name_agent",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-haiku-4-5",
+    "content": [
+      {
+        "type": "text",
+        "text": "Orders by status"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 1,
+      "output_tokens": 1
+    }
+  }
+}

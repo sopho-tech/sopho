@@ -14,7 +14,7 @@ let failedQueue: {
 const refreshAndRetry = async (
   query?: Query<unknown, unknown, unknown, QueryKey>,
   mutation?: Mutation<unknown, unknown, unknown, unknown>,
-  variables?: unknown
+  variables?: unknown,
 ) => {
   if (isRefreshing) {
     failedQueue.push({ query, mutation, variables });
@@ -26,9 +26,9 @@ const refreshAndRetry = async (
       if (refreshed) {
         failedQueue.forEach(({ query, mutation, variables }) => {
           if (query) {
-            query.fetch();
+            void query.fetch();
           } else if (mutation) {
-            mutation.execute(variables);
+            void mutation.execute(variables);
           }
         });
       } else {
@@ -53,15 +53,15 @@ const errorHandler = (
   error: unknown,
   query?: Query<unknown, unknown, unknown, QueryKey>,
   mutation?: Mutation<unknown, unknown, unknown, unknown>,
-  variables?: unknown
+  variables?: unknown,
 ) => {
   if (error instanceof ApiError) {
     const api_error = error as ApiError;
     if (api_error.status === 401) {
       if (query) {
-        refreshAndRetry(query);
+        void refreshAndRetry(query);
       } else if (mutation) {
-        refreshAndRetry(undefined, mutation, variables);
+        void refreshAndRetry(undefined, mutation, variables);
       }
     }
   }
@@ -69,7 +69,7 @@ const errorHandler = (
 
 export const queryErrorHandler = (
   error: unknown,
-  query: Query<unknown, unknown, unknown, QueryKey>
+  query: Query<unknown, unknown, unknown, QueryKey>,
 ) => {
   errorHandler(error, query, undefined, undefined);
 };
@@ -78,7 +78,7 @@ export const mutationErrorHandler = (
   error: unknown,
   variables: unknown,
   _context: unknown,
-  mutation: Mutation<unknown, unknown, unknown, unknown>
+  mutation: Mutation<unknown, unknown, unknown, unknown>,
 ) => {
   errorHandler(error, undefined, mutation, variables);
 };

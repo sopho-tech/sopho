@@ -5,13 +5,13 @@ use crate::authorization::dto::TenantId;
 use crate::authorization::dto::{AuthorizationSubject, TenantContext};
 use crate::authorization::errors::AuthorizationError;
 use crate::authorization::service as authorization_service;
+use crate::common::AppState;
 use crate::common::constants::CreatedByFilter;
 use crate::common::errors::{CreateConnectionError, ExecuteSqlError, GetDatabaseConnectionError};
 use crate::common::time_utils;
-use crate::common::AppState;
+use crate::connection::constants::CONNECTION_NOT_FOUND_MESSAGE;
 use crate::connection::constants::ConnectionStatus;
 use crate::connection::constants::SourceType;
-use crate::connection::constants::CONNECTION_NOT_FOUND_MESSAGE;
 use crate::connection::cryptography_utils;
 use crate::connection::dto;
 use crate::connection::error::ConnectionError;
@@ -21,17 +21,9 @@ use crate::database::postgres;
 use crate::database::service as database_service;
 use crate::database::sqlite;
 use crate::entity;
-use crate::suggested_question;
 
 use tracing::info;
 use uuid::Uuid;
-
-pub async fn does_connection_exist(app_state: &AppState, tenant_id: &TenantId, id: Uuid) -> bool {
-    matches!(
-        repository::get_connection(&app_state.database_connection, tenant_id, id).await,
-        Ok(Some(_))
-    )
-}
 
 pub(crate) fn reachable_connection_condition(tenant_context: &TenantContext) -> sea_orm::Condition {
     authorization_service::reachable_resource_condition(
@@ -299,15 +291,6 @@ pub async fn create_connection(
 
     let subject = connection_subject(tenant_context, &connection)?;
     connection_response_dto(app_state, tenant_context, &subject, connection).await
-}
-
-pub async fn execute_delete_connection(
-    app_state: &AppState,
-    tenant_id: &TenantId,
-    id: Uuid,
-) -> Result<sea_orm::DeleteResult, sea_orm::DbErr> {
-    suggested_question::service::delete_for_connection(app_state, tenant_id, id).await?;
-    repository::delete_connection(&app_state.database_connection, tenant_id, id).await
 }
 
 pub async fn update_connection(

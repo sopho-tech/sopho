@@ -11,8 +11,8 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::get;
 use axum::{Json, Router};
 use serde::Deserialize;
-use tower_cookies::cookie::{Cookie, SameSite};
 use tower_cookies::Cookies;
+use tower_cookies::cookie::{Cookie, SameSite};
 
 #[derive(Deserialize)]
 struct ProviderPath {

@@ -24,7 +24,11 @@ export function PieChartFields({ formOptions }: { formOptions: FormOptions }) {
           groupName="Category"
         />
       </Form.Field>
-      <Form.Field name="value" required errorMessage="Please select the value column">
+      <Form.Field
+        name="value"
+        required
+        errorMessage="Please select the value column"
+      >
         <Form.Label
           infoIconToolTipMessage={
             <InfoTooltip message="Select the column to use as values" />

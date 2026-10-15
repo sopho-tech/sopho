@@ -1,6 +1,9 @@
 import { Flex, Heading, Grid, GridItem } from "src/components/design-system";
-import { CanvasCard } from "./CanvasCard";
-import { useIsEmptyState, useRecentlyUpdatedCanvases } from "../hooks";
+import { CanvasCard } from "src/components/Home/components/CanvasCard";
+import {
+  useIsEmptyState,
+  useRecentlyUpdatedCanvases,
+} from "src/components/Home/hooks";
 
 const GRID_GUTTER = { base: "md", md: "lg" } as const;
 const GRID_COL_SPAN = { base: 1, md: 4 } as const;
@@ -16,7 +19,7 @@ export function RecentlyUpdatedCanvases() {
   return (
     <Flex direction="column" gap="md" paddingTop="md">
       <Heading
-        accessbilityLevel={2}
+        accessibilityLevel={2}
         weight="medium"
         size="lg"
         textColor="subtle"

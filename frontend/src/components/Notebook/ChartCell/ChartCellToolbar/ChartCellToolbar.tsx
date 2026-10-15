@@ -12,7 +12,7 @@ import {
 import { ElapsedTime } from "src/components/Notebook/ExecutionIndicator";
 import { Flex } from "src/components/design-system";
 import { AiEditedBadge } from "src/components/Attribution";
-import styles from "./ChartCellToolbar.module.css";
+import styles from "src/components/Notebook/ChartCell/ChartCellToolbar/ChartCellToolbar.module.css";
 
 export function ChartCellToolbar({ cellId }: { cellId: string }) {
   const updateCellMutation = useUpdateCell();
@@ -31,7 +31,7 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
         });
       }
     },
-    [cellId, getCellQuery.data, updateCellMutation]
+    [cellId, getCellQuery.data, updateCellMutation],
   );
 
   return (
@@ -43,7 +43,7 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
             onSave={handleSave}
             placeholder="Cell Name"
             defaultValue="Unnamed"
-            className={styles["toolbar__inlineEdit"]}
+            className={styles["toolbarInlineEdit"]}
             readOnly={!canEdit}
           />
         </div>

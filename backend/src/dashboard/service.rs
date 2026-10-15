@@ -4,12 +4,12 @@ use crate::authorization::dto::Actor;
 use crate::authorization::dto::{TenantContext, TenantId};
 use crate::canvas::service as canvas_service;
 use crate::cell::service as cell_service;
+use crate::common::AppState;
 use crate::common::errors::UpdateDashboardError;
 use crate::common::time_utils;
-use crate::common::AppState;
 use crate::dashboard::constants;
-use crate::dashboard::constants::DashboardStatus;
 use crate::dashboard::constants::DASHBOARD_NOT_FOUND_MESSAGE;
+use crate::dashboard::constants::DashboardStatus;
 use crate::dashboard::dto;
 use crate::dashboard::dto::Layout;
 use crate::dashboard::error::DashboardError;
@@ -17,13 +17,6 @@ use crate::dashboard::repository;
 use crate::entity;
 use sea_orm::{DatabaseTransaction, TransactionTrait};
 use uuid::Uuid;
-
-pub async fn does_dashboard_exist(app_state: &AppState, tenant_id: &TenantId, id: Uuid) -> bool {
-    matches!(
-        repository::get_dashboard(&app_state.database_connection, tenant_id, id).await,
-        Ok(Some(_))
-    )
-}
 
 pub async fn get_dashboard(
     app_state: AppState,

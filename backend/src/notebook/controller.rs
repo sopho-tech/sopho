@@ -2,17 +2,17 @@ use crate::authorization::dto::TenantContext;
 use crate::common::AppState;
 use crate::common::Pagination;
 use crate::notebook::constants::{
-    QueryFilters, CANVAS_NOT_FOUND_MESSAGE, NOTEBOOK_NOT_FOUND_MESSAGE,
+    CANVAS_NOT_FOUND_MESSAGE, NOTEBOOK_NOT_FOUND_MESSAGE, QueryFilters,
 };
 use crate::notebook::dto;
 use crate::notebook::error::NotebookError;
 use crate::notebook::service;
+use axum::Router;
 use axum::extract::Path;
 use axum::extract::{Json, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
-use axum::Router;
 use serde_json::Value;
 use uuid::Uuid;
 

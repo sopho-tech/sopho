@@ -3,8 +3,8 @@ use crate::authorization::dto::TenantId;
 use crate::canvas::dto;
 use crate::common::time_utils;
 use crate::entity::canvas;
-use sea_orm::sea_query::{Expr, Func, Query, SelectStatement};
 use sea_orm::Condition;
+use sea_orm::sea_query::{Expr, Func, Query, SelectStatement};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr,
     EntityTrait, PaginatorTrait,
@@ -52,22 +52,6 @@ pub async fn update_canvas_transaction(
     canvas_active.update(txn).await
 }
 
-pub async fn get_paginated_canvases(
-    db: &DatabaseConnection,
-    tenant_id: &TenantId,
-    page: u64,
-    page_size: u64,
-) -> Result<(Vec<canvas::Model>, u64, u64), DbErr> {
-    let paginator = canvas::Entity::find()
-        .filter(canvas::Column::TenantId.eq(tenant_id.get_uuid()))
-        .order_by(canvas::Column::UpdatedAt, Order::Desc)
-        .paginate(db, page_size);
-    let total_items = paginator.num_items().await?;
-    let canvases = paginator.fetch_page(page).await?;
-    let total_pages = paginator.num_pages().await?;
-    Ok((canvases, total_items, total_pages))
-}
-
 pub async fn save_canvas_transaction(
     txn: &DatabaseTransaction,
     tenant_id: &TenantId,
@@ -76,16 +60,6 @@ pub async fn save_canvas_transaction(
     let mut canvas_active_model: canvas::ActiveModel = canvas.into();
     canvas_active_model.tenant_id = Set(tenant_id.get_uuid());
     canvas_active_model.insert(txn).await
-}
-
-pub async fn save_canvas_connection(
-    db: &DatabaseConnection,
-    tenant_id: &TenantId,
-    canvas: canvas::Model,
-) -> Result<canvas::Model, DbErr> {
-    let mut canvas_active_model: canvas::ActiveModel = canvas.into();
-    canvas_active_model.tenant_id = Set(tenant_id.get_uuid());
-    canvas_active_model.insert(db).await
 }
 
 pub async fn delete_canvas_transaction(

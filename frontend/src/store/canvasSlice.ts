@@ -18,10 +18,16 @@ export const createCanvasSlice: StateCreator<CanvasSlice> = (set) => ({
     activeNotebookId: "",
     canvasPageState: CanvasesPageState.LIST,
     setCurrentCanvasId: (canvasId) =>
-      set((state) => ({ canvas: { ...state.canvas, currentCanvasId: canvasId } })),
+      set((state) => ({
+        canvas: { ...state.canvas, currentCanvasId: canvasId },
+      })),
     setActiveNotebookId: (notebookId) =>
-      set((state) => ({ canvas: { ...state.canvas, activeNotebookId: notebookId } })),
+      set((state) => ({
+        canvas: { ...state.canvas, activeNotebookId: notebookId },
+      })),
     setCanvasPageState: (pageState) =>
-      set((state) => ({ canvas: { ...state.canvas, canvasPageState: pageState } })),
+      set((state) => ({
+        canvas: { ...state.canvas, canvasPageState: pageState },
+      })),
   },
 });

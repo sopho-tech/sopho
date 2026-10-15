@@ -14,7 +14,7 @@ import type { MessageSegment } from "src/api/conversational_analytics/queries";
 import { SuggestedQuestions } from "src/components/ConversationalAnalytics/NewConversationPanel/SuggestedQuestions";
 import { SlashCommandSuggestionList } from "src/components/ConversationalAnalytics/SlashCommandSuggestionList";
 import { SLASH_COMMANDS_FOR_FIRST_MESSAGE } from "src/constants/slash_commands";
-import styles from "./NewConversationPanel.module.css";
+import styles from "src/components/ConversationalAnalytics/NewConversationPanel/NewConversationPanel.module.css";
 
 export function NewConversationPanel() {
   const navigate = useNavigate();
@@ -49,7 +49,7 @@ export function NewConversationPanel() {
       { connection_id: selectedConnectionId, segments },
       {
         onSuccess: (data) => {
-          navigate(
+          void navigate(
             toTenantPath(
               generatePath(
                 APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION,
@@ -70,7 +70,7 @@ export function NewConversationPanel() {
         sx={{ maxWidth: "40rem", marginInline: "auto" }}
         gap="2xl"
       >
-        <Heading accessbilityLevel={2} weight="normal" textAlign="center">
+        <Heading accessibilityLevel={2} weight="normal" textAlign="center">
           Let's data
         </Heading>
         <MessageComposer

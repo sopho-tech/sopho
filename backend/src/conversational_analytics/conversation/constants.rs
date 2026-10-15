@@ -26,7 +26,7 @@ pub const CONVERSATION_HISTORY_SCAN_MESSAGE_LIMIT: usize =
 /// 1. Processed - Successfully processed the user or system message.
 /// 2. Failed - There was some issue in processing the message. Ex: Routing agent failed, Text-to-SQL agent failed.
 /// 3. AwaitingClarification - The user question cannot be answered on its own. It can be answered if the user provides more information.
-/// This status is not valid for system messages.
+///    This status is not valid for system messages.
 /// 4. Rejected - The type of question is not supported. Ex - "What is the purpose of life ?". This status is not valid for system messages.
 ///
 /// Non-terminal statuses:
@@ -48,8 +48,6 @@ pub const TERMINAL_MESSAGE_STATUSES: &[MessageStatus] = &[
     MessageStatus::AwaitingClarification,
     MessageStatus::Rejected,
 ];
-
-pub const NON_TERMINAL_MESSAGE_STATUSES: &[MessageStatus] = &[MessageStatus::Processing];
 
 impl fmt::Display for MessageStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -2,9 +2,9 @@ import {
   useHomeNavigation,
   useIsCanvasesEmptyState,
   useIsConnectionsEmptyState,
-} from "../../hooks";
-import { CanvasesEmptyState } from "./CanvasesEmptyState";
-import { ConnectionsEmptyState } from "./ConnectionsEmptyState";
+} from "src/components/Home/hooks";
+import { CanvasesEmptyState } from "src/components/Home/components/EmptyState/CanvasesEmptyState";
+import { ConnectionsEmptyState } from "src/components/Home/components/EmptyState/ConnectionsEmptyState";
 
 export function HomeEmptyState() {
   const { handleCreateCanvas, handleCreateConnection } = useHomeNavigation();

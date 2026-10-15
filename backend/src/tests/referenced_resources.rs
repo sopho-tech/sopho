@@ -1,12 +1,12 @@
 use crate::authorization::constants::{AccessLevel, ResourceType, SystemRole, Visibility};
 use crate::authorization::dto::TenantContext;
-use crate::cell::constants::{CellType, CELL_NOTEBOOK_IS_FIXED_MESSAGE};
+use crate::cell::constants::{CELL_NOTEBOOK_IS_FIXED_MESSAGE, CellType};
 use crate::cell::dto::{
     CellDto, ChartContent, CreateCellDto, ExecuteCellPreviewDto, MetricChartContent,
 };
 use crate::cell::error::CellError;
-use crate::common::errors::{ExecuteChartError, GetDatabaseConnectionError};
 use crate::common::AppState;
+use crate::common::errors::{ExecuteChartError, GetDatabaseConnectionError};
 use crate::conversational_analytics::conversation::dto::CreateConversationDto;
 use crate::conversational_analytics::conversation::error::ConversationError;
 use crate::conversational_analytics::segment::MessageSegment;
@@ -142,9 +142,11 @@ async fn adding_a_cell_needs_write_access_to_its_canvas() {
             .await
             .is_ok()
     );
-    assert!(create_cell(&app_state, &owner, sql_cell(notebook_id, None))
-        .await
-        .is_ok());
+    assert!(
+        create_cell(&app_state, &owner, sql_cell(notebook_id, None))
+            .await
+            .is_ok()
+    );
 }
 
 #[tokio::test]

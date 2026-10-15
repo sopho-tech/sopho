@@ -1,6 +1,6 @@
 import * as RadixSeparator from "@radix-ui/react-separator";
 import classNames from "classnames";
-import styles from "./Separator.module.css";
+import styles from "src/components/design-system/Separator/Separator.module.css";
 
 export type SeparatorProps = React.ComponentPropsWithoutRef<
   typeof RadixSeparator.Root

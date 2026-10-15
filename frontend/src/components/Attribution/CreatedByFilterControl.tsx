@@ -24,7 +24,7 @@ export function CreatedByFilterControl({
   const handleValueChange = useCallback(
     (selected: string) =>
       onValueChange(
-        selected === CreatedByFilter.ME ? CreatedByFilter.ME : null,
+        selected === ALL_ROWS_FILTER_VALUE ? null : CreatedByFilter.ME,
       ),
     [onValueChange],
   );

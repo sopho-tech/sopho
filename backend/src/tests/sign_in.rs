@@ -3,8 +3,8 @@ use crate::authentication::oidc::dto::{CallbackQuery, LoginSecrets, VerifiedClai
 use crate::authentication::oidc::error::OidcLoginError;
 use crate::authentication::oidc::service as oidc_service;
 use crate::authorization::constants::PlatformRole;
-use crate::common::time_utils;
 use crate::common::AppState;
+use crate::common::time_utils;
 use crate::entity;
 use crate::tests::common::app_state::init_test_app_state;
 use crate::tests::common::tenancy::insert_user;
@@ -76,7 +76,7 @@ async fn expire_attempt(app_state: &AppState, state: &str) {
 #[tokio::test]
 async fn password_login_is_refused_for_an_sso_only_user() {
     let app_state = init_test_app_state("sign_in_sso_only_password").await;
-    crate::bootstrap(&app_state).await.unwrap();
+    crate::initialize(&app_state).await.unwrap();
 
     let administrator = crate::authentication::service::verify_credentials(
         &app_state,
@@ -142,7 +142,7 @@ async fn a_returning_identity_signs_in_as_the_same_user() {
 #[tokio::test]
 async fn a_verified_email_never_links_to_a_password_account() {
     let app_state = init_test_app_state("sign_in_password_account").await;
-    crate::bootstrap(&app_state).await.unwrap();
+    crate::initialize(&app_state).await.unwrap();
     let users_before = user_count(&app_state).await;
 
     assert!(matches!(
@@ -164,13 +164,15 @@ async fn a_verified_email_never_links_to_a_password_account() {
         "an account whose email no identity provider verified is never taken over"
     );
     assert_eq!(user_count(&app_state).await, users_before);
-    assert!(crate::authentication::service::verify_credentials(
-        &app_state,
-        TEST_ADMIN_EMAIL,
-        TEST_ADMIN_PASSWORD
-    )
-    .await
-    .is_ok());
+    assert!(
+        crate::authentication::service::verify_credentials(
+            &app_state,
+            TEST_ADMIN_EMAIL,
+            TEST_ADMIN_PASSWORD
+        )
+        .await
+        .is_ok()
+    );
 }
 
 #[tokio::test]
@@ -209,7 +211,7 @@ async fn a_verified_email_links_accounts_created_through_single_sign_on() {
 #[tokio::test]
 async fn an_unverified_email_is_refused_and_creates_nothing() {
     let app_state = init_test_app_state("sign_in_unverified_email").await;
-    crate::bootstrap(&app_state).await.unwrap();
+    crate::initialize(&app_state).await.unwrap();
     let users_before = user_count(&app_state).await;
 
     assert!(matches!(

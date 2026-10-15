@@ -22,7 +22,7 @@ import styles from "src/components/design-system/DataTable/DataTable.module.css"
 
 export function getAlignmentClass(
   dataType: ColumnDataType | undefined,
-  cellValue: unknown
+  cellValue: unknown,
 ): string {
   if (!dataType) {
     return styles.cellAlignLeft;
@@ -45,7 +45,7 @@ export function getAlignmentClass(
 }
 
 export function getHeaderAlignmentClass(
-  dataType: ColumnDataType | undefined
+  dataType: ColumnDataType | undefined,
 ): string {
   if (!dataType) {
     return styles.cellAlignLeft;
@@ -64,7 +64,7 @@ export function getHeaderAlignmentClass(
 }
 
 export function getHeaderJustifyContent(
-  dataType: ColumnDataType | undefined
+  dataType: ColumnDataType | undefined,
 ): "flex-start" | "flex-end" {
   if (!dataType) {
     return "flex-start";
@@ -101,7 +101,7 @@ export function getFontClass(dataType: ColumnDataType | undefined): string {
 
 export function getColumnWidthStyle<T>(
   columnConfig: ColumnConfig<T> | undefined,
-  resolvedColumnSize: number
+  resolvedColumnSize: number,
 ): React.CSSProperties {
   if (columnConfig?.fixedWidth === undefined) {
     return { width: resolvedColumnSize };
@@ -138,7 +138,7 @@ export function useCreateReactTable<T>(
   pagination: PaginationState | undefined,
   setPagination: OnChangeFn<PaginationState> | undefined,
   enableColumnResizing: boolean = true,
-  getRowId?: (row: T) => string
+  getRowId?: (row: T) => string,
 ) {
   const baseConfig = {
     columns: reactTableColumns,
@@ -179,7 +179,7 @@ export function useCreateReactTable<T>(
         : (() => {
             if (!pagination || !setPagination) {
               throw Error(
-                "Pagination state is required for client-side paginated table"
+                "Pagination state is required for client-side paginated table",
               );
             }
             return {
@@ -207,7 +207,7 @@ export function renderPaginationControl<T>(
   tableType: TableType,
   paginationConfig: PaginationConfig | undefined,
   table: Table<T>,
-  showRowsPerPage: boolean = true
+  showRowsPerPage: boolean = true,
 ): React.ReactNode {
   const onChangePageSize = (newPageSize: string) => {
     table.setPageSize(Number(newPageSize));

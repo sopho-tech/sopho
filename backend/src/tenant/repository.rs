@@ -3,8 +3,7 @@ use crate::authorization::dto::Actor;
 use crate::common::time_utils;
 use crate::entity::{role, tenant, tenant_membership};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait,
-    QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, Set,
 };
 use uuid::Uuid;
 
@@ -76,10 +75,6 @@ pub async fn list_memberships_for_user(
         });
     }
     Ok(rows)
-}
-
-pub async fn count_tenants(database_connection: &DatabaseConnection) -> Result<u64, DbErr> {
-    tenant::Entity::find().count(database_connection).await
 }
 
 pub async fn list_all_tenant_ids(

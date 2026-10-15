@@ -1,9 +1,9 @@
 use aes_gcm::{
-    aead::{Aead, AeadCore, KeyInit, OsRng},
     Aes256Gcm, Key,
+    aead::{Aead, AeadCore, KeyInit, OsRng},
 };
 use anyhow::Result;
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::Path;

@@ -15,10 +15,10 @@ impl Command {
 pub fn parse_dedup(names: &[String]) -> Vec<Command> {
     let mut seen: Vec<Command> = Vec::new();
     for name in names {
-        if let Some(cmd) = Command::parse(name) {
-            if !seen.contains(&cmd) {
-                seen.push(cmd);
-            }
+        if let Some(cmd) = Command::parse(name)
+            && !seen.contains(&cmd)
+        {
+            seen.push(cmd);
         }
     }
     seen

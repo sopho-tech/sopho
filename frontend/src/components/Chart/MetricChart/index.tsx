@@ -1,1 +1,1 @@
-export { MetricChart } from "./MetricChart";
+export { MetricChart } from "src/components/Chart/MetricChart/MetricChart";

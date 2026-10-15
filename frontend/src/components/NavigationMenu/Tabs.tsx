@@ -23,7 +23,7 @@ export function Tabs({
   onTabChange,
 }: TabsProps) {
   const [activeTab, setActiveTab] = useState(
-    defaultActiveItem || items[0]?.id || ""
+    defaultActiveItem || items[0]?.id || "",
   );
 
   const handleTabChange = (itemId: string) => {

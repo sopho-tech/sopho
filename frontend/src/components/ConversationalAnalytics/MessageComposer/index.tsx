@@ -1,2 +1,2 @@
-export { MessageComposer } from "./MessageComposer";
-export type { MessageComposerHandle } from "./MessageComposer";
+export { MessageComposer } from "src/components/ConversationalAnalytics/MessageComposer/MessageComposer";
+export type { MessageComposerHandle } from "src/components/ConversationalAnalytics/MessageComposer/MessageComposer";

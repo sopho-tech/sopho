@@ -4,11 +4,11 @@ use crate::tenant::constants::TENANT_NOT_FOUND_MESSAGE;
 use crate::tenant::dto::CreateTenantDto;
 use crate::tenant::error::TenantError;
 use crate::tenant::service;
+use axum::Router;
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
-use axum::Router;
 
 pub fn routes(app_state: AppState) -> Router {
     Router::new()

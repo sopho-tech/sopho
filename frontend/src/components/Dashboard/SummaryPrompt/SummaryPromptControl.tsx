@@ -45,7 +45,7 @@ export function SummaryPromptControl({
       onSavePrompt(prompt);
       setIsDialogOpen(false);
     },
-    [onSavePrompt]
+    [onSavePrompt],
   );
 
   return (

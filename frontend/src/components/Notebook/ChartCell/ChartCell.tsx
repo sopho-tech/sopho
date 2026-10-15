@@ -18,7 +18,7 @@ export function ChartCell({ cell_id }: { cell_id: string }) {
   const containerClassName = useCellContainerClassName(
     cell_id,
     ChartCellStyles.container,
-    activeCellStyles.activeCell
+    activeCellStyles.activeCell,
   );
   const setActiveCellId = useStore((state) => state.notebook.setActiveCellId);
 

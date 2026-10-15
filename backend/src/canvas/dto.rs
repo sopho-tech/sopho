@@ -15,7 +15,6 @@ pub struct CanvasAuthorship {
 pub struct CreateCanvasResult {
     pub canvas: entity::canvas::Model,
     pub notebook: entity::notebook::Model,
-    pub dashboard: entity::dashboard::Model,
 }
 
 #[derive(Debug)]

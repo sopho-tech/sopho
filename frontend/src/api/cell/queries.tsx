@@ -166,10 +166,10 @@ export const useUpdateCell = () => {
       cellApi.updateCell(tenantId, variables),
     onSuccess: (data, { cellId }) => {
       queryClient.setQueryData(cellKeys.detail(tenantId, cellId), data);
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: cellKeys.detail(tenantId, cellId),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.details(tenantId),
       });
     },
@@ -189,14 +189,14 @@ export const useCreateCell = () => {
     onSuccess: (data) => {
       queryClient.setQueryData(cellKeys.detail(tenantId, data.id!), data);
       if (data.notebook_id) {
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: notebookKeys.detail(tenantId, data.notebook_id),
         });
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: [...notebookKeys.cells(tenantId), data.notebook_id],
         });
       }
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.details(tenantId),
       });
     },
@@ -221,17 +221,17 @@ export const useDeleteCell = (notebookId?: string, canvasId?: string) => {
       });
 
       if (notebookId) {
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: notebookKeys.detail(tenantId, notebookId),
         });
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: notebookKeys.cellsByNotebook(
             tenantId,
             notebookId,
             CellType.CHART,
           ),
         });
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: notebookKeys.cellsByNotebook(
             tenantId,
             notebookId,
@@ -241,11 +241,11 @@ export const useDeleteCell = (notebookId?: string, canvasId?: string) => {
       }
 
       if (canvasId) {
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: dashboardKeys.byCanvas(tenantId, canvasId),
         });
       }
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.details(tenantId),
       });
     },
@@ -318,7 +318,7 @@ export const useClearCellOutput = () => {
     (cellId: string) => {
       queryClient.setQueryData(cellKeys.execution(tenantId, cellId), null);
     },
-    [queryClient, tenantId]
+    [queryClient, tenantId],
   );
 };
 
@@ -327,24 +327,26 @@ export const useReorderCell = (canvasId?: string) => {
   const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: (variables: { cellId: string; movementType: CellMovementType }) =>
-      cellApi.reorderCell(tenantId, variables),
+    mutationFn: (variables: {
+      cellId: string;
+      movementType: CellMovementType;
+    }) => cellApi.reorderCell(tenantId, variables),
     onSuccess: (data) => {
       queryClient.setQueryData(cellKeys.detail(tenantId, data.id!), data);
       if (data.notebook_id) {
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: notebookKeys.detail(tenantId, data.notebook_id),
         });
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: [...notebookKeys.cells(tenantId), data.notebook_id],
         });
       }
       if (canvasId) {
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: dashboardKeys.byCanvas(tenantId, canvasId),
         });
       }
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.details(tenantId),
       });
     },

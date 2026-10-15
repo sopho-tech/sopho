@@ -10,5 +10,5 @@ pub mod token_utils;
 
 pub use server_utils::{CreatedByQuery, PaginatedResponse, Pagination};
 #[cfg(test)]
-pub use state::{oidc_providers_from_variables, Configurations};
-pub use state::{AppState, OidcProviderConfiguration};
+pub use state::oidc_providers_from_variables;
+pub use state::{AppState, Configurations, ConfigurationsBuilder, OidcProviderConfiguration};

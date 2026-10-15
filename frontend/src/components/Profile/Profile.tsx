@@ -3,7 +3,7 @@ import { Flex } from "src/components/design-system/Flex/Flex";
 import { useCurrentUser, useDeleteSession } from "src/api/auth_api";
 import { Form } from "src/components/design-system/Form/Form";
 import { Button } from "src/components/design-system/Button/Button";
-import styles from "./Profile.module.css";
+import styles from "src/components/Profile/Profile.module.css";
 
 export function Profile() {
   const { data: user } = useCurrentUser();

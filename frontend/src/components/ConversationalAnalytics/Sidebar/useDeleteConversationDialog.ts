@@ -64,7 +64,7 @@ export function useDeleteConversationDialog(conversationId: string) {
     deleteConversation.mutate(id, {
       onSuccess: () => {
         if (routeConversationId === id && id === conversationId) {
-          navigate(
+          void navigate(
             toTenantPath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX),
           );
         }

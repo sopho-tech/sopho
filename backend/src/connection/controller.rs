@@ -7,11 +7,11 @@ use crate::connection::constants::CONNECTION_NOT_FOUND_MESSAGE;
 use crate::connection::dto;
 use crate::connection::error::ConnectionError;
 use crate::connection::service;
+use axum::Router;
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post, put};
-use axum::Router;
 use uuid::Uuid;
 
 #[derive(serde::Deserialize)]

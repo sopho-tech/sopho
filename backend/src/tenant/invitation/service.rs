@@ -2,10 +2,10 @@ use crate::authentication::service as authentication_service;
 use crate::authorization::constants::Permission;
 use crate::authorization::dto::{Actor, TenantContext, TenantId, UserId};
 use crate::authorization::service as authorization_service;
-use crate::common::time_utils;
 use crate::common::AppState;
+use crate::common::time_utils;
 use crate::entity::tenant_invitation;
-use crate::tenant::invitation::constants::{InvitationStatus, INVITATION_EXPIRY_DAYS};
+use crate::tenant::invitation::constants::{INVITATION_EXPIRY_DAYS, InvitationStatus};
 use crate::tenant::invitation::dto::{
     AcceptedInvitationDto, CreateInvitationDto, InvitationDto, ReceivedInvitationDto,
 };
@@ -13,8 +13,8 @@ use crate::tenant::invitation::error::InvitationError;
 use crate::tenant::invitation::repository;
 use crate::tenant::invitation::repository::NewInvitation;
 use crate::tenant::membership::service as membership_service;
-use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::TransactionTrait;
+use sea_orm::prelude::DateTimeWithTimeZone;
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -38,10 +38,9 @@ pub async fn create_invitation(
     let tenant_id = tenant_context.tenant_id();
     if let Some(existing_user) =
         authentication_service::find_optional_user_by_email(app_state, &email).await?
+        && membership_service::is_active_member(app_state, tenant_id, existing_user.id).await?
     {
-        if membership_service::is_active_member(app_state, tenant_id, existing_user.id).await? {
-            return Err(InvitationError::AlreadyMember);
-        }
+        return Err(InvitationError::AlreadyMember);
     }
     if repository::find_unexpired_pending_invitation(
         &app_state.database_connection,

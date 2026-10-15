@@ -37,7 +37,7 @@ export const ConversationListHeader = ({
     paddingY="lg"
     paddingX="2xs"
   >
-    <Heading accessbilityLevel={2} size="xl" weight="semibold">
+    <Heading accessibilityLevel={2} size="xl" weight="semibold">
       Conversations
     </Heading>
 
@@ -85,15 +85,15 @@ export const ConversationListHeader = ({
           size="sm"
           tooltip={{ text: "New conversation" }}
           onClick={onCreateConversation}
-          />
-          <Button
-            label="Select"
-            shape="rectangle"
-            size="sm"
-            backgroundColor="accent"
-            emphasis="primary"
-            onClick={onEnterSelectMode}
-          />
+        />
+        <Button
+          label="Select"
+          shape="rectangle"
+          size="sm"
+          backgroundColor="accent"
+          emphasis="primary"
+          onClick={onEnterSelectMode}
+        />
       </Flex>
     )}
   </Flex>

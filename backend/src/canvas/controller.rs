@@ -3,15 +3,15 @@ use crate::canvas::constants::{CANVAS_DELETED_MESSAGE, CANVAS_NOT_FOUND_MESSAGE}
 use crate::canvas::dto;
 use crate::canvas::error::CanvasError;
 use crate::canvas::service;
-use crate::common::constants::UNKNOWN_CREATED_BY_FILTER_MESSAGE;
 use crate::common::AppState;
+use crate::common::constants::UNKNOWN_CREATED_BY_FILTER_MESSAGE;
 use crate::common::{CreatedByQuery, Pagination};
+use axum::Router;
 use axum::extract::Path;
 use axum::extract::{Json, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, post, put};
-use axum::Router;
 use serde_json::Value;
 use uuid::Uuid;
 

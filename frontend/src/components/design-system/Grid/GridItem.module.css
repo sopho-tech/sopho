@@ -4,6 +4,7 @@
 }
 
 /* Responsive column spans using CSS custom properties */
+
 /* Only applies when data-responsive="true" (i.e., when colSpan is a responsive object) */
 .gridItem[data-responsive="true"] {
   grid-column: span var(--grid-col-span-default, 12);

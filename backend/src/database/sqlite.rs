@@ -5,7 +5,7 @@ use crate::database::constants::{
     CATALOG_SAMPLE_VALUES_PER_COLUMN, CATALOG_TABLE_FETCH_CONCURRENCY,
 };
 use crate::{connection::constants::ConnectionStatus, entity};
-use base64::{engine::general_purpose::STANDARD, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD};
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use futures_util::StreamExt;
 use sqlx::Column;

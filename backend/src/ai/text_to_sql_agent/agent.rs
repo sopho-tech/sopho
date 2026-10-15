@@ -578,8 +578,7 @@ pub(crate) async fn schema_linking_final_synthesis(
     } else {
         info!(
             "schema_linking_final_synthesis: finished after {} refine rounds without CONFIRM (status={})",
-            SCHEMA_LINKING_MAX_REFINE_ROUNDS,
-            result.status
+            SCHEMA_LINKING_MAX_REFINE_ROUNDS, result.status
         );
     }
 

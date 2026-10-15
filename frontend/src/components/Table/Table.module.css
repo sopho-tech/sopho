@@ -7,8 +7,7 @@
 }
 
 .tableContainer {
-  overflow-y: auto;
-  overflow-x: auto;
+  overflow: auto;
   scrollbar-width: thin;
   display: flex;
   flex-direction: column;
@@ -34,7 +33,7 @@
   color: var(--font-color);
   font-weight: var(--font-weight-medium);
   position: sticky;
-  top: 0px;
+  top: 0;
 }
 
 .tableDataCell {
@@ -58,10 +57,6 @@
 
 .tableBody tr:last-child td {
   border-bottom: none;
-}
-
-.tableBody tc:last-child td {
-  border-right: none;
 }
 
 .thead th:last-child {

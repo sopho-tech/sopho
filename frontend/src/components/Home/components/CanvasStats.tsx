@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Flex } from "src/components/design-system";
-import { CanvasStatItem } from "./CanvasStatItem";
+import { CanvasStatItem } from "src/components/Home/components/CanvasStatItem";
 import type { CanvasDto } from "src/components/Canvases/dto";
 
 const FLEX_SX = { flexWrap: "wrap" } as const;

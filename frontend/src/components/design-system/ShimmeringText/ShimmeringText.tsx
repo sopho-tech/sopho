@@ -42,7 +42,8 @@ export function ShimmeringText({
 
   const containerClass = [
     styles.container,
-    fontSize && styles[`fontSize-${fontSize}`],
+    fontSize &&
+      styles[`fontSize${fontSize.charAt(0).toUpperCase()}${fontSize.slice(1)}`],
     className,
   ]
     .filter(Boolean)

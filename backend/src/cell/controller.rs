@@ -1,21 +1,22 @@
 use crate::authorization::dto::TenantContext;
 use crate::cell::constants::{
     CELL_CONTENT_NOT_SQL_MESSAGE, CELL_HAS_NO_CONTENT_MESSAGE, CELL_NOT_FOUND_MESSAGE,
-    CONNECTION_NOT_FOUND_MESSAGE, INVALID_CHART_CONTENT_MESSAGE, MISSING_CONNECTION_MESSAGE,
+    CHART_CELL_MISSING_SETTING_MESSAGE_PREFIX, CONNECTION_NOT_FOUND_MESSAGE,
+    INVALID_CHART_CONTENT_MESSAGE, MISSING_CONNECTION_MESSAGE,
     SOURCE_CELL_MISSING_CONNECTION_MESSAGE,
 };
 use crate::cell::dto;
 use crate::cell::error::CellError;
 use crate::cell::service;
+use crate::common::AppState;
 use crate::common::error_codes::codes;
 use crate::common::errors::{ExecuteChartError, ExecuteQueryError, GetDatabaseConnectionError};
-use crate::common::AppState;
 use crate::database::constants::QueryResult;
+use axum::Router;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, patch, post, put};
-use axum::Router;
 use serde_json::Value;
 use uuid::Uuid;
 
@@ -234,8 +235,13 @@ fn execute_chart_error_response(error: ExecuteChartError) -> (StatusCode, axum::
             StatusCode::PRECONDITION_FAILED,
             axum::Json(serde_json::json!({ "error": SOURCE_CELL_MISSING_CONNECTION_MESSAGE })),
         ),
-        ExecuteChartError::MissingChartSetting(_)
-        | ExecuteChartError::TooManySeries { .. }
+        ExecuteChartError::MissingChartSetting(setting) => (
+            StatusCode::PRECONDITION_FAILED,
+            axum::Json(serde_json::json!({
+                "message": format!("{CHART_CELL_MISSING_SETTING_MESSAGE_PREFIX} {setting} specified")
+            })),
+        ),
+        ExecuteChartError::TooManySeries { .. }
         | ExecuteChartError::DuplicateSeriesAlias(_)
         | ExecuteChartError::InvalidIdentifier(_) => (
             StatusCode::PRECONDITION_FAILED,

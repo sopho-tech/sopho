@@ -21,17 +21,18 @@ import { PERMISSIONS } from "src/constants/permissions";
 import { InviteMemberForm } from "src/components/Settings/Members/InviteMemberForm";
 import { PendingInvitations } from "src/components/Settings/Members/PendingInvitations";
 import { RemoveMemberDialog } from "src/components/Settings/Members/RemoveMemberDialog";
+import { UNSTYLED_LIST_STYLE } from "src/components/Settings/Members/constants";
 
 const REMOVE_MEMBER_TOOLTIP = { text: "Remove from workspace" };
 
 function MemberRow({
   member,
-  assignableRoles,
+  roles,
   onChangeRole,
   onRemove,
 }: {
   member: MemberDto;
-  assignableRoles: RoleDto[];
+  roles: RoleDto[];
   onChangeRole: (userId: string, roleName: string) => void;
   onRemove: (member: MemberDto) => void;
 }) {
@@ -43,11 +44,11 @@ function MemberRow({
 
   return (
     <Flex
+      as="li"
       direction="row"
       justifyContent="space-between"
       alignItems="center"
       gap="md"
-      role="group"
       aria-label={member.email}
     >
       <Flex direction="column">
@@ -61,11 +62,13 @@ function MemberRow({
           <Select value={member.role_name} onValueChange={handleRoleChange}>
             <Select.Trigger />
             <Select.Content>
-              {assignableRoles.map((role) => (
-                <Select.Item key={role.name} value={role.name}>
-                  {role.name}
-                </Select.Item>
-              ))}
+              {roles
+                .filter((role) => role.assignable)
+                .map((role) => (
+                  <Select.Item key={role.name} value={role.name}>
+                    {role.name}
+                  </Select.Item>
+                ))}
             </Select.Content>
           </Select>
         ) : (
@@ -127,7 +130,7 @@ export function Members() {
 
   return (
     <Flex direction="column" gap="xl" overflow="scrollY">
-      <Heading accessbilityLevel={1} size="lg">
+      <Heading accessibilityLevel={1} size="lg">
         Members
       </Heading>
       {failure && <BannerSlim type="error" message={failure.message} />}
@@ -146,15 +149,17 @@ export function Members() {
           <Text fontSize="sm" color="darkGrey">
             People in this workspace
           </Text>
-          {members.data.map((member) => (
-            <MemberRow
-              key={member.user_id}
-              member={member}
-              assignableRoles={roles.data.filter((role) => role.assignable)}
-              onChangeRole={handleChangeRole}
-              onRemove={setMemberPendingRemoval}
-            />
-          ))}
+          <Flex as="ul" direction="column" gap="sm" sx={UNSTYLED_LIST_STYLE}>
+            {members.data.map((member) => (
+              <MemberRow
+                key={member.user_id}
+                member={member}
+                roles={roles.data}
+                onChangeRole={handleChangeRole}
+                onRemove={setMemberPendingRemoval}
+              />
+            ))}
+          </Flex>
         </Flex>
       )}
       {canInvite && <PendingInvitations />}

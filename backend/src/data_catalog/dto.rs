@@ -38,12 +38,6 @@ impl Database {
             .ok_or_else(|| format!("Schema '{}' not found", schema_name))
     }
 
-    pub fn delete_schema(&mut self, schema_name: &str) -> Result<(), String> {
-        let schema = self.get_schema(schema_name)?;
-        schema.delete_schema();
-        Ok(())
-    }
-
     pub fn delete_table(&mut self, schema_name: &str, table_name: &str) -> Result<(), String> {
         let schema = self.get_schema(schema_name)?;
         let table = schema.get_table(table_name)?;
@@ -61,12 +55,6 @@ impl Database {
         let table = schema.get_table(table_name)?;
         let column = table.get_column(column_name)?;
         column.delete_column();
-        Ok(())
-    }
-
-    pub fn select_schema(&mut self, schema_name: &str) -> Result<(), String> {
-        let schema = self.get_schema(schema_name)?;
-        schema.select_schema();
         Ok(())
     }
 
@@ -94,15 +82,6 @@ impl Database {
         self.schemas
             .get(schema_name)
             .and_then(|s| s.tables.get(table_name))
-    }
-
-    pub fn tables(&self) -> impl Iterator<Item = (&str, &str, &Table)> {
-        self.schemas.iter().flat_map(|(schema_name, schema)| {
-            schema
-                .tables
-                .iter()
-                .map(move |(table_name, table)| (schema_name.as_str(), table_name.as_str(), table))
-        })
     }
 }
 
@@ -136,14 +115,6 @@ impl Schema {
         self.tables
             .get_mut(table_name)
             .ok_or_else(|| format!("Table '{}' not found", table_name))
-    }
-
-    pub fn delete_schema(&mut self) {
-        self.should_delete = true
-    }
-
-    pub fn select_schema(&mut self) {
-        self.should_select = true
     }
 }
 
@@ -205,6 +176,7 @@ pub struct Column {
 }
 
 impl Column {
+    #[cfg(test)]
     pub fn new(
         name: impl Into<String>,
         description: impl Into<String>,
@@ -242,6 +214,7 @@ impl Column {
         }
     }
 
+    #[cfg(test)]
     pub fn entry(
         name: impl Into<String>,
         description: impl Into<String>,

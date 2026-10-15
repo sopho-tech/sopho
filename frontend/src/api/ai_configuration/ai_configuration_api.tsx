@@ -67,7 +67,7 @@ export const useUpdateAiConfiguration = () => {
     mutationFn: (payload: UpsertAiConfigurationInput) =>
       aiConfigurationApi.update(tenantId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiConfigurationKeys.detail(tenantId),
       });
     },
@@ -80,7 +80,7 @@ export const useDeleteAiConfiguration = () => {
   return useMutation({
     mutationFn: () => aiConfigurationApi.remove(tenantId),
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: aiConfigurationKeys.detail(tenantId),
       });
     },

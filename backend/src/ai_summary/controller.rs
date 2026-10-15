@@ -2,11 +2,11 @@ use crate::ai_summary::dto;
 use crate::ai_summary::service::{self, GenerateOutcome, SummaryError};
 use crate::authorization::dto::TenantContext;
 use crate::common::AppState;
+use axum::Router;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post, put};
-use axum::Router;
 use uuid::Uuid;
 
 #[derive(serde::Deserialize)]

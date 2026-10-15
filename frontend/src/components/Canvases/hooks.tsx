@@ -52,14 +52,16 @@ export function useCanvasActions() {
   const navigate = useNavigate();
   const toTenantPath = useTenantPath();
   const deleteMutation = useDeleteCanvas();
-  const setCanvasPageState = useStore((state) => state.canvas.setCanvasPageState);
+  const setCanvasPageState = useStore(
+    (state) => state.canvas.setCanvasPageState,
+  );
 
   const handleViewCanvas = (id: string) => {
-    navigate(toTenantPath(APP_ROUTES.CANVAS.replace(":id", id)));
+    void navigate(toTenantPath(APP_ROUTES.CANVAS.replace(":id", id)));
   };
 
   const handleEditCanvas = (id: string) => {
-    navigate(toTenantPath(APP_ROUTES.CANVAS.replace(":id", id)));
+    void navigate(toTenantPath(APP_ROUTES.CANVAS.replace(":id", id)));
   };
 
   const handleDeleteCanvas = (id: string) => {

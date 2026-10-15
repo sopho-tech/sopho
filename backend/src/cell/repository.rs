@@ -4,12 +4,12 @@ use crate::cell::constants::CellType;
 use crate::cell::dto;
 use crate::common::time_utils;
 use crate::entity::cell;
-use sea_orm::sea_query::{Expr, Func, SelectStatement};
 use sea_orm::ColumnTrait;
 use sea_orm::Condition;
 use sea_orm::QueryFilter;
 use sea_orm::QueryOrder;
 use sea_orm::Set;
+use sea_orm::sea_query::{Expr, Func, SelectStatement};
 use sea_orm::{
     ActiveModelTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
     Order, PaginatorTrait,
@@ -117,21 +117,6 @@ pub async fn update_cell_content_transaction(
     cell_entity.update(txn).await.map(Some)
 }
 
-pub async fn update_cell_display_order(
-    db: &DatabaseConnection,
-    tenant_id: &TenantId,
-    cell_id: Uuid,
-    display_order: i32,
-) -> Result<Option<cell::Model>, DbErr> {
-    let Some(cell) = get_cell(db, tenant_id, cell_id).await? else {
-        return Ok(None);
-    };
-    let mut cell_entity: cell::ActiveModel = cell.into();
-    cell_entity.display_order = Set(display_order);
-    cell_entity.updated_at = Set(time_utils::now_utc_into());
-    cell_entity.update(db).await.map(Some)
-}
-
 pub async fn update_cell_display_order_transaction(
     txn: &DatabaseTransaction,
     tenant_id: &TenantId,
@@ -197,18 +182,6 @@ pub async fn update_cell(
     cell_entity.modified_by_actor = Set(actor.kind_name());
     cell_entity.created_at = Set(payload.created_at);
     cell_entity.update(db).await.map(Some)
-}
-
-pub async fn delete_cell(
-    db: &DatabaseConnection,
-    tenant_id: &TenantId,
-    id: Uuid,
-) -> Result<sea_orm::DeleteResult, DbErr> {
-    cell::Entity::delete_many()
-        .filter(cell::Column::Id.eq(id))
-        .filter(cell::Column::TenantId.eq(tenant_id.get_uuid()))
-        .exec(db)
-        .await
 }
 
 pub async fn get_cell_transaction(

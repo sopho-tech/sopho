@@ -7,8 +7,7 @@
 }
 
 .tableContainer {
-  overflow-y: auto;
-  overflow-x: auto;
+  overflow: auto;
   scrollbar-width: thin;
   display: flex;
   flex-direction: column;
@@ -47,7 +46,7 @@
   color: var(--color-grey-800);
   font-weight: var(--font-weight-medium);
   position: sticky;
-  top: 0px;
+  top: 0;
   border-left: var(--border-dark-thin);
   padding: var(--space-sm) var(--space-md);
   user-select: none;
@@ -72,16 +71,16 @@
 
 .tableBodyRowDragging {
   opacity: 0.5;
+
   /* background-color: var(--color-grey-200); */
 }
 
 .dragPreviewContainer {
   background-color: white;
   border-radius: var(--border-radius-xl);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
   border: var(--border-dark-thin);
   isolation: isolate;
-  -webkit-mask-image: radial-gradient(white, black);
   mask-image: radial-gradient(white, black);
 }
 
@@ -125,10 +124,6 @@
   padding: var(--space-xl);
   text-align: center;
   color: var(--color-grey-500);
-}
-
-.tableBody tc:last-child td {
-  border-right: none;
 }
 
 .thead {

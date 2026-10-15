@@ -1,7 +1,7 @@
-use crate::common::errors::GetDataCatalogError;
 use crate::common::AppState;
+use crate::common::errors::GetDataCatalogError;
 use crate::data_catalog::dto::Database;
-use crate::database::pool::{get_database_pool, DatabasePool};
+use crate::database::pool::{DatabasePool, get_database_pool};
 use crate::database::{postgres, sqlite};
 use crate::entity;
 

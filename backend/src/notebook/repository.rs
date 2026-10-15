@@ -1,11 +1,8 @@
-use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
-use crate::common::time_utils;
 use crate::entity::notebook;
-use crate::notebook::dto;
-use sea_orm::sea_query::{Expr, Query, SelectStatement};
 use sea_orm::ActiveValue::Set;
 use sea_orm::Condition;
+use sea_orm::sea_query::{Expr, Query, SelectStatement};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait};
 use sea_orm::{ColumnTrait, ConnectionTrait, DatabaseTransaction, QueryFilter, QueryOrder};
 use uuid::Uuid;
@@ -58,17 +55,6 @@ pub async fn get_notebooks_by_ids(
     Ok(notebooks)
 }
 
-pub async fn get_all_notebooks(
-    db: &DatabaseConnection,
-    tenant_id: &TenantId,
-) -> Result<Vec<notebook::Model>, DbErr> {
-    let notebooks = notebook::Entity::find()
-        .filter(notebook::Column::TenantId.eq(tenant_id.get_uuid()))
-        .all(db)
-        .await?;
-    Ok(notebooks)
-}
-
 pub fn visible_notebook_ids_subquery(
     tenant_id: &TenantId,
     visible_canvas_ids: SelectStatement,
@@ -100,29 +86,6 @@ pub async fn get_paginated_visible_notebooks(
     let notebooks = paginator.fetch_page(page).await?;
     let total_pages = paginator.num_pages().await?;
     Ok((notebooks, total_items, total_pages))
-}
-
-pub async fn update_notebook(
-    db: &DatabaseConnection,
-    txn: &DatabaseTransaction,
-    tenant_id: &TenantId,
-    notebook_id: Uuid,
-    payload: &dto::NotebookDto,
-    actor: &Actor,
-) -> Result<Option<notebook::Model>, DbErr> {
-    let Some(notebook) = get_notebook(db, tenant_id, notebook_id).await? else {
-        return Ok(None);
-    };
-    let mut notebook_entity: notebook::ActiveModel = notebook.into();
-    notebook_entity.name = Set(payload.name.clone());
-    notebook_entity.description = Set(payload.description.clone());
-    notebook_entity.status = Set(payload.status.to_string());
-    notebook_entity.updated_at = Set(time_utils::now_utc_into());
-    notebook_entity.modified_by_user_id = Set(actor.user_id());
-    notebook_entity.modified_by_actor = Set(actor.kind_name());
-    notebook_entity.created_at = Set(payload.created_at);
-
-    notebook_entity.update(txn).await.map(Some)
 }
 
 pub async fn get_notebook_transaction(

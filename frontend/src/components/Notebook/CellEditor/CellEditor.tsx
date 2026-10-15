@@ -38,7 +38,7 @@ import {
   registerEditorView,
   unregisterEditorView,
 } from "src/components/Notebook/CellEditor/editorRegistry";
-import { theme } from "./theme";
+import { theme } from "src/components/Notebook/CellEditor/theme";
 import { useTenantId } from "src/utils/tenant";
 import { useCanvasCapabilities } from "src/api/canvas/queries";
 
@@ -92,7 +92,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
               return true;
             },
           };
-        }
+        },
       );
 
       debouncedUpdate = debounce((content: string) => {

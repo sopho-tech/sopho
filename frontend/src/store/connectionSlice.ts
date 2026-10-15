@@ -24,10 +24,15 @@ export const createConnectionSlice: StateCreator<ConnectionSlice> = (set) => ({
     connectionId: "",
     setConnectionDetailsPageState: (pageState) =>
       set((state) => ({
-        connection: { ...state.connection, connectionDetailsPageState: pageState },
+        connection: {
+          ...state.connection,
+          connectionDetailsPageState: pageState,
+        },
       })),
     setConnectionId: (id) =>
-      set((state) => ({ connection: { ...state.connection, connectionId: id } })),
+      set((state) => ({
+        connection: { ...state.connection, connectionId: id },
+      })),
     setConnections: (connections) =>
       set((state) => ({ connection: { ...state.connection, connections } })),
   },

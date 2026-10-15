@@ -1,5 +1,5 @@
 import * as RadixAccordion from "@radix-ui/react-accordion";
-import styles from "./Accordion.module.css";
+import styles from "src/components/design-system/Accordion/Accordion.module.css";
 import { Icon, Box } from "src/components/design-system";
 
 export type AccordionRootProps = {
@@ -31,10 +31,7 @@ export type AccordionItemProps = {
 };
 
 const AccordionItem = ({ children, value }: AccordionItemProps) => (
-  <RadixAccordion.Item
-    value={value}
-    className={styles.accordionItem}
-  >
+  <RadixAccordion.Item value={value} className={styles.accordionItem}>
     {children}
   </RadixAccordion.Item>
 );

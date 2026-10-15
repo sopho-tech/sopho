@@ -9,8 +9,8 @@ use crate::tenant::membership::error::MembershipError;
 use crate::tenant::membership::repository;
 use crate::tenant::membership::repository::TenantMemberRow;
 use sea_orm::TransactionTrait;
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use uuid::Uuid;
 
 pub async fn add_member(

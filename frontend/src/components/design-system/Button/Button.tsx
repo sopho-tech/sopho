@@ -33,6 +33,7 @@ type ButtonProps = Omit<
     size: ButtonSize;
     type?: ButtonType;
     emphasis?: ButtonEmphasis;
+    ref?: React.Ref<HTMLButtonElement>;
   };
 
 function getTextColor(backgroundColor: string) {
@@ -56,61 +57,57 @@ const buttonSizeToFontSize = {
   lg: "base",
 } as const;
 
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      onClick,
-      leadingIconName,
-      trailingIconName,
-      label,
-      shape,
-      backgroundColor,
-      disabled = false,
-      fullWidth = false,
-      size,
-      type = "button",
-      emphasis,
-      ...restProps
-    },
-    ref,
-  ) => {
-    const backgroundColorClassName = styles[backgroundColor];
-    const sizeClassName =
-      styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`];
-    const fullWidthClassName = fullWidth ? styles.fullWidth : "";
-    const textColor = getTextColor(backgroundColor);
-    const iconColor =
-      backgroundColor === "white" || backgroundColor === "ghost"
-        ? "grey"
-        : "white";
+export const Button = ({
+  onClick,
+  leadingIconName,
+  trailingIconName,
+  label,
+  shape,
+  backgroundColor,
+  disabled = false,
+  fullWidth = false,
+  size,
+  type = "button",
+  emphasis,
+  ref,
+  ...restProps
+}: ButtonProps) => {
+  const backgroundColorClassName = styles[backgroundColor];
+  const sizeClassName =
+    styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`];
+  const fullWidthClassName = fullWidth ? styles.fullWidth : "";
+  const textColor = getTextColor(backgroundColor);
+  const iconColor =
+    backgroundColor === "white" || backgroundColor === "ghost"
+      ? "grey"
+      : "white";
 
-    return (
-      <motion.button
-        {...restProps}
-        ref={ref}
-        type={type}
-        disabled={disabled}
-        data-shape={shape}
-        data-emphasis={emphasis}
-        className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${fullWidthClassName}`}
-        onClick={onClick}
-        whileHover={disabled ? undefined : { scale: Scale.HOVER }}
-        whileTap={disabled ? undefined : { scale: Scale.TAP }}
-        transition={{
-          duration: Duration.FAST,
-          ease: EASE,
-        }}
-      >
-        {leadingIconName && (
-          <Icon type={leadingIconName} color={iconColor}></Icon>
-        )}
-        <Text color={textColor} fontSize={buttonSizeToFontSize[size]}>
-          {label}
-        </Text>
-        {trailingIconName && (
-          <Icon type={trailingIconName} color={iconColor}></Icon>
-        )}
-      </motion.button>
-    );
-  },
-);
+  return (
+    <motion.button
+      {...restProps}
+      ref={ref}
+      type={type}
+      disabled={disabled}
+      data-shape={shape}
+      data-emphasis={emphasis}
+      className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${fullWidthClassName}`}
+      onClick={onClick}
+      whileHover={disabled ? undefined : { scale: Scale.HOVER }}
+      whileTap={disabled ? undefined : { scale: Scale.TAP }}
+      transition={{
+        duration: Duration.FAST,
+        ease: EASE,
+      }}
+    >
+      {leadingIconName && (
+        <Icon type={leadingIconName} color={iconColor}></Icon>
+      )}
+      <Text color={textColor} fontSize={buttonSizeToFontSize[size]}>
+        {label}
+      </Text>
+      {trailingIconName && (
+        <Icon type={trailingIconName} color={iconColor}></Icon>
+      )}
+    </motion.button>
+  );
+};

@@ -1,6 +1,6 @@
 use crate::authorization::constants::{AccessLevel, Action, ResourceType, SystemRole, Visibility};
 use crate::authorization::dto::PermissionSet;
-use crate::authorization::service::{decide_without_grant, grant_satisfies, AccessDecision};
+use crate::authorization::service::{AccessDecision, decide_without_grant, grant_satisfies};
 use std::collections::HashSet;
 
 struct DecisionCase {

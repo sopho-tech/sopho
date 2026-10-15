@@ -37,7 +37,7 @@ const IDENTIFYING_DELETION_SET: &str = r#"
 
     ### High Recall (Safety)
     - If the column name is related to the query (even 1% chance), you should keep it.
-    - If not, check the desciption to see if it is related to the query.
+    - If not, check the description to see if it is related to the query.
     - Sometimes the description is not clear, then you should pay close attention to the sample rows of the table.
     - If the sample values of some columns are related to the query, you should keep these columns.
     - If all of these information are not clear enough, remove it.

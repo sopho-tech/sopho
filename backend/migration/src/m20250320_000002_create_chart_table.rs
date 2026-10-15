@@ -33,7 +33,10 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-#[allow(clippy::enum_variant_names)]
+#[expect(
+    clippy::enum_variant_names,
+    reason = "variant names map to existing column names"
+)]
 enum Chart {
     Table,
     Id,

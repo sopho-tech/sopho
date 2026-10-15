@@ -1,0 +1,17 @@
+[package]
+name = "fake-llm"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+anyhow = "1.0.104"
+axum = "0.8.9"
+clap = { version = "4.6.7", features = ["derive"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+strum = { version = "0.27", features = ["derive"] }
+tokio = { version = "1.53.3", features = ["macros", "net", "rt-multi-thread", "signal"] }
+
+[lints]
+workspace = true

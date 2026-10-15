@@ -1,8 +1,8 @@
 use crate::authorization::constants::SystemRole;
 use crate::authorization::dto::{TenantContext, UserId};
 use crate::authorization::errors::AuthorizationError;
-use crate::common::time_utils;
 use crate::common::AppState;
+use crate::common::time_utils;
 use crate::entity;
 use crate::tenant::invitation::constants::InvitationStatus;
 use crate::tenant::invitation::dto::CreateInvitationDto;
@@ -187,13 +187,15 @@ async fn expired_and_revoked_invitations_cannot_be_accepted() {
         .await,
         Err(InvitationError::Expired)
     ));
-    assert!(invitation_service::list_received_invitations(
-        &app_state,
-        UserId::from_system_unchecked(invitee)
-    )
-    .await
-    .unwrap()
-    .is_empty());
+    assert!(
+        invitation_service::list_received_invitations(
+            &app_state,
+            UserId::from_system_unchecked(invitee)
+        )
+        .await
+        .unwrap()
+        .is_empty()
+    );
 }
 
 #[tokio::test]
@@ -302,13 +304,15 @@ async fn nobody_invites_into_a_role_more_powerful_than_their_own() {
         .await,
         Err(InvitationError::RoleTooPowerful)
     ));
-    assert!(invitation_service::create_invitation(
-        &app_state,
-        &admin,
-        invite("future.admin@example.test", SystemRole::Admin)
-    )
-    .await
-    .is_ok());
+    assert!(
+        invitation_service::create_invitation(
+            &app_state,
+            &admin,
+            invite("future.admin@example.test", SystemRole::Admin)
+        )
+        .await
+        .is_ok()
+    );
     assert!(matches!(
         invitation_service::create_invitation(
             &app_state,

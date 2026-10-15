@@ -16,8 +16,8 @@ use openidconnect::{
     EndpointSet, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
     TokenResponse,
 };
-use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::TransactionTrait;
+use sea_orm::prelude::DateTimeWithTimeZone;
 use tower_cookies::Cookies;
 use uuid::Uuid;
 
@@ -238,9 +238,9 @@ fn provider_configuration<'a>(
 
 async fn discover_client(
     provider: &OidcProviderConfiguration,
-) -> Result<(DiscoveredClient, reqwest::Client), OidcLoginError> {
-    let http_client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
+) -> Result<(DiscoveredClient, openidconnect::reqwest::Client), OidcLoginError> {
+    let http_client = openidconnect::reqwest::ClientBuilder::new()
+        .redirect(openidconnect::reqwest::redirect::Policy::none())
         .build()
         .map_err(|error| OidcLoginError::Internal(format!("HTTP client: {error}")))?;
     let issuer_url = IssuerUrl::new(provider.issuer_url.clone())

@@ -32,10 +32,10 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     public readonly body: ApiErrorBody,
-    message?: string
+    message?: string,
   ) {
     super(
-      message ?? body.message ?? body.error ?? `Request failed with ${status}`
+      message ?? body.message ?? body.error ?? `Request failed with ${status}`,
     );
     this.name = "ApiError";
   }
@@ -51,7 +51,6 @@ export class ApiError extends Error {
 
 export const isUnauthorizedError = (error: unknown): boolean =>
   error instanceof ApiError && error.status === 401;
-
 
 export enum ActorKind {
   HUMAN = "HUMAN",

@@ -11,7 +11,7 @@ export function CreateWorkspaceForm() {
   const navigate = useNavigate();
   const createTenant = useCreateTenant({
     onSuccess: (tenant) => {
-      navigate(tenantPath(tenant.id, APP_ROUTES.INDEX), { replace: true });
+      void navigate(tenantPath(tenant.id, APP_ROUTES.INDEX), { replace: true });
     },
   });
 

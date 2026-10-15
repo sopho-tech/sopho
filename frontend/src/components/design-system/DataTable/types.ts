@@ -1,4 +1,8 @@
-import { PaginationState, OnChangeFn, CellContext } from "@tanstack/react-table";
+import {
+  PaginationState,
+  OnChangeFn,
+  CellContext,
+} from "@tanstack/react-table";
 import { ColumnDataType } from "src/constants/database_types";
 
 export enum TableType {
@@ -56,4 +60,3 @@ export type DataTableProps<T> = {
   emptyMessage?: string;
   emptySearchMessage?: string;
 };
-

@@ -1,7 +1,9 @@
+import { Fragment } from "react";
 import { Navigate, Outlet } from "react-router";
 import { isUnauthorizedError } from "src/api/dto";
 import { useMemberships } from "src/api/tenant/queries";
 import { Sidebar } from "src/components/Sidebar/Sidebar";
+import { CommandMenu } from "src/components/design-system/CommandMenu/CommandMenu";
 import { Flex } from "src/components/design-system";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { tenantPath, useTenantId } from "src/utils/tenant";
@@ -24,12 +26,15 @@ export function TenantRoute() {
   }
 
   return (
-    <Flex direction="row" height="100vh" width="100vw">
-      <Sidebar />
-      <Flex flex="40" overflow="hidden">
-        <Outlet />
+    <Fragment>
+      <Flex direction="row" height="100vh" width="100vw">
+        <Sidebar />
+        <Flex flex="40" overflow="hidden">
+          <Outlet />
+        </Flex>
       </Flex>
-    </Flex>
+      <CommandMenu />
+    </Fragment>
   );
 }
 

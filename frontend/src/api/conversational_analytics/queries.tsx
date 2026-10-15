@@ -233,10 +233,10 @@ export const useCreateConversation = () => {
     mutationFn: (payload: CreateConversationDto) =>
       conversationalAnalyticsApi.createConversation(tenantId, payload),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: conversationKeys.detail(tenantId, data.id),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: conversationKeys.lists(tenantId),
       });
     },
@@ -304,7 +304,7 @@ export const useDeleteConversation = () => {
       queryClient.removeQueries({
         queryKey: conversationKeys.detail(tenantId, conversationId),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: conversationKeys.lists(tenantId),
       });
     },
@@ -327,7 +327,7 @@ export const useBulkDeleteConversations = () => {
           queryKey: conversationKeys.detail(tenantId, conversationId),
         });
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: conversationKeys.lists(tenantId),
       });
     },
@@ -350,7 +350,7 @@ export const useAppendUserMessage = (conversationId: string) => {
         conversationKeys.detail(tenantId, conversationId),
         data,
       );
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: conversationKeys.lists(tenantId),
       });
     },

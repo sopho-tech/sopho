@@ -1,12 +1,15 @@
-import { FormField, FormFieldType } from "./types";
-import { TextField } from "./TextField";
-import { PasswordField } from "./PasswordField";
-import { SelectField } from "./SelectField";
-import { FormLabel } from "./FormLabel";
-import { CollapsibleField } from "./CollapsibleField";
-import { FieldError } from "./FieldError";
-import FormStyles from "./Form.module.css";
-import { AppFormReturnType } from "./hooks";
+import {
+  FormField,
+  FormFieldType,
+} from "src/components/design-system/Form/types";
+import { TextField } from "src/components/design-system/Form/TextField";
+import { PasswordField } from "src/components/design-system/Form/PasswordField";
+import { SelectField } from "src/components/design-system/Form/SelectField";
+import { FormLabel } from "src/components/design-system/Form/FormLabel";
+import { CollapsibleField } from "src/components/design-system/Form/CollapsibleField";
+import { FieldError } from "src/components/design-system/Form/FieldError";
+import FormStyles from "src/components/design-system/Form/Form.module.css";
+import { AppFormReturnType } from "src/components/design-system/Form/hooks";
 
 type FormFieldRendererProps = {
   field: FormField;
@@ -32,7 +35,9 @@ export function FormFieldRenderer({
       return (
         <form.AppField key={field.key} name={field.key}>
           {() => (
-            <div className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}>
+            <div
+              className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}
+            >
               {field.showLabel !== false && (
                 <FormLabel
                   infoIconToolTipMessage={field.infoIconToolTipMessage}
@@ -55,7 +60,9 @@ export function FormFieldRenderer({
       return (
         <form.AppField key={field.key} name={field.key}>
           {() => (
-            <div className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}>
+            <div
+              className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}
+            >
               {field.showLabel !== false && (
                 <FormLabel
                   infoIconToolTipMessage={field.infoIconToolTipMessage}
@@ -95,7 +102,9 @@ export function FormFieldRenderer({
                 options={field.options || []}
                 readonly={readonly}
               />
-              <FieldError errors={(fieldState.state.meta.errors || []) as string[]} />
+              <FieldError
+                errors={(fieldState.state.meta.errors || []) as string[]}
+              />
             </div>
           )}
         </form.AppField>

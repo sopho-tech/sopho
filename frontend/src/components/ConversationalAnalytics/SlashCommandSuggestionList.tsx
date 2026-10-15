@@ -1,6 +1,6 @@
 import { Badge, Flex, Text } from "src/components/design-system";
 import type { SlashCommand } from "src/constants/slash_commands";
-import styles from "./SlashCommandSuggestionList.module.css";
+import styles from "src/components/ConversationalAnalytics/SlashCommandSuggestionList.module.css";
 
 type SlashCommandSuggestionListProps = {
   commands: SlashCommand[];

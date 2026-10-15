@@ -10,24 +10,24 @@ use crate::cell::constants::AggregateFunction;
 use crate::cell::constants::CellDisplayOrderMovement;
 use crate::cell::constants::CellStatus;
 use crate::cell::constants::CellType;
-use crate::cell::constants::SortOrder;
 use crate::cell::constants::MAX_CELLS_PER_NOTEBOOK;
 use crate::cell::constants::MAX_CHART_SERIES;
 use crate::cell::constants::MAX_IDENTIFIER_LEN;
+use crate::cell::constants::SortOrder;
 use crate::cell::constants::{
-    CELL_DISPLAY_ORDER_OUT_OF_BOUNDS_MESSAGE, CELL_NOTEBOOK_IS_FIXED_MESSAGE,
-    CELL_NOT_FOUND_MESSAGE,
+    CELL_DISPLAY_ORDER_OUT_OF_BOUNDS_MESSAGE, CELL_NOT_FOUND_MESSAGE,
+    CELL_NOTEBOOK_IS_FIXED_MESSAGE,
 };
 use crate::cell::dto;
 use crate::cell::dto::CellContent;
 use crate::cell::error::CellError;
 use crate::cell::repository;
+use crate::common::AppState;
 use crate::common::errors::CreateCellError;
 use crate::common::errors::ExecuteChartError;
 use crate::common::errors::GetDatabaseConnectionError;
 use crate::common::errors::SophoError;
 use crate::common::time_utils;
-use crate::common::AppState;
 use crate::connection::service as connection_service;
 use crate::dashboard::service as dashboard_service;
 use crate::database::constants::QueryResult;
@@ -619,10 +619,10 @@ pub async fn update_cell(
             CELL_NOTEBOOK_IS_FIXED_MESSAGE.to_string(),
         ));
     }
-    if let Some(connection_id) = payload.connection_id {
-        if existing_cell.connection_id != Some(connection_id) {
-            require_connection_read(&app_state, tenant_context, connection_id).await?;
-        }
+    if let Some(connection_id) = payload.connection_id
+        && existing_cell.connection_id != Some(connection_id)
+    {
+        require_connection_read(&app_state, tenant_context, connection_id).await?;
     }
 
     let actor = tenant_context.actor();
@@ -994,7 +994,6 @@ async fn execute_chart_for_cell(
     let result =
         execute_chart_content_data(app_state, tenant_id, cell.notebook_id, &chart_content).await?;
     Ok(dto::ChartExecution {
-        cell_id: cell.id,
         chart_name: cell.name.clone().unwrap_or_default(),
         chart_type: chart_content.chart_type().as_str().to_string(),
         field_names: chart_content.field_names(),

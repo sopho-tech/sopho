@@ -49,7 +49,7 @@ const canvasApi = {
     tenantId: string,
     createdBy: CreatedByFilter | null,
     page?: number,
-    pageSize?: number
+    pageSize?: number,
   ): Promise<PaginatedData<CanvasDto>> => {
     const url = new URL(
       tenantApiUrl(tenantId, API_ENDPOINTS.CANVAS.GET_ALL),
@@ -172,11 +172,13 @@ export const useUpdateCanvas = (callbacks?: {
   const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: (variables: { canvasId: string; payload: Partial<CanvasDto> }) =>
-      canvasApi.updateCanvas(tenantId, variables),
+    mutationFn: (variables: {
+      canvasId: string;
+      payload: Partial<CanvasDto>;
+    }) => canvasApi.updateCanvas(tenantId, variables),
     onSuccess: (data) => {
       queryClient.setQueryData(canvasKeys.detail(tenantId, data.id!), data);
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.lists(tenantId),
       });
       callbacks?.onSuccess?.(data);
@@ -203,7 +205,7 @@ export const useCreateCanvas = (callbacks?: {
       queryClient.setQueryData(canvasKeys.detail(tenantId, data.id!), data);
 
       // Invalidate the canvases list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.lists(tenantId),
       });
 
@@ -231,7 +233,8 @@ export const useDeleteCanvas = (callbacks?: {
   const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: (canvasId: string) => canvasApi.deleteCanvas(tenantId, canvasId),
+    mutationFn: (canvasId: string) =>
+      canvasApi.deleteCanvas(tenantId, canvasId),
     onSuccess: (_, canvasId) => {
       // Remove the deleted canvas from the cache
       queryClient.removeQueries({
@@ -239,7 +242,7 @@ export const useDeleteCanvas = (callbacks?: {
       });
 
       // Invalidate the canvases list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.lists(tenantId),
       });
 

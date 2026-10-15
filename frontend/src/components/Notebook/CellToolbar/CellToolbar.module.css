@@ -18,11 +18,11 @@
   background-color: var(--color-grey-200);
 }
 
-.toolbar__inlineEdit {
+.toolbarInlineEdit {
   background-color: var(--color-grey-200);
 }
 
-.toolbar__select-trigger {
+.toolbarSelectTrigger {
   margin: var(--space-2xs) 0;
   font-size: var(--font-size-xs);
 }

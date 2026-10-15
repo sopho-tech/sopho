@@ -17,7 +17,7 @@ import {
   useExecuteQuery,
   useQueryExecutionResult,
 } from "src/api/connection/queries";
-import styles from "./QueryResultChart.module.css";
+import styles from "src/components/ConversationalAnalytics/QueryResultChart/QueryResultChart.module.css";
 
 type QueryResultChartProps = {
   chartData: ChartRenderData;

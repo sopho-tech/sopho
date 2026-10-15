@@ -17,7 +17,7 @@ import {
   LineChartContent,
   MetricChartContent,
   PieChartContent,
-} from "../../Cell/dto";
+} from "src/components/Notebook/Cell/dto";
 import {
   BannerSlim,
   Flex,
@@ -101,7 +101,7 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
             alignItems="center"
             sx={{ textAlign: "center" }}
           >
-            <Heading accessbilityLevel={2} textColor="default">
+            <Heading accessibilityLevel={2} textColor="default">
               No chart rendered
             </Heading>
             <Text as="p" color="subtle">
@@ -117,7 +117,7 @@ export function CellOutput({ cellId }: ChartCellOutputProps) {
       const axisProps = toAxisChartProps(axisContent);
       const missing = findMissingSeriesColumns(
         axisProps.series,
-        executionData.columns?.map((column) => column.column_name) ?? []
+        executionData.columns?.map((column) => column.column_name) ?? [],
       );
       if (missing.length > 0) {
         return (

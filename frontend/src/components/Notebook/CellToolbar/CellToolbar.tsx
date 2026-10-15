@@ -67,7 +67,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
 
     const cellConnectionId = getCellQuery.data.connection_id;
     const foundConnection = query.data.find(
-      (connection) => connection.id === cellConnectionId
+      (connection) => connection.id === cellConnectionId,
     );
 
     const newInitialValue =
@@ -92,7 +92,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
         },
       });
     },
-    [cellId, getCellQuery.data, updateCellMutation]
+    [cellId, getCellQuery.data, updateCellMutation],
   );
 
   const handleSave = useCallback(
@@ -105,7 +105,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
         });
       }
     },
-    [cellId, getCellQuery.data, updateCellMutation]
+    [cellId, getCellQuery.data, updateCellMutation],
   );
 
   const handleExecute = useCallback(() => {
@@ -118,7 +118,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
 
   const handleSelectChange = useCallback(
     (v: string) => handleValueChange(v || null),
-    [handleValueChange]
+    [handleValueChange],
   );
 
   return (
@@ -130,7 +130,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
             onSave={handleSave}
             placeholder="Cell Name"
             defaultValue="Unnamed"
-            className={CellToolbarStyles["toolbar__inlineEdit"]}
+            className={CellToolbarStyles.toolbarInlineEdit}
             readOnly={!canEdit}
           />
         </div>
@@ -153,7 +153,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
           <Toolbar.Button asChild>
             <Select.Trigger
               placeholder="Select a connection"
-              className={CellToolbarStyles["toolbar__select-trigger"]}
+              className={CellToolbarStyles.toolbarSelectTrigger}
             />
           </Toolbar.Button>
           <Select.Content>
@@ -181,7 +181,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
                     <span>Clear cell output</span>
                     <Kbd>
                       {getShortcutDisplayString(
-                        KEYBOARD_SHORTCUTS.CLEAR_NOTEBOOK_CELL
+                        KEYBOARD_SHORTCUTS.CLEAR_NOTEBOOK_CELL,
                       )}
                     </Kbd>
                   </Flex>

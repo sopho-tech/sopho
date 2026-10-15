@@ -1,0 +1,18 @@
+name: Set up Rust
+description: Installs the pinned Rust toolchain, the cargo tools and the build cache
+runs:
+  using: composite
+  steps:
+    - name: Install the pinned toolchain
+      shell: bash
+      working-directory: backend
+      run: rustup toolchain install
+    - name: Install protoc and the cargo tools
+      uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8 # v2.87.28
+      with:
+        tool: protoc,cargo-nextest,cargo-llvm-cov,cargo-deny,cargo-shear
+    - name: Cache the build
+      uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      with:
+        workspaces: backend -> target
+        save-if: ${{ github.ref == 'refs/heads/main' }}

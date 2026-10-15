@@ -174,7 +174,7 @@ async fn run_search(
         results.append(&mut entity_results);
     }
 
-    results.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
+    results.sort_by_key(|search_result| std::cmp::Reverse(search_result.updated_at));
     Ok(results)
 }
 
@@ -182,7 +182,7 @@ pub async fn search(
     app_state: AppState,
     tenant_context: &TenantContext,
     request: SearchRequestDto,
-) -> impl IntoResponse {
+) -> impl IntoResponse + use<> {
     let search_query = request.query.as_deref().unwrap_or("");
     let requested_filters = request.filters.unwrap_or_default();
     let filters = requested_filters

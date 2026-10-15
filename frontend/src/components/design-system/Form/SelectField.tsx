@@ -20,30 +20,30 @@ export function SelectField({
 
   return (
     <Select
-        value={field.state.value}
-        onValueChange={(value) => {
-          if (!readonly) {
-            field.handleChange(value);
-            onChange?.(value);
-          }
-        }}
-        disabled={readonly}
-      >
-        <Select.Trigger placeholder={placeholderText} />
-        <Select.Content>
-          <Select.Group>
-            <Select.Label>{groupName}</Select.Label>
-            {options.map((opt) => (
-              <Select.Item
-                key={opt.value}
-                value={opt.value}
-                textValue={opt.textValue}
-              >
-                {opt.label}
-              </Select.Item>
-            ))}
-          </Select.Group>
-        </Select.Content>
-      </Select>
+      value={field.state.value}
+      onValueChange={(value) => {
+        if (!readonly) {
+          field.handleChange(value);
+          onChange?.(value);
+        }
+      }}
+      disabled={readonly}
+    >
+      <Select.Trigger placeholder={placeholderText} />
+      <Select.Content>
+        <Select.Group>
+          <Select.Label>{groupName}</Select.Label>
+          {options.map((opt) => (
+            <Select.Item
+              key={opt.value}
+              value={opt.value}
+              textValue={opt.textValue}
+            >
+              {opt.label}
+            </Select.Item>
+          ))}
+        </Select.Group>
+      </Select.Content>
+    </Select>
   );
 }

@@ -63,10 +63,11 @@ export function Canvas() {
   );
 
   const handleViewTypeChange = useCallback(
-    (view: string) =>
-      navigate(
+    (view: string) => {
+      void navigate(
         toTenantPath(`${APP_ROUTES.CANVAS.replace(":id", params.id!)}/${view}`),
-      ),
+      );
+    },
     [navigate, params.id, toTenantPath],
   );
 

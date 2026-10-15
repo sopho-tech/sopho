@@ -1,0 +1,50 @@
+---
+source: src/ai/text_to_sql_agent/user_prompt.rs
+expression: "UserPrompt::DataProfilingBefore\n{\n    table_name: \"orders\".to_string(), columns:\n    vec![column(\"order_id\", \"TEXT\", \"Order identifier\"),\n    column(\"order_purchase_timestamp\", \"TEXT\", \"When the order was placed\"),],\n    question: \"How many orders were placed per month?\".to_string(),\n    semantic_role: \"Target Table for order counts\".to_string(), sql_dialect:\n    SqlDialect::Sqlite,\n}.render()"
+---
+## TARGET TABLE: orders
+
+### Columns
+order_id (TEXT): Order identifier
+order_purchase_timestamp (TEXT): When the order was placed
+
+### USER QUESTION
+How many orders were placed per month?
+
+### SQL_DIALECT: SQLite
+
+### ANTICIPATED ROLE
+This table was identified as: Target Table for order counts. Use this to guide your exploration.
+
+## MISSION
+- Generate 3-8 SQL queries to investigate.
+- Focus on understanding the table's semantics and utility.
+
+## Motivation for Exploration
+
+### Semantic Alignment
+- Check distinct values to understand what the column *means* versus what the query *needs*. 
+- Ex: If column is "type", does it contain the specific categories?
+- Ex: If column is "status", does it contain values like "Active" or code "1"?
+
+### Granularity & Scope
+- Verify the table"s grain.
+- Ex: is it one row per Order or per Item?.
+- This determines if it supports the required aggregations.
+
+### Bridge/Connectivity
+- If this looks like a linking table, verify the Foreign Keys are populated (not all NULL) to ensure it can actually serve as a bridge.
+
+### Data Quality
+- Are critical columns (targets for filters or answers) usable, or are they mostly NULL?.
+
+## Output Format
+Always respond in this exact JSON format:
+[
+    {
+        "motivation": "Checking distinct values in "status" to see if it aligns with the query"s filter requirement",
+        "sql": "SELECT DISTINCT status FROM table_name LIMIT 10"
+    }
+]
+
+Generate your exploration queries.

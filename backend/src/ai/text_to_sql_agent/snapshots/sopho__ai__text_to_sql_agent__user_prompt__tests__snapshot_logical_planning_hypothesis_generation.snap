@@ -1,0 +1,6 @@
+---
+source: src/ai/text_to_sql_agent/user_prompt.rs
+expression: "UserPrompt::LogicalPlanningHypothesisGeneration\n{ question: \"How many orders were placed per month?\".to_string(), }.render()"
+---
+### USER QUESTION
+How many orders were placed per month?

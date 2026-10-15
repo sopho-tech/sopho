@@ -37,7 +37,10 @@ const dashboardApi = {
     const response = await ApiService.get({
       url: tenantApiUrl(
         tenantId,
-        API_ENDPOINTS.DASHBOARD.GET_BY_CANVAS_ID.replace(":canvas_id", canvasId),
+        API_ENDPOINTS.DASHBOARD.GET_BY_CANVAS_ID.replace(
+          ":canvas_id",
+          canvasId,
+        ),
       ),
       onlyBody: true,
     });
@@ -96,11 +99,14 @@ export const useUpdateDashboard = () => {
       payload: Partial<DashboardDto>;
     }) => dashboardApi.updateDashboard(tenantId, variables),
     onSuccess: (data, { dashboardId }) => {
-      queryClient.setQueryData(dashboardKeys.detail(tenantId, dashboardId), data);
-      queryClient.invalidateQueries({
+      queryClient.setQueryData(
+        dashboardKeys.detail(tenantId, dashboardId),
+        data,
+      );
+      void queryClient.invalidateQueries({
         queryKey: dashboardKeys.all(tenantId),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: canvasKeys.details(tenantId),
       });
     },

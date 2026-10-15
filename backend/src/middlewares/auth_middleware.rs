@@ -1,6 +1,6 @@
-use crate::authentication::service::{authenticate_from_cookies, AccessTokenValidationError};
-use crate::common::error_codes::codes;
+use crate::authentication::service::{AccessTokenValidationError, authenticate_from_cookies};
 use crate::common::AppState;
+use crate::common::error_codes::codes;
 use axum::body::Body;
 use axum::extract::Request;
 use axum::http::{Response, StatusCode};

@@ -1,7 +1,6 @@
 use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
-use crate::common::AppState;
 use crate::conversational_analytics::conversation::error::ConversationError;
 use crate::conversational_analytics::conversation::service as conversation_service;
 use crate::conversational_analytics::message::constants::Sender;
@@ -62,17 +61,6 @@ pub async fn update_message_status(
     )
     .await?;
     Ok(())
-}
-
-pub async fn get_message(
-    app_state: AppState,
-    tenant_id: &TenantId,
-    id: Uuid,
-) -> Result<dto::ConversationMessageDto, ConversationError> {
-    let model = repository::get_message(&app_state.database_connection, tenant_id, id)
-        .await?
-        .ok_or(ConversationError::NotFound)?;
-    Ok(dto::ConversationMessageDto::from(model))
 }
 
 pub async fn get_last_message_for_conversation(

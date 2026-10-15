@@ -1,0 +1,21 @@
+{
+  "match": "\"title\":\"SchemaLinkingFinalSynthesisResponse\"",
+  "response": {
+    "id": "msg_fake_schema_linking_final_synthesis_agent",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-haiku-4-5",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"refined_schema\":[{\"table_name\":\"orders\",\"relevant_columns\":[{\"column_name\":\"order_status\",\"relevance_reason\":\"The question groups orders by status\"}]}],\"rejected_candidates\":[],\"exploration_queries\":[],\"status\":\"CONFIRM\"}"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 1,
+      "output_tokens": 1
+    }
+  }
+}

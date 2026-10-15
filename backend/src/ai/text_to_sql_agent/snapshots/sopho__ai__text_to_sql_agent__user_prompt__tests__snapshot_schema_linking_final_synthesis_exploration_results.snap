@@ -1,0 +1,6 @@
+---
+source: src/ai/text_to_sql_agent/user_prompt.rs
+expression: "UserPrompt::SchemaLinkingFinalSynthesisExplorationResults\n{\n    results: \"order_purchase_timestamp spans 2016 to 2018\".to_string(),\n}.render()"
+---
+### EXPLORATION QUERY RESULTS
+order_purchase_timestamp spans 2016 to 2018

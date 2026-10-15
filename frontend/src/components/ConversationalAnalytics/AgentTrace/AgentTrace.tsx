@@ -27,9 +27,9 @@ import {
   TraceStep,
   RouterDecisionBubble,
   extractRouterDecision,
-} from "./trace-steps";
+} from "src/components/ConversationalAnalytics/AgentTrace/trace-steps";
 import { QueryResultChartContainer } from "src/components/ConversationalAnalytics/QueryResultChart";
-import styles from "./AgentTrace.module.css";
+import styles from "src/components/ConversationalAnalytics/AgentTrace/AgentTrace.module.css";
 
 type AgentTraceProps = {
   connectionId: string;

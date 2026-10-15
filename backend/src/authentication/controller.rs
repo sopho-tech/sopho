@@ -2,10 +2,10 @@ use crate::authentication::dto;
 use crate::authentication::service;
 use crate::common::AppState;
 use axum::{
+    Router,
     extract::State,
     response::IntoResponse,
     routing::{delete, get, post},
-    Router,
 };
 use tower_cookies::Cookies;
 

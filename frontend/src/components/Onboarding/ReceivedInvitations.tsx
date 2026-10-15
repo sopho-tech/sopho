@@ -54,10 +54,11 @@ export function ReceivedInvitations({
 }) {
   const navigate = useNavigate();
   const handleAccepted = useCallback(
-    (accepted: AcceptedInvitationDto) =>
-      navigate(tenantPath(accepted.tenant_id, APP_ROUTES.INDEX), {
+    (accepted: AcceptedInvitationDto) => {
+      void navigate(tenantPath(accepted.tenant_id, APP_ROUTES.INDEX), {
         replace: true,
-      }),
+      });
+    },
     [navigate],
   );
   const acceptInvitation = useAcceptInvitation({ onSuccess: handleAccepted });

@@ -11,7 +11,7 @@ import { TableBody } from "src/components/design-system/DataTable/components/Tab
 import { Input } from "src/components/design-system/Input";
 import { Flex } from "src/components/design-system/Flex";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
-import { Text } from "../Text";
+import { Text } from "src/components/design-system/Text";
 
 export function DataTable<T>({
   tableType = TableType.FULL,
@@ -51,7 +51,7 @@ export function DataTable<T>({
   const rows = table.getRowModel().rows;
   const [hoveredColumnId, setHoveredColumnId] = useState<string | null>(null);
   const isResizingColumn = Boolean(
-    table.getState().columnSizingInfo?.isResizingColumn
+    table.getState().columnSizingInfo?.isResizingColumn,
   );
 
   if (data === undefined || data === null || data.length === 0) {
@@ -81,7 +81,7 @@ export function DataTable<T>({
           tableType,
           paginationConfig,
           table,
-          showRowsPerPage
+          showRowsPerPage,
         )}
       </Flex>
       <div

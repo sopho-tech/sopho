@@ -29,18 +29,6 @@ pub async fn save_message_content_connection(
     Ok(inserted)
 }
 
-pub async fn get_message_content(
-    db: &DatabaseConnection,
-    tenant_id: &TenantId,
-    id: Uuid,
-) -> Result<Option<conversation_message_content::Model>, DbErr> {
-    conversation_message_content::Entity::find()
-        .filter(conversation_message_content::Column::Id.eq(id))
-        .filter(conversation_message_content::Column::TenantId.eq(tenant_id.get_uuid()))
-        .one(db)
-        .await
-}
-
 pub async fn get_first_message_content_by_conversation_message_id(
     db: &DatabaseConnection,
     tenant_id: &TenantId,

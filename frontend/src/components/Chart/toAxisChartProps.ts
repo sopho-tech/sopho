@@ -8,7 +8,7 @@ import type {
 } from "src/components/Notebook/Cell/dto";
 
 export function toChartSeriesSpecs(
-  content: BarChartContent | LineChartContent
+  content: BarChartContent | LineChartContent,
 ): ChartSeriesSpec[] {
   return (content.series ?? []).map((entry, index) => ({
     dataKey: entry.alias,
@@ -19,7 +19,7 @@ export function toChartSeriesSpecs(
 
 export function findMissingSeriesColumns(
   series: ChartSeriesSpec[],
-  resultColumns: string[]
+  resultColumns: string[],
 ): string[] {
   const available = new Set(resultColumns);
   return series

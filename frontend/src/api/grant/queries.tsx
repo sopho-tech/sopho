@@ -151,7 +151,7 @@ export const useCreateGrant = (
         access_level: accessLevel,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: grantKeys.sharing(tenantId, resourceType, resourceId),
       });
     },
@@ -167,7 +167,7 @@ export const useRevokeGrant = (
   return useMutation({
     mutationFn: (grantId: string) => grantApi.revokeGrant(tenantId, grantId),
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: grantKeys.sharing(tenantId, resourceType, resourceId),
       });
     },

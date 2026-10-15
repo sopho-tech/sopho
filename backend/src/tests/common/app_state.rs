@@ -1,12 +1,9 @@
 use crate::common::{AppState, Configurations, OidcProviderConfiguration};
-use crate::database::pool::new_database_pool_registry;
 use crate::db;
-use std::collections::HashMap;
 use std::path::Path;
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
 const TEST_ENCRYPTION_KEY: &str = "test-secret-key-32-chars-long!!";
+const TEST_FRONTEND_DIRECTORY: &str = "frontend-is-not-served-in-tests";
 
 fn test_database_path(test_name: &str) -> String {
     format!("./data/test_{}.db", test_name)
@@ -49,13 +46,10 @@ async fn build_test_app_state(
     std::fs::remove_file(&database_path).ok();
 
     let database_url = format!("sqlite://{}?mode=rwc", database_path);
-    let database_connection = db::get_db(&database_url).await.unwrap();
-    db::run_migrations(&database_connection).await.unwrap();
-
-    AppState::new(
-        database_connection,
+    let app_state = AppState::from_configurations(
         Configurations::builder()
             .database_url(database_url)
+            .frontend_dir(TEST_FRONTEND_DIRECTORY)
             .encryption_key(TEST_ENCRYPTION_KEY)
             .admin_username("admin")
             .admin_password("test_password")
@@ -64,8 +58,11 @@ async fn build_test_app_state(
             .oidc_providers(oidc_providers)
             .build()
             .unwrap(),
-        reqwest::Client::new(),
-        Arc::new(RwLock::new(HashMap::new())),
-        new_database_pool_registry(),
     )
+    .await
+    .unwrap();
+    db::run_migrations(&app_state.database_connection)
+        .await
+        .unwrap();
+    app_state
 }

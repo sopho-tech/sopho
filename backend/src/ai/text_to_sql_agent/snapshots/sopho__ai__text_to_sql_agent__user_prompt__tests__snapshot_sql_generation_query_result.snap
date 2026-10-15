@@ -1,0 +1,6 @@
+---
+source: src/ai/text_to_sql_agent/user_prompt.rs
+expression: "UserPrompt::SqlGenerationQueryResult\n{ result: \"month | order_count\\n2017-01 | 800\".to_string(), }.render()"
+---
+Results of executing the generated SQL is: month | order_count
+2017-01 | 800

@@ -1,0 +1,6 @@
+---
+source: src/ai/text_to_sql_agent/user_prompt.rs
+expression: "UserPrompt::SqlGenerationExplorationResult\n{ results: \"12 distinct months\".to_string(), }.render()"
+---
+### EXPLORATION RESULTS
+12 distinct months

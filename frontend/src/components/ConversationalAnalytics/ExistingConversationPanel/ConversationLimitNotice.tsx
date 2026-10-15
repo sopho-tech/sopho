@@ -9,7 +9,9 @@ export const ConversationLimitNotice = () => {
   const toTenantPath = useTenantPath();
 
   const handleStartNewConversation = useCallback(() => {
-    navigate(toTenantPath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX));
+    void navigate(
+      toTenantPath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX),
+    );
   }, [navigate, toTenantPath]);
 
   return (

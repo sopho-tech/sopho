@@ -8,13 +8,13 @@ import {
   Separator,
 } from "src/components/design-system";
 import { SourceTypeEnum } from "src/constants/database_types";
-import styles from "./ConnectionEdit.module.css";
+import styles from "src/components/Connection/ConnectionEdit/ConnectionEdit.module.css";
 import { useParams, useNavigate } from "react-router";
 import { useConnection, useUpdateConnection } from "src/api/connection/queries";
 import { useStore } from "src/store";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { useTenantPath } from "src/utils/tenant";
-import { ConnectionDetailsPageStateEnum } from "../dto";
+import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 
 export function ConnectionEdit() {
   const { id } = useParams<{ id: string }>();
@@ -22,7 +22,7 @@ export function ConnectionEdit() {
   const toTenantPath = useTenantPath();
   const updateMutation = useUpdateConnection();
   const setConnectionDetailsPageState = useStore(
-    (state) => state.connection.setConnectionDetailsPageState
+    (state) => state.connection.setConnectionDetailsPageState,
   );
   const {
     data: connection,
@@ -49,12 +49,12 @@ export function ConnectionEdit() {
     };
     updateMutation.mutate({ connectionId: connection.id, payload });
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
+    void navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
   };
 
   const handleBack = () => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
+    void navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
   };
 
   if (isLoading) return <div>Loading connection details...</div>;
@@ -89,7 +89,7 @@ export function ConnectionEdit() {
       direction="column"
     >
       <Flex justifyContent="space-between">
-        <Heading accessbilityLevel={1}>Edit Connection</Heading>
+        <Heading accessibilityLevel={1}>Edit Connection</Heading>
         <Button
           label="Go back to Settings"
           size="md"
@@ -107,10 +107,10 @@ export function ConnectionEdit() {
         <Form.Fields className={styles.formFields}>
           <Flex direction="row" gap="lg" justifyContent="space-between">
             <Flex direction="column" gap="sm" width={"100%"}>
-              <Heading accessbilityLevel={2} textColor="black" size="lg">
+              <Heading accessibilityLevel={2} textColor="black" size="lg">
                 Basic Details
               </Heading>
-              <Heading accessbilityLevel={3} textColor="subtle" size="base">
+              <Heading accessibilityLevel={3} textColor="subtle" size="base">
                 Set your basic connection details
               </Heading>
             </Flex>
@@ -160,10 +160,10 @@ export function ConnectionEdit() {
           <Separator />
           <Flex direction="row" gap="lg" justifyContent="space-between">
             <Flex direction="column" gap="sm" width={"100%"}>
-              <Heading accessbilityLevel={2} textColor="black" size="lg">
+              <Heading accessibilityLevel={2} textColor="black" size="lg">
                 Specific Details
               </Heading>
-              <Heading accessbilityLevel={3} textColor="subtle" size="base">
+              <Heading accessibilityLevel={3} textColor="subtle" size="base">
                 {connection.source_type === SourceTypeEnum.PostgreSQL
                   ? "Enter your PostgreSQL connection details"
                   : connection.source_type === SourceTypeEnum.Supabase

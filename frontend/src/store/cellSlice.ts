@@ -5,7 +5,10 @@ import { ExecutionState } from "src/components/Notebook/Cell/dto";
 export type CellSlice = {
   cell: {
     chartContents: Record<string, ChartContent | null>;
-    setChartContent: (cellId: string, chartContent: ChartContent | null) => void;
+    setChartContent: (
+      cellId: string,
+      chartContent: ChartContent | null,
+    ) => void;
     executionStates: Record<string, ExecutionState>;
     startedAt: Record<string, number>;
     setExecutionState: (cellId: string, executionState: ExecutionState) => void;
@@ -22,7 +25,10 @@ export const createCellSlice: StateCreator<CellSlice> = (set) => ({
       set((state) => ({
         cell: {
           ...state.cell,
-          chartContents: { ...state.cell.chartContents, [cellId]: newChartContent },
+          chartContents: {
+            ...state.cell.chartContents,
+            [cellId]: newChartContent,
+          },
         },
       })),
     setExecutionState: (cellId, executionState) =>

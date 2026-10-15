@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router";
 import { Card, Text } from "src/components/design-system";
-import { CanvasStats } from "./CanvasStats";
+import { CanvasStats } from "src/components/Home/components/CanvasStats";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { useTenantPath } from "src/utils/tenant";
@@ -17,13 +17,13 @@ export const CanvasCard = ({ canvas }: CanvasCardProps) => {
 
   const handleClick = useCallback(() => {
     if (canvas.id) {
-      navigate(toTenantPath(APP_ROUTES.CANVAS.replace(":id", canvas.id)));
+      void navigate(toTenantPath(APP_ROUTES.CANVAS.replace(":id", canvas.id)));
     }
   }, [canvas.id, navigate, toTenantPath]);
 
   return (
     <Card onClick={canvas.id ? handleClick : undefined}>
-      <Card.Header baseAccessbilityLevel={2}>
+      <Card.Header baseAccessibilityLevel={2}>
         <Card.Title>{canvas.name}</Card.Title>
         <Card.Description>{canvas.description}</Card.Description>
       </Card.Header>

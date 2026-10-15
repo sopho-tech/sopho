@@ -14,7 +14,7 @@ function useStartCellExecution() {
     (
       cellId: string,
       onSuccessCallback: ExecutionCallback,
-      onErrorCallback: ExecutionCallback
+      onErrorCallback: ExecutionCallback,
     ) => {
       setExecutionState(cellId, ExecutionState.RUNNING);
       return {
@@ -28,7 +28,7 @@ function useStartCellExecution() {
         },
       };
     },
-    [setExecutionState]
+    [setExecutionState],
   );
 }
 
@@ -40,14 +40,14 @@ export function useHandleExecuteCell() {
     (
       cellId: string,
       onSuccessCallback: ExecutionCallback = null,
-      onErrorCallback: ExecutionCallback = null
+      onErrorCallback: ExecutionCallback = null,
     ) => {
       mutate(
         cellId,
-        startCellExecution(cellId, onSuccessCallback, onErrorCallback)
+        startCellExecution(cellId, onSuccessCallback, onErrorCallback),
       );
     },
-    [mutate, startCellExecution]
+    [mutate, startCellExecution],
   );
 }
 
@@ -61,14 +61,14 @@ export function useHandleExecuteCellPreview() {
       content: string,
       cellType: string,
       onSuccessCallback?: ExecutionCallback,
-      onErrorCallback?: ExecutionCallback
+      onErrorCallback?: ExecutionCallback,
     ) => {
       mutate(
         { cellId, content, cellType },
-        startCellExecution(cellId, onSuccessCallback, onErrorCallback)
+        startCellExecution(cellId, onSuccessCallback, onErrorCallback),
       );
     },
-    [mutate, startCellExecution]
+    [mutate, startCellExecution],
   );
 }
 
@@ -81,7 +81,7 @@ export function useHandleRunCell() {
     (
       cellId: string,
       onSuccessCallback: ExecutionCallback = null,
-      onErrorCallback: ExecutionCallback = null
+      onErrorCallback: ExecutionCallback = null,
     ) => {
       const selectedText = canEdit ? getSelectedText(cellId) : "";
       if (!selectedText) {
@@ -94,9 +94,9 @@ export function useHandleRunCell() {
         selectedText,
         CellType.SQL,
         onSuccessCallback,
-        onErrorCallback
+        onErrorCallback,
       );
     },
-    [canEdit, handleExecuteCell, handleExecuteCellPreview]
+    [canEdit, handleExecuteCell, handleExecuteCellPreview],
   );
 }

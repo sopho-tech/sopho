@@ -1,6 +1,6 @@
 import { useFormContext } from "src/components/design-system/Form/form-context";
 import { Button } from "src/components/design-system/Button";
-import { ButtonSize } from "../datatypes";
+import { ButtonSize } from "src/components/design-system/datatypes";
 
 export function SubscribeButton({
   label,
@@ -16,7 +16,7 @@ export function SubscribeButton({
         <Button
           label={label}
           onClick={() => {
-            form.handleSubmit();
+            void form.handleSubmit();
           }}
           backgroundColor="accent"
           size={size}

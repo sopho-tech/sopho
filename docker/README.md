@@ -13,7 +13,7 @@ docker build -f docker/Dockerfile . -t sopho:test
 
 Set the env variables and execute the docker run command. For example:
 
-```
+```bash
 docker run -d -p 8000:8000 \
   --name sopho \
   -e DATABASE_URL="postgresql://admin:password@localhost:5432/sopho" \

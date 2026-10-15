@@ -83,7 +83,7 @@ async fn build_postgres(app_state: &AppState) -> anyhow::Result<JobScheduler> {
     Ok(sched)
 }
 
-async fn refresh_all_stale_for_every_tenant(app_state: &AppState) {
+pub(crate) async fn refresh_all_stale_for_every_tenant(app_state: &AppState) {
     let tenant_ids = match crate::tenant::service::list_all_tenant_ids(app_state).await {
         Ok(tenant_ids) => tenant_ids,
         Err(e) => {

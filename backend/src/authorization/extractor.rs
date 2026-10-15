@@ -2,10 +2,10 @@ use crate::authorization::dto::{AuthenticatedUser, TenantContext};
 use crate::authorization::errors::TenantContextError;
 use crate::authorization::service::resolve_tenant_context;
 use crate::common::AppState;
-use axum::extract::{FromRequestParts, Path};
-use axum::http::request::Parts;
-use axum::http::StatusCode;
 use axum::Json;
+use axum::extract::{FromRequestParts, Path};
+use axum::http::StatusCode;
+use axum::http::request::Parts;
 use uuid::Uuid;
 
 #[derive(serde::Deserialize)]

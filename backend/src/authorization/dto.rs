@@ -68,10 +68,6 @@ impl Actor {
         }
     }
 
-    pub fn kind(&self) -> ActorKind {
-        self.kind
-    }
-
     pub fn user_id(&self) -> Option<Uuid> {
         self.user_id
     }

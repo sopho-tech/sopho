@@ -1,12 +1,12 @@
 import { Command } from "cmdk";
-import { Icon } from "../Icon";
-import { IconType } from "../datatypes";
-import { Kbd } from "../Kbd";
+import { Icon } from "src/components/design-system/Icon";
+import { IconType } from "src/components/design-system/datatypes";
+import { Kbd } from "src/components/design-system/Kbd";
 import {
   getShortcutDisplayString,
   KeyboardShortcut,
 } from "src/utils/keyboard_shortcuts/keyboard_shortcuts";
-import styles from "./CommandMenu.module.css";
+import styles from "src/components/design-system/CommandMenu/CommandMenu.module.css";
 
 type CommandMenuItemProps = {
   value: string;

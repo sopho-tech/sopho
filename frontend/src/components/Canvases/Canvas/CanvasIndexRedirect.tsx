@@ -14,7 +14,7 @@ export function CanvasIndexRedirect() {
       ),
       search,
     }),
-    [params.id, search, toTenantPath]
+    [params.id, search, toTenantPath],
   );
 
   return <Navigate to={to} replace />;

@@ -1,0 +1,9 @@
+mod ai;
+mod auth;
+mod canvas_dashboard;
+mod catalog;
+mod charts;
+mod connections;
+mod migrations;
+mod notebook;
+mod support;

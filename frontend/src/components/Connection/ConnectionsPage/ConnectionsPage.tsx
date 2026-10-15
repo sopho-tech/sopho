@@ -28,7 +28,7 @@ export function Connections() {
 
   const handleNewClick = useCallback(() => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.NEW);
-    navigate(toTenantPath(APP_ROUTES.CONNECTION_NEW));
+    void navigate(toTenantPath(APP_ROUTES.CONNECTION_NEW));
   }, [setConnectionDetailsPageState, navigate, toTenantPath]);
 
   return (
@@ -40,7 +40,7 @@ export function Connections() {
         gap="md"
       >
         <Flex direction="column" gap="2xs">
-          <Heading accessbilityLevel={2} size="2xl" textColor="black">
+          <Heading accessibilityLevel={2} size="2xl" textColor="black">
             Connections
           </Heading>
           <Text fontSize="sm" color="subtle">

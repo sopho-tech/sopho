@@ -3,7 +3,7 @@ import { InputHTMLAttributes, Ref, useState } from "react";
 import { Icon } from "src/components/design-system/Icon";
 import { IconButton } from "src/components/design-system/IconButton";
 import { IconSize, IconType } from "src/components/design-system/datatypes";
-import styles from "./Input.module.css";
+import styles from "src/components/design-system/Input/Input.module.css";
 
 export type InputProps = {
   value: string | number;
@@ -100,7 +100,7 @@ export function Input({
             [styles.inputWithLeadingIcon]: leadingIcon,
             [styles.inputWithLaggingElement]: laggingElement,
           },
-          className
+          className,
         )}
         {...restProps}
       />

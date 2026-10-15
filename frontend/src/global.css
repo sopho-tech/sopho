@@ -1,6 +1,6 @@
 :root {
-  --font-primary: 'Poppins', sans-serif;
-  --font-secondary: 'Open Sans', sans-serif;
+  --font-primary: "Poppins", sans-serif;
+  --font-secondary: "Open Sans", sans-serif;
 
   /* You can also define specific weights if needed, or rely on numeric values directly in components */
   --font-weight-regular: 400;
@@ -17,16 +17,25 @@ body {
   box-sizing: border-box;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: inherit;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-primary);
   font-weight: var(--font-weight-semibold); /* Default heading weight */
 }
 
 /* Example of using a different weight for a specific heading level */
 h1 {
-  font-weight: var(--font-weight-semibold); /* Or could be a heavier weight if Poppins had it loaded */
+  font-weight: var(
+    --font-weight-semibold
+  ); /* Or could be a heavier weight if Poppins had it loaded */
 }

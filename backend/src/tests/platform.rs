@@ -25,7 +25,7 @@ async fn tenant_count(app_state: &AppState) -> usize {
 #[tokio::test]
 async fn only_platform_administrators_create_workspaces() {
     let app_state = init_test_app_state("platform_workspace_creation").await;
-    crate::bootstrap(&app_state).await.unwrap();
+    crate::initialize(&app_state).await.unwrap();
     let tenants_before = tenant_count(&app_state).await;
 
     let member = UserId::from_system_unchecked(insert_user(&app_state, "member").await);
@@ -74,7 +74,7 @@ async fn only_platform_administrators_create_workspaces() {
 #[tokio::test]
 async fn current_user_reports_platform_permissions() {
     let app_state = init_test_app_state("platform_current_user").await;
-    crate::bootstrap(&app_state).await.unwrap();
+    crate::initialize(&app_state).await.unwrap();
 
     let administrator_profile = crate::authentication::service::current_user_profile(
         &app_state,

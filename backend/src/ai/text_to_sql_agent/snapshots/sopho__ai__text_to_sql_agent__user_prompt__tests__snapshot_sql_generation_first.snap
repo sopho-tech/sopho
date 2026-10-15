@@ -1,0 +1,16 @@
+---
+source: src/ai/text_to_sql_agent/user_prompt.rs
+expression: "UserPrompt::SqlGenerationFirst\n{\n    question: \"How many orders were placed per month?\".to_string(), schema:\n    \"orders(order_id, order_purchase_timestamp)\".to_string(), current_plan:\n    \"Count orders grouped by purchase month\".to_string(), sql_dialect:\n    SqlDialect::Sqlite,\n}.render()"
+---
+### USER QUESTION
+How many orders were placed per month?
+
+### SCHEMA
+orders(order_id, order_purchase_timestamp)
+
+### CURRENT PLAN
+Count orders grouped by purchase month
+
+### SQL_DIALECT: SQLite
+
+Now begin your exploration to generate the correct SQL

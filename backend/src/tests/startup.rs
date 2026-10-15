@@ -2,9 +2,7 @@ use crate::authorization::constants::{SystemRole, Visibility};
 use crate::authorization::dto::{TenantId, UserId};
 use crate::common::AppState;
 use crate::tests::common::app_state::init_test_app_state;
-use crate::tests::common::resources::{
-    insert_canvas, insert_cell, insert_connection, insert_notebook,
-};
+use crate::tests::common::resources::{insert_canvas, insert_cell, insert_notebook};
 use crate::tests::common::tenancy::create_tenant_with_owner;
 use uuid::Uuid;
 
@@ -27,7 +25,7 @@ async fn admin_memberships(app_state: &AppState) -> Vec<crate::tenant::dto::Tena
 async fn a_fresh_database_boots_into_a_usable_default_tenant() {
     let app_state = init_test_app_state("startup_fresh_database").await;
 
-    crate::bootstrap(&app_state).await.unwrap();
+    crate::initialize(&app_state).await.unwrap();
 
     let memberships = admin_memberships(&app_state).await;
     assert_eq!(
@@ -36,9 +34,11 @@ async fn a_fresh_database_boots_into_a_usable_default_tenant() {
         "the admin owns exactly the default tenant"
     );
     assert_eq!(memberships[0].role_name, SystemRole::Owner.as_str());
-    assert!(memberships[0]
-        .permissions
-        .contains(&"canvas:create".to_string()));
+    assert!(
+        memberships[0]
+            .permissions
+            .contains(&"canvas:create".to_string())
+    );
 
     let admin = crate::authentication::service::find_user_by_email(&app_state, TEST_ADMIN_EMAIL)
         .await
@@ -67,10 +67,10 @@ async fn a_fresh_database_boots_into_a_usable_default_tenant() {
 async fn booting_twice_changes_nothing() {
     let app_state = init_test_app_state("startup_second_boot").await;
 
-    crate::bootstrap(&app_state).await.unwrap();
+    crate::initialize(&app_state).await.unwrap();
     let first_boot = admin_memberships(&app_state).await;
 
-    crate::bootstrap(&app_state).await.unwrap();
+    crate::initialize(&app_state).await.unwrap();
     let second_boot = admin_memberships(&app_state).await;
 
     assert_eq!(second_boot.len(), 1);
@@ -93,15 +93,6 @@ async fn existence_checks_report_missing_rows_as_missing() {
     .await;
     let notebook_id = insert_notebook(&app_state, fixture.tenant_id, canvas_id, "notebook").await;
     let cell_id = insert_cell(&app_state, fixture.tenant_id, notebook_id, "cell").await;
-    let connection_id = insert_connection(
-        &app_state,
-        fixture.tenant_id,
-        "connection",
-        fixture.user_id,
-        Visibility::Tenant,
-    )
-    .await;
-
     let unknown_id = Uuid::new_v4();
     assert!(
         crate::notebook::service::does_notebook_exist(&app_state, &tenant_id, notebook_id).await
@@ -111,15 +102,4 @@ async fn existence_checks_report_missing_rows_as_missing() {
     );
     assert!(crate::cell::service::does_cell_exist(&app_state, &tenant_id, cell_id).await);
     assert!(!crate::cell::service::does_cell_exist(&app_state, &tenant_id, unknown_id).await);
-    assert!(
-        crate::connection::service::does_connection_exist(&app_state, &tenant_id, connection_id)
-            .await
-    );
-    assert!(
-        !crate::connection::service::does_connection_exist(&app_state, &tenant_id, unknown_id)
-            .await
-    );
-    assert!(
-        !crate::dashboard::service::does_dashboard_exist(&app_state, &tenant_id, unknown_id).await
-    );
 }

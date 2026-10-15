@@ -20,4 +20,3 @@ export function getIconForDataType(dataType: ColumnDataType): IconType {
       return "book";
   }
 }
-

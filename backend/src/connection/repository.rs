@@ -59,18 +59,6 @@ pub async fn get_visible_connections(
     query.all(db).await
 }
 
-pub async fn delete_connection(
-    db: &DatabaseConnection,
-    tenant_id: &TenantId,
-    id: Uuid,
-) -> Result<sea_orm::DeleteResult, DbErr> {
-    connection::Entity::delete_many()
-        .filter(connection::Column::Id.eq(id))
-        .filter(connection::Column::TenantId.eq(tenant_id.get_uuid()))
-        .exec(db)
-        .await
-}
-
 pub async fn update_connection(
     db: &DatabaseConnection,
     tenant_id: &TenantId,

@@ -1,0 +1,161 @@
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md, --markdown-linebreak-ext=mdx]
+        exclude: \.(rs|snap)$
+        stages: [pre-commit]
+      - id: end-of-file-fixer
+        exclude: \.(rs|snap)$
+        stages: [pre-commit]
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.51.1
+    hooks:
+      - id: typos
+        args: [--force-exclude]
+        stages: [pre-commit]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.30.1
+    hooks:
+      - id: zizmor
+        args: [--no-progress, --config, .github/zizmor.yml]
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.15.1
+    hooks:
+      - id: hadolint-docker
+        entry: ghcr.io/hadolint/hadolint:v2.15.1 hadolint
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.14.1-1
+    hooks:
+      - id: shfmt
+        stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: rustfmt
+        name: rustfmt
+        entry: bash -c 'cd backend && cargo fmt --all'
+        language: system
+        types: [rust]
+        pass_filenames: false
+      - id: prettier
+        name: prettier
+        entry: npx --no-install prettier --write --ignore-unknown
+        language: system
+      - id: tombi-format
+        name: tombi format
+        entry: npx --no-install tombi format
+        language: system
+        types: [toml]
+        exclude: Cargo\.lock$
+      - id: tombi-lint
+        name: tombi lint
+        entry: npx --no-install tombi lint
+        language: system
+        types: [toml]
+        exclude: Cargo\.lock$
+      - id: oxlint-frontend
+        name: oxlint (frontend)
+        entry: bash -c 'cd frontend && ../node_modules/.bin/oxlint --max-warnings 428'
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+      - id: oxlint-docs
+        name: oxlint (docs)
+        entry: bash -c 'cd docs && npx --no-install next typegen >/dev/null && ../node_modules/.bin/oxlint --max-warnings 6'
+        language: system
+        files: ^docs/
+        pass_filenames: false
+      - id: oxlint-e2e
+        name: oxlint (e2e)
+        entry: bash -c 'cd e2e && ../node_modules/.bin/oxlint --max-warnings 0'
+        language: system
+        files: ^e2e/
+        pass_filenames: false
+      - id: stylelint
+        name: stylelint
+        entry: npx --no-install stylelint "frontend/**/*.css" "docs/**/*.css" --max-warnings 17
+        language: system
+        types: [css]
+        pass_filenames: false
+      - id: markdownlint
+        name: markdownlint
+        entry: npx --no-install markdownlint-cli2
+        language: system
+        types: [markdown]
+      - id: docker-compose-config
+        name: docker compose config
+        entry: docker compose --file docker/docker-compose.yaml --file docker/docker-compose.override.yaml config --quiet
+        language: system
+        files: ^docker/docker-compose
+        pass_filenames: false
+      - id: commitlint
+        name: commitlint
+        entry: npx --no-install commitlint --edit
+        language: system
+        stages: [commit-msg]
+      - id: clippy
+        name: clippy
+        entry: bash -c 'cd backend && cargo clippy --workspace --all-targets --locked -- -D warnings'
+        language: system
+        files: ^backend/
+        pass_filenames: false
+        stages: [pre-push]
+      - id: backend-unit-tests
+        name: backend unit tests
+        entry: bash -c 'cd backend && cargo nextest run --workspace --lib'
+        language: system
+        files: ^backend/
+        pass_filenames: false
+        stages: [pre-push]
+      - id: frontend-typecheck
+        name: frontend typecheck
+        entry: bash -c 'cd frontend && npx --no-install tsc -b'
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+        stages: [pre-push]
+      - id: frontend-unit-tests
+        name: frontend unit tests
+        entry: bash -c 'cd frontend && npx --no-install vitest run --project unit'
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+        stages: [pre-push]
+      - id: docs-typecheck
+        name: docs typecheck
+        entry: bash -c 'cd docs && npm run types:check'
+        language: system
+        files: ^docs/
+        pass_filenames: false
+        stages: [pre-push]
+      - id: e2e-typecheck
+        name: e2e typecheck
+        entry: bash -c 'cd e2e && npx --no-install tsc --noEmit'
+        language: system
+        files: ^e2e/
+        pass_filenames: false
+        stages: [pre-push]

@@ -1,1 +1,1 @@
-export { NewConversationPanel } from "./NewConversationPanel";
+export { NewConversationPanel } from "src/components/ConversationalAnalytics/NewConversationPanel/NewConversationPanel";

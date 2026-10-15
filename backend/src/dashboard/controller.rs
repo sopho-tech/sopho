@@ -7,9 +7,9 @@ use crate::dashboard::service;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{
+    Router,
     response::IntoResponse,
     routing::{get, post, put},
-    Router,
 };
 use serde_json::Value;
 use uuid::Uuid;

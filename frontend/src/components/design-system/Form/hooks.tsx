@@ -1,7 +1,7 @@
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
-import { TextField } from "./TextField";
-import { SelectField } from "./SelectField";
-import { SubscribeButton } from "./SubscribeButton";
+import { TextField } from "src/components/design-system/Form/TextField";
+import { SelectField } from "src/components/design-system/Form/SelectField";
+import { SubscribeButton } from "src/components/design-system/Form/SubscribeButton";
 
 export const { fieldContext, formContext, useFieldContext } =
   createFormHookContexts();

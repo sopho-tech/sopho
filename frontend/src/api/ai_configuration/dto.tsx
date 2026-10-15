@@ -1,9 +1,6 @@
 export type Provider = "anthropic" | "openai";
 export type AiConfigurationStatus =
-  | "not_configured"
-  | "untested"
-  | "live"
-  | "failed";
+  "not_configured" | "untested" | "live" | "failed";
 
 export type AiConfiguration = {
   status: AiConfigurationStatus;

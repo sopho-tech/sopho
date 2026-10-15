@@ -3,8 +3,8 @@ import { useFieldContext } from "src/components/design-system/Form/form-context"
 import { IconButton } from "src/components/design-system/IconButton";
 import { Input } from "src/components/design-system/Input";
 import { IconType } from "src/components/design-system/datatypes";
-import styles from "./PasswordField.module.css";
-import { FieldError } from "./FieldError";
+import styles from "src/components/design-system/Form/PasswordField.module.css";
+import { FieldError } from "src/components/design-system/Form/FieldError";
 
 type PasswordFieldProps = {
   placeholder?: string;
@@ -30,33 +30,35 @@ export function PasswordField({
   };
 
   return (
-    <div className={`${styles.passwordContainer} ${containerClassName ?? ""}`.trim()}>
-        <div className={styles.passwordInputWrapper}>
-          <Input
-            type={showPassword ? "text" : "password"}
-            value={field.state.value ?? ""}
-            onChange={(e) => field.handleChange(e.target.value)}
-            placeholder={placeholder}
-            leadingIcon={icon}
-            id={fieldName}
-            name={fieldName}
-            disabled={readonly}
-          />
-          {!readonly && (
-            <div className={styles.visibilityButton}>
-              <IconButton
-                type={showPassword ? "visibility_off" : "visibility"}
-                backgroundColor="transparent"
-                iconColor="grey"
-                iconSize="sm"
-                onClick={togglePasswordVisibility}
-                tabIndex={-1}
-              />
-            </div>
-          )}
-        </div>
+    <div
+      className={`${styles.passwordContainer} ${containerClassName ?? ""}`.trim()}
+    >
+      <div className={styles.passwordInputWrapper}>
+        <Input
+          type={showPassword ? "text" : "password"}
+          value={field.state.value ?? ""}
+          onChange={(e) => field.handleChange(e.target.value)}
+          placeholder={placeholder}
+          leadingIcon={icon}
+          id={fieldName}
+          name={fieldName}
+          disabled={readonly}
+        />
+        {!readonly && (
+          <div className={styles.visibilityButton}>
+            <IconButton
+              type={showPassword ? "visibility_off" : "visibility"}
+              backgroundColor="transparent"
+              iconColor="grey"
+              iconSize="sm"
+              onClick={togglePasswordVisibility}
+              tabIndex={-1}
+            />
+          </div>
+        )}
+      </div>
 
-        <FieldError errors={field.state.meta.errors} />
+      <FieldError errors={field.state.meta.errors} />
     </div>
   );
 }

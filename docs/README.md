@@ -13,7 +13,7 @@ pnpm dev
 yarn dev
 ```
 
-Open http://localhost:3000 with your browser to see the result.
+Open <http://localhost:3000> with your browser to see the result.
 
 ## Explore
 
@@ -43,3 +43,7 @@ resources:
   features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 - [Fumadocs](https://fumadocs.dev) - learn about Fumadocs
+
+## Contributing
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for the development setup, the git hooks and the tests.

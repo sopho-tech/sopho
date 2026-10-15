@@ -1,10 +1,10 @@
 import { ReactNode, useMemo } from "react";
 import { DropdownMenu, DropdownMenuItem } from "src/components/design-system";
 import { ConversationDto } from "src/api/conversational_analytics";
-import { useRenameDialog } from "./Sidebar/useRenameDialog";
-import { RenameConversationDialog } from "./Sidebar/RenameConversationDialog";
-import { useDeleteConversationDialog } from "./Sidebar/useDeleteConversationDialog";
-import { DeleteConversationDialog } from "./Sidebar/DeleteConversationDialog";
+import { useRenameDialog } from "src/components/ConversationalAnalytics/Sidebar/useRenameDialog";
+import { RenameConversationDialog } from "src/components/ConversationalAnalytics/Sidebar/RenameConversationDialog";
+import { useDeleteConversationDialog } from "src/components/ConversationalAnalytics/Sidebar/useDeleteConversationDialog";
+import { DeleteConversationDialog } from "src/components/ConversationalAnalytics/Sidebar/DeleteConversationDialog";
 
 type ConversationActionsMenuProps = {
   conversation: ConversationDto;

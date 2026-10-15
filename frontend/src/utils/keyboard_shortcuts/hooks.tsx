@@ -7,7 +7,7 @@ import {
 export function useKeyboardShortcut(
   callback: (event: KeyboardEvent) => void,
   keymap: KeyboardShortcut,
-  htmlElementToAttachToRef?: RefObject<HTMLDivElement | null>
+  htmlElementToAttachToRef?: RefObject<HTMLDivElement | null>,
 ) {
   const handleCallBack = handleKeyboardShortcut(keymap, callback);
 

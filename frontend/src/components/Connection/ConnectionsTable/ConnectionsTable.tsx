@@ -50,7 +50,9 @@ export function ConnectionsTable() {
 
   const handleEditConnection = useCallback(
     (id: string) => {
-      navigate(toTenantPath(generatePath(APP_ROUTES.CONNECTION_EDIT, { id })));
+      void navigate(
+        toTenantPath(generatePath(APP_ROUTES.CONNECTION_EDIT, { id })),
+      );
     },
     [navigate, toTenantPath],
   );

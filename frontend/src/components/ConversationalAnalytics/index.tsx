@@ -1,1 +1,1 @@
-export { ConversationalAnalytics } from "./ConversationalAnalytics";
+export { ConversationalAnalytics } from "src/components/ConversationalAnalytics/ConversationalAnalytics";

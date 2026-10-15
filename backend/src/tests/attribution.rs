@@ -16,8 +16,8 @@ use crate::conversational_analytics::conversation::dto::{
 use crate::conversational_analytics::message::constants::Sender;
 use crate::conversational_analytics::message::dto::CreateConversationMessageDto;
 use crate::conversational_analytics::segment::MessageSegment;
-use crate::dashboard::constants::DashboardStatus;
 use crate::dashboard::DashboardDto;
+use crate::dashboard::constants::DashboardStatus;
 use crate::entity;
 use crate::grant::dto::UpdateVisibilityDto;
 use crate::tenant::invitation::dto::CreateInvitationDto;
@@ -438,7 +438,7 @@ async fn agent_work_is_stamped_for_the_person_who_prompted_it() {
 async fn startup_work_is_stamped_as_the_system() {
     let app_state = init_test_app_state("attribution_startup").await;
 
-    crate::bootstrap(&app_state).await.unwrap();
+    crate::initialize(&app_state).await.unwrap();
 
     let tenants = entity::tenant::Entity::find()
         .all(&app_state.database_connection)
@@ -547,7 +547,7 @@ async fn membership_changes_name_who_made_them() {
 #[tokio::test]
 async fn a_new_workspace_names_its_creator_and_leaves_roles_to_the_system() {
     let app_state = init_test_app_state("attribution_new_workspace").await;
-    crate::bootstrap(&app_state).await.unwrap();
+    crate::initialize(&app_state).await.unwrap();
     let administrator = find_admin_user_id(&app_state).await;
 
     let created = crate::tenant::service::create_tenant_for_user(
@@ -1000,7 +1000,7 @@ async fn create_canvas_through_agent(
 #[tokio::test]
 async fn responses_name_who_made_and_changed_the_row() {
     let app_state = init_test_app_state("attribution_responses").await;
-    crate::bootstrap(&app_state).await.unwrap();
+    crate::initialize(&app_state).await.unwrap();
     let default_tenant_id = entity::tenant::Entity::find()
         .one(&app_state.database_connection)
         .await
@@ -1060,10 +1060,12 @@ async fn responses_name_who_made_and_changed_the_row() {
             .await
             .unwrap();
     assert!(!notebook.cells.is_empty());
-    assert!(notebook
-        .cells
-        .iter()
-        .all(|cell| cell.created_by == Some(system_attribution())));
+    assert!(
+        notebook
+            .cells
+            .iter()
+            .all(|cell| cell.created_by == Some(system_attribution()))
+    );
     let mut edited_cell = CellDto::from(find_cell(&app_state, notebook.cells[0].id).await);
     edited_cell.name = Some("Edited".to_string());
     let edited_cell =

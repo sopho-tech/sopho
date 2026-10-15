@@ -30,7 +30,9 @@ export function Onboarding() {
   const signOut = useDeleteSession();
   const { mutate: deleteSession } = signOut;
 
-  const handleBack = useCallback(() => navigate(APP_ROUTES.INDEX), [navigate]);
+  const handleBack = useCallback(() => {
+    void navigate(APP_ROUTES.INDEX);
+  }, [navigate]);
   const handleSignOut = useCallback(() => deleteSession(), [deleteSession]);
 
   const hasWorkspaces = (memberships.data?.length ?? 0) > 0;
@@ -57,11 +59,11 @@ export function Onboarding() {
         backgroundColor="white"
       >
         <Flex direction="column" gap="xs">
-          <Heading accessbilityLevel={1} size="xl" textAlign="center">
+          <Heading accessibilityLevel={1} size="xl" textAlign="center">
             {hasWorkspaces ? "Join or create a workspace" : "Welcome to Sopho"}
           </Heading>
           <Heading
-            accessbilityLevel={2}
+            accessibilityLevel={2}
             size="sm"
             textAlign="center"
             textColor="subtle"

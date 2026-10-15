@@ -106,6 +106,7 @@ pub async fn resolve_permissions_for_role(
     Ok(PermissionSet::from_permissions(permissions))
 }
 
+#[cfg(test)]
 pub async fn create_custom_role(
     app_state: &AppState,
     tenant_id: &TenantId,

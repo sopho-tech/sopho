@@ -5,26 +5,26 @@
 :root {
   /* Color System */
   --color-primary-base: 250, 23%, 26%;
-  --color-primary-900: hsla(250, 23%, 26%, 1);
-  --color-primary-800: hsla(250, 31%, 40%, 1);
-  --color-primary-700: hsla(250, 40%, 51%, 1);
-  --color-primary-600: hsla(250, 49%, 58%, 1);
-  --color-primary-500: hsla(250, 59%, 67%, 1);
-  --color-primary-400: hsla(250, 70%, 75%, 1);
-  --color-primary-300: hsla(250, 78%, 81%, 1);
-  --color-primary-200: hsla(250, 88%, 86%, 1);
-  --color-primary-100: hsla(240, 80%, 95%, 1);
+  --color-primary-900: hsl(250deg 23% 26% / 100%);
+  --color-primary-800: hsl(250deg 31% 40% / 100%);
+  --color-primary-700: hsl(250deg 40% 51% / 100%);
+  --color-primary-600: hsl(250deg 49% 58% / 100%);
+  --color-primary-500: hsl(250deg 59% 67% / 100%);
+  --color-primary-400: hsl(250deg 70% 75% / 100%);
+  --color-primary-300: hsl(250deg 78% 81% / 100%);
+  --color-primary-200: hsl(250deg 88% 86% / 100%);
+  --color-primary-100: hsl(240deg 80% 95% / 100%);
 
   /* Greys */
-  --color-grey-900: hsla(252, 5%, 16%, 1);
-  --color-grey-800: hsla(251, 5%, 26%, 1);
-  --color-grey-700: hsla(250, 5%, 40%, 1);
-  --color-grey-600: hsla(253, 5%, 55%, 1);
-  --color-grey-500: hsla(250, 5%, 68%, 1);
-  --color-grey-400: hsla(250, 5%, 75%, 1);
-  --color-grey-300: hsla(248, 5%, 82%, 1);
-  --color-grey-200: hsla(245, 5%, 90%, 1);
-  --color-grey-100: hsla(250, 5%, 99%, 1);
+  --color-grey-900: hsl(252deg 5% 16% / 100%);
+  --color-grey-800: hsl(251deg 5% 26% / 100%);
+  --color-grey-700: hsl(250deg 5% 40% / 100%);
+  --color-grey-600: hsl(253deg 5% 55% / 100%);
+  --color-grey-500: hsl(250deg 5% 68% / 100%);
+  --color-grey-400: hsl(250deg 5% 75% / 100%);
+  --color-grey-300: hsl(248deg 5% 82% / 100%);
+  --color-grey-200: hsl(245deg 5% 90% / 100%);
+  --color-grey-100: hsl(250deg 5% 99% / 100%);
 }
 
 @theme {

@@ -21,7 +21,7 @@ type ChartCellRow = {
 
 export function ChartBrowser() {
   const showChartBrowser = useStore(
-    (state) => state.dashboard.showChartBrowser
+    (state) => state.dashboard.showChartBrowser,
   );
   const mode = useStore((state) => state.dashboard.mode);
   const getLayout = useStore((state) => state.dashboard.getLayout);
@@ -64,7 +64,7 @@ export function ChartBrowser() {
           (props.getValue() as string | null | undefined) || "N/A",
       },
     ],
-    []
+    [],
   );
 
   if (!showChartBrowser || mode == DashboardMode.VIEWING) {

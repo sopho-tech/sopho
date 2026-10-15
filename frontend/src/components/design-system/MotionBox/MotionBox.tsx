@@ -42,7 +42,7 @@ export function MotionBox({
 
   const mergedClassName = mergeBoxClassName(
     backgroundColorClassName,
-    className
+    className,
   );
 
   const mergedStyle = mergeBoxStyles(display, layoutStyles, sx, htmlStyle);

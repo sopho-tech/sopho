@@ -77,10 +77,7 @@ export type MetricChartContent = {
 };
 
 export type ChartContent =
-  | BarChartContent
-  | PieChartContent
-  | LineChartContent
-  | MetricChartContent;
+  BarChartContent | PieChartContent | LineChartContent | MetricChartContent;
 
 export type CellDto = {
   id: string;

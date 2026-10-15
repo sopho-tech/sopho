@@ -7,14 +7,13 @@ import {
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { NotebookDto } from "src/components/Notebook/dto";
-import { PaginatedData, PaginatedDataResponse } from "../dto";
+import { PaginatedData, PaginatedDataResponse } from "src/api/dto";
 import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
 // Query keys for notebooks
 export const notebookKeys = {
   all: (tenantId: string) => [tenantId, "notebooks"] as const,
-  lists: (tenantId: string) =>
-    [...notebookKeys.all(tenantId), "list"] as const,
+  lists: (tenantId: string) => [...notebookKeys.all(tenantId), "list"] as const,
   listPaginated: (tenantId: string, page: number, pageSize: number) =>
     [...notebookKeys.lists(tenantId), { page, pageSize }] as const,
   details: (tenantId: string) =>
@@ -48,7 +47,7 @@ const notebookApi = {
   getAllNotebooks: async (
     tenantId: string,
     page?: number,
-    pageSize?: number
+    pageSize?: number,
   ): Promise<PaginatedData<NotebookDto>> => {
     const url = new URL(
       tenantApiUrl(tenantId, API_ENDPOINTS.NOTEBOOK.GET_ALL),
@@ -77,7 +76,7 @@ const notebookApi = {
 
   createNotebook: async (
     tenantId: string,
-    payload: Omit<NotebookDto, "id">
+    payload: Omit<NotebookDto, "id">,
   ): Promise<NotebookDto> => {
     const response = await ApiService.post({
       url: tenantApiUrl(tenantId, API_ENDPOINTS.NOTEBOOK.CREATE),
@@ -106,14 +105,17 @@ const notebookApi = {
   getCellsByNotebookId: async (
     tenantId: string,
     notebookId: string,
-    cellType?: string
+    cellType?: string,
   ): Promise<NotebookDto> => {
     const url = new URL(
       tenantApiUrl(
         tenantId,
-        API_ENDPOINTS.NOTEBOOK.GET_CELLS_BY_NOTEBOOK_ID.replace(":id", notebookId),
+        API_ENDPOINTS.NOTEBOOK.GET_CELLS_BY_NOTEBOOK_ID.replace(
+          ":id",
+          notebookId,
+        ),
       ),
-      window.location.origin
+      window.location.origin,
     );
     if (cellType) {
       url.searchParams.set("cell_type", cellType);
@@ -180,7 +182,7 @@ export const useCreateNotebook = (callbacks?: {
       queryClient.setQueryData(notebookKeys.detail(tenantId, data.id!), data);
 
       // Invalidate the notebooks list to refetch
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: notebookKeys.lists(tenantId),
       });
 

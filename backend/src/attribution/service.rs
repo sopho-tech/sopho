@@ -19,7 +19,7 @@ impl AttributionNames {
         let user = match (actor_kind, user_id) {
             (ActorKind::System, None) => None,
             (ActorKind::System, Some(user_id)) => {
-                return Err(AttributionError::SystemNamesUser(user_id))
+                return Err(AttributionError::SystemNamesUser(user_id));
             }
             (_, None) => return Err(AttributionError::MissingUser(actor_kind)),
             (_, Some(user_id)) => Some(AttributedUserDto {

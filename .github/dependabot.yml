@@ -1,0 +1,85 @@
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /backend
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      cargo-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      root-npm-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      frontend-npm-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /docs
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      docs-npm-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      e2e-npm-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/*
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: docker
+    directory: /docker
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      docker-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: docker
+    directory: /docs
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      docs-docker-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      pre-commit-minor-and-patch:
+        update-types: [minor, patch]

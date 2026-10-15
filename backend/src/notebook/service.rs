@@ -7,7 +7,7 @@ use crate::cell::service as cell_service;
 use crate::common::time_utils;
 use crate::common::{AppState, PaginatedResponse};
 use crate::entity;
-use crate::notebook::constants::{NotebookStatus, NOTEBOOK_NOT_FOUND_MESSAGE};
+use crate::notebook::constants::{NOTEBOOK_NOT_FOUND_MESSAGE, NotebookStatus};
 use crate::notebook::dto;
 use crate::notebook::error::NotebookError;
 use crate::notebook::repository;

@@ -1,0 +1,25 @@
+{
+  "match": "\"title\":\"ChartSummaryResponse\"",
+  "response": {
+    "id": "chatcmpl-fake-chart-summary-agent",
+    "object": "chat.completion",
+    "created": 0,
+    "model": "gpt-4o-mini",
+    "system_fingerprint": null,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"summary\":\"Delivered orders dominate the chart.\"}"
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1,
+      "total_tokens": 2
+    }
+  }
+}
