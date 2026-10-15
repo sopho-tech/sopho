@@ -7,14 +7,19 @@ use crate::support::constants::{
 use crate::support::data_sources::{
     SqliteDemoDatabase, copy_sqlite_demo_database, create_postgres_sample_database, manifest_path,
 };
+use crate::support::identity_provider::mock_identity_providers;
 use crate::support::metadata_database::MetadataDatabase;
 use crate::support::postgres_server::{PostgresDatabase, shared_postgres_server};
 use fake_llm::FakeLlmServer;
+use reqwest::cookie::Jar;
+use reqwest::redirect::Policy;
 use reqwest::{Client, Method, StatusCode};
 use sea_orm::ConnectionTrait;
 use sea_orm::sea_query::{Alias, Query};
 use serde_json::{Value, json};
-use sopho::{AppState, Configurations};
+use sopho::{AppState, Configurations, OidcProviderConfiguration};
+use std::ops::Deref;
+use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
 use tokio::task::JoinHandle;
 use uuid::Uuid;
@@ -24,65 +29,46 @@ pub struct JsonResponse {
     pub body: Value,
 }
 
-pub struct TestApp {
+pub struct UserSession {
     pub client: Client,
-    pub fake_llm: FakeLlmServer,
-    pub app_state: AppState,
-    pub tenant_id: Uuid,
+    cookie_jar: Arc<Jar>,
     base_url: String,
-    server_task: JoinHandle<()>,
-    _sqlite_demo_databases: Vec<SqliteDemoDatabase>,
-    _postgres_sample_databases: Vec<PostgresDatabase>,
-    _metadata_database: MetadataDatabase,
+    tenant_id: Option<Uuid>,
 }
 
-impl TestApp {
-    pub async fn spawn() -> Self {
-        let metadata_database = MetadataDatabase::create().await;
-        let fake_llm = FakeLlmServer::start(&manifest_path(FAKE_LLM_FIXTURES_RELATIVE_PATH))
-            .await
-            .expect("start the fake LLM server");
-        let app_state =
-            AppState::from_configurations(test_configurations(&metadata_database, &fake_llm))
-                .await
-                .expect("connect to the metadata database");
-        sopho::initialize(&app_state)
-            .await
-            .expect("initialize the application");
-        let tenant_id = default_tenant_id(&app_state).await;
-        let listener = TcpListener::bind("127.0.0.1:0")
-            .await
-            .expect("bind the application listener");
-        let base_url = format!(
-            "http://{}",
-            listener.local_addr().expect("read the application address")
-        );
-        let router = sopho::build_app(app_state.clone());
-        let server_task = tokio::spawn(async move {
-            axum::serve(listener, router)
-                .await
-                .expect("serve the application");
-        });
+impl UserSession {
+    pub fn new(base_url: &str, tenant_id: Option<Uuid>) -> Self {
+        let cookie_jar = Arc::new(Jar::default());
         Self {
             client: Client::builder()
-                .cookie_store(true)
+                .cookie_provider(cookie_jar.clone())
                 .build()
                 .expect("build the HTTP client"),
-            fake_llm,
-            app_state,
+            cookie_jar,
+            base_url: base_url.to_string(),
             tenant_id,
-            base_url,
-            server_task,
-            _sqlite_demo_databases: Vec::new(),
-            _postgres_sample_databases: Vec::new(),
-            _metadata_database: metadata_database,
         }
     }
 
-    pub async fn restart_initialization(&self) {
-        sopho::initialize(&self.app_state)
-            .await
-            .expect("re-run application initialization");
+    pub fn in_tenant(&self, tenant_id: Uuid) -> Self {
+        Self {
+            client: self.client.clone(),
+            cookie_jar: self.cookie_jar.clone(),
+            base_url: self.base_url.clone(),
+            tenant_id: Some(tenant_id),
+        }
+    }
+
+    pub fn client_without_redirects(&self) -> Client {
+        Client::builder()
+            .cookie_provider(self.cookie_jar.clone())
+            .redirect(Policy::none())
+            .build()
+            .expect("build the HTTP client")
+    }
+
+    pub fn base_url(&self) -> &str {
+        &self.base_url
     }
 
     pub fn api_url(&self, path: &str) -> String {
@@ -95,11 +81,13 @@ impl TestApp {
             .split(['/', '?'])
             .next()
             .unwrap_or_default();
-        if TENANT_SCOPED_ROUTE_GROUPS.contains(&route_group) {
-            format!("/{TENANT_PATH_SEGMENT}/{}{path}", self.tenant_id)
-        } else {
-            path.to_string()
+        if !TENANT_SCOPED_ROUTE_GROUPS.contains(&route_group) {
+            return path.to_string();
         }
+        let tenant_id = self
+            .tenant_id
+            .unwrap_or_else(|| panic!("{path} is workspace-scoped but this session has none"));
+        format!("/{TENANT_PATH_SEGMENT}/{tenant_id}{path}")
     }
 
     pub async fn request_json(
@@ -144,59 +132,12 @@ impl TestApp {
         self.request_json(Method::DELETE, path, None).await
     }
 
-    pub async fn login_as_admin(&self) {
-        let response = self
-            .post(
-                "/auth/session",
-                json!({ "email": ADMIN_EMAIL, "password": ADMIN_PASSWORD }),
-            )
-            .await;
-        assert_eq!(
-            response.status,
-            StatusCode::OK,
-            "admin login failed: {}",
-            response.body
-        );
-    }
-
-    pub async fn create_sqlite_demo_connection(&mut self) -> Value {
-        let demo_database = copy_sqlite_demo_database();
-        let payload = json!({
-            "name": SQLITE_DEMO_CONNECTION_NAME,
-            "source_type": "SQLITE",
-            "database": demo_database.path().display().to_string(),
-            "port": null,
-        });
-        self._sqlite_demo_databases.push(demo_database);
-        self.create_connection(payload).await
-    }
-
-    pub async fn create_postgres_sample_connection(&mut self) -> Value {
-        let sample_database = create_postgres_sample_database().await;
-        let server = shared_postgres_server().await;
-        let payload = json!({
-            "name": POSTGRES_SAMPLE_CONNECTION_NAME,
-            "source_type": "POSTGRESQL",
-            "host": server.host,
-            "port": server.port,
-            "username": server.username,
-            "password": server.password,
-            "database": sample_database.name,
-            "schema": SAMPLE_DATABASE_SCHEMA,
-        });
-        self._postgres_sample_databases.push(sample_database);
-        self.create_connection(payload).await
-    }
-
-    async fn create_connection(&self, payload: Value) -> Value {
-        let response = self.post("/connection", payload).await;
-        assert_eq!(
-            response.status,
-            StatusCode::CREATED,
-            "connection creation failed: {}",
-            response.body
-        );
-        response.body
+    pub async fn sign_in(&self, email: &str, password: &str) -> JsonResponse {
+        self.post(
+            "/auth/session",
+            json!({ "email": email, "password": password }),
+        )
+        .await
     }
 
     pub async fn configure_ai_provider(&self, provider: &str) -> JsonResponse {
@@ -221,6 +162,164 @@ impl TestApp {
             configured.body
         );
     }
+}
+
+enum SingleSignOn {
+    Disabled,
+    MockProviders,
+}
+
+pub struct TestApp {
+    pub admin: UserSession,
+    pub fake_llm: FakeLlmServer,
+    pub app_state: AppState,
+    pub tenant_id: Uuid,
+    server_task: JoinHandle<()>,
+    sqlite_demo_databases: Mutex<Vec<SqliteDemoDatabase>>,
+    postgres_sample_databases: Mutex<Vec<PostgresDatabase>>,
+    _metadata_database: MetadataDatabase,
+}
+
+impl Deref for TestApp {
+    type Target = UserSession;
+
+    fn deref(&self) -> &UserSession {
+        &self.admin
+    }
+}
+
+impl TestApp {
+    pub async fn spawn() -> Self {
+        Self::spawn_with(SingleSignOn::Disabled).await
+    }
+
+    pub async fn spawn_with_single_sign_on() -> Self {
+        Self::spawn_with(SingleSignOn::MockProviders).await
+    }
+
+    async fn spawn_with(single_sign_on: SingleSignOn) -> Self {
+        let metadata_database = MetadataDatabase::create().await;
+        let fake_llm = FakeLlmServer::start(&manifest_path(FAKE_LLM_FIXTURES_RELATIVE_PATH))
+            .await
+            .expect("start the fake LLM server");
+        let listener = TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind the application listener");
+        let base_url = format!(
+            "http://{}",
+            listener.local_addr().expect("read the application address")
+        );
+        let oidc_providers = match single_sign_on {
+            SingleSignOn::Disabled => Vec::new(),
+            SingleSignOn::MockProviders => mock_identity_providers(&base_url).await,
+        };
+        let app_state = AppState::from_configurations(test_configurations(
+            &metadata_database,
+            &fake_llm,
+            oidc_providers,
+        ))
+        .await
+        .expect("connect to the metadata database");
+        sopho::initialize(&app_state)
+            .await
+            .expect("initialize the application");
+        let tenant_id = default_tenant_id(&app_state).await;
+        let router = sopho::build_app(app_state.clone());
+        let server_task = tokio::spawn(async move {
+            axum::serve(listener, router)
+                .await
+                .expect("serve the application");
+        });
+        Self {
+            admin: UserSession::new(&base_url, Some(tenant_id)),
+            fake_llm,
+            app_state,
+            tenant_id,
+            server_task,
+            sqlite_demo_databases: Mutex::new(Vec::new()),
+            postgres_sample_databases: Mutex::new(Vec::new()),
+            _metadata_database: metadata_database,
+        }
+    }
+
+    pub async fn restart_initialization(&self) {
+        sopho::initialize(&self.app_state)
+            .await
+            .expect("re-run application initialization");
+    }
+
+    pub fn session(&self, tenant_id: Option<Uuid>) -> UserSession {
+        UserSession::new(self.admin.base_url(), tenant_id)
+    }
+
+    pub async fn login_as_admin(&self) {
+        let response = self.admin.sign_in(ADMIN_EMAIL, ADMIN_PASSWORD).await;
+        assert_eq!(
+            response.status,
+            StatusCode::OK,
+            "admin login failed: {}",
+            response.body
+        );
+    }
+
+    pub async fn create_sqlite_demo_connection(&mut self) -> Value {
+        self.create_sqlite_demo_connection_as(&self.admin).await
+    }
+
+    pub async fn create_sqlite_demo_connection_as(&self, session: &UserSession) -> Value {
+        self.create_named_sqlite_demo_connection_as(session, SQLITE_DEMO_CONNECTION_NAME)
+            .await
+    }
+
+    pub async fn create_named_sqlite_demo_connection_as(
+        &self,
+        session: &UserSession,
+        name: &str,
+    ) -> Value {
+        let demo_database = copy_sqlite_demo_database();
+        let payload = json!({
+            "name": name,
+            "source_type": "SQLITE",
+            "database": demo_database.path().display().to_string(),
+            "port": null,
+        });
+        self.sqlite_demo_databases
+            .lock()
+            .expect("lock the SQLite demo databases")
+            .push(demo_database);
+        create_connection(session, payload).await
+    }
+
+    pub async fn create_postgres_sample_connection(&mut self) -> Value {
+        let sample_database = create_postgres_sample_database().await;
+        let server = shared_postgres_server().await;
+        let payload = json!({
+            "name": POSTGRES_SAMPLE_CONNECTION_NAME,
+            "source_type": "POSTGRESQL",
+            "host": server.host,
+            "port": server.port,
+            "username": server.username,
+            "password": server.password,
+            "database": sample_database.name,
+            "schema": SAMPLE_DATABASE_SCHEMA,
+        });
+        self.postgres_sample_databases
+            .lock()
+            .expect("lock the Postgres sample databases")
+            .push(sample_database);
+        create_connection(&self.admin, payload).await
+    }
+}
+
+async fn create_connection(session: &UserSession, payload: Value) -> Value {
+    let response = session.post("/connection", payload).await;
+    assert_eq!(
+        response.status,
+        StatusCode::CREATED,
+        "connection creation failed: {}",
+        response.body
+    );
+    response.body
 }
 
 impl Drop for TestApp {
@@ -266,6 +365,7 @@ async fn default_tenant_id(app_state: &AppState) -> Uuid {
 fn test_configurations(
     metadata_database: &MetadataDatabase,
     fake_llm: &FakeLlmServer,
+    oidc_providers: Vec<OidcProviderConfiguration>,
 ) -> Configurations {
     Configurations::builder()
         .database_url(metadata_database.url())
@@ -280,6 +380,7 @@ fn test_configurations(
         .admin_full_name(ADMIN_FULL_NAME)
         .anthropic_base_url(fake_llm.anthropic_base_url())
         .openai_base_url(fake_llm.openai_base_url())
+        .oidc_providers(oidc_providers)
         .build()
         .expect("build the test configuration")
 }

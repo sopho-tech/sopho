@@ -1,4 +1,4 @@
-use crate::support::TestApp;
+use crate::support::UserSession;
 use reqwest::StatusCode;
 use serde_json::{Value, json};
 
@@ -8,8 +8,8 @@ pub struct CreatedCanvas {
     pub dashboard: Value,
 }
 
-pub async fn create_canvas(app: &TestApp, name: &str) -> CreatedCanvas {
-    let created = app
+pub async fn create_canvas(session: &UserSession, name: &str) -> CreatedCanvas {
+    let created = session
         .post(
             "/canvas",
             json!({ "name": name, "description": "Created by the API tests" }),
@@ -17,10 +17,10 @@ pub async fn create_canvas(app: &TestApp, name: &str) -> CreatedCanvas {
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.body);
     let canvas_id = string_field(&created.body, "id");
-    let notebooks = app.get(&format!("/notebook/canvas/{canvas_id}")).await;
+    let notebooks = session.get(&format!("/notebook/canvas/{canvas_id}")).await;
     assert_eq!(notebooks.status, StatusCode::OK, "{}", notebooks.body);
     let notebook_id = string_field(&notebooks.body[0], "id");
-    let dashboard = app.get(&format!("/dashboard/canvas/{canvas_id}")).await;
+    let dashboard = session.get(&format!("/dashboard/canvas/{canvas_id}")).await;
     assert_eq!(dashboard.status, StatusCode::OK, "{}", dashboard.body);
     CreatedCanvas {
         canvas_id,
@@ -30,14 +30,14 @@ pub async fn create_canvas(app: &TestApp, name: &str) -> CreatedCanvas {
 }
 
 pub async fn create_sql_cell(
-    app: &TestApp,
+    session: &UserSession,
     notebook_id: &str,
     connection_id: &str,
     name: &str,
     query: &str,
 ) -> Value {
     create_cell(
-        app,
+        session,
         json!({
             "notebook_id": notebook_id,
             "connection_id": connection_id,
@@ -50,14 +50,14 @@ pub async fn create_sql_cell(
 }
 
 pub async fn create_chart_cell(
-    app: &TestApp,
+    session: &UserSession,
     notebook_id: &str,
     connection_id: &str,
     name: &str,
     chart_content: Value,
 ) -> Value {
     create_cell(
-        app,
+        session,
         json!({
             "notebook_id": notebook_id,
             "connection_id": connection_id,
@@ -69,13 +69,17 @@ pub async fn create_chart_cell(
     .await
 }
 
-async fn create_cell(app: &TestApp, payload: Value) -> Value {
-    let created = app.post("/cell", payload).await;
+async fn create_cell(session: &UserSession, payload: Value) -> Value {
+    let created = session.post("/cell", payload).await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.body);
     created.body
 }
 
-pub async fn place_chart_on_dashboard(app: &TestApp, canvas: &CreatedCanvas, chart_cell_id: &str) {
+pub async fn place_chart_on_dashboard(
+    session: &UserSession,
+    canvas: &CreatedCanvas,
+    chart_cell_id: &str,
+) {
     let mut dashboard = canvas.dashboard.clone();
     dashboard["layout"] = json!([
         {
@@ -87,7 +91,7 @@ pub async fn place_chart_on_dashboard(app: &TestApp, canvas: &CreatedCanvas, cha
             "y_size": 4,
         },
     ]);
-    let updated = app
+    let updated = session
         .put(
             &format!("/dashboard/{}", string_field(&canvas.dashboard, "id")),
             dashboard,

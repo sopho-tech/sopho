@@ -394,3 +394,51 @@ impl AppState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::oidc_providers_from_variables;
+    use std::collections::HashMap;
+
+    fn variable_reader(
+        variables: HashMap<&'static str, &'static str>,
+    ) -> impl Fn(&str) -> Option<String> {
+        move |variable: &str| variables.get(variable).map(|value| value.to_string())
+    }
+
+    #[test]
+    fn configured_providers_require_every_variable() {
+        let complete: HashMap<&str, &str> = [
+            ("OIDC_PROVIDERS", " Google "),
+            ("OIDC_GOOGLE_DISPLAY_NAME", "Google"),
+            ("OIDC_GOOGLE_ISSUER_URL", "https://accounts.google.com"),
+            ("OIDC_GOOGLE_CLIENT_ID", "client-id"),
+            ("OIDC_GOOGLE_CLIENT_SECRET", "client-secret"),
+            (
+                "OIDC_GOOGLE_REDIRECT_URI",
+                "https://app.example/api/v1/auth/oidc/google/callback",
+            ),
+        ]
+        .into_iter()
+        .collect();
+
+        let providers = oidc_providers_from_variables(variable_reader(complete.clone())).unwrap();
+        assert_eq!(providers.len(), 1);
+        assert_eq!(providers[0].name, "google");
+        assert_eq!(providers[0].client_secret, "client-secret");
+
+        let mut missing_secret = complete.clone();
+        missing_secret.remove("OIDC_GOOGLE_CLIENT_SECRET");
+        let error = oidc_providers_from_variables(variable_reader(missing_secret)).unwrap_err();
+        assert!(error.to_string().contains("OIDC_GOOGLE_CLIENT_SECRET"));
+
+        let mut unsafe_name = complete.clone();
+        unsafe_name.insert("OIDC_PROVIDERS", "goo gle");
+        assert!(oidc_providers_from_variables(variable_reader(unsafe_name)).is_err());
+
+        assert!(
+            oidc_providers_from_variables(|_| None).unwrap().is_empty(),
+            "without OIDC_PROVIDERS only password sign-in is offered"
+        );
+    }
+}

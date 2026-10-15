@@ -226,3 +226,57 @@ pub struct ResourceCapabilities {
     pub can_delete: bool,
     pub can_share: bool,
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeSet;
+    use std::path::{Path, PathBuf};
+
+    const ALLOWED_ESCAPE_HATCH_FILES: [&str; 6] = [
+        "src/ai_configuration/service.rs",
+        "src/authorization/dto.rs",
+        "src/demo/service.rs",
+        "src/scheduler/mod.rs",
+        "src/tenant/invitation/service.rs",
+        "src/tenant/service.rs",
+    ];
+
+    fn collect_rust_files(directory: &Path, collected: &mut Vec<PathBuf>) {
+        for entry in std::fs::read_dir(directory).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                collect_rust_files(&path, collected);
+            } else if path.extension().is_some_and(|extension| extension == "rs") {
+                collected.push(path);
+            }
+        }
+    }
+
+    #[test]
+    fn tenant_id_escape_hatch_allowlist() {
+        let mut rust_files = Vec::new();
+        collect_rust_files(Path::new("src"), &mut rust_files);
+
+        let files_using_escape_hatch: BTreeSet<String> = rust_files
+            .into_iter()
+            .filter(|path| {
+                std::fs::read_to_string(path)
+                    .unwrap()
+                    .contains("from_system_unchecked(")
+            })
+            .map(|path| path.to_string_lossy().replace('\\', "/"))
+            .collect();
+
+        let allowed: BTreeSet<String> = ALLOWED_ESCAPE_HATCH_FILES
+            .iter()
+            .map(|value| value.to_string())
+            .collect();
+
+        assert_eq!(
+            files_using_escape_hatch, allowed,
+            "unreviewed use of from_system_unchecked. Every file constructing a TenantId or \
+             UserId outside a verified request context must be listed in \
+             ALLOWED_ESCAPE_HATCH_FILES and reviewed."
+        );
+    }
+}

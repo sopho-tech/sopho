@@ -103,7 +103,7 @@ test-image:
 	cd e2e && SOPHO_IMAGE="$(SOPHO_IMAGE)" SOPHO_UPGRADE_FROM_IMAGE="$(SOPHO_UPGRADE_FROM_IMAGE)" npx --no-install playwright test --config playwright.image.config.ts
 
 test-clean:
-	docker rm --force --volumes sopho-test-postgres
+	docker rm --force --volumes sopho-test-postgres sopho-test-oidc
 
 coverage: coverage-backend coverage-frontend
 

@@ -5,8 +5,8 @@ use crate::support::canvas_builder::{
 };
 use crate::support::constants::{AI_PROVIDER_API_KEY, ORDER_STATUS_QUERY, ORDER_STATUS_QUESTION};
 use crate::support::conversation::{
-    append_canvas_command, event_data, event_names, last_message, run_completion,
-    start_conversation, wait_for_persisted_event,
+    answer_order_status_question, append_canvas_command, event_data, event_names, last_message,
+    run_completion, start_conversation, wait_for_persisted_event,
 };
 use fake_llm::{FailureKind, Provider};
 use reqwest::StatusCode;
@@ -37,18 +37,6 @@ fn requests_answered_by(app: &TestApp, fixture_name: &str) -> usize {
         .iter()
         .filter(|request| request.fixture_name.as_deref() == Some(fixture_name))
         .count()
-}
-
-async fn answer_order_status_question(app: &TestApp, connection_id: &str) -> String {
-    let conversation_id = start_conversation(app, connection_id, ORDER_STATUS_QUESTION).await;
-    let events = run_completion(app, &conversation_id).await;
-    assert_eq!(
-        event_names(&events).last().map(String::as_str),
-        Some("completed"),
-        "{:?}",
-        event_names(&events)
-    );
-    conversation_id
 }
 
 async fn assert_ai_configuration_lifecycle(provider_name: &str, provider: Provider) {

@@ -1,5 +1,6 @@
 {
   "match": "\"title\":\"CanvasPlan\"",
+  "exclude": "Set target_canvas_index to the number of the canvas to extend",
   "response": {
     "id": "msg_fake_canvas_generation_agent",
     "type": "message",

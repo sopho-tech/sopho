@@ -25,10 +25,10 @@ mod scheduler;
 mod search;
 mod suggested_question;
 mod tenant;
-#[cfg(test)]
-mod tests;
 
-pub use crate::common::{AppState, Configurations, ConfigurationsBuilder};
+pub use crate::common::{
+    AppState, Configurations, ConfigurationsBuilder, OidcProviderConfiguration,
+};
 
 use axum::http::HeaderValue;
 use axum::http::Method;
