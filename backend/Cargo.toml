@@ -23,7 +23,7 @@ aes-gcm = "0.10.3"
 anyhow = "1.0.97"
 argon2 = "0.5.3"
 axum = { version = "0.8.1", features = ["json"] }
-base64 = "0.22.1"
+base64 = "0.23.1"
 chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
@@ -38,16 +38,16 @@ schemars = { version = "1.2", features = ["derive"] }
 sea-orm = { version = "1.1.19", features = ["debug-print", "macros", "runtime-tokio-native-tls", "sqlx-postgres", "sqlx-sqlite"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.140"
-sha2 = "0.10"
+sha2 = "0.11"
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "sqlite"] }
-strum = { version = "0.27", features = ["derive"] }
-thiserror = "=2.0.12"
+strum = { version = "0.28", features = ["derive"] }
+thiserror = "=2.0.21"
 time = "0.3.47"
 tokio = { version = "1.44.2", features = ["full"] }
 tokio-cron-scheduler = { version = "0.15.1", features = ["postgres_storage"] }
 tokio-stream = { version = "0.1.18" }
 tower-cookies = "0.11.0"
-tower-http = { version = "0.6.2", features = ["cors", "fs", "trace"] }
+tower-http = { version = "0.7.1", features = ["cors", "fs", "trace"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 uuid = { version = "1.4", features = ["serde", "v4"] }
