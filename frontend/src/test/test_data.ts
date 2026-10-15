@@ -55,7 +55,6 @@ export const SQLITE_CONNECTION: ConnectionDto = {
   database: "/data/ecommerce.db",
   schema: null,
   username: "",
-  password: "",
   description: null,
   status: StatusType.Active,
   created_at: "2026-10-01T09:00:00Z",
@@ -65,7 +64,7 @@ export const SQLITE_CONNECTION: ConnectionDto = {
   modified_by: TEST_USER_ATTRIBUTION,
 };
 
-export const POSTGRES_CONNECTION_FORM_FIELDS = {
+export const POSTGRES_CONNECTION: ConnectionDto = {
   id: "00000000-0000-4000-8000-000000000102",
   name: "Warehouse",
   source_type: "POSTGRESQL",
@@ -74,15 +73,10 @@ export const POSTGRES_CONNECTION_FORM_FIELDS = {
   database: "warehouse",
   schema: "public",
   username: "analyst",
-  password: "analyst-password",
   description: "Reporting replica",
   status: StatusType.Active,
   created_at: "2026-10-01T09:00:00Z",
   updated_at: "2026-10-01T09:00:00Z",
-};
-
-export const POSTGRES_CONNECTION: ConnectionDto = {
-  ...POSTGRES_CONNECTION_FORM_FIELDS,
   capabilities: FULL_CAPABILITIES,
   created_by: TEST_USER_ATTRIBUTION,
   modified_by: TEST_USER_ATTRIBUTION,

@@ -1,7 +1,6 @@
 use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
-use crate::connection::dto;
 use crate::entity::connection;
 use sea_orm::ColumnTrait;
 use sea_orm::Condition;
@@ -61,30 +60,10 @@ pub async fn get_visible_connections(
 
 pub async fn update_connection(
     db: &DatabaseConnection,
-    tenant_id: &TenantId,
-    connection_id: Uuid,
-    payload: dto::ConnectionDto,
-    actor: &Actor,
-) -> Result<Option<connection::Model>, DbErr> {
-    let Some(connection) = get_connection(db, tenant_id, connection_id).await? else {
-        return Ok(None);
-    };
-    let mut connection_entity: connection::ActiveModel = connection.into();
-    connection_entity.name = Set(payload.name);
-    connection_entity.description = Set(payload.description);
-    connection_entity.status = Set(payload.status.to_string());
-    connection_entity.database = Set(payload.database);
-    connection_entity.host = Set(Some(payload.host));
-    connection_entity.password = Set(Some(payload.password));
-    connection_entity.port = Set(Some(payload.port));
-    connection_entity.schema = Set(payload.schema);
-    connection_entity.username = Set(Some(payload.username));
-    connection_entity.source_type = Set(payload.source_type.to_string());
-    connection_entity.updated_at = Set(time_utils::now_utc_into());
-    connection_entity.modified_by_user_id = Set(actor.user_id());
-    connection_entity.modified_by_actor = Set(actor.kind_name());
-    connection_entity.created_at = Set(payload.created_at);
-    connection_entity.update(db).await.map(Some)
+    connection: connection::Model,
+) -> Result<connection::Model, DbErr> {
+    let connection_active_model: connection::ActiveModel = connection.into();
+    connection_active_model.reset_all().update(db).await
 }
 
 pub async fn update_connection_visibility(

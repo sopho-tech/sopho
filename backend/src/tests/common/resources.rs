@@ -1,6 +1,7 @@
 use crate::authorization::constants::Visibility;
 use crate::authorization::dto::Actor;
 use crate::common::AppState;
+use crate::common::cryptography_utils;
 use crate::common::time_utils;
 use crate::entity;
 use sea_orm::{ActiveModelTrait, Set};
@@ -166,7 +167,11 @@ pub async fn insert_sqlite_connection(
         password: Set(None),
         host: Set(None),
         port: Set(None),
-        database: Set(database_path.to_string()),
+        database: Set(cryptography_utils::encrypt(
+            app_state.config.encryption_key.to_string(),
+            database_path.to_string(),
+        )
+        .unwrap()),
         schema: Set(None),
         source_type: Set("SQLITE".to_string()),
         status: Set(ACTIVE_STATUS.to_string()),

@@ -75,7 +75,7 @@ async fn update_connection(
     State(app_state): State<AppState>,
     tenant_context: TenantContext,
     axum::extract::Path(ConnectionPath { id }): axum::extract::Path<ConnectionPath>,
-    axum::extract::Json(payload): axum::extract::Json<dto::ConnectionDto>,
+    axum::extract::Json(payload): axum::extract::Json<dto::UpdateConnectionDto>,
 ) -> impl IntoResponse {
     match service::update_connection(app_state, &tenant_context, id, payload).await {
         Ok(connection) => (StatusCode::OK, axum::Json(serde_json::json!(connection))),
@@ -100,6 +100,10 @@ async fn execute_query(
         Err(ExecuteSqlError::GetConnection(GetDatabaseConnectionError::ConnectionNotFound)) => (
             StatusCode::NOT_FOUND,
             axum::Json(serde_json::json!({ "error": "Connection not found" })),
+        ),
+        Err(ExecuteSqlError::GetConnection(e @ GetDatabaseConnectionError::Decryption(_))) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
         Err(ExecuteSqlError::GetConnection(e)) => (
             StatusCode::BAD_REQUEST,

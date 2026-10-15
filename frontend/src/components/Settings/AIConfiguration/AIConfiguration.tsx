@@ -49,7 +49,6 @@ type LivenessLabel = {
 };
 
 function connectionStatusBadge(status: string | undefined): LivenessLabel {
-  console.log("test: ", status);
   switch (status) {
     case "live":
       return { label: "live (connection verified)", variant: "green" };

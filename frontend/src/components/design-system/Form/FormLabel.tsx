@@ -1,4 +1,6 @@
+import { useContext } from "react";
 import FormStyles from "src/components/design-system/Form/Form.module.css";
+import { FormFieldIdContext } from "src/components/design-system/Form/form-context";
 import {
   InfoIconTooltip,
   InfoIconTooltipStyles,
@@ -17,19 +19,26 @@ export function FormLabel({
   className,
   labelIconContainerStyleClass,
 }: FormLabelProps) {
+  const formFieldId = useContext(FormFieldIdContext);
+
   if (!children && !infoIconToolTipMessage) {
     return null;
   }
+
+  const labelClassName = `${FormStyles.formLabel} ${className ?? ""}`;
 
   return (
     <div
       className={`${FormStyles.formLabelIconContainer} ${InfoIconTooltipStyles.hoverContainer} ${labelIconContainerStyleClass ?? ""}`}
     >
-      {children && (
-        <span className={`${FormStyles.formLabel} ${className ?? ""}`}>
-          {children}
-        </span>
-      )}
+      {children &&
+        (formFieldId === null ? (
+          <span className={labelClassName}>{children}</span>
+        ) : (
+          <label htmlFor={formFieldId} className={labelClassName}>
+            {children}
+          </label>
+        ))}
       {infoIconToolTipMessage && (
         <div className={InfoIconTooltipStyles.hoverIcon}>
           <InfoIconTooltip messageElement={infoIconToolTipMessage} />

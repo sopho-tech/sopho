@@ -14,7 +14,12 @@ export type CreateConnectionDto = Omit<
   | "capabilities"
   | "created_by"
   | "modified_by"
->;
+> & { password: string };
+
+export type UpdateConnectionDto = Pick<
+  ConnectionDto,
+  "name" | "description" | "host" | "port" | "database" | "schema" | "username"
+> & { password: string | null };
 
 export type QueryExecutionResultDto =
   | { status: "success"; data: ExecuteCellResponseDto }
@@ -79,7 +84,7 @@ const connectionApi = {
       payload,
     }: {
       connectionId: string;
-      payload: Partial<ConnectionDto>;
+      payload: UpdateConnectionDto;
     },
   ): Promise<ConnectionDto> => {
     const response = await ApiService.put({
@@ -167,7 +172,7 @@ export const useUpdateConnection = () => {
   return useMutation({
     mutationFn: (variables: {
       connectionId: string;
-      payload: Partial<ConnectionDto>;
+      payload: UpdateConnectionDto;
     }) => connectionApi.updateConnection(tenantId, variables),
     onSuccess: (data, { connectionId }) => {
       queryClient.setQueryData(

@@ -55,6 +55,19 @@ pub struct CreateConnectionDto {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateConnectionDto {
+    pub name: String,
+    pub description: Option<String>,
+    pub database: String,
+    pub host: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_port")]
+    pub port: Option<String>,
+    pub schema: Option<String>,
+    pub username: Option<String>,
+    pub password: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ConnectionDto {
     pub id: Uuid,
     pub name: String,
@@ -66,7 +79,6 @@ pub struct ConnectionDto {
     pub port: String,
     pub schema: Option<String>,
     pub username: String,
-    pub password: String,
     pub created_at: DateTime<FixedOffset>,
     pub updated_at: DateTime<FixedOffset>,
     pub status: ConnectionStatus,
@@ -95,7 +107,6 @@ impl From<entity::connection::Model> for ConnectionDto {
             port: model.port.unwrap_or_default(),
             schema: model.schema,
             username: model.username.unwrap_or_default(),
-            password: model.password.unwrap_or_default(),
             created_at: model.created_at,
             updated_at: model.updated_at,
             status: ConnectionStatus::from_str(&model.status).unwrap(),

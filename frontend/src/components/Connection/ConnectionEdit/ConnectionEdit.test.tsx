@@ -11,10 +11,7 @@ import {
   testTenantApiUrl,
   testTenantPath,
 } from "src/test/tenant_routes";
-import {
-  POSTGRES_CONNECTION,
-  POSTGRES_CONNECTION_FORM_FIELDS,
-} from "src/test/test_data";
+import { POSTGRES_CONNECTION } from "src/test/test_data";
 
 describe("edit connection form", () => {
   test("shows the saved connection and sends the edited fields", async () => {
@@ -65,9 +62,14 @@ describe("edit connection form", () => {
     await expect
       .poll(() => updatedConnection)
       .toEqual({
-        ...POSTGRES_CONNECTION_FORM_FIELDS,
         name: "Warehouse replica",
+        description: POSTGRES_CONNECTION.description,
+        host: POSTGRES_CONNECTION.host,
         port: 6432,
+        database: POSTGRES_CONNECTION.database,
+        schema: POSTGRES_CONNECTION.schema,
+        username: POSTGRES_CONNECTION.username,
+        password: null,
       });
   });
 });

@@ -10,6 +10,8 @@ import { CollapsibleField } from "src/components/design-system/Form/CollapsibleF
 import { FieldError } from "src/components/design-system/Form/FieldError";
 import FormStyles from "src/components/design-system/Form/Form.module.css";
 import { AppFormReturnType } from "src/components/design-system/Form/hooks";
+import { FormFieldIdContext } from "src/components/design-system/Form/form-context";
+import { useId } from "react";
 
 type FormFieldRendererProps = {
   field: FormField;
@@ -30,84 +32,93 @@ export function FormFieldRenderer({
   labelStyleClass,
   readonly = false,
 }: FormFieldRendererProps) {
+  const formFieldId = useId();
   switch (field.type) {
     case FormFieldType.INPUT: {
       return (
-        <form.AppField key={field.key} name={field.key}>
-          {() => (
-            <div
-              className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}
-            >
-              {field.showLabel !== false && (
-                <FormLabel
-                  infoIconToolTipMessage={field.infoIconToolTipMessage}
-                  labelIconContainerStyleClass={labelStyleClass}
-                >
-                  {String(field.name)}
-                </FormLabel>
-              )}
-              <TextField
-                placeholder={field.placeholder}
-                icon={field.icon}
-                readonly={readonly}
-              />
-            </div>
-          )}
-        </form.AppField>
+        <FormFieldIdContext value={formFieldId}>
+          <form.AppField key={field.key} name={field.key}>
+            {() => (
+              <div
+                className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}
+              >
+                {field.showLabel !== false && (
+                  <FormLabel
+                    infoIconToolTipMessage={field.infoIconToolTipMessage}
+                    labelIconContainerStyleClass={labelStyleClass}
+                  >
+                    {String(field.name)}
+                  </FormLabel>
+                )}
+                <TextField
+                  placeholder={field.placeholder}
+                  icon={field.icon}
+                  readonly={readonly}
+                />
+              </div>
+            )}
+          </form.AppField>
+        </FormFieldIdContext>
       );
     }
     case FormFieldType.INPUT_PASSWORD: {
       return (
-        <form.AppField key={field.key} name={field.key}>
-          {() => (
-            <div
-              className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}
-            >
-              {field.showLabel !== false && (
-                <FormLabel
-                  infoIconToolTipMessage={field.infoIconToolTipMessage}
-                  labelIconContainerStyleClass={labelStyleClass}
-                >
-                  {String(field.name)}
-                </FormLabel>
-              )}
-              <PasswordField
-                placeholder={field.placeholder}
-                icon={field.icon}
-                readonly={readonly}
-              />
-            </div>
-          )}
-        </form.AppField>
+        <FormFieldIdContext value={formFieldId}>
+          <form.AppField key={field.key} name={field.key}>
+            {() => (
+              <div
+                className={`${FormStyles.formFieldContainer} ${fieldStyleClass || ""}`}
+              >
+                {field.showLabel !== false && (
+                  <FormLabel
+                    infoIconToolTipMessage={field.infoIconToolTipMessage}
+                    labelIconContainerStyleClass={labelStyleClass}
+                  >
+                    {String(field.name)}
+                  </FormLabel>
+                )}
+                <PasswordField
+                  placeholder={field.placeholder}
+                  icon={field.icon}
+                  readonly={readonly}
+                />
+              </div>
+            )}
+          </form.AppField>
+        </FormFieldIdContext>
       );
     }
     case FormFieldType.SELECT: {
       return (
-        <form.AppField key={field.key} name={field.key}>
-          {(fieldState: { state: { meta: { errors: unknown[] } } }) => (
-            <div className={`${FormStyles.formField} ${fieldStyleClass || ""}`}>
-              {field.showLabel !== false && (
-                <FormLabel
-                  infoIconToolTipMessage={field.infoIconToolTipMessage}
-                  labelIconContainerStyleClass={labelStyleClass}
-                >
-                  {String(field.name)}
-                </FormLabel>
-              )}
-              <SelectField
-                groupName={
-                  typeof field.name === "string" ? field.name : "Options"
-                }
-                placeholderText={field.placeholder || "Select an option"}
-                options={field.options || []}
-                readonly={readonly}
-              />
-              <FieldError
-                errors={(fieldState.state.meta.errors || []) as string[]}
-              />
-            </div>
-          )}
-        </form.AppField>
+        <FormFieldIdContext value={formFieldId}>
+          <form.AppField key={field.key} name={field.key}>
+            {(fieldState: { state: { meta: { errors: unknown[] } } }) => (
+              <div
+                className={`${FormStyles.formField} ${fieldStyleClass || ""}`}
+              >
+                {field.showLabel !== false && (
+                  <FormLabel
+                    infoIconToolTipMessage={field.infoIconToolTipMessage}
+                    labelIconContainerStyleClass={labelStyleClass}
+                  >
+                    {String(field.name)}
+                  </FormLabel>
+                )}
+                <SelectField
+                  groupName={
+                    typeof field.name === "string" ? field.name : "Options"
+                  }
+                  placeholderText={field.placeholder || "Select an option"}
+                  options={field.options || []}
+                  readonly={readonly}
+                />
+                <FieldError
+                  errors={(fieldState.state.meta.errors || []) as string[]}
+                />
+              </div>
+            )}
+          </form.AppField>
+        </FormFieldIdContext>
       );
     }
     case FormFieldType.COLLAPSIBLE: {

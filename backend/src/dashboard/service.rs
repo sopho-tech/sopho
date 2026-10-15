@@ -275,9 +275,9 @@ pub async fn delete_dashboard_transaction(
     tenant_id: &TenantId,
     id: Uuid,
 ) -> Result<(), sea_orm::DbErr> {
-    let chart_cell_ids = match repository::get_dashboard_transaction(txn, tenant_id, id).await {
-        Ok(Some(dashboard)) => dashboard_chart_cell_ids(&dashboard),
-        Ok(None) | Err(_) => Vec::new(),
+    let chart_cell_ids = match repository::get_dashboard_transaction(txn, tenant_id, id).await? {
+        Some(dashboard) => dashboard_chart_cell_ids(&dashboard),
+        None => Vec::new(),
     };
     repository::delete_dashboard_transaction(txn, tenant_id, id).await?;
     ai_summary_service::delete_dashboard_summary(txn, tenant_id, id).await?;
@@ -347,11 +347,11 @@ pub async fn remove_cell_from_layout_transaction(
     cell_id: Uuid,
     actor: &Actor,
 ) -> Result<(), sea_orm::DbErr> {
-    let dashboard =
-        match repository::get_dashboard_by_canvas_id_transaction(txn, tenant_id, canvas_id).await {
-            Ok(Some(dashboard)) => dashboard,
-            Ok(None) | Err(_) => return Ok(()),
-        };
+    let Some(dashboard) =
+        repository::get_dashboard_by_canvas_id_transaction(txn, tenant_id, canvas_id).await?
+    else {
+        return Ok(());
+    };
     let mut layout = match dto::Layout::from_json(dashboard.layout.clone()) {
         Some(l) => l,
         None => return Ok(()),

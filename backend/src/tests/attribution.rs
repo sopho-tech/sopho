@@ -7,6 +7,7 @@ use crate::canvas::dto::{CanvasAuthorship, CreateCanvasDto};
 use crate::cell::constants::{CellDisplayOrderMovement, CellType};
 use crate::cell::dto::{CellDto, CreateCellDto, ReorderCellDto};
 use crate::common::constants::CreatedByFilter;
+use crate::common::cryptography_utils;
 use crate::common::time_utils;
 use crate::common::{AppState, CreatedByQuery};
 use crate::conversational_analytics::conversation::constants::MessageStatus;
@@ -958,7 +959,11 @@ async fn insert_connection_created_by(
         password: Set(None),
         host: Set(None),
         port: Set(None),
-        database: Set("./data/unused.db".to_string()),
+        database: Set(cryptography_utils::encrypt(
+            app_state.config.encryption_key.to_string(),
+            "./data/unused.db".to_string(),
+        )
+        .unwrap()),
         schema: Set(None),
         source_type: Set("SQLITE".to_string()),
         status: Set("ACTIVE".to_string()),

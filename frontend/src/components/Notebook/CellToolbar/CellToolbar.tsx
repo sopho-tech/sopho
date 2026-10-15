@@ -173,6 +173,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
               type="clear"
               backgroundColor="transparent"
               iconColor="red"
+              aria-label="Clear cell output"
               onClick={handleClearOutput}
               disabled={isRunning}
               tooltip={{
@@ -195,6 +196,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
                 type="play"
                 backgroundColor="transparent"
                 iconColor="green"
+                aria-label="Execute cell"
                 onClick={handleExecute}
                 tooltip={{
                   content: (

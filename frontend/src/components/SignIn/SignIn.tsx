@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
   BannerSlim,
+  Box,
   Button,
   Flex,
   Form,
@@ -56,9 +57,6 @@ export default function SignIn() {
   const createSessionMutation = useCreateSession({
     onSuccess: () => {
       void navigate(APP_ROUTES.INDEX, { replace: true });
-    },
-    onError: (error) => {
-      console.error("Sign in failed", error);
     },
   });
 
@@ -162,6 +160,14 @@ export default function SignIn() {
               <Form.Password placeholder="password" icon="lock" />
             </Form.Field>
           </Form.Fields>
+          {createSessionMutation.error && (
+            <Box role="alert">
+              <BannerSlim
+                type="error"
+                message={createSessionMutation.error.message}
+              />
+            </Box>
+          )}
           <Form.Actions className={styles.formButtonRowContainer}>
             <Form.Submit label="Sign In" />
           </Form.Actions>

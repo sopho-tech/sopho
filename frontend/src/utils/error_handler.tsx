@@ -18,34 +18,26 @@ const refreshAndRetry = async (
 ) => {
   if (isRefreshing) {
     failedQueue.push({ query, mutation, variables });
-  } else {
-    isRefreshing = true;
-    failedQueue.push({ query, mutation, variables });
-    try {
-      const refreshed = await authApi.refreshToken();
-      if (refreshed) {
-        failedQueue.forEach(({ query, mutation, variables }) => {
-          if (query) {
-            void query.fetch();
-          } else if (mutation) {
-            void mutation.execute(variables);
-          }
-        });
-      } else {
-        redirectToSignIn();
-      }
-    } catch {
-      redirectToSignIn();
-    } finally {
-      isRefreshing = false;
-      failedQueue = [];
-    }
+    return;
   }
-};
-
-const redirectToSignIn = () => {
-  if (window.location.pathname !== APP_ROUTES.SIGN_IN) {
-    window.location.href = APP_ROUTES.SIGN_IN;
+  isRefreshing = true;
+  failedQueue.push({ query, mutation, variables });
+  try {
+    const isRefreshed = await authApi.refreshToken();
+    if (isRefreshed) {
+      failedQueue.forEach(({ query, mutation, variables }) => {
+        if (query) {
+          void query.fetch();
+        } else if (mutation) {
+          void mutation.execute(variables);
+        }
+      });
+    } else if (window.location.pathname !== APP_ROUTES.SIGN_IN) {
+      window.location.href = APP_ROUTES.SIGN_IN;
+    }
+  } finally {
+    isRefreshing = false;
+    failedQueue = [];
   }
 };
 

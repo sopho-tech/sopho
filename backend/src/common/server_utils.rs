@@ -10,7 +10,7 @@ pub struct Pagination {
 
 impl Pagination {
     pub fn page(&self) -> u64 {
-        self.page.unwrap_or(1)
+        self.page.unwrap_or(0)
     }
 
     pub fn page_size(&self) -> u64 {

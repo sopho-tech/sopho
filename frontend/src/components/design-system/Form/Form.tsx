@@ -1,6 +1,7 @@
 import { useAppForm } from "src/components/design-system/Form/hooks";
 import { Button } from "src/components/design-system/Button";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useId } from "react";
+import { FormFieldIdContext } from "src/components/design-system/Form/form-context";
 import FormStyles from "src/components/design-system/Form/Form.module.css";
 import { SubscribeButton } from "src/components/design-system/Form/SubscribeButton";
 import { TextField } from "src/components/design-system/Form/TextField";
@@ -198,6 +199,7 @@ const FormField = ({
   children,
 }: FormFieldProps) => {
   const { form } = useFormCompoundContext();
+  const formFieldId = useId();
 
   return (
     <form.AppField
@@ -212,9 +214,13 @@ const FormField = ({
       }
     >
       {() => (
-        <div className={`${FormStyles.formFieldContainer} ${className || ""}`}>
-          {children}
-        </div>
+        <FormFieldIdContext value={formFieldId}>
+          <div
+            className={`${FormStyles.formFieldContainer} ${className || ""}`}
+          >
+            {children}
+          </div>
+        </FormFieldIdContext>
       )}
     </form.AppField>
   );

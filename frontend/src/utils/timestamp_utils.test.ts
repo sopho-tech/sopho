@@ -8,6 +8,7 @@ import {
 describe("timestamp formatting", () => {
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllEnvs();
   });
 
   test("describes a timestamp relative to now", () => {
@@ -17,11 +18,17 @@ describe("timestamp formatting", () => {
     expect(formatRelativeTime("2026-10-15T10:00:00Z")).toBe("2 hours ago");
   });
 
-  test("formats dates and timestamps in the requested offset", () => {
-    expect(formatDate("2026-10-15T22:30:00Z", 0)).toBe("Oct 15, 2026");
-    expect(formatDate("2026-10-15T22:30:00Z", 330)).toBe("Oct 16, 2026");
-    expect(formatTimestamp("2026-10-15T09:05:00Z", 0)).toBe(
+  test("formats dates and timestamps in the local time zone", () => {
+    vi.stubEnv("TZ", "UTC");
+    expect(formatDate("2026-10-15T22:30:00Z")).toBe("Oct 15, 2026");
+    expect(formatTimestamp("2026-10-15T09:05:00Z")).toBe(
       "Oct 15, 2026 9:05 AM",
+    );
+
+    vi.stubEnv("TZ", "America/New_York");
+    expect(formatDate("2026-10-16T02:30:00Z")).toBe("Oct 15, 2026");
+    expect(formatTimestamp("2026-10-15T09:05:00Z")).toBe(
+      "Oct 15, 2026 5:05 AM",
     );
   });
 

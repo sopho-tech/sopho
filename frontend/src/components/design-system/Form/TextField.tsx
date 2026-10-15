@@ -1,4 +1,7 @@
-import { useFieldContext } from "src/components/design-system/Form/form-context";
+import {
+  useFieldContext,
+  useFormFieldId,
+} from "src/components/design-system/Form/form-context";
 import { Input } from "src/components/design-system/Input";
 import { IconType } from "src/components/design-system/datatypes";
 import { FieldError } from "src/components/design-system/Form/FieldError";
@@ -17,6 +20,7 @@ export function TextField({
   containerClassName,
 }: TextFieldProps) {
   const field = useFieldContext<string>();
+  const formFieldId = useFormFieldId();
   const fieldName = field.name;
   return (
     <>
@@ -26,7 +30,7 @@ export function TextField({
         onChange={(e) => field.handleChange(e.target.value)}
         placeholder={placeholder}
         leadingIcon={icon}
-        id={fieldName}
+        id={formFieldId}
         name={fieldName}
         disabled={readonly}
         containerClassName={containerClassName}

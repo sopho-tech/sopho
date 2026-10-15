@@ -7,7 +7,9 @@ use crate::authorization::errors::AuthorizationError;
 use crate::authorization::service as authorization_service;
 use crate::common::AppState;
 use crate::common::constants::CreatedByFilter;
-use crate::common::errors::{CreateConnectionError, ExecuteSqlError, GetDatabaseConnectionError};
+use crate::common::errors::{
+    CreateConnectionError, ExecuteSqlError, GetDatabaseConnectionError, UpdateConnectionError,
+};
 use crate::common::time_utils;
 use crate::connection::constants::CONNECTION_NOT_FOUND_MESSAGE;
 use crate::connection::constants::ConnectionStatus;
@@ -70,9 +72,7 @@ pub async fn get_connection(
 ) -> Result<dto::ConnectionDto, ConnectionError> {
     let authorized = authorize_connection(&app_state, tenant_context, id, Action::Read).await?;
 
-    let connection = execute_get_connection(&app_state, tenant_context.tenant_id(), id)
-        .await
-        .map_err(|_| ConnectionError::NotFound)?;
+    let connection = execute_get_connection(&app_state, tenant_context.tenant_id(), id).await?;
 
     let subject = connection_subject(tenant_context, &authorized)?;
     connection_response_dto(&app_state, tenant_context, &subject, connection).await
@@ -134,22 +134,27 @@ pub async fn execute_get_connection(
     app_state: &AppState,
     tenant_id: &TenantId,
     id: Uuid,
-) -> Result<entity::connection::Model, sea_orm::DbErr> {
+) -> Result<entity::connection::Model, GetDatabaseConnectionError> {
     let mut connection = repository::get_connection(&app_state.database_connection, tenant_id, id)
-        .await?
-        .ok_or_else(|| sea_orm::DbErr::RecordNotFound(CONNECTION_NOT_FOUND_MESSAGE.into()))?;
-    cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key);
+        .await
+        .map_err(GetDatabaseConnectionError::Connection)?
+        .ok_or(GetDatabaseConnectionError::ConnectionNotFound)?;
+    cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key)
+        .map_err(GetDatabaseConnectionError::Decryption)?;
     Ok(connection)
 }
 
 pub async fn execute_get_all_connections(
     app_state: &AppState,
     tenant_id: &TenantId,
-) -> Result<Vec<entity::connection::Model>, sea_orm::DbErr> {
+) -> Result<Vec<entity::connection::Model>, GetDatabaseConnectionError> {
     let mut connections =
-        repository::get_all_connections(&app_state.database_connection, tenant_id).await?;
+        repository::get_all_connections(&app_state.database_connection, tenant_id)
+            .await
+            .map_err(GetDatabaseConnectionError::Connection)?;
     for connection in connections.iter_mut() {
-        cryptography_utils::decrypt_connection(connection, &app_state.config.encryption_key);
+        cryptography_utils::decrypt_connection(connection, &app_state.config.encryption_key)
+            .map_err(GetDatabaseConnectionError::Decryption)?;
     }
     Ok(connections)
 }
@@ -176,7 +181,8 @@ pub async fn get_all_connections(
     .await?;
 
     for connection in connections.iter_mut() {
-        cryptography_utils::decrypt_connection(connection, &app_state.config.encryption_key);
+        cryptography_utils::decrypt_connection(connection, &app_state.config.encryption_key)
+            .map_err(GetDatabaseConnectionError::Decryption)?;
     }
 
     let names = attribution_service::load_names(
@@ -265,7 +271,8 @@ pub async fn execute_create_connection(
             .await
             .map_err(CreateConnectionError::Repository)?;
 
-    cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key);
+    cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key)
+        .map_err(CreateConnectionError::Decryption)?;
 
     Ok(connection)
 }
@@ -293,41 +300,64 @@ pub async fn create_connection(
     connection_response_dto(app_state, tenant_context, &subject, connection).await
 }
 
+async fn execute_update_connection(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    id: Uuid,
+    payload: dto::UpdateConnectionDto,
+    actor: &Actor,
+) -> Result<entity::connection::Model, UpdateConnectionError> {
+    let stored_connection = execute_get_connection(app_state, tenant_id, id).await?;
+    let password = payload.password.or(stored_connection.password);
+    let mut connection_entity = entity::connection::Model {
+        name: payload.name,
+        description: payload.description,
+        database: payload.database,
+        host: payload.host,
+        port: payload.port,
+        schema: payload.schema,
+        username: payload.username,
+        password,
+        updated_at: time_utils::now_utc_into(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
+        ..stored_connection
+    };
+
+    let connection_status = get_connection_status(&connection_entity).await?;
+    connection_entity.status = connection_status.to_string();
+
+    cryptography_utils::encrypt_connection(
+        &mut connection_entity,
+        &app_state.config.encryption_key,
+    )
+    .map_err(|_| UpdateConnectionError::Encryption)?;
+
+    let mut connection =
+        repository::update_connection(&app_state.database_connection, connection_entity).await?;
+
+    cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key)
+        .map_err(UpdateConnectionError::Decryption)?;
+
+    Ok(connection)
+}
+
 pub async fn update_connection(
     app_state: AppState,
     tenant_context: &TenantContext,
     id: Uuid,
-    mut payload: dto::ConnectionDto,
+    payload: dto::UpdateConnectionDto,
 ) -> Result<dto::ConnectionDto, ConnectionError> {
     authorize_connection(&app_state, tenant_context, id, Action::Write).await?;
 
-    let tenant_id = tenant_context.tenant_id();
-    let connection = repository::get_connection(&app_state.database_connection, tenant_id, id)
-        .await?
-        .ok_or(ConnectionError::NotFound)?;
-
-    let mut status_check_entity = connection.clone();
-    status_check_entity.database = payload.database.clone();
-    payload.status = get_connection_status(&status_check_entity)
-        .await
-        .map_err(|error| ConnectionError::InvalidRequest(error.to_string()))?;
-
-    if cryptography_utils::encrypt_connection_dto(&mut payload, &app_state.config.encryption_key)
-        .is_err()
-    {
-        return Err(ConnectionError::Encryption);
-    }
-
-    let mut connection = repository::update_connection(
-        &app_state.database_connection,
-        tenant_id,
+    let connection = execute_update_connection(
+        &app_state,
+        tenant_context.tenant_id(),
         id,
         payload,
         &tenant_context.actor(),
     )
-    .await?
-    .ok_or(ConnectionError::NotFound)?;
-    cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key);
+    .await?;
 
     let subject = connection_subject(tenant_context, &connection)?;
     let response_dto =
@@ -349,17 +379,7 @@ pub async fn execute_query(
                 crate::common::errors::GetDatabaseConnectionError::ConnectionNotFound,
             )
         })?;
-    let tenant_id = tenant_context.tenant_id();
-    let connection = execute_get_connection(app_state, tenant_id, id)
-        .await
-        .map_err(|e| -> ExecuteSqlError {
-            match e {
-                sea_orm::DbErr::RecordNotFound(_) => {
-                    GetDatabaseConnectionError::ConnectionNotFound.into()
-                }
-                other => GetDatabaseConnectionError::Connection(other).into(),
-            }
-        })?;
+    let connection = execute_get_connection(app_state, tenant_context.tenant_id(), id).await?;
     database_service::execute_sql_query(app_state, &connection, &payload.query).await
 }
 

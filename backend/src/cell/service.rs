@@ -671,12 +671,7 @@ async fn fetch_connection(
     tenant_id: &TenantId,
     connection_id: Uuid,
 ) -> Result<entity::connection::Model, GetDatabaseConnectionError> {
-    connection_service::execute_get_connection(app_state, tenant_id, connection_id)
-        .await
-        .map_err(|e| match &e {
-            sea_orm::DbErr::RecordNotFound(_) => GetDatabaseConnectionError::ConnectionNotFound,
-            _ => GetDatabaseConnectionError::Connection(e),
-        })
+    connection_service::execute_get_connection(app_state, tenant_id, connection_id).await
 }
 
 fn strip_trailing_semicolons(query: &str) -> String {

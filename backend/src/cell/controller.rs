@@ -183,6 +183,7 @@ fn get_database_connection_error_response(
             axum::Json(serde_json::json!({ "error": CONNECTION_NOT_FOUND_MESSAGE })),
         ),
         GetDatabaseConnectionError::Connection(_)
+        | GetDatabaseConnectionError::Decryption(_)
         | GetDatabaseConnectionError::SourceTypeParse(_) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": error.to_string() })),
