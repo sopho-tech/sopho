@@ -61,7 +61,7 @@
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.554.0",
     "material-symbols": "^0.31.2",
-    "motion": "^12.31.0",
+    "motion": "^14.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-grid-layout": "^1.5.3",
