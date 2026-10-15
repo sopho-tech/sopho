@@ -60,9 +60,6 @@ describe("conversational analytics", () => {
       http.get(API_ENDPOINTS.SUGGESTED_QUESTION.GET_BY_CONNECTION, () =>
         HttpResponse.json([]),
       ),
-      http.get(API_ENDPOINTS.SEARCH.SEARCH, () =>
-        HttpResponse.json({ data: [] }),
-      ),
       http.get(API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.GET_ALL, () =>
         HttpResponse.json({ items: [], total: 0, page: 1, page_size: 25 }),
       ),
