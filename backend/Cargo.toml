@@ -47,7 +47,7 @@ tokio = { version = "1.44.2", features = ["full"] }
 tokio-cron-scheduler = { version = "0.15.1", features = ["postgres_storage"] }
 tokio-stream = { version = "0.1.18" }
 tower-cookies = "0.11.0"
-tower-http = { version = "0.6.2", features = ["cors", "fs", "trace"] }
+tower-http = { version = "0.7.1", features = ["cors", "fs", "trace"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 uuid = { version = "1.4", features = ["serde", "v4"] }
