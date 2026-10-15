@@ -15,5 +15,6 @@ afterEach(() => {
 });
 
 afterAll(() => {
+  assertEveryRequestWasHandled();
   server.close();
 });

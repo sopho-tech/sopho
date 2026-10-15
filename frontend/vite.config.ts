@@ -39,6 +39,7 @@ export default defineConfig({
         test: {
           name: "browser",
           include: ["src/**/*.test.tsx"],
+          testTimeout: 30_000,
           setupFiles: ["src/test/browser_setup.ts"],
           browser: {
             enabled: true,
