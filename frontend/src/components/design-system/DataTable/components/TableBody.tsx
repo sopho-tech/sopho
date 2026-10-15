@@ -1,22 +1,26 @@
-import { Row } from "@tanstack/react-table";
+import { Row, RowData } from "@tanstack/react-table";
 import { ColumnConfig } from "src/components/design-system/DataTable/types";
+import type { DataTableFeatures } from "src/components/design-system/DataTable/features";
 import { TableRow } from "src/components/design-system/DataTable/components/TableRow";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
 
-type TableBodyProps<T> = {
-  rows: Row<T>[];
+type TableBodyProps<T extends RowData> = {
+  rows: Row<DataTableFeatures, T>[];
   columnConfigMap: Map<string, ColumnConfig<T>>;
   hoveredColumnId: string | null;
   tableDataCellStyle?: string;
   enableRowDragging: boolean;
   draggingRowId: string | null;
-  onDragStart: (e: React.DragEvent<HTMLTableRowElement>, row: Row<T>) => void;
+  onDragStart: (
+    e: React.DragEvent<HTMLTableRowElement>,
+    row: Row<DataTableFeatures, T>,
+  ) => void;
   onDragEnd: () => void;
   emptySearchMessage?: string;
   columnCount: number;
 };
 
-export function TableBody<T>({
+export function TableBody<T extends RowData>({
   rows,
   columnConfigMap,
   hoveredColumnId,

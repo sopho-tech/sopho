@@ -13,13 +13,13 @@ export enum DashboardMode {
 export type DashboardSlice = {
   dashboard: {
     mode: DashboardMode;
-    layout: Layout[];
+    layout: Layout;
     saveRequested: boolean;
     showChartBrowser: boolean;
     setShowChartBrowser: (showChartBrowser: boolean) => void;
     setMode: (mode: DashboardMode) => void;
-    setLayout: (layout: Layout[]) => void;
-    getLayout: () => Layout[];
+    setLayout: (layout: Layout) => void;
+    getLayout: () => Layout;
     requestSave: () => void;
     clearSaveRequest: () => void;
     resetFromBackendData: (dashboardData: DashboardDto) => void;
