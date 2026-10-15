@@ -1,6 +1,6 @@
 import * as RadixAccordion from "@radix-ui/react-accordion";
 import styles from "src/components/design-system/Accordion/Accordion.module.css";
-import { Icon, Box } from "src/components/design-system";
+import { Icon } from "src/components/design-system";
 
 export type AccordionRootProps = {
   children: React.ReactNode;
@@ -44,13 +44,11 @@ export type AccordionTriggerProps = {
 
 const AccordionTrigger = ({ children }: AccordionTriggerProps) => (
   <RadixAccordion.Header className={styles.accordionHeader} asChild>
-    <RadixAccordion.Trigger className={styles.accordionTrigger} asChild>
-      <Box>
-        {children}
-        <div className={styles.accordionChevron}>
-          <Icon type="chevron_down" color="default" />
-        </div>
-      </Box>
+    <RadixAccordion.Trigger className={styles.accordionTrigger}>
+      {children}
+      <span className={styles.accordionChevron}>
+        <Icon type="chevron_down" color="default" />
+      </span>
     </RadixAccordion.Trigger>
   </RadixAccordion.Header>
 );

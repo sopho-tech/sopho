@@ -232,6 +232,7 @@ export function MessageComposer({
               type="arrow_up"
               backgroundColor="accent"
               iconColor="white"
+              aria-label="Send message"
               tooltip={{
                 text: disabled ? (disabledTooltip ?? "") : enabledTooltip,
                 direction: "top",

@@ -20,7 +20,6 @@ export type ConnectionDto = {
   database: string;
   schema: string | null;
   username: string;
-  password: string;
   description: string | null;
   status: StatusType;
   created_at: string;

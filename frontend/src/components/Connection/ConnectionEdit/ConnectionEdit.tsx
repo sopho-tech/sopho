@@ -10,7 +10,11 @@ import {
 import { SourceTypeEnum } from "src/constants/database_types";
 import styles from "src/components/Connection/ConnectionEdit/ConnectionEdit.module.css";
 import { useParams, useNavigate } from "react-router";
-import { useConnection, useUpdateConnection } from "src/api/connection/queries";
+import {
+  type UpdateConnectionDto,
+  useConnection,
+  useUpdateConnection,
+} from "src/api/connection/queries";
 import { useStore } from "src/store";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
@@ -30,19 +34,14 @@ export function ConnectionEdit() {
 
   const onSubmitHandler = (values: Record<string, unknown>) => {
     if (!connection) return;
-    const payload = {
-      id: connection.id,
-      source_type: connection.source_type,
-      created_at: connection.created_at,
-      updated_at: connection.updated_at,
-      status: connection.status,
+    const payload: UpdateConnectionDto = {
       name: values.name as string,
       host: values.host as string,
       port: values.port ? Number(values.port) : null,
       database: values.database as string,
       schema: (values.schema as string) || null,
       username: values.username as string,
-      password: values.password as string,
+      password: (values.password as string) || null,
       description: (values.description as string) || null,
     };
     updateMutation.mutate({ connectionId: connection.id, payload });
@@ -64,7 +63,7 @@ export function ConnectionEdit() {
     name: connection.name,
     description: connection.description ?? "",
     username: connection.username,
-    password: connection.password,
+    password: "",
     host: connection.host,
     port: connection.port != null ? String(connection.port) : "",
     database: connection.database,
@@ -190,16 +189,11 @@ export function ConnectionEdit() {
                   </Form.Field>
                 </GridItem>
                 <GridItem colSpan={6}>
-                  <Form.Field
-                    name="password"
-                    required
-                    errorMessage="Enter the password"
-                    className={styles.formField}
-                  >
+                  <Form.Field name="password" className={styles.formField}>
                     <Form.Label className={styles.formLabel}>
                       Password
                     </Form.Label>
-                    <Form.Password placeholder="toughpassword@123" />
+                    <Form.Password placeholder="Leave blank to keep the current password" />
                   </Form.Field>
                 </GridItem>
                 <GridItem colSpan={6}>

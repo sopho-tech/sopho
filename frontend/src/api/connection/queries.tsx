@@ -7,7 +7,12 @@ import { type ExecuteCellResponseDto } from "src/components/Notebook/Cell/dto";
 export type CreateConnectionDto = Omit<
   ConnectionDto,
   "id" | "created_at" | "updated_at"
->;
+> & { password: string };
+
+export type UpdateConnectionDto = Pick<
+  ConnectionDto,
+  "name" | "description" | "host" | "port" | "database" | "schema" | "username"
+> & { password: string | null };
 
 export type QueryExecutionResultDto =
   | { status: "success"; data: ExecuteCellResponseDto }
@@ -47,7 +52,7 @@ const connectionApi = {
     payload,
   }: {
     connectionId: string;
-    payload: Partial<ConnectionDto>;
+    payload: UpdateConnectionDto;
   }): Promise<ConnectionDto> => {
     const response = await ApiService.put({
       url: API_ENDPOINTS.CONNECTION.UPDATE.replace(":id", connectionId),
