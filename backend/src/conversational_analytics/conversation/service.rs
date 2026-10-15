@@ -18,6 +18,7 @@ use crate::ai::visualization_agent;
 use crate::ai_configuration::dto::AiConfigurationStatus;
 use crate::ai_configuration::service as ai_config_service;
 use crate::common::AppState;
+use crate::common::errors::GetDatabaseConnectionError;
 use crate::common::time_utils;
 use crate::connection::service as connection_service;
 use crate::conversational_analytics::command::constants::{self as command_constants, Command};
@@ -522,9 +523,11 @@ pub async fn execute_completion(
     let connection =
         connection_service::execute_get_connection(&app_state, conversation.connection_id)
             .await
-            .map_err(|e| match &e {
-                sea_orm::DbErr::RecordNotFound(_) => ExecuteCompletionError::ConnectionNotFound,
-                _ => ExecuteCompletionError::Database(e),
+            .map_err(|e| match e {
+                GetDatabaseConnectionError::ConnectionNotFound => {
+                    ExecuteCompletionError::ConnectionNotFound
+                }
+                other => ExecuteCompletionError::GetConnection(other),
             })?;
     let conversation_message_id = create_conversation_message_for_completion(
         &app_state,
@@ -534,8 +537,11 @@ pub async fn execute_completion(
     .await?;
 
     let (sse_tx, sse_rx) = mpsc::channel(constants::CHANNEL_SIZE);
-    let (persist_tx, mut persist_rx) = mpsc::channel(constants::CHANNEL_SIZE);
+    let (persist_tx, persist_rx) = mpsc::channel(constants::CHANNEL_SIZE);
     let db = app_state.database_connection.clone();
+
+    let persistence_task =
+        tokio::spawn(async move { persist_events(&db, conversation_message_id, persist_rx).await });
 
     tokio::spawn(async move {
         let channels = EventChannels { sse_tx, persist_tx };
@@ -554,29 +560,40 @@ pub async fn execute_completion(
             .await
         }
         .await;
-        if let Err(e) = &result {
-            let _ = channels
-                .send(crate::ai::dto::Event::Error(e.to_string()))
-                .await;
-        }
 
-        let status = match &result {
-            Ok(PipelineOutcome::Completed) => MessageStatus::Processed,
-            Ok(PipelineOutcome::AwaitingClarification) => MessageStatus::AwaitingClarification,
-            Ok(PipelineOutcome::Rejected) => MessageStatus::Rejected,
-            Err(_) => MessageStatus::Failed,
+        let (final_event, status) = match result {
+            Ok(PipelineOutcome::Completed) => {
+                (crate::ai::dto::Event::Completed, MessageStatus::Processed)
+            }
+            Ok(PipelineOutcome::AwaitingClarification) => (
+                crate::ai::dto::Event::AwaitingClarification,
+                MessageStatus::AwaitingClarification,
+            ),
+            Ok(PipelineOutcome::Rejected) => {
+                (crate::ai::dto::Event::Rejected, MessageStatus::Rejected)
+            }
+            Err(e) => (
+                crate::ai::dto::Event::Error(e.to_string()),
+                MessageStatus::Failed,
+            ),
         };
-        let _ = message_repository::update_message_status(
+
+        let EventChannels { sse_tx, persist_tx } = channels;
+        let final_event = complete_assistant_message(
             &app_state.database_connection,
             conversation_message_id,
-            status.to_string(),
+            persist_tx,
+            persistence_task,
+            final_event,
+            status,
         )
         .await;
+        if let Err(e) = sse_tx.send(final_event).await {
+            tracing::error!(
+                "conversation message {conversation_message_id}: failed to send the final event: {e}"
+            );
+        }
     });
-
-    tokio::spawn(
-        async move { persist_events(&db, conversation_message_id, &mut persist_rx).await },
-    );
 
     let stream = ReceiverStream::new(sse_rx)
         .map(|agent_event| Ok(Event::default().data(agent_event.to_json_string())));
@@ -695,7 +712,6 @@ async fn run_pipeline(
                     })
                     .await;
             }
-            channels.send(crate::ai::dto::Event::Completed).await?;
             Ok(PipelineOutcome::Completed)
         }
         RouterCode::GenerateCanvas => {
@@ -707,19 +723,10 @@ async fn run_pipeline(
                 channels,
             )
             .await?;
-            channels.send(crate::ai::dto::Event::Completed).await?;
             Ok(PipelineOutcome::Completed)
         }
-        RouterCode::Clarify => {
-            channels
-                .send(crate::ai::dto::Event::AwaitingClarification)
-                .await?;
-            Ok(PipelineOutcome::AwaitingClarification)
-        }
-        RouterCode::RejectOffTopic | RouterCode::RejectUnsafe => {
-            channels.send(crate::ai::dto::Event::Rejected).await?;
-            Ok(PipelineOutcome::Rejected)
-        }
+        RouterCode::Clarify => Ok(PipelineOutcome::AwaitingClarification),
+        RouterCode::RejectOffTopic | RouterCode::RejectUnsafe => Ok(PipelineOutcome::Rejected),
     }
 }
 
@@ -765,8 +772,8 @@ fn content_type_for_event(event: &crate::ai::dto::Event) -> ContentType {
 async fn persist_events(
     db: &sea_orm::DatabaseConnection,
     conversation_message_id: Uuid,
-    persist_rx: &mut mpsc::Receiver<crate::ai::dto::Event>,
-) {
+    mut persist_rx: mpsc::Receiver<crate::ai::dto::Event>,
+) -> Result<(), ConversationError> {
     let mut sequence_number = 1;
     while let Some(event) = persist_rx.recv().await {
         let create_dto = CreateConversationMessageContentDto {
@@ -776,7 +783,60 @@ async fn persist_events(
             content: event.to_json_string(),
             status: ConversationStatus::Active.to_string(),
         };
-        let _ = message_content_service::create_message_content_connection(db, create_dto).await;
+        message_content_service::create_message_content_connection(db, create_dto).await?;
         sequence_number += 1;
+    }
+    Ok(())
+}
+
+async fn persist_final_event(
+    persist_tx: mpsc::Sender<crate::ai::dto::Event>,
+    persistence_task: tokio::task::JoinHandle<Result<(), ConversationError>>,
+    final_event: crate::ai::dto::Event,
+) -> anyhow::Result<()> {
+    let final_event_queued = persist_tx.send(final_event).await;
+    drop(persist_tx);
+    persistence_task.await??;
+    final_event_queued?;
+    Ok(())
+}
+
+async fn complete_assistant_message(
+    db: &sea_orm::DatabaseConnection,
+    conversation_message_id: Uuid,
+    persist_tx: mpsc::Sender<crate::ai::dto::Event>,
+    persistence_task: tokio::task::JoinHandle<Result<(), ConversationError>>,
+    final_event: crate::ai::dto::Event,
+    status: MessageStatus,
+) -> crate::ai::dto::Event {
+    let (final_event, status) = match persist_final_event(
+        persist_tx,
+        persistence_task,
+        final_event.clone(),
+    )
+    .await
+    {
+        Ok(()) => (final_event, status),
+        Err(e) => {
+            tracing::error!(
+                "conversation message {conversation_message_id}: failed to save the answer: {e:#}"
+            );
+            (
+                crate::ai::dto::Event::Error(format!("Failed to save the answer: {e}")),
+                MessageStatus::Failed,
+            )
+        }
+    };
+
+    match message_repository::update_message_status(db, conversation_message_id, status.to_string())
+        .await
+    {
+        Ok(_) => final_event,
+        Err(e) => {
+            tracing::error!(
+                "conversation message {conversation_message_id}: failed to update the status: {e}"
+            );
+            crate::ai::dto::Event::Error(format!("Failed to save the answer status: {e}"))
+        }
     }
 }

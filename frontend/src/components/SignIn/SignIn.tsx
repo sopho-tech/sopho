@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { Flex, Form, Heading } from "src/components/design-system";
+import {
+  BannerSlim,
+  Box,
+  Flex,
+  Form,
+  Heading,
+} from "src/components/design-system";
 import styles from "src/components/SignIn/SignIn.module.css";
 import { MeshGradient } from "@paper-design/shaders-react";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -13,9 +19,6 @@ export default function SignIn() {
   const createSessionMutation = useCreateSession({
     onSuccess: () => {
       void navigate(APP_ROUTES.INDEX, { replace: true });
-    },
-    onError: (error) => {
-      console.error("Sign in failed", error);
     },
   });
 
@@ -115,6 +118,14 @@ export default function SignIn() {
               <Form.Password placeholder="password" icon="lock" />
             </Form.Field>
           </Form.Fields>
+          {createSessionMutation.error && (
+            <Box role="alert">
+              <BannerSlim
+                type="error"
+                message={createSessionMutation.error.message}
+              />
+            </Box>
+          )}
           <Form.Actions className={styles.formButtonRowContainer}>
             <Form.Submit label="Sign In" />
           </Form.Actions>

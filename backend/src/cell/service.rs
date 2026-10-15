@@ -505,12 +505,7 @@ async fn fetch_connection(
     app_state: &AppState,
     connection_id: Uuid,
 ) -> Result<entity::connection::Model, GetDatabaseConnectionError> {
-    connection_service::execute_get_connection(app_state, connection_id)
-        .await
-        .map_err(|e| match &e {
-            sea_orm::DbErr::RecordNotFound(_) => GetDatabaseConnectionError::ConnectionNotFound,
-            _ => GetDatabaseConnectionError::Connection(e),
-        })
+    connection_service::execute_get_connection(app_state, connection_id).await
 }
 
 fn query_result_response(result: &QueryResult) -> (http::StatusCode, axum::Json<JsonValue>) {
@@ -795,6 +790,10 @@ fn get_database_connection_error_response(
             axum::Json(serde_json::json!({ "error": "Connection not found" })),
         ),
         GetDatabaseConnectionError::Connection(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        ),
+        GetDatabaseConnectionError::Decryption(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),

@@ -52,9 +52,14 @@ describe("edit connection form", () => {
     await expect
       .poll(() => updatedConnection)
       .toEqual({
-        ...POSTGRES_CONNECTION,
         name: "Warehouse replica",
+        description: POSTGRES_CONNECTION.description,
+        host: POSTGRES_CONNECTION.host,
         port: 6432,
+        database: POSTGRES_CONNECTION.database,
+        schema: POSTGRES_CONNECTION.schema,
+        username: POSTGRES_CONNECTION.username,
+        password: null,
       });
   });
 });

@@ -25,51 +25,38 @@ pub async fn save_dashboard_transaction(
     Ok(dashboard_active_model)
 }
 
-pub async fn get_dashboard(db: &DatabaseConnection, id: Uuid) -> Result<dashboard::Model, DbErr> {
-    let dashboard = dashboard::Entity::find_by_id(id).one(db).await?;
-    match dashboard {
-        Some(model) => Ok(model),
-        None => Err(DbErr::RecordNotFound("Dashboard not found".into())),
-    }
+pub async fn get_dashboard(
+    db: &DatabaseConnection,
+    id: Uuid,
+) -> Result<Option<dashboard::Model>, DbErr> {
+    dashboard::Entity::find_by_id(id).one(db).await
 }
 
 pub async fn get_dashboard_transaction(
     txn: &DatabaseTransaction,
     id: Uuid,
-) -> Result<dashboard::Model, DbErr> {
-    let dashboard = dashboard::Entity::find_by_id(id).one(txn).await?;
-    match dashboard {
-        Some(model) => Ok(model),
-        None => Err(DbErr::RecordNotFound("Dashboard not found".into())),
-    }
+) -> Result<Option<dashboard::Model>, DbErr> {
+    dashboard::Entity::find_by_id(id).one(txn).await
 }
 
 pub async fn get_dashboard_by_canvas_id(
     db: &DatabaseConnection,
     canvas_id: Uuid,
-) -> Result<dashboard::Model, DbErr> {
-    let dashboard = dashboard::Entity::find()
+) -> Result<Option<dashboard::Model>, DbErr> {
+    dashboard::Entity::find()
         .filter(dashboard::Column::CanvasId.eq(canvas_id))
         .one(db)
-        .await?;
-    match dashboard {
-        Some(model) => Ok(model),
-        None => Err(DbErr::RecordNotFound("Dashboard not found".into())),
-    }
+        .await
 }
 
 pub async fn get_dashboard_by_canvas_id_transaction(
     txn: &DatabaseTransaction,
     canvas_id: Uuid,
-) -> Result<dashboard::Model, DbErr> {
-    let dashboard = dashboard::Entity::find()
+) -> Result<Option<dashboard::Model>, DbErr> {
+    dashboard::Entity::find()
         .filter(dashboard::Column::CanvasId.eq(canvas_id))
         .one(txn)
-        .await?;
-    match dashboard {
-        Some(model) => Ok(model),
-        None => Err(DbErr::RecordNotFound("Dashboard not found".into())),
-    }
+        .await
 }
 
 pub async fn delete_dashboard_transaction(
@@ -94,25 +81,19 @@ pub async fn update_dashboard_layout_transaction(
 
 pub async fn update_dashboard(
     db: &DatabaseConnection,
-    dashboard_id: Uuid,
+    dashboard: dashboard::Model,
     payload: dto::DashboardDto,
 ) -> Result<dashboard::Model, DbErr> {
-    let dashboard = get_dashboard(db, dashboard_id).await;
-    match dashboard {
-        Ok(dashboard) => {
-            let mut dashboard_entity: dashboard::ActiveModel = dashboard.into();
-            if let Some(name) = payload.name {
-                dashboard_entity.name = Set(name);
-            }
-            if let Some(description) = payload.description {
-                dashboard_entity.description = Set(description);
-            }
-            dashboard_entity.status = Set(payload.status.to_string());
-            dashboard_entity.layout = Set(dto::Layout::to_json(payload.layout));
-            dashboard_entity.updated_at = Set(time_utils::now_utc_into());
-
-            dashboard_entity.update(db).await
-        }
-        Err(e) => Err(e),
+    let mut dashboard_entity: dashboard::ActiveModel = dashboard.into();
+    if let Some(name) = payload.name {
+        dashboard_entity.name = Set(name);
     }
+    if let Some(description) = payload.description {
+        dashboard_entity.description = Set(description);
+    }
+    dashboard_entity.status = Set(payload.status.to_string());
+    dashboard_entity.layout = Set(dto::Layout::to_json(payload.layout));
+    dashboard_entity.updated_at = Set(time_utils::now_utc_into());
+
+    dashboard_entity.update(db).await
 }

@@ -1,5 +1,6 @@
 mod state;
 
+pub mod constants;
 pub mod cryptography_utils;
 pub mod error_codes;
 pub mod errors;

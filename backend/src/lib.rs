@@ -142,12 +142,16 @@ pub fn build_app(app_state: AppState) -> Router {
         .layer(middleware::from_fn(move |req: Request, next: Next| {
             let index_path = index_path.clone();
             async move {
+                let is_api_request = req
+                    .uri()
+                    .path()
+                    .starts_with(common::constants::API_PATH_PREFIX);
                 let res = next.run(req).await;
                 let (parts, body) = res.into_parts();
                 let status = parts.status;
 
                 // If the response is 404, serve index.html instead
-                if status == StatusCode::NOT_FOUND {
+                if status == StatusCode::NOT_FOUND && !is_api_request {
                     match tokio::fs::read_to_string(&index_path).await {
                         Ok(html) => Html(html).into_response(),
                         Err(_) => Response::from_parts(parts, body),

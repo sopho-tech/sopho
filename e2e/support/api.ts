@@ -3,7 +3,6 @@ import {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
   API_ROUTES,
-  ASSISTANT_SENDER,
   DEMO_CONNECTION_NAME,
   FAKE_LLM_API_KEY,
 } from "e2e/support/constants";
@@ -186,33 +185,5 @@ export async function executeCell(
   return readJson<{ data: Record<string, unknown>[] }>(
     await request.post(API_ROUTES.EXECUTE_CELL.replace(":cellId", cellId)),
     200,
-  );
-}
-
-type ConversationMessage = {
-  sender: string;
-  content: { content: string }[];
-};
-
-export async function lastMessageEventNames(
-  request: APIRequestContext,
-  conversationId: string,
-): Promise<string[]> {
-  const conversation = await readJson<{ messages: ConversationMessage[] }>(
-    await request.get(
-      API_ROUTES.CONVERSATION.replace(":conversationId", conversationId),
-    ),
-    200,
-  );
-  const lastMessage = conversation.messages.at(-1);
-  if (!lastMessage) {
-    throw new Error(`conversation ${conversationId} has no messages`);
-  }
-  if (lastMessage.sender !== ASSISTANT_SENDER) {
-    return [];
-  }
-  return lastMessage.content.map(
-    (content) =>
-      (JSON.parse(content.content) as { event_name: string }).event_name,
   );
 }

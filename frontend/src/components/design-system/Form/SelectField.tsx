@@ -1,4 +1,7 @@
-import { useFieldContext } from "src/components/design-system/Form/form-context";
+import {
+  useFieldContext,
+  useFormFieldId,
+} from "src/components/design-system/Form/form-context";
 import { Select, SelectOption } from "src/components/design-system";
 
 type SelectFieldProps = {
@@ -17,6 +20,7 @@ export function SelectField({
   readonly = false,
 }: SelectFieldProps) {
   const field = useFieldContext<string>();
+  const formFieldId = useFormFieldId();
 
   return (
     <Select
@@ -29,7 +33,7 @@ export function SelectField({
       }}
       disabled={readonly}
     >
-      <Select.Trigger placeholder={placeholderText} />
+      <Select.Trigger id={formFieldId} placeholder={placeholderText} />
       <Select.Content>
         <Select.Group>
           <Select.Label>{groupName}</Select.Label>

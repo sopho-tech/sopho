@@ -30,6 +30,13 @@
   cursor: pointer;
   flex: 1;
   justify-content: space-between;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.accordionTrigger:focus-visible {
+  outline: 2px solid var(--color-blue-500);
+  outline-offset: -2px;
 }
 
 .accordionTrigger:hover,

@@ -47,7 +47,7 @@ export function ActionButtons({
     <div onClick={handleStopPropagation}>
       <DropdownMenu>
         <DropdownMenu.Trigger>
-          <button className={styles.trigger}>
+          <button className={styles.trigger} aria-label="Connection actions">
             <Icon type="more_vert" color="grey" size="md" />
           </button>
         </DropdownMenu.Trigger>

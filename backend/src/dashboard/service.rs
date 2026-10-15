@@ -13,13 +13,26 @@ use axum::response::IntoResponse;
 use sea_orm::DatabaseTransaction;
 use uuid::Uuid;
 
-pub async fn get_dashboard(app_state: AppState, id: Uuid) -> impl IntoResponse {
-    let dashboard = repository::get_dashboard(&app_state.database_connection, id).await;
+fn require_existing_dashboard(
+    dashboard: Option<entity::dashboard::Model>,
+) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
+    dashboard.ok_or_else(|| {
+        sea_orm::DbErr::RecordNotFound(constants::DASHBOARD_NOT_FOUND_MESSAGE.to_string())
+    })
+}
+
+fn dashboard_response(
+    dashboard: Result<Option<entity::dashboard::Model>, sea_orm::DbErr>,
+) -> (StatusCode, axum::Json<serde_json::Value>) {
     match dashboard {
-        Ok(dashboard) => {
+        Ok(Some(dashboard)) => {
             let response_dto = dto::DashboardDto::from(dashboard);
             (StatusCode::OK, axum::Json(serde_json::json!(response_dto)))
         }
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            axum::Json(serde_json::json!({ "error": constants::DASHBOARD_NOT_FOUND_MESSAGE })),
+        ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": e.to_string() })),
@@ -27,25 +40,14 @@ pub async fn get_dashboard(app_state: AppState, id: Uuid) -> impl IntoResponse {
     }
 }
 
+pub async fn get_dashboard(app_state: AppState, id: Uuid) -> impl IntoResponse {
+    dashboard_response(repository::get_dashboard(&app_state.database_connection, id).await)
+}
+
 pub async fn get_dashboard_by_canvas_id(app_state: AppState, canvas_id: Uuid) -> impl IntoResponse {
-    let dashboard =
-        repository::get_dashboard_by_canvas_id(&app_state.database_connection, canvas_id).await;
-    match dashboard {
-        Ok(dashboard) => {
-            let response_dto = dto::DashboardDto::from(dashboard);
-            (StatusCode::OK, axum::Json(serde_json::json!(response_dto)))
-        }
-        Err(e) => match e {
-            sea_orm::DbErr::RecordNotFound(_) => (
-                StatusCode::NOT_FOUND,
-                axum::Json(serde_json::json!({ "error": "Dashboard not found" })),
-            ),
-            _ => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            ),
-        },
-    }
+    dashboard_response(
+        repository::get_dashboard_by_canvas_id(&app_state.database_connection, canvas_id).await,
+    )
 }
 
 pub async fn create_dashboard(
@@ -110,7 +112,7 @@ pub async fn get_dashboard_entity(
     app_state: &AppState,
     id: Uuid,
 ) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
-    repository::get_dashboard(&app_state.database_connection, id).await
+    require_existing_dashboard(repository::get_dashboard(&app_state.database_connection, id).await?)
 }
 
 pub fn dashboard_chart_cell_ids(dashboard: &entity::dashboard::Model) -> Vec<Uuid> {
@@ -125,14 +127,18 @@ pub async fn get_dashboard_by_canvas_id_entity(
     app_state: &AppState,
     canvas_id: Uuid,
 ) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
-    repository::get_dashboard_by_canvas_id(&app_state.database_connection, canvas_id).await
+    require_existing_dashboard(
+        repository::get_dashboard_by_canvas_id(&app_state.database_connection, canvas_id).await?,
+    )
 }
 
 pub async fn get_dashboard_by_canvas_id_transaction(
     txn: &DatabaseTransaction,
     canvas_id: Uuid,
 ) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
-    repository::get_dashboard_by_canvas_id_transaction(txn, canvas_id).await
+    require_existing_dashboard(
+        repository::get_dashboard_by_canvas_id_transaction(txn, canvas_id).await?,
+    )
 }
 
 pub async fn execute_update_dashboard(
@@ -146,7 +152,10 @@ pub async fn execute_update_dashboard(
             constants::MAX_CHARTS_PER_DASHBOARD,
         ));
     }
-    repository::update_dashboard(&app_state.database_connection, dashboard_id, payload)
+    let dashboard = require_existing_dashboard(
+        repository::get_dashboard(&app_state.database_connection, dashboard_id).await?,
+    )?;
+    repository::update_dashboard(&app_state.database_connection, dashboard, payload)
         .await
         .map_err(UpdateDashboardError::Repository)
 }
@@ -201,7 +210,9 @@ pub async fn append_dashboard_charts_transaction(
     removed_cell_ids: &[Uuid],
     charts: Vec<DashboardChartRequest>,
 ) -> Result<i32, sea_orm::DbErr> {
-    let dashboard = repository::get_dashboard_by_canvas_id_transaction(txn, canvas_id).await?;
+    let dashboard = require_existing_dashboard(
+        repository::get_dashboard_by_canvas_id_transaction(txn, canvas_id).await?,
+    )?;
     let mut layout = Layout::from_json(dashboard.layout.clone()).unwrap_or_default();
     layout.retain(|l| !removed_cell_ids.contains(&l.cell_id()));
 
@@ -235,9 +246,9 @@ pub async fn delete_dashboard_transaction(
     txn: &DatabaseTransaction,
     id: Uuid,
 ) -> Result<(), sea_orm::DbErr> {
-    let chart_cell_ids = match repository::get_dashboard_transaction(txn, id).await {
-        Ok(dashboard) => dashboard_chart_cell_ids(&dashboard),
-        Err(_) => Vec::new(),
+    let chart_cell_ids = match repository::get_dashboard_transaction(txn, id).await? {
+        Some(dashboard) => dashboard_chart_cell_ids(&dashboard),
+        None => Vec::new(),
     };
     repository::delete_dashboard_transaction(txn, id).await?;
     ai_summary_service::delete_dashboard_summary(txn, id).await?;
@@ -277,9 +288,10 @@ pub async fn remove_cell_from_layout_transaction(
     canvas_id: Uuid,
     cell_id: Uuid,
 ) -> Result<(), sea_orm::DbErr> {
-    let dashboard = match repository::get_dashboard_by_canvas_id_transaction(txn, canvas_id).await {
-        Ok(d) => d,
-        Err(_) => return Ok(()),
+    let Some(dashboard) =
+        repository::get_dashboard_by_canvas_id_transaction(txn, canvas_id).await?
+    else {
+        return Ok(());
     };
     let mut layout = match dto::Layout::from_json(dashboard.layout.clone()) {
         Some(l) => l,

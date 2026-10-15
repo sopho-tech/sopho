@@ -102,7 +102,7 @@ async fn execute_completion(
         Ok(sse) => sse.into_response(),
         Err(e) => {
             let (status, error, code) = match &e {
-                ExecuteCompletionError::Database(_) => {
+                ExecuteCompletionError::Database(_) | ExecuteCompletionError::GetConnection(_) => {
                     (StatusCode::INTERNAL_SERVER_ERROR, e.to_string(), None)
                 }
                 ExecuteCompletionError::ConnectionNotFound => {

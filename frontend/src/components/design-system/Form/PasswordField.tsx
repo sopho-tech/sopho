@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { useFieldContext } from "src/components/design-system/Form/form-context";
+import {
+  useFieldContext,
+  useFormFieldId,
+} from "src/components/design-system/Form/form-context";
 import { IconButton } from "src/components/design-system/IconButton";
 import { Input } from "src/components/design-system/Input";
 import { IconType } from "src/components/design-system/datatypes";
@@ -20,6 +23,7 @@ export function PasswordField({
   containerClassName,
 }: PasswordFieldProps) {
   const field = useFieldContext<string>();
+  const formFieldId = useFormFieldId();
   const [showPassword, setShowPassword] = useState(false);
   const fieldName = field.name;
 
@@ -40,7 +44,7 @@ export function PasswordField({
           onChange={(e) => field.handleChange(e.target.value)}
           placeholder={placeholder}
           leadingIcon={icon}
-          id={fieldName}
+          id={formFieldId}
           name={fieldName}
           disabled={readonly}
         />

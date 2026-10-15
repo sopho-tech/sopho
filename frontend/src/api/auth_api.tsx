@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ApiError } from "src/api/dto";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 
@@ -57,8 +58,15 @@ export const authApi = {
   },
   refreshToken: async (): Promise<boolean> => {
     const url = API_ENDPOINTS.AUTH.REFRESH_TOKEN;
-    const response = await ApiService.post({ url, onlyBody: false });
-    return (response as Response).status === 200;
+    try {
+      await ApiService.post({ url, onlyBody: false });
+      return true;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        return false;
+      }
+      throw error;
+    }
   },
 };
 

@@ -57,7 +57,6 @@ export const API_ROUTES = {
   AI_CONFIGURATION: "/api/v1/ai_configuration",
   CANVAS: "/api/v1/canvas/:canvasId",
   EXECUTE_CELL: "/api/v1/cell/:cellId/execute",
-  CONVERSATION: "/api/v1/conversational_analytics/:conversationId",
 } as const;
 
 export const DEMO_CONNECTION_NAME = "Ecommerce Sales Demo";
@@ -81,9 +80,6 @@ export const SAMPLE_POSTGRES_HOST_VARIABLE = "E2E_SAMPLE_POSTGRES_HOST";
 export const SAMPLE_POSTGRES_PORT_VARIABLE = "E2E_SAMPLE_POSTGRES_PORT";
 
 export const ORDER_STATUS_QUESTION = "How many orders are in each status?";
-export const ANSWER_PERSISTED_TIMEOUT_MILLISECONDS = 30_000;
-export const COMPLETED_EVENT_NAME = "completed";
-export const ASSISTANT_SENDER = "ASSISTANT";
 export const ORDER_STATUS_SQL =
   "SELECT order_status, COUNT(*) AS order_count FROM orders GROUP BY order_status ORDER BY order_count DESC, order_status";
 export const ORDER_STATUS_NARRATION =

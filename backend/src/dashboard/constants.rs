@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 pub const MAX_CHARTS_PER_DASHBOARD: usize = 30;
+pub const DASHBOARD_NOT_FOUND_MESSAGE: &str = "Dashboard not found";
 pub const GRID_COLUMN_COUNT: u16 = 12;
 pub const MIN_CHART_WIDTH: u16 = 4;
 pub const MIN_CHART_HEIGHT: u16 = 3;
