@@ -11,6 +11,10 @@ pub struct Model {
     pub connection_id: Uuid,
     pub question_text: String,
     pub generated_at: DateTimeWithTimeZone,
+    pub created_by_user_id: Option<Uuid>,
+    pub created_by_actor: String,
+    pub modified_by_user_id: Option<Uuid>,
+    pub modified_by_actor: String,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

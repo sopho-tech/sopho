@@ -1,3 +1,4 @@
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::entity::suggested_question;
 use sea_orm::{
@@ -55,6 +56,7 @@ pub async fn insert(
     connection_id: Uuid,
     question_text: String,
     now: sea_orm::prelude::DateTimeWithTimeZone,
+    actor: &Actor,
 ) -> Result<(), DbErr> {
     suggested_question::ActiveModel {
         id: Set(Uuid::new_v4()),
@@ -62,6 +64,10 @@ pub async fn insert(
         connection_id: Set(connection_id),
         question_text: Set(question_text),
         generated_at: Set(now),
+        created_by_user_id: Set(actor.user_id()),
+        created_by_actor: Set(actor.kind_name()),
+        modified_by_user_id: Set(actor.user_id()),
+        modified_by_actor: Set(actor.kind_name()),
         created_at: Set(now),
         updated_at: Set(now),
     }

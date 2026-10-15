@@ -1,4 +1,4 @@
-use crate::db::add_created_at_and_updated_at_timestamps;
+use crate::db::{add_attribution_columns, add_created_at_and_updated_at_timestamps};
 use sea_orm_migration::{
     prelude::*,
     schema::{boolean, pk_uuid, string, uuid},
@@ -12,24 +12,28 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
             .create_table(add_created_at_and_updated_at_timestamps(
-                Table::create()
-                    .table(Tenant::Table)
-                    .col(pk_uuid(Tenant::Id))
-                    .col(string(Tenant::Name))
-                    .col(string(Tenant::Status))
-                    .to_owned(),
+                add_attribution_columns(
+                    Table::create()
+                        .table(Tenant::Table)
+                        .col(pk_uuid(Tenant::Id))
+                        .col(string(Tenant::Name))
+                        .col(string(Tenant::Status))
+                        .to_owned(),
+                ),
             ))
             .await?;
 
         manager
             .create_table(add_created_at_and_updated_at_timestamps(
-                Table::create()
-                    .table(Role::Table)
-                    .col(pk_uuid(Role::Id))
-                    .col(uuid(Role::TenantId))
-                    .col(string(Role::Name))
-                    .col(boolean(Role::IsSystem))
-                    .to_owned(),
+                add_attribution_columns(
+                    Table::create()
+                        .table(Role::Table)
+                        .col(pk_uuid(Role::Id))
+                        .col(uuid(Role::TenantId))
+                        .col(string(Role::Name))
+                        .col(boolean(Role::IsSystem))
+                        .to_owned(),
+                ),
             ))
             .await?;
 
@@ -70,14 +74,16 @@ impl MigrationTrait for Migration {
 
         manager
             .create_table(add_created_at_and_updated_at_timestamps(
-                Table::create()
-                    .table(TenantMembership::Table)
-                    .col(pk_uuid(TenantMembership::Id))
-                    .col(uuid(TenantMembership::TenantId))
-                    .col(uuid(TenantMembership::UserId))
-                    .col(uuid(TenantMembership::RoleId))
-                    .col(string(TenantMembership::Status))
-                    .to_owned(),
+                add_attribution_columns(
+                    Table::create()
+                        .table(TenantMembership::Table)
+                        .col(pk_uuid(TenantMembership::Id))
+                        .col(uuid(TenantMembership::TenantId))
+                        .col(uuid(TenantMembership::UserId))
+                        .col(uuid(TenantMembership::RoleId))
+                        .col(string(TenantMembership::Status))
+                        .to_owned(),
+                ),
             ))
             .await?;
 

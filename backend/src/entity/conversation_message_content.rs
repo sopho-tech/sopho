@@ -13,6 +13,10 @@ pub struct Model {
     pub content_type: String,
     pub content: String,
     pub status: String,
+    pub created_by_user_id: Option<Uuid>,
+    pub created_by_actor: String,
+    pub modified_by_user_id: Option<Uuid>,
+    pub modified_by_actor: String,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

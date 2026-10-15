@@ -1,3 +1,4 @@
+use crate::attribution::error::AttributionError;
 use crate::authorization::errors::AuthorizationError;
 use crate::cell::constants::{
     CELL_NOT_FOUND_MESSAGE, INVALID_SQL_CONTENT_MESSAGE, MISSING_CONNECTION_MESSAGE,
@@ -61,6 +62,15 @@ impl From<ExecuteSqlError> for CellError {
                 CellError::GetConnection(connection_error)
             }
             ExecuteSqlError::ExecuteQuery(query_error) => CellError::ExecuteQuery(query_error),
+        }
+    }
+}
+
+impl From<AttributionError> for CellError {
+    fn from(error: AttributionError) -> Self {
+        match error {
+            AttributionError::Database(database_error) => CellError::Database(database_error),
+            other => CellError::Internal(other.to_string()),
         }
     }
 }

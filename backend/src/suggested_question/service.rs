@@ -2,6 +2,7 @@ use super::dto::SuggestedQuestionDto;
 use super::repository;
 use crate::ai::suggested_questions_agent;
 use crate::authorization::constants::Action;
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::{TenantContext, TenantId};
 use crate::authorization::errors::AuthorizationError;
 use crate::authorization::service as authorization_service;
@@ -58,7 +59,7 @@ fn is_stale(generated_at: sea_orm::prelude::DateTimeWithTimeZone) -> bool {
         > chrono::Duration::hours(STALE_AFTER_HOURS)
 }
 
-pub async fn refresh_all_stale(app_state: &AppState, tenant_id: &TenantId) {
+pub async fn refresh_all_stale(app_state: &AppState, tenant_id: &TenantId, actor: &Actor) {
     if app_state.current_model_client(tenant_id).await.is_none() {
         info!("suggested_question: AI not configured; skipping refresh");
         return;
@@ -95,7 +96,7 @@ pub async fn refresh_all_stale(app_state: &AppState, tenant_id: &TenantId) {
             continue;
         }
 
-        if let Err(e) = regenerate(app_state, tenant_id, &connection).await {
+        if let Err(e) = regenerate(app_state, tenant_id, &connection, actor).await {
             error!(
                 "suggested_question: regen failed for connection {}: {e}",
                 connection.id
@@ -113,6 +114,7 @@ async fn regenerate(
     app_state: &AppState,
     tenant_id: &TenantId,
     connection: &entity::connection::Model,
+    actor: &Actor,
 ) -> anyhow::Result<()> {
     let catalog = data_catalog::get_data_catalog_of_connection(app_state, connection).await?;
     let questions =
@@ -126,6 +128,7 @@ async fn regenerate(
         tenant_id,
         connection.id,
         questions,
+        actor,
     )
     .await?;
     Ok(())
@@ -136,12 +139,13 @@ async fn replace_batch(
     tenant_id: &TenantId,
     connection_id: Uuid,
     questions: Vec<String>,
+    actor: &Actor,
 ) -> Result<(), sea_orm::DbErr> {
     let now = time_utils::now_utc_into();
     let txn = db.begin().await?;
     repository::delete_for_connection(&txn, tenant_id, connection_id).await?;
     for question_text in questions {
-        repository::insert(&txn, tenant_id, connection_id, question_text, now).await?;
+        repository::insert(&txn, tenant_id, connection_id, question_text, now, actor).await?;
     }
     txn.commit().await
 }

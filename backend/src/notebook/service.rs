@@ -1,4 +1,5 @@
 use crate::authorization::constants::Action;
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::{TenantContext, TenantId};
 use crate::authorization::errors::AuthorizationError;
 use crate::cell::constants::CellType;
@@ -6,11 +7,11 @@ use crate::cell::service as cell_service;
 use crate::common::time_utils;
 use crate::common::{AppState, PaginatedResponse};
 use crate::entity;
-use crate::notebook::constants::NotebookStatus;
+use crate::notebook::constants::{NotebookStatus, NOTEBOOK_NOT_FOUND_MESSAGE};
 use crate::notebook::dto;
 use crate::notebook::error::NotebookError;
 use crate::notebook::repository;
-use sea_orm::DatabaseTransaction;
+use sea_orm::{ConnectionTrait, DatabaseTransaction};
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -121,6 +122,7 @@ pub async fn create_notebook(
     )?;
 
     let tenant_id = tenant_context.tenant_id();
+    let actor = tenant_context.actor();
     let notebook = entity::notebook::Model {
         id: Uuid::new_v4(),
         tenant_id: tenant_id.get_uuid(),
@@ -128,6 +130,10 @@ pub async fn create_notebook(
         name: payload.name,
         description: payload.description,
         status: NotebookStatus::Active.to_string(),
+        created_by_user_id: actor.user_id(),
+        created_by_actor: actor.kind_name(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
         created_at: time_utils::now_utc_into(),
         updated_at: time_utils::now_utc_into(),
     };
@@ -144,6 +150,7 @@ pub async fn create_notebook_transaction(
     canvas_id: Uuid,
     name: String,
     description: Option<String>,
+    actor: &Actor,
 ) -> Result<entity::notebook::Model, sea_orm::DbErr> {
     let notebook = entity::notebook::Model {
         id: Uuid::new_v4(),
@@ -152,6 +159,10 @@ pub async fn create_notebook_transaction(
         name,
         description,
         status: NotebookStatus::Active.to_string(),
+        created_by_user_id: actor.user_id(),
+        created_by_actor: actor.kind_name(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
         created_at: time_utils::now_utc_into(),
         updated_at: time_utils::now_utc_into(),
     };
@@ -296,4 +307,15 @@ async fn authorize_canvas_for_children(
     .await?;
 
     Ok(())
+}
+
+pub async fn canvas_id_for_notebook(
+    connection: &impl ConnectionTrait,
+    tenant_id: &TenantId,
+    notebook_id: Uuid,
+) -> Result<Uuid, sea_orm::DbErr> {
+    repository::get_notebook(connection, tenant_id, notebook_id)
+        .await?
+        .map(|notebook| notebook.canvas_id)
+        .ok_or_else(|| sea_orm::DbErr::RecordNotFound(NOTEBOOK_NOT_FOUND_MESSAGE.into()))
 }

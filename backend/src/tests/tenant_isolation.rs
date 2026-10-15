@@ -1,4 +1,5 @@
 use crate::authorization::constants::{SystemRole, Visibility};
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantContext;
 use crate::authorization::errors::TenantContextError;
 use crate::common::time_utils;
@@ -78,9 +79,10 @@ async fn canvas_list_excludes_other_tenants() {
     .await;
 
     let first_context = tenant_context_for(&app_state, &first).await;
-    let page = crate::canvas::service::get_all_canvases(app_state.clone(), &first_context, 0, 50)
-        .await
-        .unwrap();
+    let page =
+        crate::canvas::service::get_all_canvases(app_state.clone(), &first_context, 0, 50, None)
+            .await
+            .unwrap();
 
     assert_eq!(
         page.total_items, 1,
@@ -147,6 +149,10 @@ async fn cell_of_another_tenant_is_not_readable() {
         content: Set(None),
         cell_type: Set("SQL".to_string()),
         status: Set("ACTIVE".to_string()),
+        created_by_user_id: Set(None),
+        created_by_actor: Set(Actor::system().kind_name()),
+        modified_by_user_id: Set(None),
+        modified_by_actor: Set(Actor::system().kind_name()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }
@@ -306,6 +312,10 @@ async fn suggested_question_of_another_tenant_is_not_visible() {
         connection_id: Set(connection_id),
         question_text: Set("How many orders?".to_string()),
         generated_at: Set(time_utils::now_utc_into()),
+        created_by_user_id: Set(None),
+        created_by_actor: Set(Actor::system().kind_name()),
+        modified_by_user_id: Set(None),
+        modified_by_actor: Set(Actor::system().kind_name()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }
@@ -366,6 +376,10 @@ async fn ai_summary_of_another_tenant_is_not_visible() {
         user_prompt_used: Set(None),
         generated_at: Set(None),
         requested_at: Set(time_utils::now_utc_into()),
+        created_by_user_id: Set(None),
+        created_by_actor: Set(Actor::system().kind_name()),
+        modified_by_user_id: Set(None),
+        modified_by_actor: Set(Actor::system().kind_name()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }
@@ -463,6 +477,7 @@ async fn user_belonging_to_two_tenants_is_scoped_to_each_separately() {
         &second.scope(),
         first.user(),
         SystemRole::Owner.as_str(),
+        &Actor::system(),
     )
     .await
     .unwrap();
@@ -496,9 +511,10 @@ async fn user_belonging_to_two_tenants_is_scoped_to_each_separately() {
         )
         .await
         .unwrap();
-        let page = crate::canvas::service::get_all_canvases(app_state.clone(), &context, 0, 50)
-            .await
-            .unwrap();
+        let page =
+            crate::canvas::service::get_all_canvases(app_state.clone(), &context, 0, 50, None)
+                .await
+                .unwrap();
         assert_eq!(page.total_items, 1);
         assert_eq!(page.data[0].name, expected_name);
     }

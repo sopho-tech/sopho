@@ -1,6 +1,8 @@
 use crate::ai_summary::service as ai_summary_service;
 use crate::authorization::constants::Action;
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::{TenantContext, TenantId};
+use crate::canvas::service as canvas_service;
 use crate::cell::service as cell_service;
 use crate::common::errors::UpdateDashboardError;
 use crate::common::time_utils;
@@ -13,7 +15,7 @@ use crate::dashboard::dto::Layout;
 use crate::dashboard::error::DashboardError;
 use crate::dashboard::repository;
 use crate::entity;
-use sea_orm::DatabaseTransaction;
+use sea_orm::{DatabaseTransaction, TransactionTrait};
 use uuid::Uuid;
 
 pub async fn does_dashboard_exist(app_state: &AppState, tenant_id: &TenantId, id: Uuid) -> bool {
@@ -60,6 +62,7 @@ pub async fn create_dashboard(
         crate::authorization::constants::Permission::CanvasWrite,
     )?;
     let tenant_id = tenant_context.tenant_id();
+    let actor = tenant_context.actor();
     let dashboard_entity = entity::dashboard::Model {
         id: Uuid::new_v4(),
         tenant_id: tenant_id.get_uuid(),
@@ -67,6 +70,10 @@ pub async fn create_dashboard(
         name: payload.name,
         description: payload.description,
         status: DashboardStatus::Active.to_string(),
+        created_by_user_id: actor.user_id(),
+        created_by_actor: actor.kind_name(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
         created_at: time_utils::now_utc_into(),
         updated_at: time_utils::now_utc_into(),
         layout: None,
@@ -89,6 +96,7 @@ pub async fn create_dashboard_transaction(
     name: String,
     description: String,
     layout: Option<Vec<Layout>>,
+    actor: &Actor,
 ) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
     let dashboard_entity = entity::dashboard::Model {
         id: Uuid::new_v4(),
@@ -98,6 +106,10 @@ pub async fn create_dashboard_transaction(
         description,
         layout: Layout::to_json(layout),
         status: DashboardStatus::Active.to_string(),
+        created_by_user_id: actor.user_id(),
+        created_by_actor: actor.kind_name(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
         created_at: time_utils::now_utc_into(),
         updated_at: time_utils::now_utc_into(),
     };
@@ -147,6 +159,7 @@ pub async fn execute_update_dashboard(
     tenant_id: &TenantId,
     dashboard_id: Uuid,
     payload: dto::DashboardDto,
+    actor: &Actor,
 ) -> Result<entity::dashboard::Model, UpdateDashboardError> {
     let chart_count = payload.layout.as_ref().map_or(0, Vec::len);
     if chart_count > constants::MAX_CHARTS_PER_DASHBOARD {
@@ -154,17 +167,30 @@ pub async fn execute_update_dashboard(
             constants::MAX_CHARTS_PER_DASHBOARD,
         ));
     }
-    repository::update_dashboard(
-        &app_state.database_connection,
-        tenant_id,
-        dashboard_id,
-        payload,
-    )
-    .await
-    .map_err(UpdateDashboardError::Repository)?
-    .ok_or(UpdateDashboardError::Repository(
-        sea_orm::DbErr::RecordNotFound(DASHBOARD_NOT_FOUND_MESSAGE.into()),
-    ))
+    update_dashboard_and_stamp_canvas(app_state, tenant_id, dashboard_id, payload, actor)
+        .await
+        .map_err(UpdateDashboardError::Repository)
+}
+
+async fn update_dashboard_and_stamp_canvas(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    dashboard_id: Uuid,
+    payload: dto::DashboardDto,
+    actor: &Actor,
+) -> Result<entity::dashboard::Model, sea_orm::DbErr> {
+    let transaction = app_state.database_connection.begin().await?;
+    let canvas_id = repository::get_dashboard(&transaction, tenant_id, dashboard_id)
+        .await?
+        .ok_or_else(|| sea_orm::DbErr::RecordNotFound(DASHBOARD_NOT_FOUND_MESSAGE.into()))?
+        .canvas_id;
+    canvas_service::stamp_modified(&transaction, tenant_id, canvas_id, actor).await?;
+    let dashboard =
+        repository::update_dashboard(&transaction, tenant_id, dashboard_id, payload, actor)
+            .await?
+            .ok_or_else(|| sea_orm::DbErr::RecordNotFound(DASHBOARD_NOT_FOUND_MESSAGE.into()))?;
+    transaction.commit().await?;
+    Ok(dashboard)
 }
 
 pub struct DashboardChartRequest {
@@ -217,6 +243,7 @@ pub async fn append_dashboard_charts_transaction(
     canvas_id: Uuid,
     removed_cell_ids: &[Uuid],
     charts: Vec<DashboardChartRequest>,
+    actor: &Actor,
 ) -> Result<i32, sea_orm::DbErr> {
     let dashboard = repository::get_dashboard_by_canvas_id_transaction(txn, tenant_id, canvas_id)
         .await?
@@ -246,7 +273,7 @@ pub async fn append_dashboard_charts_transaction(
 
     let count = layout.len() as i32;
     let layout = (!layout.is_empty()).then_some(layout);
-    repository::update_dashboard_layout_transaction(txn, dashboard, layout).await?;
+    repository::update_dashboard_layout_transaction(txn, dashboard, layout, actor).await?;
     Ok(count)
 }
 
@@ -287,6 +314,7 @@ pub async fn update_dashboard(
         tenant_context.tenant_id(),
         dashboard_id,
         payload,
+        &tenant_context.actor(),
     )
     .await?;
 
@@ -324,6 +352,7 @@ pub async fn remove_cell_from_layout_transaction(
     tenant_id: &TenantId,
     canvas_id: Uuid,
     cell_id: Uuid,
+    actor: &Actor,
 ) -> Result<(), sea_orm::DbErr> {
     let dashboard =
         match repository::get_dashboard_by_canvas_id_transaction(txn, tenant_id, canvas_id).await {
@@ -343,6 +372,7 @@ pub async fn remove_cell_from_layout_transaction(
         } else {
             Some(layout)
         },
+        actor,
     )
     .await?;
     Ok(())

@@ -18,10 +18,13 @@ use crate::ai::text_to_sql_agent;
 use crate::ai::visualization_agent;
 use crate::ai_configuration::dto::AiConfigurationStatus;
 use crate::ai_configuration::service as ai_config_service;
+use crate::attribution::service::{self as attribution_service, AttributionNames};
 use crate::authorization::constants::{Action, Permission, ResourceType, Visibility};
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::{AuthorizationSubject, TenantContext, TenantId};
 use crate::authorization::errors::AuthorizationError;
 use crate::authorization::service as authorization_service;
+use crate::canvas::dto::CanvasAuthorship;
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::connection::service as connection_service;
@@ -33,7 +36,6 @@ use crate::conversational_analytics::message::constants::Sender;
 use crate::conversational_analytics::message::dto::{
     ConversationMessageWithContentDto, CreateConversationMessageDto,
 };
-use crate::conversational_analytics::message::repository as message_repository;
 use crate::conversational_analytics::message::service as message_service;
 use crate::conversational_analytics::message_content::dto::{
     ConversationMessageContentDto, CreateConversationMessageContentDto,
@@ -126,14 +128,32 @@ fn conversation_subject(
     .map_err(|_| ConversationError::NotFound)
 }
 
-async fn conversation_dto_with_capabilities(
+async fn conversation_response_dto(
     app_state: &AppState,
     tenant_context: &TenantContext,
     model: entity::conversation::Model,
 ) -> Result<dto::ConversationDto, ConversationError> {
+    let names = attribution_service::load_names(
+        app_state,
+        [model.created_by_user_id, model.modified_by_user_id],
+    )
+    .await?;
+    conversation_response_dto_with_names(app_state, tenant_context, model, &names).await
+}
+
+async fn conversation_response_dto_with_names(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    model: entity::conversation::Model,
+    names: &AttributionNames,
+) -> Result<dto::ConversationDto, ConversationError> {
     let subject = conversation_subject(tenant_context, &model)?;
+    let created_by = names.describe(&model.created_by_actor, model.created_by_user_id)?;
+    let modified_by = names.describe(&model.modified_by_actor, model.modified_by_user_id)?;
     let mut conversation =
         dto::ConversationDto::try_from(model).map_err(ConversationError::Conversion)?;
+    conversation.created_by = Some(created_by);
+    conversation.modified_by = Some(modified_by);
     conversation.capabilities = Some(
         authorization_service::resolve_capabilities(app_state, tenant_context, &subject)
             .await
@@ -159,8 +179,7 @@ pub async fn get_conversation(
             .await
             .map_err(ConversationError::Database)?
             .ok_or(ConversationError::NotFound)?;
-    let conversation =
-        conversation_dto_with_capabilities(&app_state, tenant_context, model).await?;
+    let conversation = conversation_response_dto(&app_state, tenant_context, model).await?;
     let messages = message_service::list_messages_for_conversation(
         &app_state.database_connection,
         tenant_id,
@@ -249,6 +268,13 @@ pub async fn list_conversations(
     )
     .await?;
 
+    let names = attribution_service::load_names(
+        &app_state,
+        models
+            .iter()
+            .flat_map(|model| [model.created_by_user_id, model.modified_by_user_id]),
+    )
+    .await?;
     let mut items = Vec::with_capacity(models.len());
     for model in models {
         let user_message_count = user_message_counts
@@ -256,7 +282,7 @@ pub async fn list_conversations(
             .copied()
             .unwrap_or_default();
         let conversation =
-            conversation_dto_with_capabilities(&app_state, tenant_context, model).await?;
+            conversation_response_dto_with_names(&app_state, tenant_context, model, &names).await?;
         items.push(dto::ConversationListItemDto {
             conversation,
             user_message_count,
@@ -310,6 +336,7 @@ pub async fn create_conversation(
     })?;
     let tenant_id = tenant_context.tenant_id();
     ensure_ai_live(&app_state, tenant_id).await?;
+    let actor = tenant_context.actor();
     let now = time_utils::now_utc_into();
     let conversation_id = Uuid::new_v4();
     let conversation = entity::conversation::Model {
@@ -320,6 +347,10 @@ pub async fn create_conversation(
         connection_id: payload.connection_id,
         name: constants::DEFAULT_CONVERSATION_NAME.to_string(),
         status: ConversationStatus::Active.to_string(),
+        created_by_user_id: actor.user_id(),
+        created_by_actor: actor.kind_name(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
         created_at: now,
         updated_at: now,
     };
@@ -333,7 +364,8 @@ pub async fn create_conversation(
 
     let user_message =
         CreateConversationMessageDto::initial_user_message(saved_conversation.id, &plain_text);
-    let created_message = message_service::create_message(&txn, tenant_id, user_message).await?;
+    let created_message =
+        message_service::create_message(&txn, tenant_id, user_message, &actor).await?;
 
     let user_message_content = CreateConversationMessageContentDto {
         conversation_message_id: created_message.id,
@@ -342,10 +374,11 @@ pub async fn create_conversation(
         content: segments_json,
         status: MessageStatus::Processed.to_string(),
     };
-    message_content_service::create_message_content(&txn, tenant_id, user_message_content).await?;
+    message_content_service::create_message_content(&txn, tenant_id, user_message_content, &actor)
+        .await?;
 
     txn.commit().await?;
-    conversation_dto_with_capabilities(&app_state, tenant_context, saved_conversation).await
+    conversation_response_dto(&app_state, tenant_context, saved_conversation).await
 }
 
 pub async fn update_conversation(
@@ -361,10 +394,11 @@ pub async fn update_conversation(
         tenant_id,
         conversation_id,
         payload,
+        &tenant_context.actor(),
     )
     .await?
     .ok_or(ConversationError::NotFound)?;
-    conversation_dto_with_capabilities(&app_state, tenant_context, model).await
+    conversation_response_dto(&app_state, tenant_context, model).await
 }
 
 pub async fn delete_conversation(
@@ -498,6 +532,8 @@ pub async fn suggest_conversation_name(
         created_at: conversation.created_at,
         updated_at: conversation.updated_at,
         capabilities: None,
+        created_by: None,
+        modified_by: None,
     };
 
     let model = repository::update_conversation(
@@ -505,11 +541,12 @@ pub async fn suggest_conversation_name(
         tenant_id,
         conversation_id,
         updated_payload,
+        &tenant_context.ai_actor(),
     )
     .await?
     .ok_or(ConversationError::NotFound)?;
 
-    conversation_dto_with_capabilities(&app_state, tenant_context, model).await
+    conversation_response_dto(&app_state, tenant_context, model).await
 }
 
 pub async fn append_user_message(
@@ -585,7 +622,9 @@ pub async fn append_user_message(
         content: question.clone(),
         status: MessageStatus::Processed.to_string(),
     };
-    let created_message = message_service::create_message(&txn, tenant_id, new_message).await?;
+    let actor = tenant_context.actor();
+    let created_message =
+        message_service::create_message(&txn, tenant_id, new_message, &actor).await?;
 
     let user_message_content = CreateConversationMessageContentDto {
         conversation_message_id: created_message.id,
@@ -594,7 +633,8 @@ pub async fn append_user_message(
         content: segments_json,
         status: MessageStatus::Processed.to_string(),
     };
-    message_content_service::create_message_content(&txn, tenant_id, user_message_content).await?;
+    message_content_service::create_message_content(&txn, tenant_id, user_message_content, &actor)
+        .await?;
 
     txn.commit().await?;
 
@@ -655,26 +695,24 @@ async fn create_conversation_message_for_completion(
     tenant_id: &TenantId,
     conversation_id: Uuid,
     last_message_sequence_number: i32,
+    actor: &Actor,
 ) -> Result<Uuid, ExecuteCompletionError> {
-    let conversation_message_id = Uuid::new_v4();
-    let now = time_utils::now_utc_into();
-    let message = entity::conversation_message::Model {
-        id: conversation_message_id,
-        tenant_id: tenant_id.get_uuid(),
-        conversation_id,
-        sequence_number: last_message_sequence_number + 1,
-        sender: Sender::Assistant.to_string(),
-        status: MessageStatus::Processing.to_string(),
-        created_at: now,
-        updated_at: now,
-    };
-    let saved = message_repository::save_message_connection(
-        &app_state.database_connection,
+    let transaction = app_state.database_connection.begin().await?;
+    let created_message = message_service::create_message(
+        &transaction,
         tenant_id,
-        message,
+        CreateConversationMessageDto {
+            conversation_id,
+            sequence_number: last_message_sequence_number + 1,
+            sender: Sender::Assistant.to_string(),
+            content: String::new(),
+            status: MessageStatus::Processing.to_string(),
+        },
+        actor,
     )
     .await?;
-    Ok(saved.id)
+    transaction.commit().await?;
+    Ok(created_message.id)
 }
 
 pub async fn execute_completion(
@@ -705,11 +743,13 @@ pub async fn execute_completion(
         sea_orm::DbErr::RecordNotFound(_) => ExecuteCompletionError::ConnectionNotFound,
         _ => ExecuteCompletionError::Database(e),
     })?;
+    let ai_actor = tenant_context.ai_actor();
     let conversation_message_id = create_conversation_message_for_completion(
         &app_state,
         tenant_id,
         conversation_id,
         last_message_sequence_number,
+        &ai_actor,
     )
     .await?;
 
@@ -739,6 +779,7 @@ pub async fn execute_completion(
                 &commands,
                 &conversation_history,
                 &channels,
+                &ai_actor,
             )
             .await
         }
@@ -755,13 +796,19 @@ pub async fn execute_completion(
             Ok(PipelineOutcome::Rejected) => MessageStatus::Rejected,
             Err(_) => MessageStatus::Failed,
         };
-        let _ = message_repository::update_message_status(
+        if let Err(error) = message_service::update_message_status(
             &app_state.database_connection,
             tenant_id,
             conversation_message_id,
             status.to_string(),
+            &ai_actor,
         )
-        .await;
+        .await
+        {
+            tracing::error!(
+                "completion: failed to record the final status of message {conversation_message_id}: {error}"
+            );
+        }
     });
 
     tokio::spawn(async move {
@@ -770,6 +817,7 @@ pub async fn execute_completion(
             &persist_tenant_id,
             conversation_message_id,
             &mut persist_rx,
+            &ai_actor,
         )
         .await
     });
@@ -814,6 +862,7 @@ async fn run_pipeline(
     commands: &[Command],
     conversation_history: &ConversationHistory,
     channels: &EventChannels,
+    actor: &Actor,
 ) -> anyhow::Result<PipelineOutcome> {
     channels.send(crate::ai::dto::Event::Starting).await?;
     channels.send(crate::ai::dto::Event::Routing).await?;
@@ -916,7 +965,10 @@ async fn run_pipeline(
             canvas::generate(
                 app_state,
                 tenant_id,
-                conversation_subject.ownership(),
+                CanvasAuthorship {
+                    ownership: conversation_subject.ownership(),
+                    actor: *actor,
+                },
                 conversation_id,
                 connection.id,
                 conversation_history,
@@ -985,6 +1037,7 @@ async fn persist_events(
     tenant_id: &TenantId,
     conversation_message_id: Uuid,
     persist_rx: &mut mpsc::Receiver<crate::ai::dto::Event>,
+    actor: &Actor,
 ) {
     let mut sequence_number = 1;
     while let Some(event) = persist_rx.recv().await {
@@ -995,9 +1048,10 @@ async fn persist_events(
             content: event.to_json_string(),
             status: ConversationStatus::Active.to_string(),
         };
-        let _ =
-            message_content_service::create_message_content_connection(db, tenant_id, create_dto)
-                .await;
+        let _ = message_content_service::create_message_content_connection(
+            db, tenant_id, create_dto, actor,
+        )
+        .await;
         sequence_number += 1;
     }
 }
@@ -1025,15 +1079,32 @@ pub async fn set_visibility(
     tenant_id: &TenantId,
     id: Uuid,
     visibility: Visibility,
+    actor: &Actor,
 ) -> Result<(), sea_orm::DbErr> {
     let updated_rows = repository::update_conversation_visibility(
         &app_state.database_connection,
         tenant_id,
         id,
         visibility.as_str(),
+        actor,
     )
     .await?;
     if updated_rows == 0 {
+        return Err(sea_orm::DbErr::RecordNotFound(
+            CONVERSATION_NOT_FOUND_MESSAGE.into(),
+        ));
+    }
+    Ok(())
+}
+
+pub async fn stamp_modified(
+    connection: &impl sea_orm::ConnectionTrait,
+    tenant_id: &TenantId,
+    id: Uuid,
+    actor: &Actor,
+) -> Result<(), sea_orm::DbErr> {
+    let stamped_rows = repository::stamp_modified(connection, tenant_id, id, actor).await?;
+    if stamped_rows == 0 {
         return Err(sea_orm::DbErr::RecordNotFound(
             CONVERSATION_NOT_FOUND_MESSAGE.into(),
         ));

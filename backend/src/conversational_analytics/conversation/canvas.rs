@@ -1,8 +1,8 @@
 use crate::ai::canvas_generation_agent;
 use crate::ai::dto::{CanvasCandidate, ConversationHistory, Event, EventChannels};
-use crate::authorization::dto::ResourceOwnership;
 use crate::authorization::dto::TenantId;
-use crate::canvas::dto::CanvasChangeSummary;
+
+use crate::canvas::dto::{CanvasAuthorship, CanvasChangeSummary};
 use crate::canvas::service as canvas_service;
 use crate::common::AppState;
 use crate::conversational_analytics::conversation::constants::CONVERSATION_HISTORY_SCAN_MESSAGE_LIMIT;
@@ -14,7 +14,7 @@ use uuid::Uuid;
 pub async fn generate(
     app_state: &AppState,
     tenant_id: &TenantId,
-    ownership: ResourceOwnership,
+    authorship: CanvasAuthorship,
     conversation_id: Uuid,
     connection_id: Uuid,
     conversation_history: &ConversationHistory,
@@ -38,7 +38,7 @@ pub async fn generate(
     let summary = canvas_service::apply_canvas_plan(
         app_state,
         tenant_id,
-        ownership,
+        authorship,
         connection_id,
         plan,
         target_canvas_id,

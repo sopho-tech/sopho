@@ -61,6 +61,7 @@ pub async fn upsert(
         &encrypted,
         liveness_db,
         checked_at,
+        &tenant_context.actor(),
     )
     .await?;
 

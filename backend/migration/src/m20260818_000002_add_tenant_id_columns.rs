@@ -1,4 +1,4 @@
-use crate::db::GeneralIds;
+use crate::db::{Attribution, GeneralIds, SYSTEM_ACTOR};
 use crate::m20250221_000001_create_configuration_table::Configuration;
 use crate::m20250315_000001_create_dashboard_table::Dashboard;
 use crate::m20250317_000001_create_conversation_table::Conversation;
@@ -122,11 +122,19 @@ impl MigrationTrait for Migration {
             .exec_stmt(
                 Query::insert()
                     .into_table(Tenant::Table)
-                    .columns([Tenant::Id, Tenant::Name, Tenant::Status])
+                    .columns([
+                        Tenant::Id.into_iden(),
+                        Tenant::Name.into_iden(),
+                        Tenant::Status.into_iden(),
+                        Attribution::CreatedByActor.into_iden(),
+                        Attribution::ModifiedByActor.into_iden(),
+                    ])
                     .values_panic([
                         default_tenant_id.into(),
                         DEFAULT_TENANT_NAME.into(),
                         DEFAULT_TENANT_STATUS.into(),
+                        SYSTEM_ACTOR.into(),
+                        SYSTEM_ACTOR.into(),
                     ])
                     .to_owned(),
             )

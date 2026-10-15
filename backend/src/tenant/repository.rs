@@ -1,4 +1,5 @@
 use crate::authorization::constants::{MembershipStatus, TenantStatus};
+use crate::authorization::dto::Actor;
 use crate::common::time_utils;
 use crate::entity::{role, tenant, tenant_membership};
 use sea_orm::{
@@ -16,11 +17,16 @@ pub struct TenantMembershipRow {
 pub async fn insert_tenant(
     database_connection: &DatabaseConnection,
     name: String,
+    actor: &Actor,
 ) -> Result<tenant::Model, DbErr> {
     tenant::ActiveModel {
         id: Set(Uuid::new_v4()),
         name: Set(name),
         status: Set(TenantStatus::Active.as_str().to_string()),
+        created_by_user_id: Set(actor.user_id()),
+        created_by_actor: Set(actor.kind_name()),
+        modified_by_user_id: Set(actor.user_id()),
+        modified_by_actor: Set(actor.kind_name()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }

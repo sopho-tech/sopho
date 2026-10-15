@@ -8,7 +8,7 @@ pub mod server_utils;
 pub mod time_utils;
 pub mod token_utils;
 
-pub use server_utils::{PaginatedResponse, Pagination};
+pub use server_utils::{CreatedByQuery, PaginatedResponse, Pagination};
 #[cfg(test)]
 pub use state::{oidc_providers_from_variables, Configurations};
 pub use state::{AppState, OidcProviderConfiguration};

@@ -115,10 +115,17 @@ async fn set_resource_visibility(
     visibility: Visibility,
 ) -> Result<(), GrantError> {
     let tenant_id = tenant_context.tenant_id();
+    let actor = tenant_context.actor();
     let updated = match resource_type {
         ResourceType::Canvas => {
-            crate::canvas::service::set_visibility(app_state, tenant_id, resource_id, visibility)
-                .await
+            crate::canvas::service::set_visibility(
+                app_state,
+                tenant_id,
+                resource_id,
+                visibility,
+                &actor,
+            )
+            .await
         }
         ResourceType::Conversation => {
             crate::conversational_analytics::conversation::service::set_visibility(
@@ -126,6 +133,7 @@ async fn set_resource_visibility(
                 tenant_id,
                 resource_id,
                 visibility,
+                &actor,
             )
             .await
         }
@@ -135,6 +143,7 @@ async fn set_resource_visibility(
                 tenant_id,
                 resource_id,
                 visibility,
+                &actor,
             )
             .await
         }

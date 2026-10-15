@@ -495,6 +495,7 @@ async fn accepting_while_already_a_member_keeps_the_existing_role() {
         &crate::authorization::dto::TenantId::from_system_unchecked(tenant_id),
         UserId::from_system_unchecked(invitee),
         SystemRole::Viewer.as_str(),
+        &crate::authorization::dto::Actor::system(),
     )
     .await
     .unwrap();

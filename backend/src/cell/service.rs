@@ -1,5 +1,7 @@
 use crate::ai_summary::service as ai_summary_service;
+use crate::attribution::service::{self as attribution_service, AttributionNames};
 use crate::authorization::constants::Action;
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::{TenantContext, TenantId};
 use crate::authorization::errors::AuthorizationError;
 use crate::authorization::service as authorization_service;
@@ -89,7 +91,31 @@ pub async fn get_cell(
     id: Uuid,
 ) -> Result<dto::CellDto, CellError> {
     let cell = authorize_cell(&app_state, tenant_context, id, Action::Read).await?;
-    Ok(dto::CellDto::from(cell))
+    cell_response_dto(&app_state, cell).await
+}
+
+async fn cell_response_dto(
+    app_state: &AppState,
+    cell: entity::cell::Model,
+) -> Result<dto::CellDto, CellError> {
+    let names = attribution_service::load_names(
+        app_state,
+        [cell.created_by_user_id, cell.modified_by_user_id],
+    )
+    .await?;
+    cell_response_dto_with_names(cell, &names)
+}
+
+fn cell_response_dto_with_names(
+    cell: entity::cell::Model,
+    names: &AttributionNames,
+) -> Result<dto::CellDto, CellError> {
+    let created_by = names.describe(&cell.created_by_actor, cell.created_by_user_id)?;
+    let modified_by = names.describe(&cell.modified_by_actor, cell.modified_by_user_id)?;
+    let mut response_dto = dto::CellDto::from(cell);
+    response_dto.created_by = Some(created_by);
+    response_dto.modified_by = Some(modified_by);
+    Ok(response_dto)
 }
 
 async fn execute_get_cell(
@@ -129,7 +155,7 @@ pub async fn get_cells_by_notebook_id_and_cell_type(
     tenant_id: &TenantId,
     notebook_id: Uuid,
     cell_type: Option<CellType>,
-) -> Result<Vec<dto::CellDto>, SophoError> {
+) -> Result<Vec<dto::CellDto>, CellError> {
     let cells = match cell_type {
         Some(cell_type) => {
             repository::get_cells_by_notebook_id_and_cell_type(
@@ -149,14 +175,18 @@ pub async fn get_cells_by_notebook_id_and_cell_type(
             .await
         }
     };
-    match cells {
-        Ok(cells) => {
-            let response_dtos: Vec<dto::CellDto> =
-                cells.into_iter().map(dto::CellDto::from).collect();
-            Ok(response_dtos)
-        }
-        Err(e) => Err(SophoError::DatabaseError(e)),
-    }
+    let cells = cells?;
+    let names = attribution_service::load_names(
+        app_state,
+        cells
+            .iter()
+            .flat_map(|cell| [cell.created_by_user_id, cell.modified_by_user_id]),
+    )
+    .await?;
+    cells
+        .into_iter()
+        .map(|cell| cell_response_dto_with_names(cell, &names))
+        .collect()
 }
 
 async fn get_number_of_cells_in_notebook(
@@ -164,12 +194,13 @@ async fn get_number_of_cells_in_notebook(
     tenant_id: &TenantId,
     notebook_id: Uuid,
 ) -> Result<i32, SophoError> {
-    let cells =
-        get_cells_by_notebook_id_and_cell_type(app_state, tenant_id, notebook_id, None).await;
-    match cells {
-        Ok(cells) => Ok(cells.len() as i32),
-        Err(e) => Err(e),
-    }
+    let cell_count = repository::count_cells_by_notebook_id(
+        &app_state.database_connection,
+        tenant_id,
+        notebook_id,
+    )
+    .await?;
+    Ok(cell_count as i32)
 }
 
 async fn get_number_of_cells_in_notebook_by_type(
@@ -178,23 +209,21 @@ async fn get_number_of_cells_in_notebook_by_type(
     id: Uuid,
     cell_type: CellType,
 ) -> Result<i32, SophoError> {
-    let cells = get_cells_by_notebook_id_and_cell_type(app_state, tenant_id, id, None).await;
-    match cells {
-        Ok(cells) => {
-            let count = cells
-                .into_iter()
-                .filter(|cell| cell.cell_type == cell_type)
-                .count();
-            Ok(count as i32)
-        }
-        Err(e) => Err(e),
-    }
+    let cell_count = repository::count_cells_by_notebook_id_and_cell_type(
+        &app_state.database_connection,
+        tenant_id,
+        id,
+        cell_type,
+    )
+    .await?;
+    Ok(cell_count as i32)
 }
 
 pub async fn execute_create_cell(
     app_state: &AppState,
     tenant_id: &TenantId,
     payload: dto::CreateCellDto,
+    actor: &Actor,
 ) -> Result<entity::cell::Model, CreateCellError> {
     if !does_notebook_exist(app_state, tenant_id, payload.notebook_id).await {
         return Err(CreateCellError::NotebookNotFound);
@@ -244,15 +273,46 @@ pub async fn execute_create_cell(
         notebook_id: payload.notebook_id,
         connection_id: payload.connection_id,
         display_order,
+        created_by_user_id: actor.user_id(),
+        created_by_actor: actor.kind_name(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
         created_at: time_utils::now_utc_into(),
         updated_at: time_utils::now_utc_into(),
     };
 
-    let cell = repository::save_cell(&app_state.database_connection, tenant_id, cell_entity)
-        .await
-        .map_err(CreateCellError::Repository)?;
+    save_cell_and_stamp_canvas(
+        &app_state.database_connection,
+        tenant_id,
+        cell_entity,
+        actor,
+    )
+    .await
+    .map_err(CreateCellError::Repository)
+}
 
+async fn save_cell_and_stamp_canvas(
+    database_connection: &sea_orm::DatabaseConnection,
+    tenant_id: &TenantId,
+    cell_entity: entity::cell::Model,
+    actor: &Actor,
+) -> Result<entity::cell::Model, sea_orm::DbErr> {
+    let transaction = database_connection.begin().await?;
+    stamp_canvas_of_notebook(&transaction, tenant_id, cell_entity.notebook_id, actor).await?;
+    let cell = repository::save_cell_transaction(&transaction, tenant_id, cell_entity).await?;
+    transaction.commit().await?;
     Ok(cell)
+}
+
+async fn stamp_canvas_of_notebook(
+    connection: &impl sea_orm::ConnectionTrait,
+    tenant_id: &TenantId,
+    notebook_id: Uuid,
+    actor: &Actor,
+) -> Result<(), sea_orm::DbErr> {
+    let canvas_id =
+        notebook_service::canvas_id_for_notebook(connection, tenant_id, notebook_id).await?;
+    canvas_service::stamp_modified(connection, tenant_id, canvas_id, actor).await
 }
 
 pub async fn execute_create_cell_transaction(
@@ -260,6 +320,7 @@ pub async fn execute_create_cell_transaction(
     tenant_id: &TenantId,
     payload: dto::CreateCellDto,
     display_order: i32,
+    actor: &Actor,
 ) -> Result<entity::cell::Model, sea_orm::DbErr> {
     let cell_count =
         repository::count_cells_by_notebook_id(txn, tenant_id, payload.notebook_id).await?;
@@ -279,6 +340,10 @@ pub async fn execute_create_cell_transaction(
         notebook_id: payload.notebook_id,
         connection_id: payload.connection_id,
         display_order,
+        created_by_user_id: actor.user_id(),
+        created_by_actor: actor.kind_name(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
         created_at: time_utils::now_utc_into(),
         updated_at: time_utils::now_utc_into(),
     };
@@ -308,10 +373,11 @@ pub async fn update_cell_content_transaction(
     cell_id: Uuid,
     name: Option<String>,
     content: Option<String>,
+    actor: &Actor,
 ) -> Result<entity::cell::Model, sea_orm::DbErr> {
-    repository::update_cell_content_transaction(txn, tenant_id, cell_id, name, content)
+    repository::update_cell_content_transaction(txn, tenant_id, cell_id, name, content, actor)
         .await?
-        .ok_or_else(|| sea_orm::DbErr::RecordNotFound("Cell not found".into()))
+        .ok_or_else(|| sea_orm::DbErr::RecordNotFound(CELL_NOT_FOUND_MESSAGE.into()))
 }
 
 pub async fn delete_cell_transaction(
@@ -368,8 +434,14 @@ pub async fn create_cell(
         require_connection_read(&app_state, tenant_context, connection_id).await?;
     }
 
-    let cell = execute_create_cell(&app_state, tenant_context.tenant_id(), payload).await?;
-    Ok(dto::CellDto::from(cell))
+    let cell = execute_create_cell(
+        &app_state,
+        tenant_context.tenant_id(),
+        payload,
+        &tenant_context.actor(),
+    )
+    .await?;
+    cell_response_dto(&app_state, cell).await
 }
 
 pub async fn delete_cell(
@@ -380,7 +452,14 @@ pub async fn delete_cell(
     authorize_cell(&app_state, tenant_context, id, Action::Delete).await?;
 
     let transaction = app_state.database_connection.begin().await?;
-    match delete_cell_in_transaction(&transaction, tenant_context.tenant_id(), id).await {
+    match delete_cell_in_transaction(
+        &transaction,
+        tenant_context.tenant_id(),
+        id,
+        &tenant_context.actor(),
+    )
+    .await
+    {
         Ok(()) => {
             transaction.commit().await?;
             Ok(())
@@ -396,6 +475,7 @@ async fn delete_cell_in_transaction(
     transaction: &sea_orm::DatabaseTransaction,
     tenant_id: &TenantId,
     id: Uuid,
+    actor: &Actor,
 ) -> Result<(), CellError> {
     let cell = repository::get_cell_transaction(transaction, tenant_id, id)
         .await?
@@ -405,11 +485,13 @@ async fn delete_cell_in_transaction(
         notebook_service::get_notebook_transaction(transaction, tenant_id, cell.notebook_id)
             .await?;
 
+    canvas_service::stamp_modified(transaction, tenant_id, notebook.canvas_id, actor).await?;
     dashboard_service::remove_cell_from_layout_transaction(
         transaction,
         tenant_id,
         notebook.canvas_id,
         id,
+        actor,
     )
     .await?;
     repository::delete_cell_transaction(transaction, tenant_id, id).await?;
@@ -468,10 +550,19 @@ pub async fn reorder_cell(
     }
 
     let transaction = app_state.database_connection.begin().await?;
-    match persist_cell_order(&transaction, tenant_id, &ordered_cells, id, cell.clone()).await {
+    match persist_cell_order(
+        &transaction,
+        tenant_id,
+        &ordered_cells,
+        id,
+        cell.clone(),
+        &tenant_context.actor(),
+    )
+    .await
+    {
         Ok(reordered_cell) => {
             transaction.commit().await?;
-            Ok(dto::CellDto::from(reordered_cell))
+            cell_response_dto(&app_state, reordered_cell).await
         }
         Err(error) => {
             let _ = transaction.rollback().await;
@@ -486,7 +577,15 @@ async fn persist_cell_order(
     ordered_cells: &[entity::cell::Model],
     reordered_cell_id: Uuid,
     original_cell: entity::cell::Model,
+    actor: &Actor,
 ) -> Result<entity::cell::Model, CellError> {
+    let order_changes = ordered_cells
+        .iter()
+        .enumerate()
+        .any(|(position, cell)| cell.display_order != (position + 1) as i32);
+    if order_changes {
+        stamp_canvas_of_notebook(transaction, tenant_id, original_cell.notebook_id, actor).await?;
+    }
     let mut reordered_cell = original_cell;
     for (position, cell) in ordered_cells.iter().enumerate() {
         let new_display_order = (position + 1) as i32;
@@ -526,16 +625,27 @@ pub async fn update_cell(
         }
     }
 
+    let actor = tenant_context.actor();
+    let transaction = app_state.database_connection.begin().await?;
+    stamp_canvas_of_notebook(
+        &transaction,
+        tenant_context.tenant_id(),
+        existing_cell.notebook_id,
+        &actor,
+    )
+    .await?;
     let cell = repository::update_cell(
-        &app_state.database_connection,
+        &transaction,
         tenant_context.tenant_id(),
         id,
         payload,
+        &actor,
     )
     .await?
     .ok_or(CellError::NotFound)?;
+    transaction.commit().await?;
 
-    Ok(dto::CellDto::from(cell))
+    cell_response_dto(&app_state, cell).await
 }
 
 pub async fn execute_cell(

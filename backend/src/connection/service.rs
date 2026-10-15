@@ -1,8 +1,11 @@
+use crate::attribution::service::{self as attribution_service, AttributionNames};
 use crate::authorization::constants::{Action, ResourceType, Visibility};
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::authorization::dto::{AuthorizationSubject, TenantContext};
 use crate::authorization::errors::AuthorizationError;
 use crate::authorization::service as authorization_service;
+use crate::common::constants::CreatedByFilter;
 use crate::common::errors::{CreateConnectionError, ExecuteSqlError, GetDatabaseConnectionError};
 use crate::common::time_utils;
 use crate::common::AppState;
@@ -80,19 +83,44 @@ pub async fn get_connection(
         .map_err(|_| ConnectionError::NotFound)?;
 
     let subject = connection_subject(tenant_context, &authorized)?;
-    connection_dto_with_capabilities(&app_state, tenant_context, &subject, connection).await
+    connection_response_dto(&app_state, tenant_context, &subject, connection).await
 }
 
-async fn connection_dto_with_capabilities(
+async fn connection_response_dto(
     app_state: &AppState,
     tenant_context: &TenantContext,
     subject: &AuthorizationSubject,
     connection: entity::connection::Model,
 ) -> Result<dto::ConnectionDto, ConnectionError> {
+    let names = attribution_service::load_names(
+        app_state,
+        [
+            connection.created_by_user_id,
+            connection.modified_by_user_id,
+        ],
+    )
+    .await?;
+    connection_response_dto_with_names(app_state, tenant_context, subject, connection, &names).await
+}
+
+async fn connection_response_dto_with_names(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    subject: &AuthorizationSubject,
+    connection: entity::connection::Model,
+    names: &AttributionNames,
+) -> Result<dto::ConnectionDto, ConnectionError> {
+    let created_by = names.describe(&connection.created_by_actor, connection.created_by_user_id)?;
+    let modified_by = names.describe(
+        &connection.modified_by_actor,
+        connection.modified_by_user_id,
+    )?;
     let mut response_dto = dto::ConnectionDto::from(connection);
     response_dto.capabilities = Some(
         authorization_service::resolve_capabilities(app_state, tenant_context, subject).await?,
     );
+    response_dto.created_by = Some(created_by);
+    response_dto.modified_by = Some(modified_by);
     Ok(response_dto)
 }
 
@@ -137,16 +165,21 @@ pub async fn execute_get_all_connections(
 pub async fn get_all_connections(
     app_state: AppState,
     tenant_context: &TenantContext,
+    created_by: Option<CreatedByFilter>,
 ) -> Result<Vec<dto::ConnectionDto>, ConnectionError> {
     authorization_service::require_capability(
         tenant_context,
         ResourceType::Connection.permission_for(Action::Read),
     )?;
 
+    let created_by_user_id = created_by.map(|filter| match filter {
+        CreatedByFilter::Me => tenant_context.user_id().get_uuid(),
+    });
     let mut connections = repository::get_visible_connections(
         &app_state.database_connection,
         tenant_context.tenant_id(),
         reachable_connection_condition(tenant_context),
+        created_by_user_id,
     )
     .await?;
 
@@ -154,12 +187,28 @@ pub async fn get_all_connections(
         cryptography_utils::decrypt_connection(connection, &app_state.config.encryption_key);
     }
 
+    let names = attribution_service::load_names(
+        &app_state,
+        connections.iter().flat_map(|connection| {
+            [
+                connection.created_by_user_id,
+                connection.modified_by_user_id,
+            ]
+        }),
+    )
+    .await?;
     let mut response_dto_list = Vec::with_capacity(connections.len());
     for connection in connections {
         let subject = connection_subject(tenant_context, &connection)?;
         response_dto_list.push(
-            connection_dto_with_capabilities(&app_state, tenant_context, &subject, connection)
-                .await?,
+            connection_response_dto_with_names(
+                &app_state,
+                tenant_context,
+                &subject,
+                connection,
+                &names,
+            )
+            .await?,
         );
     }
     Ok(response_dto_list)
@@ -183,6 +232,7 @@ pub async fn execute_create_connection(
     tenant_id: &TenantId,
     owner_user_id: Uuid,
     payload: dto::CreateConnectionDto,
+    actor: &Actor,
 ) -> Result<entity::connection::Model, CreateConnectionError> {
     let mut connection_entity = entity::connection::Model {
         id: Uuid::new_v4(),
@@ -199,6 +249,10 @@ pub async fn execute_create_connection(
         schema: payload.schema,
         username: payload.username,
         source_type: payload.source_type.to_string(),
+        created_by_user_id: actor.user_id(),
+        created_by_actor: actor.kind_name(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
         created_at: time_utils::now_utc_into(),
         updated_at: time_utils::now_utc_into(),
     };
@@ -239,11 +293,12 @@ pub async fn create_connection(
         tenant_context.tenant_id(),
         tenant_context.user_id().get_uuid(),
         payload,
+        &tenant_context.actor(),
     )
     .await?;
 
     let subject = connection_subject(tenant_context, &connection)?;
-    connection_dto_with_capabilities(app_state, tenant_context, &subject, connection).await
+    connection_response_dto(app_state, tenant_context, &subject, connection).await
 }
 
 pub async fn execute_delete_connection(
@@ -280,15 +335,20 @@ pub async fn update_connection(
         return Err(ConnectionError::Encryption);
     }
 
-    let mut connection =
-        repository::update_connection(&app_state.database_connection, tenant_id, id, payload)
-            .await?
-            .ok_or(ConnectionError::NotFound)?;
+    let mut connection = repository::update_connection(
+        &app_state.database_connection,
+        tenant_id,
+        id,
+        payload,
+        &tenant_context.actor(),
+    )
+    .await?
+    .ok_or(ConnectionError::NotFound)?;
     cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key);
 
     let subject = connection_subject(tenant_context, &connection)?;
     let response_dto =
-        connection_dto_with_capabilities(&app_state, tenant_context, &subject, connection).await?;
+        connection_response_dto(&app_state, tenant_context, &subject, connection).await?;
     info!("Connection updated: {:?}", response_dto);
     Ok(response_dto)
 }
@@ -358,12 +418,14 @@ pub async fn set_visibility(
     tenant_id: &TenantId,
     id: Uuid,
     visibility: Visibility,
+    actor: &Actor,
 ) -> Result<(), sea_orm::DbErr> {
     let updated_rows = repository::update_connection_visibility(
         &app_state.database_connection,
         tenant_id,
         id,
         visibility.as_str(),
+        actor,
     )
     .await?;
     if updated_rows == 0 {

@@ -1,3 +1,4 @@
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::connection::dto;
@@ -47,13 +48,15 @@ pub async fn get_visible_connections(
     db: &DatabaseConnection,
     tenant_id: &TenantId,
     reachable: Condition,
+    created_by_user_id: Option<Uuid>,
 ) -> Result<Vec<connection::Model>, DbErr> {
-    let connections = connection::Entity::find()
+    let mut query = connection::Entity::find()
         .filter(connection::Column::TenantId.eq(tenant_id.get_uuid()))
-        .filter(reachable)
-        .all(db)
-        .await?;
-    Ok(connections)
+        .filter(reachable);
+    if let Some(created_by_user_id) = created_by_user_id {
+        query = query.filter(connection::Column::CreatedByUserId.eq(created_by_user_id));
+    }
+    query.all(db).await
 }
 
 pub async fn delete_connection(
@@ -73,6 +76,7 @@ pub async fn update_connection(
     tenant_id: &TenantId,
     connection_id: Uuid,
     payload: dto::ConnectionDto,
+    actor: &Actor,
 ) -> Result<Option<connection::Model>, DbErr> {
     let Some(connection) = get_connection(db, tenant_id, connection_id).await? else {
         return Ok(None);
@@ -89,6 +93,8 @@ pub async fn update_connection(
     connection_entity.username = Set(Some(payload.username));
     connection_entity.source_type = Set(payload.source_type.to_string());
     connection_entity.updated_at = Set(time_utils::now_utc_into());
+    connection_entity.modified_by_user_id = Set(actor.user_id());
+    connection_entity.modified_by_actor = Set(actor.kind_name());
     connection_entity.created_at = Set(payload.created_at);
     connection_entity.update(db).await.map(Some)
 }
@@ -98,6 +104,7 @@ pub async fn update_connection_visibility(
     tenant_id: &TenantId,
     id: Uuid,
     visibility: &str,
+    actor: &Actor,
 ) -> Result<u64, DbErr> {
     let result = connection::Entity::update_many()
         .col_expr(
@@ -109,6 +116,14 @@ pub async fn update_connection_visibility(
             sea_orm::sea_query::Expr::value(time_utils::now_utc_into::<
                 sea_orm::prelude::DateTimeWithTimeZone,
             >()),
+        )
+        .col_expr(
+            connection::Column::ModifiedByUserId,
+            sea_orm::sea_query::Expr::value(actor.user_id()),
+        )
+        .col_expr(
+            connection::Column::ModifiedByActor,
+            sea_orm::sea_query::Expr::value(actor.kind_name()),
         )
         .filter(connection::Column::Id.eq(id))
         .filter(connection::Column::TenantId.eq(tenant_id.get_uuid()))

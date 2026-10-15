@@ -1,3 +1,4 @@
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::common::AppState;
@@ -12,6 +13,7 @@ pub async fn create_message_content(
     txn: &DatabaseTransaction,
     tenant_id: &TenantId,
     payload: dto::CreateConversationMessageContentDto,
+    actor: &Actor,
 ) -> Result<(), ConversationError> {
     let now = time_utils::now_utc_into();
     let row = entity::conversation_message_content::Model {
@@ -22,6 +24,10 @@ pub async fn create_message_content(
         content_type: payload.content_type,
         content: payload.content,
         status: payload.status,
+        created_by_user_id: actor.user_id(),
+        created_by_actor: actor.kind_name(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
         created_at: now,
         updated_at: now,
     };
@@ -33,6 +39,7 @@ pub async fn create_message_content_connection(
     db: &DatabaseConnection,
     tenant_id: &TenantId,
     payload: dto::CreateConversationMessageContentDto,
+    actor: &Actor,
 ) -> Result<dto::ConversationMessageContentDto, ConversationError> {
     let now = time_utils::now_utc_into();
     let row = entity::conversation_message_content::Model {
@@ -43,6 +50,10 @@ pub async fn create_message_content_connection(
         content_type: payload.content_type,
         content: payload.content,
         status: payload.status,
+        created_by_user_id: actor.user_id(),
+        created_by_actor: actor.kind_name(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
         created_at: now,
         updated_at: now,
     };

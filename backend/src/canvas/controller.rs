@@ -3,8 +3,9 @@ use crate::canvas::constants::{CANVAS_DELETED_MESSAGE, CANVAS_NOT_FOUND_MESSAGE}
 use crate::canvas::dto;
 use crate::canvas::error::CanvasError;
 use crate::canvas::service;
+use crate::common::constants::UNKNOWN_CREATED_BY_FILTER_MESSAGE;
 use crate::common::AppState;
-use crate::common::Pagination;
+use crate::common::{CreatedByQuery, Pagination};
 use axum::extract::Path;
 use axum::extract::{Json, Query, State};
 use axum::http::StatusCode;
@@ -44,12 +45,20 @@ async fn get_all_canvases(
     State(app_state): State<AppState>,
     tenant_context: TenantContext,
     pagination: Query<Pagination>,
+    created_by_query: Query<CreatedByQuery>,
 ) -> impl IntoResponse {
+    let Ok(created_by) = created_by_query.filter() else {
+        return (
+            StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({ "error": UNKNOWN_CREATED_BY_FILTER_MESSAGE })),
+        );
+    };
     match service::get_all_canvases(
         app_state,
         &tenant_context,
         pagination.page(),
         pagination.page_size(),
+        created_by,
     )
     .await
     {

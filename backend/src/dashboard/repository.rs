@@ -1,10 +1,11 @@
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::dashboard::dto;
 use crate::entity::dashboard;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
-    QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr,
+    EntityTrait, QueryFilter, Set,
 };
 use uuid::Uuid;
 
@@ -29,7 +30,7 @@ pub async fn save_dashboard_transaction(
 }
 
 pub async fn get_dashboard(
-    db: &DatabaseConnection,
+    db: &impl ConnectionTrait,
     tenant_id: &TenantId,
     id: Uuid,
 ) -> Result<Option<dashboard::Model>, DbErr> {
@@ -93,19 +94,23 @@ pub async fn update_dashboard_layout_transaction(
     txn: &DatabaseTransaction,
     dashboard: dashboard::Model,
     layout: Option<Vec<dto::Layout>>,
+    actor: &Actor,
 ) -> Result<dashboard::Model, DbErr> {
     let mut dashboard_active: dashboard::ActiveModel = dashboard.into();
     dashboard_active.layout = Set(dto::Layout::to_json(layout));
     dashboard_active.updated_at = Set(time_utils::now_utc_into());
+    dashboard_active.modified_by_user_id = Set(actor.user_id());
+    dashboard_active.modified_by_actor = Set(actor.kind_name());
     let result = dashboard_active.update(txn).await?;
     Ok(result)
 }
 
 pub async fn update_dashboard(
-    db: &DatabaseConnection,
+    db: &impl ConnectionTrait,
     tenant_id: &TenantId,
     dashboard_id: Uuid,
     payload: dto::DashboardDto,
+    actor: &Actor,
 ) -> Result<Option<dashboard::Model>, DbErr> {
     let Some(dashboard) = get_dashboard(db, tenant_id, dashboard_id).await? else {
         return Ok(None);
@@ -120,6 +125,8 @@ pub async fn update_dashboard(
     dashboard_entity.status = Set(payload.status.to_string());
     dashboard_entity.layout = Set(dto::Layout::to_json(payload.layout));
     dashboard_entity.updated_at = Set(time_utils::now_utc_into());
+    dashboard_entity.modified_by_user_id = Set(actor.user_id());
+    dashboard_entity.modified_by_actor = Set(actor.kind_name());
 
     dashboard_entity.update(db).await.map(Some)
 }

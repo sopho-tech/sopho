@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use tracing::{error, info};
 use uuid::Uuid;
 
-use crate::authorization::dto::TenantId;
+use crate::authorization::dto::{Actor, TenantId};
 use crate::canvas::dto::CreateCanvasDto;
 use crate::canvas::service::execute_create_canvas;
 use crate::cell::dto::CreateCellDto;
@@ -32,6 +32,7 @@ pub async fn seed_demo_data(app_state: &AppState) {
     };
     let tenant_id = TenantId::from_system_unchecked(default_tenant_id);
     let tenant_id = &tenant_id;
+    let system_actor = Actor::system();
 
     let admin_email = app_state.config.admin_email.as_ref();
     let owner_user_id =
@@ -61,6 +62,7 @@ pub async fn seed_demo_data(app_state: &AppState) {
             description: Some("Demo SQLite database with ecommerce sales data".to_string()),
             source_type: SourceType::Sqlite,
         },
+        &system_actor,
     )
     .await
     {
@@ -81,6 +83,7 @@ pub async fn seed_demo_data(app_state: &AppState) {
             owner_user_id,
             visibility: crate::authorization::constants::Visibility::Tenant,
         },
+        &system_actor,
         CreateCanvasDto {
             name: "Ecommerce Sales".to_string(),
             description: Some("Ecommerce sales analytics".to_string()),
@@ -128,6 +131,7 @@ pub async fn seed_demo_data(app_state: &AppState) {
                 display_order: Some(display_order),
                 cell_type: crate::cell::constants::CellType::Sql,
             },
+            &system_actor,
         )
         .await
         {
@@ -230,6 +234,7 @@ pub async fn seed_demo_data(app_state: &AppState) {
                 display_order: Some(display_order),
                 cell_type: crate::cell::constants::CellType::Chart,
             },
+            &system_actor,
         )
         .await
         {
@@ -265,7 +270,9 @@ pub async fn seed_demo_data(app_state: &AppState) {
         Layout::new(chart_id_map[&9], notebook_id, 0, 12, 6, 3),
         Layout::new(chart_id_map[&10], notebook_id, 6, 12, 6, 3),
     ]);
-    if let Err(e) = execute_update_dashboard(app_state, tenant_id, dashboard.id, payload).await {
+    if let Err(e) =
+        execute_update_dashboard(app_state, tenant_id, dashboard.id, payload, &system_actor).await
+    {
         error!(
             "Failed to update dashboard layout when seeding demo data: {}",
             e

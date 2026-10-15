@@ -1,4 +1,5 @@
 use crate::authorization::constants::MembershipStatus;
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::entity::{role, tenant_membership, user};
@@ -20,6 +21,7 @@ pub async fn insert_membership(
     tenant_id: &TenantId,
     user_id: Uuid,
     role_id: Uuid,
+    actor: &Actor,
 ) -> Result<tenant_membership::Model, DbErr> {
     tenant_membership::ActiveModel {
         id: Set(Uuid::new_v4()),
@@ -27,6 +29,10 @@ pub async fn insert_membership(
         user_id: Set(user_id),
         role_id: Set(role_id),
         status: Set(MembershipStatus::Active.as_str().to_string()),
+        created_by_user_id: Set(actor.user_id()),
+        created_by_actor: Set(actor.kind_name()),
+        modified_by_user_id: Set(actor.user_id()),
+        modified_by_actor: Set(actor.kind_name()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }
@@ -65,6 +71,7 @@ pub async fn update_membership_role(
     tenant_id: &TenantId,
     membership_id: Uuid,
     role_id: Uuid,
+    actor: &Actor,
 ) -> Result<u64, DbErr> {
     let result = tenant_membership::Entity::update_many()
         .col_expr(tenant_membership::Column::RoleId, Expr::value(role_id))
@@ -73,6 +80,14 @@ pub async fn update_membership_role(
             Expr::value(time_utils::now_utc_into::<
                 sea_orm::prelude::DateTimeWithTimeZone,
             >()),
+        )
+        .col_expr(
+            tenant_membership::Column::ModifiedByUserId,
+            Expr::value(actor.user_id()),
+        )
+        .col_expr(
+            tenant_membership::Column::ModifiedByActor,
+            Expr::value(actor.kind_name()),
         )
         .filter(tenant_membership::Column::TenantId.eq(tenant_id.get_uuid()))
         .filter(tenant_membership::Column::Id.eq(membership_id))

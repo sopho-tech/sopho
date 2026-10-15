@@ -1,3 +1,4 @@
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::entity::ai_configuration;
@@ -19,6 +20,7 @@ pub async fn upsert(
     api_key_encrypted: &str,
     liveness_status_db: &str,
     last_checked_at: Option<chrono::DateTime<chrono::FixedOffset>>,
+    actor: &Actor,
 ) -> Result<ai_configuration::Model, DbErr> {
     let now = time_utils::now_utc_into();
     if let Some(existing) = find(db, tenant_id).await? {
@@ -28,6 +30,8 @@ pub async fn upsert(
         active.liveness_status = Set(liveness_status_db.to_string());
         active.last_checked_at = Set(last_checked_at);
         active.updated_at = Set(now);
+        active.modified_by_user_id = Set(actor.user_id());
+        active.modified_by_actor = Set(actor.kind_name());
         active.update(db).await
     } else {
         let model = ai_configuration::ActiveModel {
@@ -36,6 +40,10 @@ pub async fn upsert(
             api_key_encrypted: Set(api_key_encrypted.to_string()),
             liveness_status: Set(liveness_status_db.to_string()),
             last_checked_at: Set(last_checked_at),
+            created_by_user_id: Set(actor.user_id()),
+            created_by_actor: Set(actor.kind_name()),
+            modified_by_user_id: Set(actor.user_id()),
+            modified_by_actor: Set(actor.kind_name()),
             created_at: Set(now),
             updated_at: Set(now),
         };

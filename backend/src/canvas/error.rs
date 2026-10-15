@@ -1,3 +1,4 @@
+use crate::attribution::error::AttributionError;
 use crate::authorization::errors::AuthorizationError;
 use crate::canvas::constants::CANVAS_NOT_FOUND_MESSAGE;
 use thiserror::Error;
@@ -12,4 +13,13 @@ pub enum CanvasError {
     NotFound,
     #[error("{0}")]
     Internal(String),
+}
+
+impl From<AttributionError> for CanvasError {
+    fn from(error: AttributionError) -> Self {
+        match error {
+            AttributionError::Database(database_error) => CanvasError::Database(database_error),
+            other => CanvasError::Internal(other.to_string()),
+        }
+    }
 }

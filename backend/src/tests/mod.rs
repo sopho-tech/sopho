@@ -1,3 +1,4 @@
+mod attribution;
 mod authorization_decision;
 mod authorization_gates;
 mod common;

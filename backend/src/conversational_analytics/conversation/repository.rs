@@ -1,12 +1,13 @@
 use super::dto;
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::entity::conversation;
 use sea_orm::sea_query::{Expr, Func};
 use sea_orm::Condition;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
-    PaginatorTrait, QueryFilter, QueryOrder, Set,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr,
+    EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, Set,
 };
 use uuid::Uuid;
 
@@ -68,6 +69,7 @@ pub async fn update_conversation(
     tenant_id: &TenantId,
     id: Uuid,
     payload: dto::ConversationDto,
+    actor: &Actor,
 ) -> Result<Option<conversation::Model>, DbErr> {
     let Some(existing) = get_conversation(db, tenant_id, id).await? else {
         return Ok(None);
@@ -76,6 +78,8 @@ pub async fn update_conversation(
     active.name = Set(payload.name);
     active.status = Set(payload.status.to_string());
     active.updated_at = Set(time_utils::now_utc_into());
+    active.modified_by_user_id = Set(actor.user_id());
+    active.modified_by_actor = Set(actor.kind_name());
     let result = active.update(db).await?;
     Ok(Some(result))
 }
@@ -123,6 +127,7 @@ pub async fn update_conversation_visibility(
     tenant_id: &TenantId,
     id: Uuid,
     visibility: &str,
+    actor: &Actor,
 ) -> Result<u64, DbErr> {
     let result = conversation::Entity::update_many()
         .col_expr(
@@ -135,9 +140,45 @@ pub async fn update_conversation_visibility(
                 sea_orm::prelude::DateTimeWithTimeZone,
             >()),
         )
+        .col_expr(
+            conversation::Column::ModifiedByUserId,
+            sea_orm::sea_query::Expr::value(actor.user_id()),
+        )
+        .col_expr(
+            conversation::Column::ModifiedByActor,
+            sea_orm::sea_query::Expr::value(actor.kind_name()),
+        )
         .filter(conversation::Column::Id.eq(id))
         .filter(conversation::Column::TenantId.eq(tenant_id.get_uuid()))
         .exec(db)
+        .await?;
+    Ok(result.rows_affected)
+}
+
+pub async fn stamp_modified(
+    connection: &impl ConnectionTrait,
+    tenant_id: &TenantId,
+    id: Uuid,
+    actor: &Actor,
+) -> Result<u64, DbErr> {
+    let result = conversation::Entity::update_many()
+        .col_expr(
+            conversation::Column::UpdatedAt,
+            Expr::value(time_utils::now_utc_into::<
+                sea_orm::prelude::DateTimeWithTimeZone,
+            >()),
+        )
+        .col_expr(
+            conversation::Column::ModifiedByUserId,
+            Expr::value(actor.user_id()),
+        )
+        .col_expr(
+            conversation::Column::ModifiedByActor,
+            Expr::value(actor.kind_name()),
+        )
+        .filter(conversation::Column::Id.eq(id))
+        .filter(conversation::Column::TenantId.eq(tenant_id.get_uuid()))
+        .exec(connection)
         .await?;
     Ok(result.rows_affected)
 }

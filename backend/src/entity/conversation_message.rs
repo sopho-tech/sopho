@@ -12,6 +12,10 @@ pub struct Model {
     pub sequence_number: i32,
     pub sender: String,
     pub status: String,
+    pub created_by_user_id: Option<Uuid>,
+    pub created_by_actor: String,
+    pub modified_by_user_id: Option<Uuid>,
+    pub modified_by_actor: String,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

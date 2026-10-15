@@ -1,3 +1,4 @@
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::AppState;
 use crate::suggested_question;
@@ -92,6 +93,7 @@ async fn refresh_all_stale_for_every_tenant(app_state: &AppState) {
     };
     for tenant_id in tenant_ids {
         let tenant_id = TenantId::from_system_unchecked(tenant_id);
-        suggested_question::service::refresh_all_stale(app_state, &tenant_id).await;
+        suggested_question::service::refresh_all_stale(app_state, &tenant_id, &Actor::system())
+            .await;
     }
 }

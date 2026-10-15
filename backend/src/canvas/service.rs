@@ -2,7 +2,9 @@ use crate::ai::dto::{
     CanvasCandidate, CanvasCandidateCell, CanvasOp, CanvasPlan, PlannedAxisChart, PlannedChart,
     PlannedChartSpec,
 };
+use crate::attribution::service::{self as attribution_service, AttributionNames};
 use crate::authorization::constants::{Action, ResourceType, Visibility};
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::authorization::dto::{AuthorizationSubject, ResourceOwnership, TenantContext};
 use crate::authorization::service as authorization_service;
@@ -17,12 +19,14 @@ use crate::cell::dto::{
     PieChartContent,
 };
 use crate::cell::service as cell_service;
+use crate::common::constants::CreatedByFilter;
 use crate::common::time_utils;
 use crate::common::{AppState, PaginatedResponse};
 use crate::dashboard::service::{self as dashboard_service, DashboardChartRequest};
 use crate::entity;
 use crate::notebook::service as notebook_service;
 use sea_orm::Condition;
+use sea_orm::ConnectionTrait;
 use sea_orm::DatabaseTransaction;
 use sea_orm::TransactionTrait;
 use std::collections::HashMap;
@@ -88,20 +92,38 @@ pub async fn get_canvas(
     id: Uuid,
 ) -> Result<dto::CanvasDto, CanvasError> {
     let canvas = authorize_canvas(&app_state, tenant_context, id, Action::Read).await?;
-    canvas_dto_with_capabilities(&app_state, tenant_context, canvas).await
+    canvas_response_dto(&app_state, tenant_context, canvas).await
 }
 
-async fn canvas_dto_with_capabilities(
+async fn canvas_response_dto(
     app_state: &AppState,
     tenant_context: &TenantContext,
     canvas: entity::canvas::Model,
 ) -> Result<dto::CanvasDto, CanvasError> {
+    let names = attribution_service::load_names(
+        app_state,
+        [canvas.created_by_user_id, canvas.modified_by_user_id],
+    )
+    .await?;
+    canvas_response_dto_with_names(app_state, tenant_context, canvas, &names).await
+}
+
+async fn canvas_response_dto_with_names(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    canvas: entity::canvas::Model,
+    names: &AttributionNames,
+) -> Result<dto::CanvasDto, CanvasError> {
     let subject = authorization_subject_for(&canvas, tenant_context.tenant_id())
         .map_err(CanvasError::Internal)?;
+    let created_by = names.describe(&canvas.created_by_actor, canvas.created_by_user_id)?;
+    let modified_by = names.describe(&canvas.modified_by_actor, canvas.modified_by_user_id)?;
     let mut response_dto = dto::CanvasDto::from(canvas);
     response_dto.capabilities = Some(
         authorization_service::resolve_capabilities(app_state, tenant_context, &subject).await?,
     );
+    response_dto.created_by = Some(created_by);
+    response_dto.modified_by = Some(modified_by);
     Ok(response_dto)
 }
 
@@ -110,25 +132,38 @@ pub async fn get_all_canvases(
     tenant_context: &TenantContext,
     page: u64,
     page_size: u64,
+    created_by: Option<CreatedByFilter>,
 ) -> Result<PaginatedResponse<dto::CanvasDto>, CanvasError> {
     authorization_service::require_capability(
         tenant_context,
         ResourceType::Canvas.permission_for(Action::Read),
     )?;
 
+    let created_by_user_id = created_by.map(|filter| match filter {
+        CreatedByFilter::Me => tenant_context.user_id().get_uuid(),
+    });
     let (canvases, total_items, total_pages) = repository::get_paginated_visible_canvases(
         &app_state.database_connection,
         tenant_context.tenant_id(),
         reachable_canvas_condition(tenant_context),
+        created_by_user_id,
         page,
         page_size,
     )
     .await?;
 
+    let names = attribution_service::load_names(
+        &app_state,
+        canvases
+            .iter()
+            .flat_map(|canvas| [canvas.created_by_user_id, canvas.modified_by_user_id]),
+    )
+    .await?;
     let mut response_dto_list: Vec<dto::CanvasDto> = Vec::new();
     for canvas in canvases.iter() {
         let mut canvas_dto =
-            canvas_dto_with_capabilities(&app_state, tenant_context, canvas.clone()).await?;
+            canvas_response_dto_with_names(&app_state, tenant_context, canvas.clone(), &names)
+                .await?;
 
         let cell_counts_result = cell_service::get_cell_counts_by_canvas_id(
             &app_state,
@@ -181,21 +216,23 @@ pub async fn create_canvas(
             owner_user_id,
             visibility: Visibility::Tenant,
         },
+        &tenant_context.actor(),
         payload,
     )
     .await?;
 
-    canvas_dto_with_capabilities(&app_state, tenant_context, created.canvas).await
+    canvas_response_dto(&app_state, tenant_context, created.canvas).await
 }
 
 pub async fn execute_create_canvas(
     app_state: &AppState,
     tenant_id: &TenantId,
     ownership: ResourceOwnership,
+    actor: &Actor,
     payload: dto::CreateCanvasDto,
 ) -> Result<dto::CreateCanvasResult, sea_orm::DbErr> {
     let txn = app_state.database_connection.begin().await?;
-    let created = create_canvas_transaction(&txn, tenant_id, ownership, payload).await?;
+    let created = create_canvas_transaction(&txn, tenant_id, ownership, payload, actor).await?;
     txn.commit().await?;
     Ok(created)
 }
@@ -205,6 +242,7 @@ async fn create_canvas_transaction(
     tenant_id: &TenantId,
     ownership: ResourceOwnership,
     payload: dto::CreateCanvasDto,
+    actor: &Actor,
 ) -> Result<dto::CreateCanvasResult, sea_orm::DbErr> {
     let canvas_id = Uuid::new_v4();
     let now = time_utils::now_utc_into();
@@ -216,6 +254,10 @@ async fn create_canvas_transaction(
         name: payload.name.clone(),
         description: payload.description.clone(),
         status: CanvasStatus::Active.to_string(),
+        created_by_user_id: actor.user_id(),
+        created_by_actor: actor.kind_name(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
         created_at: now,
         updated_at: now,
     };
@@ -226,6 +268,7 @@ async fn create_canvas_transaction(
         canvas_id,
         payload.name.clone(),
         payload.description.clone(),
+        actor,
     )
     .await?;
     let dashboard = dashboard_service::create_dashboard_transaction(
@@ -235,6 +278,7 @@ async fn create_canvas_transaction(
         payload.name.clone(),
         payload.description.clone().unwrap_or_default(),
         None,
+        actor,
     )
     .await?;
     Ok(dto::CreateCanvasResult {
@@ -410,15 +454,24 @@ struct AppliedChanges {
     removed: i32,
 }
 
+struct PlannedCellScope<'a> {
+    txn: &'a DatabaseTransaction,
+    tenant_id: &'a TenantId,
+    actor: &'a Actor,
+    connection_id: Uuid,
+    notebook_id: Uuid,
+}
+
 pub async fn apply_canvas_plan(
     app_state: &AppState,
     tenant_id: &TenantId,
-    ownership: ResourceOwnership,
+    authorship: dto::CanvasAuthorship,
     connection_id: Uuid,
     plan: CanvasPlan,
     target_canvas_id: Option<Uuid>,
     ops: Vec<CanvasOp>,
 ) -> Result<dto::CanvasChangeSummary, sea_orm::DbErr> {
+    let actor = &authorship.actor;
     let txn = app_state.database_connection.begin().await?;
 
     let existing = match target_canvas_id {
@@ -431,18 +484,29 @@ pub async fn apply_canvas_plan(
             let created = create_canvas_transaction(
                 &txn,
                 tenant_id,
-                ownership,
+                authorship.ownership,
                 dto::CreateCanvasDto {
                     name: plan.name.clone(),
                     description: non_blank(&plan.description),
                 },
+                actor,
             )
             .await?;
             (created.canvas, created.notebook.id, false)
         }
     };
 
-    let changes = apply_ops(&txn, tenant_id, connection_id, notebook_id, canvas.id, ops).await?;
+    if reused {
+        stamp_modified(&txn, tenant_id, canvas.id, actor).await?;
+    }
+    let scope = PlannedCellScope {
+        txn: &txn,
+        tenant_id,
+        actor,
+        connection_id,
+        notebook_id,
+    };
+    let changes = apply_ops(&scope, canvas.id, ops).await?;
     if !reused && changes.added == 0 {
         return Err(sea_orm::DbErr::Custom(
             "the canvas plan produced no cells".into(),
@@ -450,7 +514,8 @@ pub async fn apply_canvas_plan(
     }
     let name = non_blank(&plan.name).unwrap_or_else(|| canvas.name.clone());
     let description = non_blank(&plan.description).or_else(|| canvas.description.clone());
-    let canvas = repository::update_canvas_transaction(&txn, canvas, name, description).await?;
+    let canvas =
+        repository::update_canvas_transaction(&txn, canvas, name, description, actor).await?;
 
     txn.commit().await?;
 
@@ -479,13 +544,17 @@ pub async fn apply_canvas_plan(
 }
 
 async fn apply_ops(
-    txn: &sea_orm::DatabaseTransaction,
-    tenant_id: &TenantId,
-    connection_id: Uuid,
-    notebook_id: Uuid,
+    scope: &PlannedCellScope<'_>,
     canvas_id: Uuid,
     ops: Vec<CanvasOp>,
 ) -> Result<AppliedChanges, sea_orm::DbErr> {
+    let &PlannedCellScope {
+        txn,
+        tenant_id,
+        actor,
+        notebook_id,
+        ..
+    } = scope;
     let cells =
         cell_service::get_cells_by_notebook_id_transaction(txn, tenant_id, notebook_id).await?;
     let mut order = cells.iter().map(|c| c.display_order).max().unwrap_or(-1) + 1;
@@ -508,17 +577,7 @@ async fn apply_ops(
         }
         match op {
             CanvasOp::Create { title, sql, chart } => {
-                let created = create_pair(
-                    txn,
-                    tenant_id,
-                    connection_id,
-                    notebook_id,
-                    &mut order,
-                    title,
-                    sql,
-                    chart.as_ref(),
-                )
-                .await?;
+                let created = create_pair(scope, &mut order, title, sql, chart.as_ref()).await?;
                 if let Some(request) = created {
                     queued.push(request);
                 }
@@ -540,6 +599,7 @@ async fn apply_ops(
                         pair.sql_cell_id,
                         title.clone(),
                         sql,
+                        actor,
                     )
                     .await?;
                 }
@@ -553,15 +613,13 @@ async fn apply_ops(
                                 chart_cell_id,
                                 title,
                                 Some(content),
+                                actor,
                             )
                             .await?;
                         }
                         None => {
                             let chart_cell = create_chart_cell(
-                                txn,
-                                tenant_id,
-                                connection_id,
-                                notebook_id,
+                                scope,
                                 &mut order,
                                 title.or_else(|| Some(pair.title.clone())),
                                 content,
@@ -600,6 +658,7 @@ async fn apply_ops(
             canvas_id,
             &removed_cell_ids,
             queued,
+            actor,
         )
         .await?;
     }
@@ -608,15 +667,19 @@ async fn apply_ops(
 }
 
 async fn create_pair(
-    txn: &sea_orm::DatabaseTransaction,
-    tenant_id: &TenantId,
-    connection_id: Uuid,
-    notebook_id: Uuid,
+    scope: &PlannedCellScope<'_>,
     order: &mut i32,
     title: Option<String>,
     sql: String,
     chart: Option<&PlannedChart>,
 ) -> Result<Option<DashboardChartRequest>, sea_orm::DbErr> {
+    let &PlannedCellScope {
+        txn,
+        tenant_id,
+        actor,
+        connection_id,
+        notebook_id,
+    } = scope;
     let sql_cell = cell_service::execute_create_cell_transaction(
         txn,
         tenant_id,
@@ -629,6 +692,7 @@ async fn create_pair(
             cell_type: CellType::Sql,
         },
         *order,
+        actor,
     )
     .await?;
     *order += 1;
@@ -637,16 +701,7 @@ async fn create_pair(
         return Ok(None);
     };
     let content = chart_content_json(sql_cell.id, chart)?;
-    let chart_cell = create_chart_cell(
-        txn,
-        tenant_id,
-        connection_id,
-        notebook_id,
-        order,
-        title,
-        content,
-    )
-    .await?;
+    let chart_cell = create_chart_cell(scope, order, title, content).await?;
     Ok(Some(DashboardChartRequest {
         cell_id: chart_cell.id,
         notebook_id,
@@ -656,14 +711,18 @@ async fn create_pair(
 }
 
 async fn create_chart_cell(
-    txn: &sea_orm::DatabaseTransaction,
-    tenant_id: &TenantId,
-    connection_id: Uuid,
-    notebook_id: Uuid,
+    scope: &PlannedCellScope<'_>,
     order: &mut i32,
     title: Option<String>,
     content: String,
 ) -> Result<entity::cell::Model, sea_orm::DbErr> {
+    let &PlannedCellScope {
+        txn,
+        tenant_id,
+        actor,
+        connection_id,
+        notebook_id,
+    } = scope;
     let cell = cell_service::execute_create_cell_transaction(
         txn,
         tenant_id,
@@ -676,6 +735,7 @@ async fn create_chart_cell(
             cell_type: CellType::Chart,
         },
         *order,
+        actor,
     )
     .await?;
     *order += 1;
@@ -691,6 +751,7 @@ pub async fn get_last_modified_canvases(
         &app_state.database_connection,
         tenant_context.tenant_id(),
         reachable_canvas_condition(tenant_context),
+        None,
         0,
         limit,
     )
@@ -727,11 +788,12 @@ pub async fn update_canvas(
         tenant_context.tenant_id(),
         id,
         payload,
+        &tenant_context.actor(),
     )
     .await?
     .ok_or(CanvasError::NotFound)?;
 
-    canvas_dto_with_capabilities(&app_state, tenant_context, canvas).await
+    canvas_response_dto(&app_state, tenant_context, canvas).await
 }
 
 pub async fn delete_canvas(
@@ -759,6 +821,7 @@ async fn delete_canvas_in_transaction(
     tenant_id: &TenantId,
     id: Uuid,
 ) -> Result<(), CanvasError> {
+    repository::delete_canvas_transaction(transaction, tenant_id, id).await?;
     let notebook =
         notebook_service::get_notebook_by_canvas_id_transaction(transaction, tenant_id, id)
             .await
@@ -779,7 +842,6 @@ async fn delete_canvas_in_transaction(
             })?;
 
     dashboard_service::delete_dashboard_transaction(transaction, tenant_id, dashboard.id).await?;
-    repository::delete_canvas_transaction(transaction, tenant_id, id).await?;
 
     Ok(())
 }
@@ -800,15 +862,32 @@ pub async fn set_visibility(
     tenant_id: &TenantId,
     id: Uuid,
     visibility: Visibility,
+    actor: &Actor,
 ) -> Result<(), sea_orm::DbErr> {
     let updated_rows = repository::update_canvas_visibility(
         &app_state.database_connection,
         tenant_id,
         id,
         visibility.as_str(),
+        actor,
     )
     .await?;
     if updated_rows == 0 {
+        return Err(sea_orm::DbErr::RecordNotFound(
+            CANVAS_NOT_FOUND_MESSAGE.into(),
+        ));
+    }
+    Ok(())
+}
+
+pub async fn stamp_modified(
+    connection: &impl ConnectionTrait,
+    tenant_id: &TenantId,
+    id: Uuid,
+    actor: &Actor,
+) -> Result<(), sea_orm::DbErr> {
+    let stamped_rows = repository::stamp_modified(connection, tenant_id, id, actor).await?;
+    if stamped_rows == 0 {
         return Err(sea_orm::DbErr::RecordNotFound(
             CANVAS_NOT_FOUND_MESSAGE.into(),
         ));

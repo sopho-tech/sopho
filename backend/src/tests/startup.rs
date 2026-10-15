@@ -50,9 +50,10 @@ async fn a_fresh_database_boots_into_a_usable_default_tenant() {
     )
     .await
     .unwrap();
-    let canvases = crate::canvas::service::get_all_canvases(app_state.clone(), &context, 0, 50)
-        .await
-        .unwrap();
+    let canvases =
+        crate::canvas::service::get_all_canvases(app_state.clone(), &context, 0, 50, None)
+            .await
+            .unwrap();
     assert!(
         canvases
             .data

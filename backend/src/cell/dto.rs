@@ -1,3 +1,4 @@
+use crate::attribution::dto::AttributionDto;
 use crate::cell::constants::AggregateFunction;
 use crate::cell::constants::AxisMinorTickShow;
 use crate::cell::constants::AxisTickShow;
@@ -193,6 +194,10 @@ pub struct CellDto {
     pub status: CellStatus,
     pub created_at: DateTime<FixedOffset>,
     pub updated_at: DateTime<FixedOffset>,
+    #[serde(default, skip_deserializing)]
+    pub created_by: Option<AttributionDto>,
+    #[serde(default, skip_deserializing)]
+    pub modified_by: Option<AttributionDto>,
 }
 
 impl From<entity::cell::Model> for CellDto {
@@ -208,6 +213,8 @@ impl From<entity::cell::Model> for CellDto {
             status: CellStatus::from_str(&model.status).unwrap(),
             created_at: model.created_at,
             updated_at: model.updated_at,
+            created_by: None,
+            modified_by: None,
         }
     }
 }

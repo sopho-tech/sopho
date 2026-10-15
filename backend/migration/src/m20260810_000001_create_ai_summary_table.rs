@@ -1,4 +1,4 @@
-use crate::db::add_created_at_and_updated_at_timestamps;
+use crate::db::{add_attribution_columns, add_created_at_and_updated_at_timestamps};
 use sea_orm_migration::{
     prelude::*,
     schema::{
@@ -17,21 +17,23 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
             .create_table(add_created_at_and_updated_at_timestamps(
-                Table::create()
-                    .table(AiSummary::Table)
-                    .col(pk_uuid(AiSummary::Id))
-                    .col(uuid(AiSummary::TenantId))
-                    .col(string(AiSummary::EntityType))
-                    .col(uuid(AiSummary::EntityId))
-                    .col(string(AiSummary::Status))
-                    .col(text_null(AiSummary::SummaryText))
-                    .col(text_null(AiSummary::ErrorMessage))
-                    .col(integer_null(AiSummary::SummarizedEntityCount))
-                    .col(text_null(AiSummary::UserPrompt))
-                    .col(text_null(AiSummary::UserPromptUsed))
-                    .col(timestamp_with_time_zone_null(AiSummary::GeneratedAt))
-                    .col(timestamp_with_time_zone(AiSummary::RequestedAt))
-                    .to_owned(),
+                add_attribution_columns(
+                    Table::create()
+                        .table(AiSummary::Table)
+                        .col(pk_uuid(AiSummary::Id))
+                        .col(uuid(AiSummary::TenantId))
+                        .col(string(AiSummary::EntityType))
+                        .col(uuid(AiSummary::EntityId))
+                        .col(string(AiSummary::Status))
+                        .col(text_null(AiSummary::SummaryText))
+                        .col(text_null(AiSummary::ErrorMessage))
+                        .col(integer_null(AiSummary::SummarizedEntityCount))
+                        .col(text_null(AiSummary::UserPrompt))
+                        .col(text_null(AiSummary::UserPromptUsed))
+                        .col(timestamp_with_time_zone_null(AiSummary::GeneratedAt))
+                        .col(timestamp_with_time_zone(AiSummary::RequestedAt))
+                        .to_owned(),
+                ),
             ))
             .await?;
 

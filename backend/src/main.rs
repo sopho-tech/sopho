@@ -3,6 +3,7 @@
 mod ai;
 mod ai_configuration;
 mod ai_summary;
+mod attribution;
 mod authentication;
 mod authorization;
 mod canvas;

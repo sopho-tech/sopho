@@ -1,3 +1,4 @@
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::cell::constants::CellType;
 use crate::cell::dto;
@@ -15,16 +16,6 @@ use sea_orm::{
 };
 use uuid::Uuid;
 
-pub async fn save_cell(
-    db: &DatabaseConnection,
-    tenant_id: &TenantId,
-    cell: cell::Model,
-) -> Result<cell::Model, DbErr> {
-    let mut cell_active_model: cell::ActiveModel = cell.into();
-    cell_active_model.tenant_id = Set(tenant_id.get_uuid());
-    cell_active_model.insert(db).await
-}
-
 pub async fn save_cell_transaction(
     txn: &DatabaseTransaction,
     tenant_id: &TenantId,
@@ -36,7 +27,7 @@ pub async fn save_cell_transaction(
 }
 
 pub async fn get_cell(
-    db: &DatabaseConnection,
+    db: &impl ConnectionTrait,
     tenant_id: &TenantId,
     id: Uuid,
 ) -> Result<Option<cell::Model>, DbErr> {
@@ -108,6 +99,7 @@ pub async fn update_cell_content_transaction(
     cell_id: Uuid,
     name: Option<String>,
     content: Option<String>,
+    actor: &Actor,
 ) -> Result<Option<cell::Model>, DbErr> {
     let Some(cell) = get_cell_transaction(txn, tenant_id, cell_id).await? else {
         return Ok(None);
@@ -120,6 +112,8 @@ pub async fn update_cell_content_transaction(
         cell_entity.content = Set(Some(content));
     }
     cell_entity.updated_at = Set(time_utils::now_utc_into());
+    cell_entity.modified_by_user_id = Set(actor.user_id());
+    cell_entity.modified_by_actor = Set(actor.kind_name());
     cell_entity.update(txn).await.map(Some)
 }
 
@@ -182,10 +176,11 @@ pub async fn count_cells_by_notebook_id_and_cell_type(
 }
 
 pub async fn update_cell(
-    db: &DatabaseConnection,
+    db: &impl ConnectionTrait,
     tenant_id: &TenantId,
     cell_id: Uuid,
     payload: dto::CellDto,
+    actor: &Actor,
 ) -> Result<Option<cell::Model>, DbErr> {
     let Some(cell) = get_cell(db, tenant_id, cell_id).await? else {
         return Ok(None);
@@ -198,6 +193,8 @@ pub async fn update_cell(
     cell_entity.content = Set(payload.content.clone());
     cell_entity.status = Set(payload.status.to_string());
     cell_entity.updated_at = Set(time_utils::now_utc_into());
+    cell_entity.modified_by_user_id = Set(actor.user_id());
+    cell_entity.modified_by_actor = Set(actor.kind_name());
     cell_entity.created_at = Set(payload.created_at);
     cell_entity.update(db).await.map(Some)
 }

@@ -1,7 +1,9 @@
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::conversational_analytics::conversation::error::ConversationError;
+use crate::conversational_analytics::conversation::service as conversation_service;
 use crate::conversational_analytics::message::constants::Sender;
 use crate::conversational_analytics::message::dto;
 use crate::conversational_analytics::message::repository;
@@ -14,6 +16,7 @@ pub async fn create_message(
     txn: &DatabaseTransaction,
     tenant_id: &TenantId,
     payload: dto::CreateConversationMessageDto,
+    actor: &Actor,
 ) -> Result<dto::ConversationMessageDto, ConversationError> {
     let now = time_utils::now_utc_into();
     let message = entity::conversation_message::Model {
@@ -23,11 +26,42 @@ pub async fn create_message(
         sequence_number: payload.sequence_number,
         sender: payload.sender,
         status: payload.status,
+        created_by_user_id: actor.user_id(),
+        created_by_actor: actor.kind_name(),
+        modified_by_user_id: actor.user_id(),
+        modified_by_actor: actor.kind_name(),
         created_at: now,
         updated_at: now,
     };
     let saved = repository::save_message_transaction(txn, tenant_id, message).await?;
+    conversation_service::stamp_modified(txn, tenant_id, saved.conversation_id, actor).await?;
     Ok(dto::ConversationMessageDto::from(saved))
+}
+
+pub async fn update_message_status(
+    database_connection: &DatabaseConnection,
+    tenant_id: &TenantId,
+    message_id: Uuid,
+    status: String,
+    actor: &Actor,
+) -> Result<(), ConversationError> {
+    let message = repository::update_message_status(
+        database_connection,
+        tenant_id,
+        message_id,
+        status,
+        actor,
+    )
+    .await?
+    .ok_or(ConversationError::NotFound)?;
+    conversation_service::stamp_modified(
+        database_connection,
+        tenant_id,
+        message.conversation_id,
+        actor,
+    )
+    .await?;
+    Ok(())
 }
 
 pub async fn get_message(

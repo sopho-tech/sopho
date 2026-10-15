@@ -1,4 +1,4 @@
-use crate::authorization::constants::{Permission, ResourceType, Visibility};
+use crate::authorization::constants::{ActorKind, Permission, ResourceType, Visibility};
 use std::collections::HashSet;
 use uuid::Uuid;
 
@@ -37,6 +37,47 @@ impl UserId {
 
     pub fn get_uuid(&self) -> Uuid {
         self.user_id
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Actor {
+    kind: ActorKind,
+    user_id: Option<Uuid>,
+}
+
+impl Actor {
+    pub fn human(user_id: UserId) -> Actor {
+        Actor {
+            kind: ActorKind::Human,
+            user_id: Some(user_id.get_uuid()),
+        }
+    }
+
+    pub fn ai_for(user_id: UserId) -> Actor {
+        Actor {
+            kind: ActorKind::Ai,
+            user_id: Some(user_id.get_uuid()),
+        }
+    }
+
+    pub fn system() -> Actor {
+        Actor {
+            kind: ActorKind::System,
+            user_id: None,
+        }
+    }
+
+    pub fn kind(&self) -> ActorKind {
+        self.kind
+    }
+
+    pub fn user_id(&self) -> Option<Uuid> {
+        self.user_id
+    }
+
+    pub fn kind_name(&self) -> String {
+        self.kind.as_str().to_string()
     }
 }
 
@@ -112,6 +153,14 @@ impl TenantContext {
 
     pub fn permissions(&self) -> &PermissionSet {
         &self.permissions
+    }
+
+    pub fn actor(&self) -> Actor {
+        Actor::human(self.user_id)
+    }
+
+    pub fn ai_actor(&self) -> Actor {
+        Actor::ai_for(self.user_id)
     }
 }
 

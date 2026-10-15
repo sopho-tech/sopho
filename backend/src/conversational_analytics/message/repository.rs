@@ -1,3 +1,4 @@
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::entity::conversation_message;
 use sea_orm::{
@@ -20,17 +21,6 @@ pub async fn save_message_transaction(
     let mut active: conversation_message::ActiveModel = message.into();
     active.tenant_id = Set(tenant_id.get_uuid());
     let inserted = active.insert(txn).await?;
-    Ok(inserted)
-}
-
-pub async fn save_message_connection(
-    db: &DatabaseConnection,
-    tenant_id: &TenantId,
-    message: conversation_message::Model,
-) -> Result<conversation_message::Model, DbErr> {
-    let mut active: conversation_message::ActiveModel = message.into();
-    active.tenant_id = Set(tenant_id.get_uuid());
-    let inserted = active.insert(db).await?;
     Ok(inserted)
 }
 
@@ -98,6 +88,7 @@ pub async fn update_message_status(
     tenant_id: &TenantId,
     message_id: Uuid,
     status: String,
+    actor: &Actor,
 ) -> Result<Option<conversation_message::Model>, DbErr> {
     let Some(message) = get_message(db, tenant_id, message_id).await? else {
         return Ok(None);
@@ -105,6 +96,8 @@ pub async fn update_message_status(
     let mut active: conversation_message::ActiveModel = message.into();
     active.status = Set(status);
     active.updated_at = Set(crate::common::time_utils::now_utc_into());
+    active.modified_by_user_id = Set(actor.user_id());
+    active.modified_by_actor = Set(actor.kind_name());
     active.update(db).await.map(Some)
 }
 

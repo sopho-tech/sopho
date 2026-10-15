@@ -1,6 +1,6 @@
 use crate::authentication::service as authentication_service;
 use crate::authorization::constants::Permission;
-use crate::authorization::dto::{TenantContext, TenantId, UserId};
+use crate::authorization::dto::{Actor, TenantContext, TenantId, UserId};
 use crate::authorization::service as authorization_service;
 use crate::common::time_utils;
 use crate::common::AppState;
@@ -205,8 +205,14 @@ pub async fn accept_invitation(
         return Err(InvitationError::NotFound);
     }
     if !already_member {
-        membership_service::add_member_transaction(&txn, &tenant_id, user_id, invitation.role_id)
-            .await?;
+        membership_service::add_member_transaction(
+            &txn,
+            &tenant_id,
+            user_id,
+            invitation.role_id,
+            &Actor::human(user_id),
+        )
+        .await?;
     }
     txn.commit().await?;
 

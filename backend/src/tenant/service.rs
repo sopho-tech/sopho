@@ -1,4 +1,5 @@
 use crate::authorization::constants::{PlatformPermission, SystemRole};
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::authorization::dto::UserId;
 use crate::authorization::service as authorization_service;
@@ -12,8 +13,13 @@ use crate::tenant::membership::service as membership_service;
 use crate::tenant::repository;
 use uuid::Uuid;
 
-pub async fn create_tenant(app_state: &AppState, name: String) -> anyhow::Result<tenant::Model> {
-    let created_tenant = repository::insert_tenant(&app_state.database_connection, name).await?;
+pub async fn create_tenant(
+    app_state: &AppState,
+    name: String,
+    actor: &Actor,
+) -> anyhow::Result<tenant::Model> {
+    let created_tenant =
+        repository::insert_tenant(&app_state.database_connection, name, actor).await?;
     authorization_service::seed_system_roles_for_tenant(
         app_state,
         &TenantId::from_system_unchecked(created_tenant.id),
@@ -38,12 +44,14 @@ pub async fn create_tenant_for_user(
         return Err(TenantError::NameRequired);
     }
 
-    let created_tenant = create_tenant(app_state, name).await?;
+    let creator = Actor::human(user_id);
+    let created_tenant = create_tenant(app_state, name, &creator).await?;
     membership_service::add_member_with_role_name(
         app_state,
         &TenantId::from_system_unchecked(created_tenant.id),
         user_id,
         SystemRole::Owner.as_str(),
+        &creator,
     )
     .await
     .map_err(anyhow::Error::from)?;
@@ -108,6 +116,7 @@ pub async fn seed_default_tenant(app_state: &AppState) -> anyhow::Result<Uuid> {
     let created_tenant = repository::insert_tenant(
         &app_state.database_connection,
         DEFAULT_TENANT_NAME.to_string(),
+        &Actor::system(),
     )
     .await?;
 
@@ -147,6 +156,7 @@ pub async fn ensure_default_tenant_membership(app_state: &AppState) -> anyhow::R
         &TenantId::from_system_unchecked(default_tenant_id),
         UserId::from_system_unchecked(admin_user.id),
         owner_role.id,
+        &Actor::system(),
     )
     .await?;
 

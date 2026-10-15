@@ -1,6 +1,7 @@
 use crate::authorization::constants::{
     AccessLevel, Action, Permission, PrincipalType, ResourceType, SystemRole, Visibility,
 };
+use crate::authorization::dto::Actor;
 use crate::authorization::dto::{AuthorizationSubject, TenantContext, TenantId, UserId};
 use crate::authorization::errors::AuthorizationError;
 use crate::common::time_utils;
@@ -196,7 +197,7 @@ async fn subject_from_another_tenant_is_rejected_before_any_gate() {
 }
 
 async fn visible_names(app_state: &AppState, context: &TenantContext) -> Vec<String> {
-    let page = crate::canvas::service::get_all_canvases(app_state.clone(), context, 0, 50)
+    let page = crate::canvas::service::get_all_canvases(app_state.clone(), context, 0, 50, None)
         .await
         .unwrap();
     let mut names: Vec<String> = page.data.into_iter().map(|canvas| canvas.name).collect();
@@ -556,6 +557,10 @@ async fn a_child_resource_inherits_its_roots_decision() {
         name: Set("Notebook".to_string()),
         description: Set(None),
         status: Set("ACTIVE".to_string()),
+        created_by_user_id: Set(None),
+        created_by_actor: Set(Actor::system().kind_name()),
+        modified_by_user_id: Set(None),
+        modified_by_actor: Set(Actor::system().kind_name()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }
@@ -594,9 +599,10 @@ async fn visible_notebook_names(app_state: &AppState, context: &TenantContext) -
 }
 
 async fn visible_connection_names(app_state: &AppState, context: &TenantContext) -> Vec<String> {
-    let connections = crate::connection::service::get_all_connections(app_state.clone(), context)
-        .await
-        .unwrap();
+    let connections =
+        crate::connection::service::get_all_connections(app_state.clone(), context, None)
+            .await
+            .unwrap();
     let mut names: Vec<String> = connections
         .into_iter()
         .map(|connection| connection.name)
@@ -864,6 +870,10 @@ async fn search_does_not_surface_cells_of_unreachable_canvases() {
             name: Set("notebook".to_string()),
             description: Set(None),
             status: Set("ACTIVE".to_string()),
+            created_by_user_id: Set(None),
+            created_by_actor: Set(Actor::system().kind_name()),
+            modified_by_user_id: Set(None),
+            modified_by_actor: Set(Actor::system().kind_name()),
             created_at: Set(time_utils::now_utc_into()),
             updated_at: Set(time_utils::now_utc_into()),
         }
@@ -927,6 +937,10 @@ async fn search_does_not_surface_unreachable_conversations() {
             connection_id: Set(Uuid::new_v4()),
             name: Set(name.to_string()),
             status: Set("ACTIVE".to_string()),
+            created_by_user_id: Set(None),
+            created_by_actor: Set(Actor::system().kind_name()),
+            modified_by_user_id: Set(None),
+            modified_by_actor: Set(Actor::system().kind_name()),
             created_at: Set(time_utils::now_utc_into()),
             updated_at: Set(time_utils::now_utc_into()),
         }
@@ -987,6 +1001,7 @@ async fn agent_created_canvas_inherits_conversation_owner_and_visibility() {
         &app_state,
         owner.tenant_id(),
         conversation_subject.ownership(),
+        &other.ai_actor(),
         crate::canvas::dto::CreateCanvasDto {
             name: "agent canvas".to_string(),
             description: None,
@@ -1052,6 +1067,7 @@ async fn custom_role_with_read_private_can_see_private_canvas() {
         &scope,
         "AUDITOR",
         &[Permission::CanvasRead, Permission::CanvasReadPrivate],
+        &Actor::system(),
     )
     .await
     .unwrap();
@@ -1062,6 +1078,7 @@ async fn custom_role_with_read_private_can_see_private_canvas() {
         &scope,
         UserId::from_system_unchecked(auditor_user_id),
         "AUDITOR",
+        &Actor::system(),
     )
     .await
     .unwrap();

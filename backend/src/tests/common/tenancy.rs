@@ -1,5 +1,5 @@
 use crate::authorization::constants::{PlatformRole, SystemRole};
-use crate::authorization::dto::{TenantContext, TenantId, UserId};
+use crate::authorization::dto::{Actor, TenantContext, TenantId, UserId};
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::entity;
@@ -40,7 +40,7 @@ pub async fn insert_user(app_state: &AppState, label: &str) -> Uuid {
 }
 
 pub async fn create_tenant(app_state: &AppState, name: &str) -> Uuid {
-    crate::tenant::service::create_tenant(app_state, name.to_string())
+    crate::tenant::service::create_tenant(app_state, name.to_string(), &Actor::system())
         .await
         .unwrap()
         .id
@@ -52,9 +52,14 @@ pub async fn add_member(app_state: &AppState, tenant_id: Uuid, user_id: Uuid, ro
         &TenantId::from_system_unchecked(tenant_id),
         UserId::from_system_unchecked(user_id),
         role.as_str(),
+        &Actor::system(),
     )
     .await
     .unwrap();
+}
+
+pub fn human_actor(user_id: Uuid) -> Actor {
+    Actor::human(UserId::from_system_unchecked(user_id))
 }
 
 pub async fn resolve_context(

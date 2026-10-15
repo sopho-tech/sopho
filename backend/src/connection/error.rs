@@ -1,3 +1,4 @@
+use crate::attribution::error::AttributionError;
 use crate::authorization::errors::AuthorizationError;
 use crate::common::errors::CreateConnectionError;
 use crate::connection::constants::CONNECTION_NOT_FOUND_MESSAGE;
@@ -29,6 +30,15 @@ impl From<CreateConnectionError> for ConnectionError {
             CreateConnectionError::Repository(database_error) => {
                 ConnectionError::Database(database_error)
             }
+        }
+    }
+}
+
+impl From<AttributionError> for ConnectionError {
+    fn from(error: AttributionError) -> Self {
+        match error {
+            AttributionError::Database(database_error) => ConnectionError::Database(database_error),
+            other => ConnectionError::Internal(other.to_string()),
         }
     }
 }

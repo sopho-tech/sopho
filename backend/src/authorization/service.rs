@@ -3,7 +3,8 @@ use crate::authorization::constants::{
     ResourceType, SystemRole, Visibility,
 };
 use crate::authorization::dto::{
-    AuthorizationSubject, PermissionSet, ResourceCapabilities, TenantContext, TenantId, UserId,
+    Actor, AuthorizationSubject, PermissionSet, ResourceCapabilities, TenantContext, TenantId,
+    UserId,
 };
 use crate::authorization::errors::{AuthorizationError, TenantContextError};
 use crate::authorization::repository;
@@ -27,8 +28,14 @@ pub async fn seed_system_roles_for_tenant(
         {
             Some(existing_role) => existing_role,
             None => {
-                repository::insert_role(&app_state.database_connection, tenant_id, role_name, true)
-                    .await?
+                repository::insert_role(
+                    &app_state.database_connection,
+                    tenant_id,
+                    role_name,
+                    true,
+                    &Actor::system(),
+                )
+                .await?
             }
         };
 
@@ -104,9 +111,16 @@ pub async fn create_custom_role(
     tenant_id: &TenantId,
     name: &str,
     permissions: &[Permission],
+    actor: &Actor,
 ) -> Result<crate::entity::role::Model, sea_orm::DbErr> {
-    let role =
-        repository::insert_role(&app_state.database_connection, tenant_id, name, false).await?;
+    let role = repository::insert_role(
+        &app_state.database_connection,
+        tenant_id,
+        name,
+        false,
+        actor,
+    )
+    .await?;
     for permission in permissions {
         repository::insert_role_permission(
             &app_state.database_connection,

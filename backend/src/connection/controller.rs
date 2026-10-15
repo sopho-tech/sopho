@@ -1,12 +1,13 @@
 use crate::authorization::dto::TenantContext;
+use crate::common::constants::UNKNOWN_CREATED_BY_FILTER_MESSAGE;
 use crate::common::error_codes::codes;
 use crate::common::errors::{ExecuteQueryError, ExecuteSqlError, GetDatabaseConnectionError};
-use crate::common::AppState;
+use crate::common::{AppState, CreatedByQuery};
 use crate::connection::constants::CONNECTION_NOT_FOUND_MESSAGE;
 use crate::connection::dto;
 use crate::connection::error::ConnectionError;
 use crate::connection::service;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post, put};
@@ -56,8 +57,15 @@ async fn create_connection(
 async fn get_all_connections(
     State(app_state): State<AppState>,
     tenant_context: TenantContext,
+    created_by_query: Query<CreatedByQuery>,
 ) -> impl IntoResponse {
-    match service::get_all_connections(app_state, &tenant_context).await {
+    let Ok(created_by) = created_by_query.filter() else {
+        return (
+            StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({ "error": UNKNOWN_CREATED_BY_FILTER_MESSAGE })),
+        );
+    };
+    match service::get_all_connections(app_state, &tenant_context, created_by).await {
         Ok(connections) => (StatusCode::OK, axum::Json(serde_json::json!(connections))),
         Err(error) => connection_error_http_response(error),
     }

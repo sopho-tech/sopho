@@ -1,5 +1,5 @@
 use crate::authorization::constants::{Permission, SystemRole};
-use crate::authorization::dto::{PermissionSet, TenantContext, TenantId, UserId};
+use crate::authorization::dto::{Actor, PermissionSet, TenantContext, TenantId, UserId};
 use crate::authorization::service as authorization_service;
 use crate::common::AppState;
 use crate::entity::{role, tenant_membership};
@@ -18,12 +18,14 @@ pub async fn add_member(
     tenant_id: &TenantId,
     user_id: UserId,
     role_id: Uuid,
+    actor: &Actor,
 ) -> Result<(), MembershipError> {
     repository::insert_membership(
         &app_state.database_connection,
         tenant_id,
         user_id.get_uuid(),
         role_id,
+        actor,
     )
     .await?;
     Ok(())
@@ -34,8 +36,9 @@ pub async fn add_member_transaction(
     tenant_id: &TenantId,
     user_id: UserId,
     role_id: Uuid,
+    actor: &Actor,
 ) -> Result<(), MembershipError> {
-    repository::insert_membership(txn, tenant_id, user_id.get_uuid(), role_id).await?;
+    repository::insert_membership(txn, tenant_id, user_id.get_uuid(), role_id, actor).await?;
     Ok(())
 }
 
@@ -44,9 +47,10 @@ pub async fn add_member_with_role_name(
     tenant_id: &TenantId,
     user_id: UserId,
     role_name: &str,
+    actor: &Actor,
 ) -> Result<(), MembershipError> {
     let role = find_role(app_state, tenant_id, role_name).await?;
-    add_member(app_state, tenant_id, user_id, role.id).await
+    add_member(app_state, tenant_id, user_id, role.id, actor).await
 }
 
 pub async fn is_active_member(
@@ -156,6 +160,7 @@ pub async fn update_member_role(
         tenant_id,
         membership.id,
         target_role.id,
+        &tenant_context.actor(),
     )
     .await?;
 

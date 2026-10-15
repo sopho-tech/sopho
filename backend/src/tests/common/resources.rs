@@ -1,4 +1,5 @@
 use crate::authorization::constants::Visibility;
+use crate::authorization::dto::Actor;
 use crate::common::time_utils;
 use crate::common::AppState;
 use crate::entity;
@@ -16,6 +17,7 @@ pub async fn insert_canvas(
     visibility: Visibility,
 ) -> Uuid {
     let canvas_id = Uuid::new_v4();
+    let actor = Actor::system();
     entity::canvas::ActiveModel {
         id: Set(canvas_id),
         tenant_id: Set(tenant_id),
@@ -24,6 +26,10 @@ pub async fn insert_canvas(
         name: Set(name.to_string()),
         description: Set(None),
         status: Set(ACTIVE_STATUS.to_string()),
+        created_by_user_id: Set(actor.user_id()),
+        created_by_actor: Set(actor.kind_name()),
+        modified_by_user_id: Set(actor.user_id()),
+        modified_by_actor: Set(actor.kind_name()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }
@@ -40,6 +46,7 @@ pub async fn insert_notebook(
     name: &str,
 ) -> Uuid {
     let notebook_id = Uuid::new_v4();
+    let actor = Actor::system();
     entity::notebook::ActiveModel {
         id: Set(notebook_id),
         tenant_id: Set(tenant_id),
@@ -47,6 +54,10 @@ pub async fn insert_notebook(
         name: Set(name.to_string()),
         description: Set(None),
         status: Set(ACTIVE_STATUS.to_string()),
+        created_by_user_id: Set(actor.user_id()),
+        created_by_actor: Set(actor.kind_name()),
+        modified_by_user_id: Set(actor.user_id()),
+        modified_by_actor: Set(actor.kind_name()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }
@@ -63,6 +74,7 @@ pub async fn insert_dashboard(
     name: &str,
 ) -> Uuid {
     let dashboard_id = Uuid::new_v4();
+    let actor = Actor::system();
     entity::dashboard::ActiveModel {
         id: Set(dashboard_id),
         tenant_id: Set(tenant_id),
@@ -71,6 +83,10 @@ pub async fn insert_dashboard(
         description: Set(String::new()),
         layout: Set(None),
         status: Set(ACTIVE_STATUS.to_string()),
+        created_by_user_id: Set(actor.user_id()),
+        created_by_actor: Set(actor.kind_name()),
+        modified_by_user_id: Set(actor.user_id()),
+        modified_by_actor: Set(actor.kind_name()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }
@@ -87,6 +103,7 @@ pub async fn insert_cell(
     name: &str,
 ) -> Uuid {
     let cell_id = Uuid::new_v4();
+    let actor = Actor::system();
     entity::cell::ActiveModel {
         id: Set(cell_id),
         tenant_id: Set(tenant_id),
@@ -97,6 +114,10 @@ pub async fn insert_cell(
         content: Set(None),
         cell_type: Set(crate::cell::constants::CellType::Sql.to_string()),
         status: Set(ACTIVE_STATUS.to_string()),
+        created_by_user_id: Set(actor.user_id()),
+        created_by_actor: Set(actor.kind_name()),
+        modified_by_user_id: Set(actor.user_id()),
+        modified_by_actor: Set(actor.kind_name()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }
@@ -133,6 +154,7 @@ pub async fn insert_sqlite_connection(
     database_path: &str,
 ) -> Uuid {
     let connection_id = Uuid::new_v4();
+    let actor = Actor::system();
     entity::connection::ActiveModel {
         id: Set(connection_id),
         tenant_id: Set(tenant_id),
@@ -148,6 +170,10 @@ pub async fn insert_sqlite_connection(
         schema: Set(None),
         source_type: Set("SQLITE".to_string()),
         status: Set(ACTIVE_STATUS.to_string()),
+        created_by_user_id: Set(actor.user_id()),
+        created_by_actor: Set(actor.kind_name()),
+        modified_by_user_id: Set(actor.user_id()),
+        modified_by_actor: Set(actor.kind_name()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }
@@ -166,6 +192,7 @@ pub async fn insert_conversation(
     connection_id: Uuid,
 ) -> Uuid {
     let conversation_id = Uuid::new_v4();
+    let actor = Actor::system();
     entity::conversation::ActiveModel {
         id: Set(conversation_id),
         tenant_id: Set(tenant_id),
@@ -174,6 +201,10 @@ pub async fn insert_conversation(
         connection_id: Set(connection_id),
         name: Set(name.to_string()),
         status: Set(ACTIVE_STATUS.to_string()),
+        created_by_user_id: Set(actor.user_id()),
+        created_by_actor: Set(actor.kind_name()),
+        modified_by_user_id: Set(actor.user_id()),
+        modified_by_actor: Set(actor.kind_name()),
         created_at: Set(time_utils::now_utc_into()),
         updated_at: Set(time_utils::now_utc_into()),
     }
