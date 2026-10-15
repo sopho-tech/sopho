@@ -1,3 +1,4 @@
+use crate::common::errors::GetDatabaseConnectionError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -20,6 +21,8 @@ pub enum ExecuteCompletionError {
     Database(#[from] sea_orm::DbErr),
     #[error("Connection not found")]
     ConnectionNotFound,
+    #[error("{0}")]
+    GetConnection(GetDatabaseConnectionError),
     #[error("Conversation not found")]
     ConversationNotFound,
     #[error("There are no questions to answer")]

@@ -41,7 +41,7 @@ async fn get_all_connections(State(app_state): State<AppState>) -> impl IntoResp
 async fn update_connection(
     State(app_state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<Uuid>,
-    axum::extract::Json(payload): axum::extract::Json<dto::ConnectionDto>,
+    axum::extract::Json(payload): axum::extract::Json<dto::UpdateConnectionDto>,
 ) -> impl IntoResponse {
     service::update_connection(app_state, id, payload).await
 }
@@ -62,6 +62,10 @@ async fn execute_query(
         Err(ExecuteSqlError::GetConnection(GetDatabaseConnectionError::ConnectionNotFound)) => (
             StatusCode::NOT_FOUND,
             axum::Json(serde_json::json!({ "error": "Connection not found" })),
+        ),
+        Err(ExecuteSqlError::GetConnection(e @ GetDatabaseConnectionError::Decryption(_))) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
         ),
         Err(ExecuteSqlError::GetConnection(e)) => (
             StatusCode::BAD_REQUEST,

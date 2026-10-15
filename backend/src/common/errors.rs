@@ -18,6 +18,22 @@ pub enum CreateConnectionError {
     ConnectionStatus(#[from] ValidationError),
     #[error("Failed to encrypt connection")]
     Encryption,
+    #[error("Failed to decrypt connection: {0}")]
+    Decryption(anyhow::Error),
+    #[error("Failed to save connection: {0}")]
+    Repository(#[from] sea_orm::DbErr),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum UpdateConnectionError {
+    #[error("{0}")]
+    GetConnection(#[from] GetDatabaseConnectionError),
+    #[error("Failed to get connection status: {0}")]
+    ConnectionStatus(#[from] ValidationError),
+    #[error("Failed to encrypt connection")]
+    Encryption,
+    #[error("Failed to decrypt connection: {0}")]
+    Decryption(anyhow::Error),
     #[error("Failed to save connection: {0}")]
     Repository(#[from] sea_orm::DbErr),
 }
@@ -40,6 +56,8 @@ pub enum GetDatabaseConnectionError {
     ConnectionNotFound,
     #[error("Failed to get connection: {0}")]
     Connection(sea_orm::DbErr),
+    #[error("Failed to decrypt connection: {0}")]
+    Decryption(anyhow::Error),
     #[error("Failed to connect to database: {0}")]
     DatabaseConnection(#[from] sqlx::Error),
     #[error("Failed to parse source type: {0}")]

@@ -1,7 +1,4 @@
-use crate::common::time_utils;
-use crate::connection::dto;
 use crate::entity::connection;
-use sea_orm::Set;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait};
 use uuid::Uuid;
 
@@ -29,22 +26,8 @@ pub async fn get_all_connections(db: &DatabaseConnection) -> Result<Vec<connecti
 
 pub async fn update_connection(
     db: &DatabaseConnection,
-    connection_id: Uuid,
-    payload: dto::ConnectionDto,
+    connection: connection::Model,
 ) -> Result<connection::Model, DbErr> {
-    let connection = get_connection(db, connection_id).await?;
-    let mut connection_entity: connection::ActiveModel = connection.into();
-    connection_entity.name = Set(payload.name);
-    connection_entity.description = Set(payload.description);
-    connection_entity.status = Set(payload.status.to_string());
-    connection_entity.database = Set(payload.database);
-    connection_entity.host = Set(Some(payload.host));
-    connection_entity.password = Set(Some(payload.password));
-    connection_entity.port = Set(Some(payload.port));
-    connection_entity.schema = Set(payload.schema);
-    connection_entity.username = Set(Some(payload.username));
-    connection_entity.source_type = Set(payload.source_type.to_string());
-    connection_entity.updated_at = Set(time_utils::now_utc_into());
-    connection_entity.created_at = Set(payload.created_at);
-    connection_entity.update(db).await
+    let connection_active_model: connection::ActiveModel = connection.into();
+    connection_active_model.reset_all().update(db).await
 }

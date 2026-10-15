@@ -1,5 +1,7 @@
 use crate::common::AppState;
-use crate::common::errors::{CreateConnectionError, ExecuteSqlError, GetDatabaseConnectionError};
+use crate::common::errors::{
+    CreateConnectionError, ExecuteSqlError, GetDatabaseConnectionError, UpdateConnectionError,
+};
 use crate::common::time_utils;
 use crate::connection::constants::ConnectionStatus;
 use crate::connection::constants::SourceType;
@@ -24,48 +26,49 @@ pub async fn get_connection(app_state: AppState, id: Uuid) -> impl IntoResponse 
             let response_dto = dto::ConnectionDto::from(connection);
             (StatusCode::OK, axum::Json(serde_json::json!(response_dto)))
         }
-        Err(e) => match e {
-            sea_orm::DbErr::RecordNotFound(_) => (
-                StatusCode::NOT_FOUND,
-                axum::Json(serde_json::json!({ "error": "Connection not found" })),
-            ),
-            _ => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            ),
-        },
+        Err(GetDatabaseConnectionError::ConnectionNotFound) => (
+            StatusCode::NOT_FOUND,
+            axum::Json(serde_json::json!({ "error": "Connection not found" })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        ),
     }
 }
 
 pub async fn execute_get_connection(
     app_state: &AppState,
     id: Uuid,
-) -> Result<entity::connection::Model, sea_orm::DbErr> {
-    let mut connection = repository::get_connection(&app_state.database_connection, id).await?;
-    cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key);
+) -> Result<entity::connection::Model, GetDatabaseConnectionError> {
+    let mut connection = repository::get_connection(&app_state.database_connection, id)
+        .await
+        .map_err(|e| match e {
+            sea_orm::DbErr::RecordNotFound(_) => GetDatabaseConnectionError::ConnectionNotFound,
+            other => GetDatabaseConnectionError::Connection(other),
+        })?;
+    cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key)
+        .map_err(GetDatabaseConnectionError::Decryption)?;
     Ok(connection)
 }
 
 pub async fn execute_get_all_connections(
     app_state: &AppState,
-) -> Result<Vec<entity::connection::Model>, sea_orm::DbErr> {
-    let mut connections = repository::get_all_connections(&app_state.database_connection).await?;
+) -> Result<Vec<entity::connection::Model>, GetDatabaseConnectionError> {
+    let mut connections = repository::get_all_connections(&app_state.database_connection)
+        .await
+        .map_err(GetDatabaseConnectionError::Connection)?;
     for connection in connections.iter_mut() {
-        cryptography_utils::decrypt_connection(connection, &app_state.config.encryption_key);
+        cryptography_utils::decrypt_connection(connection, &app_state.config.encryption_key)
+            .map_err(GetDatabaseConnectionError::Decryption)?;
     }
     Ok(connections)
 }
 
 pub async fn get_all_connections(app_state: AppState) -> impl IntoResponse {
-    let connections = repository::get_all_connections(&app_state.database_connection).await;
+    let connections = execute_get_all_connections(&app_state).await;
     match connections {
-        Ok(mut connections) => {
-            for connection in connections.iter_mut() {
-                cryptography_utils::decrypt_connection(
-                    connection,
-                    &app_state.config.encryption_key,
-                );
-            }
+        Ok(connections) => {
             let response_dto_list: Vec<dto::ConnectionDto> = connections
                 .into_iter()
                 .map(dto::ConnectionDto::from)
@@ -131,7 +134,8 @@ pub async fn execute_create_connection(
             .await
             .map_err(CreateConnectionError::Repository)?;
 
-    cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key);
+    cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key)
+        .map_err(CreateConnectionError::Decryption)?;
 
     Ok(connection)
 }
@@ -156,6 +160,10 @@ pub async fn create_connection(
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "message": "Failed to encrypt connection" })),
         ),
+        Err(CreateConnectionError::Decryption(e)) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({ "message": e.to_string() })),
+        ),
         Err(CreateConnectionError::Repository(e)) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": e.to_string() })),
@@ -163,53 +171,65 @@ pub async fn create_connection(
     }
 }
 
+async fn execute_update_connection(
+    app_state: &AppState,
+    id: Uuid,
+    payload: dto::UpdateConnectionDto,
+) -> Result<entity::connection::Model, UpdateConnectionError> {
+    let stored_connection = execute_get_connection(app_state, id).await?;
+    let password = payload.password.or(stored_connection.password);
+    let mut connection_entity = entity::connection::Model {
+        name: payload.name,
+        description: payload.description,
+        database: payload.database,
+        host: payload.host,
+        port: payload.port,
+        schema: payload.schema,
+        username: payload.username,
+        password,
+        updated_at: time_utils::now_utc_into(),
+        ..stored_connection
+    };
+
+    let connection_status = get_connection_status(&connection_entity).await?;
+    connection_entity.status = connection_status.to_string();
+
+    cryptography_utils::encrypt_connection(
+        &mut connection_entity,
+        &app_state.config.encryption_key,
+    )
+    .map_err(|_| UpdateConnectionError::Encryption)?;
+
+    let mut connection =
+        repository::update_connection(&app_state.database_connection, connection_entity).await?;
+
+    cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key)
+        .map_err(UpdateConnectionError::Decryption)?;
+
+    Ok(connection)
+}
+
 pub async fn update_connection(
     app_state: AppState,
     id: Uuid,
-    mut payload: dto::ConnectionDto,
+    payload: dto::UpdateConnectionDto,
 ) -> impl IntoResponse {
-    let connection = match repository::get_connection(&app_state.database_connection, id).await {
-        Ok(connection) => connection,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
-
-    let mut status_check_entity = connection.clone();
-    status_check_entity.database = payload.database.clone();
-    let status = match get_connection_status(&status_check_entity).await {
-        Ok(s) => s,
-        Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                axum::Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
-    payload.status = status;
-    if cryptography_utils::encrypt_connection_dto(&mut payload, &app_state.config.encryption_key)
-        .is_err()
-    {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            axum::Json(serde_json::json!({ "error": "Failed to encrypt connection" })),
-        );
-    }
-    let connection =
-        repository::update_connection(&app_state.database_connection, id, payload).await;
-    match connection {
-        Ok(mut connection) => {
-            cryptography_utils::decrypt_connection(
-                &mut connection,
-                &app_state.config.encryption_key,
-            );
+    match execute_update_connection(&app_state, id, payload).await {
+        Ok(connection) => {
             let response_dto = dto::ConnectionDto::from(connection);
             info!("Connection updated: {:?}", response_dto);
             (StatusCode::OK, axum::Json(serde_json::json!(response_dto)))
         }
+        Err(UpdateConnectionError::GetConnection(
+            GetDatabaseConnectionError::ConnectionNotFound,
+        )) => (
+            StatusCode::NOT_FOUND,
+            axum::Json(serde_json::json!({ "error": "Connection not found" })),
+        ),
+        Err(UpdateConnectionError::ConnectionStatus(e)) => (
+            StatusCode::BAD_REQUEST,
+            axum::Json(serde_json::json!({ "error": e.to_string() })),
+        ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": e.to_string() })),
@@ -222,16 +242,6 @@ pub async fn execute_query(
     id: Uuid,
     payload: dto::ExecuteQueryDto,
 ) -> Result<QueryResult, ExecuteSqlError> {
-    let connection =
-        execute_get_connection(app_state, id)
-            .await
-            .map_err(|e| -> ExecuteSqlError {
-                match e {
-                    sea_orm::DbErr::RecordNotFound(_) => {
-                        GetDatabaseConnectionError::ConnectionNotFound.into()
-                    }
-                    other => GetDatabaseConnectionError::Connection(other).into(),
-                }
-            })?;
+    let connection = execute_get_connection(app_state, id).await?;
     database_service::execute_sql_query(app_state, &connection, &payload.query).await
 }
