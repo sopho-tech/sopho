@@ -35,11 +35,16 @@ export function useCanvasesPagination() {
     setPagination((prev) => ({ ...prev, pageIndex: newPage }));
   };
 
+  const handleResetToFirstPage = () => {
+    setPagination((prev) => ({ ...prev, pageIndex: INITIAL_PAGE_INDEX }));
+  };
+
   return {
     pagination,
     handlePaginationChange,
     handleChangePageSize,
     handlePageClick,
+    handleResetToFirstPage,
   };
 }
 

@@ -12,6 +12,7 @@ import { useTenantPath } from "src/utils/tenant";
 import { ConversationActionsMenu } from "src/components/ConversationalAnalytics/ConversationActionsMenu";
 import { Flex, Icon, Text } from "src/components/design-system";
 import { ConversationLimitNotice } from "src/components/ConversationalAnalytics/ExistingConversationPanel/ConversationLimitNotice";
+import { AttributionLine } from "src/components/Attribution";
 import { MessageHoverFooter } from "./MessageHoverFooter";
 import {
   getFollowUpDisabledTooltip,
@@ -195,20 +196,27 @@ export const ExistingConversationPanel = () => {
               shadow="scroll"
               sx={FLEX_SHRINK_STYLE}
             >
-              <ConversationActionsMenu conversation={conversation}>
-                <button
-                  type="button"
-                  className={styles.conversationHeaderTrigger}
-                  aria-label="Conversation actions"
-                >
-                  <Flex flex="grow" alignItems="center" sx={MIN_WIDTH_STYLE}>
-                    <Text truncate fontSize="lg" color="darkGrey">
-                      {conversation.name}
-                    </Text>
-                  </Flex>
-                  <Icon type="chevron_down" color="grey" size="md" />
-                </button>
-              </ConversationActionsMenu>
+              <Flex direction="column" gap="2xs" sx={MIN_WIDTH_STYLE}>
+                <ConversationActionsMenu conversation={conversation}>
+                  <button
+                    type="button"
+                    className={styles.conversationHeaderTrigger}
+                    aria-label="Conversation actions"
+                  >
+                    <Flex flex="grow" alignItems="center" sx={MIN_WIDTH_STYLE}>
+                      <Text truncate fontSize="lg" color="darkGrey">
+                        {conversation.name}
+                      </Text>
+                    </Flex>
+                    <Icon type="chevron_down" color="grey" size="md" />
+                  </button>
+                </ConversationActionsMenu>
+                <AttributionLine
+                  createdBy={conversation.created_by}
+                  modifiedBy={conversation.modified_by}
+                  updatedAt={conversation.updated_at}
+                />
+              </Flex>
               <ArtifactsButton />
             </Flex>
           )}

@@ -1,4 +1,6 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { CreatedByFilter } from "src/api/dto";
+import { CreatedByFilterControl } from "src/components/Attribution";
 import { Flex } from "src/components/design-system";
 import { Table, TableType } from "src/components/Table/Table";
 import { useAllCanvases } from "src/api/canvas/queries";
@@ -28,13 +30,23 @@ export function CanvasesTable() {
     handlePaginationChange,
     handleChangePageSize,
     handlePageClick,
+    handleResetToFirstPage,
   } = useCanvasesPagination();
+  const [createdBy, setCreatedBy] = useState<CreatedByFilter | null>(null);
 
   const {
     data: canvases,
     isLoading,
     isError,
-  } = useAllCanvases(pagination.pageIndex, pagination.pageSize);
+  } = useAllCanvases(createdBy, pagination.pageIndex, pagination.pageSize);
+
+  const handleCreatedByChange = useCallback(
+    (value: CreatedByFilter | null) => {
+      setCreatedBy(value);
+      handleResetToFirstPage();
+    },
+    [handleResetToFirstPage]
+  );
 
   const columns = createCanvasesTableColumns({
     onViewClick: handleViewCanvas,
@@ -79,6 +91,7 @@ export function CanvasesTable() {
   );
 
   const isEmpty =
+    createdBy === null &&
     !isLoading &&
     !isError &&
     (canvases?.totalItems ?? 0) === 0;
@@ -92,7 +105,19 @@ export function CanvasesTable() {
   }
 
   return (
-    <Flex direction="column" flex="grow" marginTop="lg" overflow="hidden">
+    <Flex
+      direction="column"
+      flex="grow"
+      marginTop="lg"
+      gap="md"
+      overflow="hidden"
+    >
+      <Flex direction="row">
+        <CreatedByFilterControl
+          value={createdBy}
+          onValueChange={handleCreatedByChange}
+        />
+      </Flex>
       <Table
         tableType={TableType.PAGINATED}
         columns={columns}

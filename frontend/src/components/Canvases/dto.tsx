@@ -1,4 +1,4 @@
-import { ResourceCapabilities } from "src/api/dto";
+import { AttributionDto, ResourceCapabilities } from "src/api/dto";
 
 export type CanvasDto = {
   id: string | null;
@@ -11,9 +11,14 @@ export type CanvasDto = {
   chart_cell_count: number;
   dashboard_charts_count: number;
   capabilities: ResourceCapabilities;
+  created_by: AttributionDto;
+  modified_by: AttributionDto;
 };
 
-export type NewCanvasDto = Omit<CanvasDto, "id" | "capabilities">;
+export type NewCanvasDto = Omit<
+  CanvasDto,
+  "id" | "capabilities" | "created_by" | "modified_by"
+>;
 
 export enum CanvasesPageState {
   LIST = "LIST",

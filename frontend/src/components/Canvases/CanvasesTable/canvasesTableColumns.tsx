@@ -2,6 +2,8 @@ import { ColumnConfig } from "src/components/Table/Table";
 import { CanvasDto } from "src/components/Canvases/dto";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 import { ActionButtons } from "src/components/ActionButtons";
+import { describeActor } from "src/components/Attribution/describeActor";
+import { CREATED_BY_LABEL } from "src/components/Attribution/constants";
 
 type CreateColumnsParams = {
   onViewClick: (id: string) => void;
@@ -26,6 +28,12 @@ export function createCanvasesTableColumns({
       header: "Description",
       type: "accessor",
       accessor: "description",
+    },
+    {
+      key: "created_by",
+      header: CREATED_BY_LABEL,
+      type: "display",
+      cell: (props) => describeActor(props.row.original.created_by),
     },
     {
       key: "created_at",

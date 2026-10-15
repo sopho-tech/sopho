@@ -3,6 +3,7 @@ import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { DashboardDto } from "src/components/Dashboard/dto";
 import { tenantApiUrl, useTenantId } from "src/utils/tenant";
+import { canvasKeys } from "src/api/canvas/queries";
 
 export const dashboardKeys = {
   all: (tenantId: string) => [tenantId, "dashboards"] as const,
@@ -98,6 +99,9 @@ export const useUpdateDashboard = () => {
       queryClient.setQueryData(dashboardKeys.detail(tenantId, dashboardId), data);
       queryClient.invalidateQueries({
         queryKey: dashboardKeys.all(tenantId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: canvasKeys.details(tenantId),
       });
     },
     onError: (error) => {

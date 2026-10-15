@@ -1,4 +1,4 @@
-import { ApiErrorBody } from "src/api/dto";
+import { ApiErrorBody, AttributionDto } from "src/api/dto";
 import { ChartType } from "src/components/Chart";
 import { ColumnDataType } from "src/constants/database_types";
 
@@ -91,6 +91,8 @@ export type CellDto = {
   content: string | null;
   cell_type: CellType | null;
   status: string | null;
+  created_by: AttributionDto;
+  modified_by: AttributionDto;
 };
 
 export type CreateCellDto = {

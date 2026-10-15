@@ -20,7 +20,7 @@ export function NewConversationPanel() {
   const navigate = useNavigate();
   const toTenantPath = useTenantPath();
   const { mutate: createConversation, isPending } = useCreateConversation();
-  const { data: connections } = useConnections();
+  const { data: connections } = useConnections(null);
 
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
   const composerRef = useRef<MessageComposerHandle>(null);

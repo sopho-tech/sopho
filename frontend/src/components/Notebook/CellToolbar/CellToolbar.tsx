@@ -16,6 +16,7 @@ import {
 } from "src/components/Notebook/Cell/useExecutionPhase";
 import { ElapsedTime } from "src/components/Notebook/ExecutionIndicator";
 import { Flex, Kbd, Spinner } from "src/components/design-system";
+import { AiEditedBadge } from "src/components/Attribution";
 import {
   KEYBOARD_SHORTCUTS,
   getShortcutDisplayString,
@@ -42,7 +43,7 @@ function ExecuteTooltipContent({
 
 export function CellToolbar({ cellId }: { cellId: string }) {
   const clearCellOutput = useClearCellOutput();
-  const query = useConnections();
+  const query = useConnections(null);
   const updateCellMutation = useUpdateCell();
   const getCellQuery = useCell(cellId);
   const [options, setOptions] = useState<
@@ -122,16 +123,21 @@ export function CellToolbar({ cellId }: { cellId: string }) {
 
   return (
     <Toolbar loop className={CellToolbarStyles.toolbar}>
-      <div className={CellToolbarStyles.cellNameContainer}>
-        <InlineEdit
-          value={getCellQuery.data?.name ?? ""}
-          onSave={handleSave}
-          placeholder="Cell Name"
-          defaultValue="Unnamed"
-          className={CellToolbarStyles["toolbar__inlineEdit"]}
-          readOnly={!canEdit}
-        />
-      </div>
+      <Flex direction="row" alignItems="center" gap="xs">
+        <div className={CellToolbarStyles.cellNameContainer}>
+          <InlineEdit
+            value={getCellQuery.data?.name ?? ""}
+            onSave={handleSave}
+            placeholder="Cell Name"
+            defaultValue="Unnamed"
+            className={CellToolbarStyles["toolbar__inlineEdit"]}
+            readOnly={!canEdit}
+          />
+        </div>
+        {getCellQuery.data && (
+          <AiEditedBadge modifiedBy={getCellQuery.data.modified_by} />
+        )}
+      </Flex>
       <Flex
         direction="row"
         alignItems="center"

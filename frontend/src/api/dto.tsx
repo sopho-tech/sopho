@@ -52,3 +52,23 @@ export class ApiError extends Error {
 export const isUnauthorizedError = (error: unknown): boolean =>
   error instanceof ApiError && error.status === 401;
 
+
+export enum ActorKind {
+  HUMAN = "HUMAN",
+  AI = "AI",
+  SYSTEM = "SYSTEM",
+}
+
+export type AttributedUserDto = {
+  user_id: string;
+  full_name: string;
+};
+
+export type AttributionDto = {
+  actor: ActorKind;
+  user: AttributedUserDto | null;
+};
+
+export enum CreatedByFilter {
+  ME = "me",
+}

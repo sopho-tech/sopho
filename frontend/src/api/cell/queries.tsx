@@ -11,6 +11,7 @@ import {
 } from "src/components/Notebook/Cell/dto";
 import { notebookKeys } from "src/api/notebook/queries";
 import { dashboardKeys } from "src/api/dashboard/queries";
+import { canvasKeys } from "src/api/canvas/queries";
 import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
 type CellMovementType = "UP" | "DOWN" | "TOP" | "BOTTOM";
@@ -168,6 +169,9 @@ export const useUpdateCell = () => {
       queryClient.invalidateQueries({
         queryKey: cellKeys.detail(tenantId, cellId),
       });
+      queryClient.invalidateQueries({
+        queryKey: canvasKeys.details(tenantId),
+      });
     },
     onError: (error) => {
       console.error("Failed to update cell:", error);
@@ -192,6 +196,9 @@ export const useCreateCell = () => {
           queryKey: [...notebookKeys.cells(tenantId), data.notebook_id],
         });
       }
+      queryClient.invalidateQueries({
+        queryKey: canvasKeys.details(tenantId),
+      });
     },
     onError: (error) => {
       console.error("Failed to create cell:", error);
@@ -238,6 +245,9 @@ export const useDeleteCell = (notebookId?: string, canvasId?: string) => {
           queryKey: dashboardKeys.byCanvas(tenantId, canvasId),
         });
       }
+      queryClient.invalidateQueries({
+        queryKey: canvasKeys.details(tenantId),
+      });
     },
     onError: (error) => {
       console.error("Failed to delete cell:", error);
@@ -334,6 +344,9 @@ export const useReorderCell = (canvasId?: string) => {
           queryKey: dashboardKeys.byCanvas(tenantId, canvasId),
         });
       }
+      queryClient.invalidateQueries({
+        queryKey: canvasKeys.details(tenantId),
+      });
     },
     onError: (error) => {
       console.error("Failed to reorder cell:", error);

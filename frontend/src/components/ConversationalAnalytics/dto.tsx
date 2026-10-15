@@ -1,4 +1,4 @@
-import { ResourceCapabilities } from "src/api/dto";
+import { AttributionDto, ResourceCapabilities } from "src/api/dto";
 import { ChartType } from "src/components/Chart";
 import { ExecuteCellResponseDto } from "src/components/Notebook/Cell/dto";
 
@@ -23,6 +23,8 @@ export type ConversationDto = {
   created_at: string;
   updated_at: string;
   capabilities?: ResourceCapabilities;
+  created_by: AttributionDto;
+  modified_by: AttributionDto;
 };
 
 export type ConversationListItemDto = ConversationDto & {

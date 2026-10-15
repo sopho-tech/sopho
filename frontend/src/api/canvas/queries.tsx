@@ -9,6 +9,7 @@ import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { useParams } from "react-router";
 import { CanvasDto, NewCanvasDto } from "src/components/Canvases/dto";
 import {
+  CreatedByFilter,
   PaginatedData,
   PaginatedDataResponse,
   ResourceCapabilities,
@@ -19,8 +20,12 @@ import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 export const canvasKeys = {
   all: (tenantId: string) => [tenantId, "canvases"] as const,
   lists: (tenantId: string) => [...canvasKeys.all(tenantId), "list"] as const,
-  listPaginated: (tenantId: string, page: number, pageSize: number) =>
-    [...canvasKeys.lists(tenantId), { page, pageSize }] as const,
+  listPaginated: (
+    tenantId: string,
+    createdBy: CreatedByFilter | null,
+    page: number,
+    pageSize: number,
+  ) => [...canvasKeys.lists(tenantId), { createdBy, page, pageSize }] as const,
   details: (tenantId: string) =>
     [...canvasKeys.all(tenantId), "detail"] as const,
   detail: (tenantId: string, id: string) =>
@@ -42,6 +47,7 @@ const canvasApi = {
 
   getAllCanvases: async (
     tenantId: string,
+    createdBy: CreatedByFilter | null,
     page?: number,
     pageSize?: number
   ): Promise<PaginatedData<CanvasDto>> => {
@@ -49,6 +55,9 @@ const canvasApi = {
       tenantApiUrl(tenantId, API_ENDPOINTS.CANVAS.GET_ALL),
       window.location.origin,
     );
+    if (createdBy !== null) {
+      url.searchParams.set("created_by", createdBy);
+    }
     if (page !== undefined) {
       url.searchParams.set("page", page.toString());
     }
@@ -136,11 +145,21 @@ export const useCanvasCapabilities = (): ResourceCapabilities => {
   return canvasQuery.data.capabilities;
 };
 
-export const useAllCanvases = (page?: number, pageSize?: number) => {
+export const useAllCanvases = (
+  createdBy: CreatedByFilter | null,
+  page?: number,
+  pageSize?: number,
+) => {
   const tenantId = useTenantId();
   return useQuery({
-    queryKey: canvasKeys.listPaginated(tenantId, page ?? 1, pageSize ?? 10),
-    queryFn: () => canvasApi.getAllCanvases(tenantId, page, pageSize),
+    queryKey: canvasKeys.listPaginated(
+      tenantId,
+      createdBy,
+      page ?? 1,
+      pageSize ?? 10,
+    ),
+    queryFn: () =>
+      canvasApi.getAllCanvases(tenantId, createdBy, page, pageSize),
     placeholderData: keepPreviousData,
   });
 };

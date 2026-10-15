@@ -10,6 +10,8 @@ import {
   isAtLeast,
 } from "src/components/Notebook/Cell/useExecutionPhase";
 import { ElapsedTime } from "src/components/Notebook/ExecutionIndicator";
+import { Flex } from "src/components/design-system";
+import { AiEditedBadge } from "src/components/Attribution";
 import styles from "./ChartCellToolbar.module.css";
 
 export function ChartCellToolbar({ cellId }: { cellId: string }) {
@@ -34,16 +36,21 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
 
   return (
     <Toolbar.Root className={ToolbarStyles.root} loop>
-      <div className={ToolbarStyles.cellNameContainer}>
-        <InlineEdit
-          value={getCellQuery.data?.name ?? ""}
-          onSave={handleSave}
-          placeholder="Cell Name"
-          defaultValue="Unnamed"
-          className={styles["toolbar__inlineEdit"]}
-          readOnly={!canEdit}
-        />
-      </div>
+      <Flex direction="row" alignItems="center" gap="xs">
+        <div className={ToolbarStyles.cellNameContainer}>
+          <InlineEdit
+            value={getCellQuery.data?.name ?? ""}
+            onSave={handleSave}
+            placeholder="Cell Name"
+            defaultValue="Unnamed"
+            className={styles["toolbar__inlineEdit"]}
+            readOnly={!canEdit}
+          />
+        </div>
+        {getCellQuery.data && (
+          <AiEditedBadge modifiedBy={getCellQuery.data.modified_by} />
+        )}
+      </Flex>
       {showElapsed && startedAt && <ElapsedTime startedAt={startedAt} />}
     </Toolbar.Root>
   );

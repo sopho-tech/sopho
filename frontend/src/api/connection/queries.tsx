@@ -1,13 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
+import { CreatedByFilter } from "src/api/dto";
 import { ConnectionDto } from "src/components/Connection/dto";
 import { type ExecuteCellResponseDto } from "src/components/Notebook/Cell/dto";
 import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
 export type CreateConnectionDto = Omit<
   ConnectionDto,
-  "id" | "created_at" | "updated_at" | "capabilities"
+  | "id"
+  | "created_at"
+  | "updated_at"
+  | "capabilities"
+  | "created_by"
+  | "modified_by"
 >;
 
 export type QueryExecutionResultDto =
@@ -18,6 +24,8 @@ export const connectionKeys = {
   all: (tenantId: string) => [tenantId, "connections"] as const,
   lists: (tenantId: string) =>
     [...connectionKeys.all(tenantId), "list"] as const,
+  list: (tenantId: string, createdBy: CreatedByFilter | null) =>
+    [...connectionKeys.lists(tenantId), { createdBy }] as const,
   details: (tenantId: string) =>
     [...connectionKeys.all(tenantId), "detail"] as const,
   detail: (tenantId: string, id: string) =>
@@ -46,9 +54,19 @@ const connectionApi = {
     return response as ConnectionDto;
   },
 
-  getAllConnections: async (tenantId: string): Promise<ConnectionDto[]> => {
+  getAllConnections: async (
+    tenantId: string,
+    createdBy: CreatedByFilter | null,
+  ): Promise<ConnectionDto[]> => {
+    const url = new URL(
+      tenantApiUrl(tenantId, API_ENDPOINTS.CONNECTION.GET_ALL),
+      window.location.origin,
+    );
+    if (createdBy !== null) {
+      url.searchParams.set("created_by", createdBy);
+    }
     const response = await ApiService.get({
-      url: tenantApiUrl(tenantId, API_ENDPOINTS.CONNECTION.GET_ALL),
+      url: url.toString(),
       onlyBody: true,
     });
     return response as ConnectionDto[];
@@ -134,11 +152,11 @@ export const useConnection = (connectionId: string) => {
   });
 };
 
-export const useConnections = () => {
+export const useConnections = (createdBy: CreatedByFilter | null) => {
   const tenantId = useTenantId();
   return useQuery({
-    queryKey: connectionKeys.lists(tenantId),
-    queryFn: () => connectionApi.getAllConnections(tenantId),
+    queryKey: connectionKeys.list(tenantId, createdBy),
+    queryFn: () => connectionApi.getAllConnections(tenantId, createdBy),
   });
 };
 

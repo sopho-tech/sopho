@@ -8,6 +8,7 @@ import { ShareDialog } from "src/components/ShareDialog";
 import { useStore } from "src/store";
 import { AiSummaryRow } from "src/components/Dashboard/AiSummaryRow";
 import { CanvasButtons } from "src/components/Canvases/CanvasButtons";
+import { AttributionLine } from "src/components/Attribution";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { useTenantPath } from "src/utils/tenant";
 
@@ -122,6 +123,11 @@ export function Canvas() {
           defaultValue="Default description"
           textColor="subtle"
           readOnly={!capabilities.can_edit}
+        />
+        <AttributionLine
+          createdBy={query.data.created_by}
+          modifiedBy={query.data.modified_by}
+          updatedAt={query.data.updated_at}
         />
         {isDashboardView &&
           dashboardQuery.data?.id &&

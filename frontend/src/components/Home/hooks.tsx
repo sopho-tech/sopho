@@ -38,16 +38,16 @@ export function useRecentlyUpdatedCanvases(
   page: number = 0,
   pageSize: number = 9,
 ) {
-  return useAllCanvases(page, pageSize);
+  return useAllCanvases(null, page, pageSize);
 }
 
 export const useIsConnectionsEmptyState = (): boolean | undefined => {
-  const connectionsQuery = useConnections();
+  const connectionsQuery = useConnections(null);
   return connectionsQuery.data?.length === 0;
 };
 
 export const useIsCanvasesEmptyState = (): boolean | undefined => {
-  const canvasesQuery = useAllCanvases();
+  const canvasesQuery = useAllCanvases(null);
   return canvasesQuery.data?.totalItems === 0;
 };
 
