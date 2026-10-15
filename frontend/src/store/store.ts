@@ -8,13 +8,18 @@ import {
   createConnectionSlice,
   ConnectionSlice,
 } from "src/store/connectionSlice";
+import {
+  createCommandMenuSlice,
+  CommandMenuSlice,
+} from "src/store/commandMenuSlice";
 
 export type Store = DashboardSlice &
   CanvasSlice &
   NotebookSlice &
   CellSlice &
   ChartCellSlice &
-  ConnectionSlice;
+  ConnectionSlice &
+  CommandMenuSlice;
 
 export const useStore = create<Store>()((...a) => ({
   ...createDashboardSlice(...a),
@@ -23,4 +28,5 @@ export const useStore = create<Store>()((...a) => ({
   ...createCellSlice(...a),
   ...createChartCellSlice(...a),
   ...createConnectionSlice(...a),
+  ...createCommandMenuSlice(...a),
 }));

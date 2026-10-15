@@ -19,11 +19,6 @@ import { CommandMenuHomePage } from "src/components/design-system/CommandMenu/Co
 import { CommandMenuSearchResults } from "src/components/design-system/CommandMenu/CommandMenuSearchResults.tsx";
 import { Page } from "src/components/design-system/CommandMenu/CommandMenu.types.ts";
 
-type CommandMenuProps = {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-};
-
 const RECENT_ITEMS_LIMIT = 5;
 
 const PageToDisplayNameMap: Record<Page, string> = {
@@ -47,52 +42,39 @@ const PageToFiltersMap: Record<Page, EntityType[]> = {
   conversations: [EntityType.Conversation],
 };
 
-export const CommandMenu = ({
-  open: controlledOpen,
-  onOpenChange,
-}: CommandMenuProps) => {
+export const CommandMenu = () => {
   const navigate = useNavigate();
   const setCanvasPageState = useStore(
     (state) => state.canvas.setCanvasPageState,
   );
-  const [internalOpen, setInternalOpen] = useState(false);
-  const isControlled = controlledOpen !== undefined;
-  const open = isControlled ? controlledOpen : internalOpen;
+  const isCommandMenuOpen = useStore((state) => state.commandMenu.isOpen);
+  const setIsCommandMenuOpen = useStore((state) => state.commandMenu.setIsOpen);
+  const toggleIsCommandMenuOpen = useStore(
+    (state) => state.commandMenu.toggleIsOpen,
+  );
   const [inputValue, setInputValue] = useState<string>("");
   const debouncedInputValue = useDebouncedValue(inputValue);
   const [pages, setPages] = useState<Page[]>(["home"]);
   const currentPage = pages[pages.length - 1];
   const isHomePage = currentPage === "home";
   const filters = PageToFiltersMap[currentPage];
-  const searchQuery = useSearch(debouncedInputValue, filters);
-
-  const handleOpenChange = (newOpen: boolean) => {
-    if (isControlled) {
-      onOpenChange?.(newOpen);
-    } else {
-      setInternalOpen(newOpen);
-    }
-  };
-
-  const commandMenuCallback = () => {
-    if (isControlled) {
-      onOpenChange?.(!open);
-    } else {
-      setInternalOpen((prevOpen) => !prevOpen);
-    }
-  };
+  const searchQuery = useSearch(
+    debouncedInputValue,
+    filters,
+    isCommandMenuOpen,
+  );
 
   useKeyboardShortcut(
-    commandMenuCallback,
+    toggleIsCommandMenuOpen,
     KEYBOARD_SHORTCUTS.OPEN_COMMAND_MENU,
   );
 
   useEffect(() => {
-    if (open) {
+    if (isCommandMenuOpen) {
       setPages(["home"]);
       setInputValue("");
     }
-  }, [open]);
+  }, [isCommandMenuOpen]);
 
   const popPage = () => {
     setPages((prevPages) => {
@@ -129,12 +111,12 @@ export const CommandMenu = ({
 
   const handleSearchResultSelect = (item: SearchResultItemDto) => {
     if (item.entity_type === EntityType.Canvas) {
-      handleOpenChange(false);
+      setIsCommandMenuOpen(false);
       void navigate(APP_ROUTES.CANVAS.replace(":id", item.id));
       return;
     }
     if (item.entity_type === EntityType.Conversation) {
-      handleOpenChange(false);
+      setIsCommandMenuOpen(false);
       void navigate(
         APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION.replace(
           ":id",
@@ -146,21 +128,21 @@ export const CommandMenu = ({
     if (!item.canvas_id) {
       return;
     }
-    handleOpenChange(false);
+    setIsCommandMenuOpen(false);
     void navigate(
       `${APP_ROUTES.CANVAS.replace(":id", item.canvas_id)}?${SEARCH_PARAMS.CELL}=${item.id}`,
     );
   };
 
   const handleCreateCanvas = (value: string) => {
-    handleOpenChange(false);
+    setIsCommandMenuOpen(false);
     setCanvasPageState(CanvasesPageState.CREATE_CANVAS_DIALOG);
     void navigate(APP_ROUTES.CANVASES);
     return value;
   };
 
   const handleCreateConversation = (value: string) => {
-    handleOpenChange(false);
+    setIsCommandMenuOpen(false);
     void navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
     return value;
   };
@@ -198,8 +180,8 @@ export const CommandMenu = ({
 
   return (
     <Command.Dialog
-      open={open}
-      onOpenChange={handleOpenChange}
+      open={isCommandMenuOpen}
+      onOpenChange={setIsCommandMenuOpen}
       label="Global Command Menu"
       onKeyDown={handleKeyDown}
       filter={filter}
