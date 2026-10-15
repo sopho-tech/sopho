@@ -2,8 +2,10 @@ import {
   PaginationState,
   OnChangeFn,
   CellContext,
+  RowData,
 } from "@tanstack/react-table";
 import { ColumnDataType } from "src/constants/database_types";
+import type { DataTableFeatures } from "src/components/design-system/DataTable/features";
 
 export enum TableType {
   FULL = "FULL",
@@ -11,7 +13,7 @@ export enum TableType {
   CLIENT_SIDE_PAGINATED = "CLIENT_SIDE_PAGINATED",
 }
 
-export type ColumnConfig<T> = {
+export type ColumnConfig<T extends RowData> = {
   key: string;
   header: string;
   size?: number;
@@ -19,7 +21,7 @@ export type ColumnConfig<T> = {
   maxSize?: number;
   fixedWidth?: number;
   type: "accessor" | "display";
-  cell?: (props: CellContext<T, unknown>) => React.ReactNode;
+  cell?: (props: CellContext<DataTableFeatures, T, unknown>) => React.ReactNode;
   accessor?: keyof T;
   dataType?: ColumnDataType;
 };
@@ -37,7 +39,7 @@ export type PaginationConfig = {
   showRowsPerPage?: boolean;
 };
 
-export type DataTableProps<T> = {
+export type DataTableProps<T extends RowData> = {
   tableType?: TableType;
   columns: ColumnConfig<T>[];
   data: T[];

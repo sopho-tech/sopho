@@ -1,17 +1,21 @@
 import { useState, useMemo } from "react";
 import {
   createColumnHelper,
-  ColumnDef,
-  Table,
+  ReactTable,
   PaginationState,
   SortingState,
   OnChangeFn,
+  RowData,
 } from "@tanstack/react-table";
 import {
   TableType,
   ColumnConfig,
   PaginationConfig,
 } from "src/components/design-system/DataTable/types";
+import type {
+  DataTableColumnDef,
+  DataTableFeatures,
+} from "src/components/design-system/DataTable/features";
 import {
   useCreateReactTable,
   getDisplayRowNumber,
@@ -24,8 +28,8 @@ import { getIconForDataType } from "src/utils/column_utils";
 const ROW_NUMBER_COLUMN_KEY = "row_number";
 const ROW_NUMBER_COLUMN_WIDTH = 64;
 
-type UseDataTableReturn<T> = {
-  table: Table<T>;
+type UseDataTableReturn<T extends RowData> = {
+  table: ReactTable<DataTableFeatures, T>;
   columnConfigMap: Map<string, ColumnConfig<T>>;
   globalFilter: string;
   setGlobalFilter: (value: string) => void;
@@ -37,7 +41,7 @@ type UseDataTableReturn<T> = {
   setPagination: (value: PaginationState | undefined) => void;
 };
 
-export function useDataTable<T>({
+export function useDataTable<T extends RowData>({
   tableType,
   columns,
   data,
@@ -70,7 +74,7 @@ export function useDataTable<T>({
     },
   );
 
-  const columnHelper = createColumnHelper<T>();
+  const columnHelper = createColumnHelper<DataTableFeatures, T>();
 
   const columnsWithLeadingUtilityColumns = useMemo(() => {
     const leadingUtilityColumns: ColumnConfig<T>[] = [];
@@ -113,7 +117,7 @@ export function useDataTable<T>({
     return map;
   }, [columnsWithLeadingUtilityColumns]);
 
-  const reactTableColumns: ColumnDef<T, unknown>[] = useMemo(() => {
+  const reactTableColumns: DataTableColumnDef<T>[] = useMemo(() => {
     return columnsWithLeadingUtilityColumns.map((col) => {
       const headerContent = col.dataType
         ? () => {
@@ -132,7 +136,7 @@ export function useDataTable<T>({
           }
         : col.header;
 
-      const columnDef: Partial<ColumnDef<T, unknown>> = {
+      const columnDef: Partial<DataTableColumnDef<T>> = {
         size: col.size,
         minSize: col.minSize,
         maxSize: col.maxSize,
@@ -157,7 +161,7 @@ export function useDataTable<T>({
           id: col.key,
           ...columnDef,
           header: headerContent,
-          cell: col.cell as ColumnDef<T, unknown>["cell"],
+          cell: col.cell as DataTableColumnDef<T>["cell"],
         });
       }
     });

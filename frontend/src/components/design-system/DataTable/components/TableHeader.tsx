@@ -1,5 +1,6 @@
-import { flexRender, Table, HeaderGroup } from "@tanstack/react-table";
+import { flexRender, Table, HeaderGroup, RowData } from "@tanstack/react-table";
 import { ColumnConfig } from "src/components/design-system/DataTable/types";
+import type { DataTableFeatures } from "src/components/design-system/DataTable/features";
 import {
   getHeaderAlignmentClass,
   getHeaderJustifyContent,
@@ -9,19 +10,19 @@ import { Icon } from "src/components/design-system/Icon/Icon";
 import { Flex } from "src/components/design-system/Flex";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
 
-type TableHeaderProps<T> = {
-  headerGroups: HeaderGroup<T>[];
+type TableHeaderProps<T extends RowData> = {
+  headerGroups: HeaderGroup<DataTableFeatures, T>[];
   columnConfigMap: Map<string, ColumnConfig<T>>;
   hoveredColumnId: string | null;
   setHoveredColumnId: (id: string | null) => void;
   isResizingColumn: boolean;
-  table: Table<T>;
+  table: Table<DataTableFeatures, T>;
   tableHeaderCellStyle?: string;
   tableFirstHeaderCellStyle?: string;
   tableLastHeaderCellStyle?: string;
 };
 
-export function TableHeader<T>({
+export function TableHeader<T extends RowData>({
   headerGroups,
   columnConfigMap,
   hoveredColumnId,

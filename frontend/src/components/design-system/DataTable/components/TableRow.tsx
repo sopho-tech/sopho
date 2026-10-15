@@ -1,5 +1,6 @@
-import { flexRender, Row } from "@tanstack/react-table";
+import { flexRender, Row, RowData } from "@tanstack/react-table";
 import { ColumnConfig } from "src/components/design-system/DataTable/types";
+import type { DataTableFeatures } from "src/components/design-system/DataTable/features";
 import {
   getAlignmentClass,
   getFontClass,
@@ -7,8 +8,8 @@ import {
 } from "src/components/design-system/DataTable/utils";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
 
-type TableRowProps<T> = {
-  row: Row<T>;
+type TableRowProps<T extends RowData> = {
+  row: Row<DataTableFeatures, T>;
   columnConfigMap: Map<string, ColumnConfig<T>>;
   hoveredColumnId: string | null;
   tableDataCellStyle?: string;
@@ -18,7 +19,7 @@ type TableRowProps<T> = {
   onDragEnd?: () => void;
 };
 
-export function TableRow<T>({
+export function TableRow<T extends RowData>({
   row,
   columnConfigMap,
   hoveredColumnId,
@@ -36,7 +37,7 @@ export function TableRow<T>({
       onDragStart={enableRowDragging ? onDragStart : undefined}
       onDragEnd={enableRowDragging ? onDragEnd : undefined}
     >
-      {row.getVisibleCells().map((cell) => {
+      {row.getAllCells().map((cell) => {
         const isHovered = hoveredColumnId === cell.column.id;
         const columnConfig = columnConfigMap.get(cell.column.id);
         const dataType = columnConfig?.dataType;
