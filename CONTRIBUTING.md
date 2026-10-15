@@ -4,7 +4,7 @@
 
 - [rustup](https://rustup.rs). The toolchain version comes from `backend/rust-toolchain.toml`.
 - The cargo tools: `make tools` installs cargo-nextest, cargo-llvm-cov, cargo-deny and cargo-shear.
-- Node 24, as pinned in `.nvmrc`.
+- Node 26, as pinned in `.nvmrc`.
 - Docker, for the backend tests (they query a Postgres sample database even when the metadata database is SQLite), the end-to-end suite and the image tests.
 - [prek](https://github.com/j178/prek), which runs the git hooks.
 
