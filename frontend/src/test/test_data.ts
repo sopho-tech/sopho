@@ -59,6 +59,9 @@ export const POSTGRES_CONNECTION: ConnectionDto = {
   updated_at: "2026-10-01T09:00:00Z",
 };
 
+export const SSE_TEST_STREAM_URL =
+  "http://localhost/api/v1/conversational_analytics/stream";
+
 export const CANVAS_ID = "00000000-0000-4000-8000-000000000201";
 export const NOTEBOOK_ID = "00000000-0000-4000-8000-000000000301";
 export const DASHBOARD_ID = "00000000-0000-4000-8000-000000000501";

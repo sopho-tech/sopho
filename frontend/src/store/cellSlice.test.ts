@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { ExecutionState } from "src/components/Notebook/Cell/dto";
 import { useStore } from "src/store";
+import { SQL_CELL } from "src/test/test_data";
 
 const initialStoreState = useStore.getState();
-const CELL_ID = "5f3b5c3e-4b8e-4f43-9a51-9a2d6a4c1b01";
 
 describe("cell slice", () => {
   beforeEach(() => {
@@ -17,32 +17,36 @@ describe("cell slice", () => {
   });
 
   test("records when a cell starts running", () => {
-    useStore.getState().cell.setExecutionState(CELL_ID, ExecutionState.RUNNING);
+    useStore
+      .getState()
+      .cell.setExecutionState(SQL_CELL.id, ExecutionState.RUNNING);
 
     const cell = useStore.getState().cell;
-    expect(cell.executionStates[CELL_ID]).toBe(ExecutionState.RUNNING);
-    expect(cell.startedAt[CELL_ID]).toBe(Date.parse("2026-10-15T10:00:00Z"));
+    expect(cell.executionStates[SQL_CELL.id]).toBe(ExecutionState.RUNNING);
+    expect(cell.startedAt[SQL_CELL.id]).toBe(
+      Date.parse("2026-10-15T10:00:00Z"),
+    );
   });
 
   test("forgets the start time once the cell finishes", () => {
     const cell = useStore.getState().cell;
-    cell.setExecutionState(CELL_ID, ExecutionState.RUNNING);
-    cell.setExecutionState(CELL_ID, ExecutionState.COMPLETED);
+    cell.setExecutionState(SQL_CELL.id, ExecutionState.RUNNING);
+    cell.setExecutionState(SQL_CELL.id, ExecutionState.COMPLETED);
 
     const finishedCell = useStore.getState().cell;
-    expect(finishedCell.executionStates[CELL_ID]).toBe(
+    expect(finishedCell.executionStates[SQL_CELL.id]).toBe(
       ExecutionState.COMPLETED,
     );
-    expect(finishedCell.startedAt[CELL_ID]).toBeUndefined();
+    expect(finishedCell.startedAt[SQL_CELL.id]).toBeUndefined();
   });
 
   test("clears both the state and the start time", () => {
     const cell = useStore.getState().cell;
-    cell.setExecutionState(CELL_ID, ExecutionState.RUNNING);
-    cell.clearExecutionState(CELL_ID);
+    cell.setExecutionState(SQL_CELL.id, ExecutionState.RUNNING);
+    cell.clearExecutionState(SQL_CELL.id);
 
     const clearedCell = useStore.getState().cell;
-    expect(clearedCell.executionStates[CELL_ID]).toBeUndefined();
-    expect(clearedCell.startedAt[CELL_ID]).toBeUndefined();
+    expect(clearedCell.executionStates[SQL_CELL.id]).toBeUndefined();
+    expect(clearedCell.startedAt[SQL_CELL.id]).toBeUndefined();
   });
 });

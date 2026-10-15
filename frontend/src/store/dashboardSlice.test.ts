@@ -5,10 +5,9 @@ import {
   type DashboardDto,
 } from "src/components/Dashboard/dto";
 import { DashboardMode, useStore } from "src/store";
+import { CHART_CELL, NOTEBOOK_ID } from "src/test/test_data";
 
 const initialStoreState = useStore.getState();
-const CELL_ID = "0d1f2e3c-4b5a-4968-8776-655443322110";
-const NOTEBOOK_ID = "1e2f3a4b-5c6d-4e7f-8091-a2b3c4d5e6f7";
 
 function dashboardWithLayout(layout: DashboardDto["layout"]): DashboardDto {
   return {
@@ -29,7 +28,7 @@ describe("dashboard slice", () => {
     useStore.getState().dashboard.resetFromBackendData(
       dashboardWithLayout([
         {
-          cell_id: CELL_ID,
+          cell_id: CHART_CELL.id,
           notebook_id: NOTEBOOK_ID,
           x_position: 2,
           y_position: 1,
@@ -41,7 +40,7 @@ describe("dashboard slice", () => {
 
     expect(useStore.getState().dashboard.layout).toEqual([
       {
-        i: CELL_ID,
+        i: CHART_CELL.id,
         x: 2,
         y: 1,
         w: 6,
@@ -54,7 +53,7 @@ describe("dashboard slice", () => {
 
   test("keeps the current layout when the backend has none", () => {
     const dashboard = useStore.getState().dashboard;
-    dashboard.setLayout([{ i: CELL_ID, x: 0, y: 0, w: 4, h: 3 }]);
+    dashboard.setLayout([{ i: CHART_CELL.id, x: 0, y: 0, w: 4, h: 3 }]);
 
     dashboard.resetFromBackendData(dashboardWithLayout(undefined));
 

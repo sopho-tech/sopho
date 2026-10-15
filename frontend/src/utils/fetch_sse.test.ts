@@ -1,9 +1,8 @@
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
 import { server } from "src/test/msw/node_server";
+import { SSE_TEST_STREAM_URL } from "src/test/test_data";
 import { streamSse } from "src/utils/fetch_sse";
-
-const STREAM_URL = "http://localhost/api/v1/conversational_analytics/stream";
 
 function eventStreamResponse(chunks: string[]) {
   const encoder = new TextEncoder();
@@ -21,9 +20,13 @@ function eventStreamResponse(chunks: string[]) {
 }
 
 async function collectMessages(chunks: string[]) {
-  server.use(http.get(STREAM_URL, () => eventStreamResponse(chunks)));
+  server.use(http.get(SSE_TEST_STREAM_URL, () => eventStreamResponse(chunks)));
   const messages: string[] = [];
-  await streamSse(STREAM_URL, {}, { onMessage: (data) => messages.push(data) });
+  await streamSse(
+    SSE_TEST_STREAM_URL,
+    {},
+    { onMessage: (data) => messages.push(data) },
+  );
   return messages;
 }
 
@@ -57,26 +60,28 @@ describe("streamSse", () => {
 
   test("rejects with the server's error message when the response fails", async () => {
     server.use(
-      http.get(STREAM_URL, () =>
+      http.get(SSE_TEST_STREAM_URL, () =>
         HttpResponse.json({ error: "AI is not configured" }, { status: 403 }),
       ),
     );
 
     await expect(
-      streamSse(STREAM_URL, {}, { onMessage: () => undefined }),
+      streamSse(SSE_TEST_STREAM_URL, {}, { onMessage: () => undefined }),
     ).rejects.toThrow("AI is not configured");
   });
 
   test("returns without delivering events when the request is aborted", async () => {
     server.use(
-      http.get(STREAM_URL, () => eventStreamResponse(["data: late\n\n"])),
+      http.get(SSE_TEST_STREAM_URL, () =>
+        eventStreamResponse(["data: late\n\n"]),
+      ),
     );
     const abortController = new AbortController();
     abortController.abort();
     const messages: string[] = [];
 
     await streamSse(
-      STREAM_URL,
+      SSE_TEST_STREAM_URL,
       { signal: abortController.signal },
       { onMessage: (data) => messages.push(data) },
     );
