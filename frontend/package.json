@@ -59,7 +59,7 @@
     "codemirror": "^6.0.2",
     "dayjs": "^1.11.23",
     "lodash.debounce": "^4.0.8",
-    "lucide-react": "^0.554.0",
+    "lucide-react": "^1.55.0",
     "material-symbols": "^0.47.6",
     "motion": "^14.0.0",
     "react": "^19.3.0",
