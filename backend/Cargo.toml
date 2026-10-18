@@ -19,7 +19,7 @@ todo = "warn"
 unsafe_code = "deny"
 
 [dependencies]
-aes-gcm = "0.10.3"
+aes-gcm = "0.11.1"
 anyhow = "1.0.97"
 argon2 = "0.5.3"
 axum = { version = "0.8.1", features = ["json"] }
