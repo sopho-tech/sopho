@@ -1,6 +1,12 @@
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString, IntoStaticStr, VariantArray};
 
+pub const ACCESS_TOKEN_REQUIRED_MESSAGE: &str = "Access token required";
+pub const INVALID_ACCESS_TOKEN_MESSAGE: &str = "Invalid access token";
+pub const ACCESS_TOKEN_EXPIRED_MESSAGE: &str = "Access token expired";
+pub const MEMBERSHIP_SUSPENDED_MESSAGE: &str = "Membership suspended";
+pub const TENANT_NOT_FOUND_MESSAGE: &str = "Tenant not found";
+
 #[derive(
     Debug,
     Clone,
