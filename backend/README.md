@@ -16,7 +16,7 @@
 
 ## Serving Frontend
 
-1. The location `FRONTEND_DIR` in the `.env` file should point to the directory containing the frontend build.
+1. The location `SOPHO_FRONTEND_DIR` in the `.env` file should point to the directory containing the frontend build.
 2. The frontend build should be in the `dist` directory.
 3. The backend will serve the frontend build at `/`.
 

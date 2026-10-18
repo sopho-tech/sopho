@@ -1,3 +1,4 @@
+use crate::common::constants::EnvironmentVariable;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -130,4 +131,81 @@ pub enum SophoError {
     JsonError(#[from] serde_json::Error),
     #[error("Unsupported cell type for content parsing")]
     UnsupportedCellType,
+}
+
+#[derive(Debug, Error)]
+pub enum ConfigurationError {
+    #[error("missing {variable}")]
+    MissingEnvironmentVariable { variable: EnvironmentVariable },
+    #[error("invalid {variable}")]
+    InvalidEnvironmentVariable {
+        variable: EnvironmentVariable,
+        #[source]
+        source: std::env::VarError,
+    },
+    #[error("invalid {variable} {value:?}", variable = EnvironmentVariable::Port)]
+    InvalidPort {
+        value: String,
+        #[source]
+        source: std::num::ParseIntError,
+    },
+    #[error("invalid {variable} {value:?}", variable = EnvironmentVariable::SophoCookieSecure)]
+    InvalidCookieSecure {
+        value: String,
+        #[source]
+        source: std::str::ParseBoolError,
+    },
+    #[error("could not read the encryption key from {path}")]
+    UnreadableEncryptionKeyFile {
+        path: &'static str,
+        #[source]
+        source: std::io::Error,
+    },
+    #[error("could not store a generated encryption key at {path}")]
+    UnwritableEncryptionKeyFile {
+        path: &'static str,
+        #[source]
+        source: std::io::Error,
+    },
+    #[error(transparent)]
+    InvalidBaseUrl { source: BaseUrlError },
+    #[error("{setting} is required")]
+    MissingSetting { setting: EnvironmentVariable },
+    #[error("invalid {variable_name}")]
+    InvalidOidcVariable {
+        variable_name: String,
+        #[source]
+        source: std::env::VarError,
+    },
+    #[error("OIDC provider name {name:?} may only contain letters, digits and dashes")]
+    InvalidOidcProviderName { name: String },
+    #[error("OIDC provider {name:?} is listed twice in {variable}", variable = EnvironmentVariable::SophoOidcProviders)]
+    DuplicateOidcProvider { name: String },
+    #[error("missing {variable_name} for OIDC provider {provider_name}")]
+    MissingOidcProviderVariable {
+        variable_name: String,
+        provider_name: String,
+    },
+}
+
+impl From<BaseUrlError> for ConfigurationError {
+    fn from(source: BaseUrlError) -> Self {
+        ConfigurationError::InvalidBaseUrl { source }
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum BaseUrlError {
+    #[error("invalid {setting_name} {base_url}")]
+    Unparsable {
+        setting_name: String,
+        base_url: String,
+        #[source]
+        source: http::uri::InvalidUri,
+    },
+    #[error("invalid {setting_name} {base_url}: expected an http or https URL")]
+    NotHttp {
+        setting_name: String,
+        base_url: String,
+    },
 }

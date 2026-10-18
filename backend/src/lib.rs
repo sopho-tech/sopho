@@ -26,6 +26,7 @@ mod search;
 mod suggested_question;
 mod tenant;
 
+pub use crate::common::constants::EnvironmentVariable;
 pub use crate::common::{
     AppState, Configurations, ConfigurationsBuilder, OidcProviderConfiguration,
 };

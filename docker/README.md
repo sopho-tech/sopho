@@ -17,12 +17,12 @@ Set the env variables and execute the docker run command. For example:
 docker run -d -p 8000:8000 \
   --name sopho \
   -e DATABASE_URL="postgresql://admin:password@localhost:5432/sopho" \
-  -e FRONTEND_DIR="/app/frontend/dist/" \
-  -e ENVIRONMENT="production" \
-  -e COOKIE_SECURE="false" \
-  -e ADMIN_USERNAME="admin" \
-  -e ADMIN_PASSWORD="password" \
-  -e ADMIN_EMAIL="admin@admin.com" \
-  -e ADMIN_FULL_NAME="admin admin" \
+  -e SOPHO_FRONTEND_DIR="/app/frontend/dist/" \
+  -e SOPHO_ENVIRONMENT="production" \
+  -e SOPHO_COOKIE_SECURE="false" \
+  -e SOPHO_ADMIN_USERNAME="admin" \
+  -e SOPHO_ADMIN_PASSWORD="password" \
+  -e SOPHO_ADMIN_EMAIL="admin@admin.com" \
+  -e SOPHO_ADMIN_FULL_NAME="admin admin" \
   sopho:latest
 ```

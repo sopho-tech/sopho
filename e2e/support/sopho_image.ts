@@ -55,17 +55,20 @@ export function requiredEnvironmentVariable(name: string): string {
 
 export function readmeEnvironment(): Record<string, string> {
   return {
-    ADMIN_USERNAME,
-    ADMIN_PASSWORD,
-    ADMIN_EMAIL,
-    ADMIN_FULL_NAME,
+    SOPHO_ADMIN_USERNAME: ADMIN_USERNAME,
+    SOPHO_ADMIN_PASSWORD: ADMIN_PASSWORD,
+    SOPHO_ADMIN_EMAIL: ADMIN_EMAIL,
+    SOPHO_ADMIN_FULL_NAME: ADMIN_FULL_NAME,
   };
 }
 
 export function upgradeEnvironment(
   databaseUrl: string | null,
 ): Record<string, string> {
-  const environment = { ...readmeEnvironment(), ENCRYPTION_KEY };
+  const environment = {
+    ...readmeEnvironment(),
+    SOPHO_ENCRYPTION_KEY: ENCRYPTION_KEY,
+  };
   return databaseUrl === null
     ? environment
     : { ...environment, DATABASE_URL: databaseUrl };

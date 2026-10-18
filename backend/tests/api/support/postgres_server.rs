@@ -2,7 +2,7 @@ use crate::support::constants::{
     POSTGRES_ADMIN_DATABASE, POSTGRES_CONTAINER_NAME, POSTGRES_IMAGE_NAME, POSTGRES_IMAGE_TAG,
     POSTGRES_PASSWORD, POSTGRES_PORT, POSTGRES_READY_MESSAGE, POSTGRES_READY_POLL_MILLISECONDS,
     POSTGRES_READY_TIMEOUT_SECONDS, POSTGRES_STARTUP_LOCK_FILE_NAME, POSTGRES_USER,
-    TEST_POSTGRES_URL_VARIABLE,
+    TestEnvironmentVariable,
 };
 use percent_encoding::percent_decode_str;
 use sqlx::{Connection, Executor, PgConnection};
@@ -42,37 +42,37 @@ impl PostgresServer {
 }
 
 fn decoded_url_part(encoded_part: &str, part_name: &str) -> String {
+    let variable = TestEnvironmentVariable::TestPostgresUrl;
     percent_decode_str(encoded_part)
         .decode_utf8()
-        .unwrap_or_else(|error| {
-            panic!("the {part_name} in {TEST_POSTGRES_URL_VARIABLE} is not UTF-8: {error}")
-        })
+        .unwrap_or_else(|error| panic!("the {part_name} in {variable} is not UTF-8: {error}"))
         .into_owned()
 }
 
 fn postgres_server_from_url(url: &str) -> PostgresServer {
-    let parsed_url = reqwest::Url::parse(url)
-        .unwrap_or_else(|error| panic!("{TEST_POSTGRES_URL_VARIABLE} is not a URL: {error}"));
+    let variable = TestEnvironmentVariable::TestPostgresUrl;
+    let parsed_url =
+        reqwest::Url::parse(url).unwrap_or_else(|error| panic!("{variable} is not a URL: {error}"));
     let username = decoded_url_part(parsed_url.username(), "username");
     if username.is_empty() {
-        panic!("{TEST_POSTGRES_URL_VARIABLE} must include a username");
+        panic!("{variable} must include a username");
     }
     let password = decoded_url_part(
         parsed_url
             .password()
-            .unwrap_or_else(|| panic!("{TEST_POSTGRES_URL_VARIABLE} must include a password")),
+            .unwrap_or_else(|| panic!("{variable} must include a password")),
         "password",
     );
     let admin_database = decoded_url_part(parsed_url.path().trim_start_matches('/'), "database");
     if admin_database.is_empty() {
         panic!(
-            "{TEST_POSTGRES_URL_VARIABLE} must name the database the tests connect to when they create their own databases"
+            "{variable} must name the database the tests connect to when they create their own databases"
         );
     }
     PostgresServer {
         host: parsed_url
             .host_str()
-            .unwrap_or_else(|| panic!("{TEST_POSTGRES_URL_VARIABLE} has no host"))
+            .unwrap_or_else(|| panic!("{variable} has no host"))
             .to_string(),
         port: parsed_url.port().unwrap_or(POSTGRES_PORT),
         username,
@@ -144,7 +144,8 @@ impl Drop for PostgresDatabase {
 }
 
 async fn start_or_reuse_postgres_server() -> PostgresServer {
-    if let Ok(url) = std::env::var(TEST_POSTGRES_URL_VARIABLE) {
+    let variable = TestEnvironmentVariable::TestPostgresUrl;
+    if let Ok(url) = std::env::var(variable.as_ref()) {
         let server = postgres_server_from_url(&url);
         wait_until_ready(&server.admin_url()).await;
         return server;
@@ -170,7 +171,7 @@ async fn start_or_reuse_postgres_server() -> PostgresServer {
         .await
         .unwrap_or_else(|error| {
             panic!(
-                "Postgres-backed tests need a running Docker daemon (set DOCKER_HOST for OrbStack or colima) or {TEST_POSTGRES_URL_VARIABLE} pointing at a Postgres server: {error}"
+                "Postgres-backed tests need a running Docker daemon (set DOCKER_HOST for OrbStack or colima) or {variable} pointing at a Postgres server: {error}"
             )
         });
     let server = PostgresServer {

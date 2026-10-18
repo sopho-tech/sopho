@@ -137,7 +137,7 @@ export function Members() {
       {canInvite && providers.data && providers.data.length === 0 && (
         <BannerSlim
           type="info"
-          message="Inviting people needs a single sign-on provider, because invitees join by signing in with it. Configure one with the OIDC_PROVIDERS setting."
+          message="Inviting people needs a single sign-on provider, because invitees join by signing in with it. Configure one with the SOPHO_OIDC_PROVIDERS setting."
         />
       )}
       {canInvite &&

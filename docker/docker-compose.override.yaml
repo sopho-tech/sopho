@@ -7,13 +7,13 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://admin:password@db:5432/sopho
-      - FRONTEND_DIR=/app/frontend/dist/
-      - ENVIRONMENT=production
-      - COOKIE_SECURE=false
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=password
-      - ADMIN_EMAIL=admin@admin.com
-      - ADMIN_FULL_NAME=admin admin
+      - SOPHO_FRONTEND_DIR=/app/frontend/dist/
+      - SOPHO_ENVIRONMENT=production
+      - SOPHO_COOKIE_SECURE=false
+      - SOPHO_ADMIN_USERNAME=admin
+      - SOPHO_ADMIN_PASSWORD=password
+      - SOPHO_ADMIN_EMAIL=admin@admin.com
+      - SOPHO_ADMIN_FULL_NAME=admin admin
     depends_on:
       - db
     networks:

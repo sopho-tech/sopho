@@ -4,7 +4,7 @@ description: Configure Sopho using various properties
 icon: Cog
 ---
 
-The following environment variables are available to configure Sopho for different requirements.
+The following environment variables are available to configure Sopho for different requirements. Sopho's own variables start with `SOPHO_`; `DATABASE_URL`, `PORT` and `RUST_LOG` keep the names that hosting platforms and Rust tooling use.
 
 ## DATABASE_URL
 
@@ -30,15 +30,19 @@ If the environment variable is not set, Sopho uses SQLite as the database by def
 
 Used for setting the network port on which Sopho will run. If the environment variable is not set, it uses the port `8000` by default.
 
-## FRONTEND_DIR
+## SOPHO_FRONTEND_DIR
 
 Path to the directory containing the frontend build, which Sopho serves at `/`. The Docker image sets it to `/app/frontend/dist/`. Sopho fails to start if it is not set, so set it when running the binary outside the image.
 
-## COOKIE_SECURE
+## SOPHO_ENVIRONMENT
+
+Set to `development` only when developing Sopho locally: the API then accepts cross-origin browser requests, with cookies, from `http://localhost`. Any other value allows no cross-origin requests. Defaults to `production`.
+
+## SOPHO_COOKIE_SECURE
 
 When enabled, session cookies are marked with the Secure attribute and sent only over HTTPS. Set to `true` when serving Sopho over HTTPS (e.g. in production). Keep `false` when serving over HTTP. Defaults to `false`. See [MDN](https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/Cookies#secure) for details.
 
-## ENCRYPTION_KEY
+## SOPHO_ENCRYPTION_KEY
 
 It is used for encrypting sensitive data stored in Sopho's database such as credentials for different [Connections](/connections).
 
@@ -52,23 +56,54 @@ openssl rand -base64 32
 
 The output of the above command can be set as the value of the environment variable.
 
-## ANTHROPIC_BASE_URL
+## SOPHO_ANTHROPIC_BASE_URL
 
-Base URL for requests to Anthropic. Leave it unset to use Anthropic's API. Set it to send requests through a proxy or a compatible endpoint; Sopho calls `<ANTHROPIC_BASE_URL>/v1/messages`.
+Base URL for requests to Anthropic. Leave it unset to use Anthropic's API. Set it to send requests through a proxy or a compatible endpoint; Sopho calls `<SOPHO_ANTHROPIC_BASE_URL>/v1/messages`.
 
-## OPENAI_BASE_URL
+## SOPHO_OPENAI_BASE_URL
 
-Base URL for requests to OpenAI, including the version path. Leave it unset to use OpenAI's API (`https://api.openai.com/v1`). Set it to send requests through a proxy or a compatible endpoint; Sopho calls `<OPENAI_BASE_URL>/chat/completions`.
+Base URL for requests to OpenAI, including the version path. Leave it unset to use OpenAI's API (`https://api.openai.com/v1`). Set it to send requests through a proxy or a compatible endpoint; Sopho calls `<SOPHO_OPENAI_BASE_URL>/chat/completions`.
+
+## RUST_LOG
+
+Controls how much Sopho logs, using the [tracing filter syntax](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html#directives), for example `info` or `sopho=info,tower_http=warn`. Defaults to `sopho=debug,tower_http=debug`.
 
 ## Admin Credentials
 
 The first time Sopho runs, the following four environment variables are used to seed the initial admin user so you can log in after bootup. The application fails to start if any of these are not set.
 
-| Variable          | Purpose                                                 |
-| ----------------- | ------------------------------------------------------- |
-| `ADMIN_USERNAME`  | Login username for the admin account                    |
-| `ADMIN_PASSWORD`  | Password for the admin account                          |
-| `ADMIN_EMAIL`     | Email used to identify the admin and enforce uniqueness |
-| `ADMIN_FULL_NAME` | Display name for the admin user                         |
+| Variable                | Purpose                                                 |
+| ----------------------- | ------------------------------------------------------- |
+| `SOPHO_ADMIN_USERNAME`  | Login username for the admin account                    |
+| `SOPHO_ADMIN_PASSWORD`  | Password for the admin account                          |
+| `SOPHO_ADMIN_EMAIL`     | Email used to identify the admin and enforce uniqueness |
+| `SOPHO_ADMIN_FULL_NAME` | Display name for the admin user                         |
 
 Use a strong password in production.
+
+## Single Sign-On
+
+People can sign in through any OpenID Connect provider, such as Google, Microsoft Entra ID or Okta. Without a provider, Sopho offers password sign-in only, and nobody can be invited to a workspace, because invitees join by signing in through a provider.
+
+`SOPHO_OIDC_PROVIDERS` lists the providers, separated by commas, for example `google,okta`. A name may contain letters, digits and dashes. Each provider then needs the following five variables, where `<NAME>` is the provider name in upper case with dashes turned into underscores (`my-idp` becomes `MY_IDP`). Sopho fails to start if any of them is missing.
+
+| Variable                          | Purpose                                                                                               |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `SOPHO_OIDC_<NAME>_DISPLAY_NAME`  | Label of the sign-in button, for example `Google`                                                     |
+| `SOPHO_OIDC_<NAME>_ISSUER_URL`    | The provider's issuer URL. Sopho reads its settings from `<issuer>/.well-known/openid-configuration`  |
+| `SOPHO_OIDC_<NAME>_CLIENT_ID`     | Client ID of the application registered with the provider                                             |
+| `SOPHO_OIDC_<NAME>_CLIENT_SECRET` | Client secret of that application                                                                     |
+| `SOPHO_OIDC_<NAME>_REDIRECT_URI`  | `https://<your Sopho host>/api/v1/auth/oidc/<name>/callback`. Register the same URI with the provider |
+
+Sopho asks for the `openid`, `email` and `profile` scopes. The provider must return the person's email, marked as verified, and their name. Someone signing in for the first time gets an account without a workspace and joins workspaces by accepting invitations. An email that already belongs to an account with a password, such as the admin's, can't be used to sign in through a provider.
+
+For example, for Google:
+
+```bash
+SOPHO_OIDC_PROVIDERS=google
+SOPHO_OIDC_GOOGLE_DISPLAY_NAME=Google
+SOPHO_OIDC_GOOGLE_ISSUER_URL=https://accounts.google.com
+SOPHO_OIDC_GOOGLE_CLIENT_ID=<client id>
+SOPHO_OIDC_GOOGLE_CLIENT_SECRET=<client secret>
+SOPHO_OIDC_GOOGLE_REDIRECT_URI=https://sopho.example.com/api/v1/auth/oidc/google/callback
+```

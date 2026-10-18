@@ -1,3 +1,5 @@
+use strum::{AsRefStr, Display};
+
 pub const API_PREFIX: &str = "/api/v1";
 pub const TENANT_PATH_SEGMENT: &str = "tenant";
 pub const TENANT_SCOPED_ROUTE_GROUPS: [&str; 13] = [
@@ -27,8 +29,12 @@ pub const AI_PROVIDER_API_KEY: &str = "fake-llm-api-key";
 pub const ACCESS_TOKEN_COOKIE: &str = "ACCESS_TOKEN";
 pub const REFRESH_TOKEN_COOKIE: &str = "REFRESH_TOKEN";
 
-pub const TEST_DATABASE_VARIABLE: &str = "TEST_DB";
-pub const TEST_POSTGRES_URL_VARIABLE: &str = "TEST_POSTGRES_URL";
+#[derive(Debug, Clone, Copy, PartialEq, Eq, AsRefStr, Display)]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
+pub enum TestEnvironmentVariable {
+    TestDb,
+    TestPostgresUrl,
+}
 
 pub const POSTGRES_IMAGE_NAME: &str = "postgres";
 pub const POSTGRES_IMAGE_TAG: &str = "17";

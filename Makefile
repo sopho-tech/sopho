@@ -19,10 +19,9 @@ install:
 run:
 	@echo "Starting backend server..."
 	cd backend && \
-	ENVIRONMENT="development" \
-	COOKIE_DOMAIN="localhost" \
-	COOKIE_SECURE="false" \
-	FRONTEND_DIR="../frontend/dist" \
+	SOPHO_ENVIRONMENT="development" \
+	SOPHO_COOKIE_SECURE="false" \
+	SOPHO_FRONTEND_DIR="../frontend/dist" \
 	cargo run --release
 
 # Dev: Run frontend and backend as separate processes
@@ -30,10 +29,9 @@ dev:
 	@echo "Starting backend and frontend in development mode..."
 	@trap 'kill 0' EXIT; \
 	(cd backend && \
-	ENVIRONMENT="development" \
-	COOKIE_DOMAIN="localhost" \
-	COOKIE_SECURE="false" \
-	FRONTEND_DIR="../frontend/dist" \
+	SOPHO_ENVIRONMENT="development" \
+	SOPHO_COOKIE_SECURE="false" \
+	SOPHO_FRONTEND_DIR="../frontend/dist" \
 	cargo run) & \
 	(cd frontend && \
 	VITE_API_HOSTNAME=http://localhost:8000 \

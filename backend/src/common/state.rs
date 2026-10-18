@@ -1,21 +1,19 @@
 use crate::ai::agent_utils::ModelClient;
 use crate::ai_configuration;
 use crate::authorization::dto::TenantId;
-use crate::common::constants::{
-    OIDC_CLIENT_ID_SUFFIX, OIDC_CLIENT_SECRET_SUFFIX, OIDC_DISPLAY_NAME_SUFFIX,
-    OIDC_ISSUER_URL_SUFFIX, OIDC_PROVIDER_VARIABLE_PREFIX, OIDC_PROVIDERS_VARIABLE,
-    OIDC_REDIRECT_URI_SUFFIX,
-};
+use crate::common::constants::{EnvironmentVariable, OidcProviderVariable};
 use crate::common::cryptography_utils::{
-    generate_and_store_encryption_key, get_encryption_key_from_path,
+    SECRET_KEY_PATH, generate_and_store_encryption_key, get_encryption_key_from_path,
 };
+use crate::common::errors::ConfigurationError;
+use crate::common::url_utils::validated_base_url;
 use crate::database::pool::{DatabasePoolRegistry, new_database_pool_registry};
 use crate::db;
-use anyhow::bail;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::env::VarError;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::warn;
@@ -32,9 +30,10 @@ pub struct OidcProviderConfiguration {
 }
 
 pub fn oidc_providers_from_variables(
-    read_variable: impl Fn(&str) -> Option<String>,
-) -> anyhow::Result<Vec<OidcProviderConfiguration>> {
-    let Some(provider_list) = read_variable(OIDC_PROVIDERS_VARIABLE) else {
+    read_variable: impl Fn(&str) -> Result<Option<String>, ConfigurationError>,
+) -> Result<Vec<OidcProviderConfiguration>, ConfigurationError> {
+    let Some(provider_list) = read_variable(EnvironmentVariable::SophoOidcProviders.as_ref())?
+    else {
         return Ok(Vec::new());
     };
 
@@ -48,29 +47,28 @@ pub fn oidc_providers_from_variables(
             .chars()
             .all(|character| character.is_ascii_alphanumeric() || character == '-');
         if !is_url_safe {
-            bail!("OIDC provider name {name:?} may only contain letters, digits and dashes");
+            return Err(ConfigurationError::InvalidOidcProviderName { name });
         }
         if providers.iter().any(|provider| provider.name == name) {
-            bail!("OIDC provider {name:?} is listed twice in {OIDC_PROVIDERS_VARIABLE}");
+            return Err(ConfigurationError::DuplicateOidcProvider { name });
         }
 
-        let variable_prefix = format!(
-            "{OIDC_PROVIDER_VARIABLE_PREFIX}{}",
-            name.to_uppercase().replace('-', "_")
-        );
-        let required = |suffix: &str| -> anyhow::Result<String> {
-            let variable = format!("{variable_prefix}{suffix}");
-            read_variable(&variable)
+        let required = |variable: OidcProviderVariable| -> Result<String, ConfigurationError> {
+            let variable_name = variable.name_for_provider(&name);
+            read_variable(&variable_name)?
                 .map(|value| value.trim().to_string())
                 .filter(|value| !value.is_empty())
-                .ok_or_else(|| anyhow::anyhow!("missing {variable} for OIDC provider {name}"))
+                .ok_or_else(|| ConfigurationError::MissingOidcProviderVariable {
+                    provider_name: name.clone(),
+                    variable_name,
+                })
         };
         providers.push(OidcProviderConfiguration {
-            display_name: required(OIDC_DISPLAY_NAME_SUFFIX)?,
-            issuer_url: required(OIDC_ISSUER_URL_SUFFIX)?,
-            client_id: required(OIDC_CLIENT_ID_SUFFIX)?,
-            client_secret: required(OIDC_CLIENT_SECRET_SUFFIX)?,
-            redirect_uri: required(OIDC_REDIRECT_URI_SUFFIX)?,
+            display_name: required(OidcProviderVariable::DisplayName)?,
+            issuer_url: required(OidcProviderVariable::IssuerUrl)?,
+            client_id: required(OidcProviderVariable::ClientId)?,
+            client_secret: required(OidcProviderVariable::ClientSecret)?,
+            redirect_uri: required(OidcProviderVariable::RedirectUri)?,
             name,
         });
     }
@@ -194,34 +192,43 @@ impl ConfigurationsBuilder {
         self
     }
 
-    pub fn build(self) -> anyhow::Result<Configurations> {
+    pub fn build(self) -> Result<Configurations, ConfigurationError> {
         Ok(Configurations {
             database_url: self
                 .database_url
                 .unwrap_or_else(|| db::get_sqlite_database_file_path().into()),
             port: self.port.unwrap_or(8000),
-            frontend_dir: self
-                .frontend_dir
-                .ok_or_else(|| anyhow::anyhow!("frontend_dir is required"))?,
+            frontend_dir: required_setting(
+                self.frontend_dir,
+                EnvironmentVariable::SophoFrontendDir,
+            )?,
             environment: self.environment.unwrap_or(Cow::Borrowed("production")),
             cookie_secure: self.cookie_secure.unwrap_or(false),
-            encryption_key: self
-                .encryption_key
-                .ok_or_else(|| anyhow::anyhow!("encryption_key is required"))?,
-            admin_username: self
-                .admin_username
-                .ok_or_else(|| anyhow::anyhow!("admin_username is required"))?,
-            admin_password: self
-                .admin_password
-                .ok_or_else(|| anyhow::anyhow!("admin_password is required"))?,
-            admin_email: self
-                .admin_email
-                .ok_or_else(|| anyhow::anyhow!("admin_email is required"))?,
-            admin_full_name: self
-                .admin_full_name
-                .ok_or_else(|| anyhow::anyhow!("admin_full_name is required"))?,
-            anthropic_base_url: validated_base_url("anthropic_base_url", self.anthropic_base_url)?,
-            openai_base_url: validated_base_url("openai_base_url", self.openai_base_url)?,
+            encryption_key: required_setting(
+                self.encryption_key,
+                EnvironmentVariable::SophoEncryptionKey,
+            )?,
+            admin_username: required_setting(
+                self.admin_username,
+                EnvironmentVariable::SophoAdminUsername,
+            )?,
+            admin_password: required_setting(
+                self.admin_password,
+                EnvironmentVariable::SophoAdminPassword,
+            )?,
+            admin_email: required_setting(self.admin_email, EnvironmentVariable::SophoAdminEmail)?,
+            admin_full_name: required_setting(
+                self.admin_full_name,
+                EnvironmentVariable::SophoAdminFullName,
+            )?,
+            anthropic_base_url: validated_base_url(
+                EnvironmentVariable::SophoAnthropicBaseUrl.as_ref(),
+                self.anthropic_base_url,
+            )?,
+            openai_base_url: validated_base_url(
+                EnvironmentVariable::SophoOpenaiBaseUrl.as_ref(),
+                self.openai_base_url,
+            )?,
             oidc_providers: self.oidc_providers,
         })
     }
@@ -238,103 +245,128 @@ impl Configurations {
         ConfigurationsBuilder::new()
     }
 
-    pub fn from_env() -> anyhow::Result<Self> {
+    pub fn from_env() -> Result<Self, ConfigurationError> {
         dotenvy::dotenv().ok();
 
         Ok(Self {
-            database_url: match dotenvy::var("DATABASE_URL") {
-                Ok(url) => url.into(),
-                Err(_) => {
-                    let database_url = Cow::Owned(db::get_sqlite_database_file_path());
+            database_url: match optional_environment_variable(EnvironmentVariable::DatabaseUrl)? {
+                Some(database_url) => database_url,
+                None => {
                     warn!(
                         "Using SQLite as the database. This is not recommended for production use."
                     );
-                    database_url
+                    Cow::Owned(db::get_sqlite_database_file_path())
                 }
             },
-            port: match dotenvy::var("PORT") {
-                Ok(port) => port.parse()?,
-                _ => 8000,
+            port: match optional_environment_variable(EnvironmentVariable::Port)? {
+                Some(port) => port
+                    .parse()
+                    .map_err(|source| ConfigurationError::InvalidPort {
+                        value: port.to_string(),
+                        source,
+                    })?,
+                None => 8000,
             },
-            frontend_dir: match dotenvy::var("FRONTEND_DIR") {
-                Ok(v) => v.into(),
-                Err(err) => bail!("missing FRONTEND_DIR: {err}"),
-            },
-            environment: match dotenvy::var("ENVIRONMENT") {
-                Ok(environment) => environment.into(),
-                Err(_err) => Cow::Borrowed("production"),
-            },
-            cookie_secure: match dotenvy::var("COOKIE_SECURE") {
-                Ok(cookie_secure) => cookie_secure.parse()?,
-                Err(_err) => false,
-            },
-            encryption_key: match dotenvy::var("ENCRYPTION_KEY") {
-                Ok(v) => v.into(),
-                Err(_) => {
-                    if let Some(key) = get_encryption_key_from_path()? {
-                        key.into()
-                    } else {
-                        let (encryption_key, full_path) = generate_and_store_encryption_key()?;
-                        warn!(
-                            "Since ENCRYPTION_KEY is not provided, one is generated and stored at {}. This is not recommended for production use.",
-                            full_path
-                        );
-                        encryption_key.into()
+            frontend_dir: required_environment_variable(EnvironmentVariable::SophoFrontendDir)?,
+            environment: optional_environment_variable(EnvironmentVariable::SophoEnvironment)?
+                .unwrap_or(Cow::Borrowed("production")),
+            cookie_secure: match optional_environment_variable(
+                EnvironmentVariable::SophoCookieSecure,
+            )? {
+                Some(cookie_secure) => cookie_secure.parse().map_err(|source| {
+                    ConfigurationError::InvalidCookieSecure {
+                        value: cookie_secure.to_string(),
+                        source,
                     }
-                }
+                })?,
+                None => false,
             },
-            admin_username: match dotenvy::var("ADMIN_USERNAME") {
-                Ok(v) => v.into(),
-                Err(err) => bail!("missing ADMIN_USERNAME: {err}"),
+            encryption_key: match optional_environment_variable(
+                EnvironmentVariable::SophoEncryptionKey,
+            )? {
+                Some(encryption_key) => encryption_key,
+                None => stored_or_generated_encryption_key()?,
             },
-            admin_password: match dotenvy::var("ADMIN_PASSWORD") {
-                Ok(v) => v.into(),
-                Err(err) => bail!("missing ADMIN_PASSWORD: {err}"),
-            },
-            admin_email: match dotenvy::var("ADMIN_EMAIL") {
-                Ok(v) => v.into(),
-                Err(err) => bail!("missing ADMIN_EMAIL: {err}"),
-            },
-            admin_full_name: match dotenvy::var("ADMIN_FULL_NAME") {
-                Ok(v) => v.into(),
-                Err(err) => bail!("missing ADMIN_FULL_NAME: {err}"),
-            },
+            admin_username: required_environment_variable(EnvironmentVariable::SophoAdminUsername)?,
+            admin_password: required_environment_variable(EnvironmentVariable::SophoAdminPassword)?,
+            admin_email: required_environment_variable(EnvironmentVariable::SophoAdminEmail)?,
+            admin_full_name: required_environment_variable(
+                EnvironmentVariable::SophoAdminFullName,
+            )?,
             anthropic_base_url: validated_base_url(
-                "ANTHROPIC_BASE_URL",
-                optional_environment_variable("ANTHROPIC_BASE_URL")?,
+                EnvironmentVariable::SophoAnthropicBaseUrl.as_ref(),
+                optional_environment_variable(EnvironmentVariable::SophoAnthropicBaseUrl)?,
             )?,
             openai_base_url: validated_base_url(
-                "OPENAI_BASE_URL",
-                optional_environment_variable("OPENAI_BASE_URL")?,
+                EnvironmentVariable::SophoOpenaiBaseUrl.as_ref(),
+                optional_environment_variable(EnvironmentVariable::SophoOpenaiBaseUrl)?,
             )?,
-            oidc_providers: oidc_providers_from_variables(|variable| dotenvy::var(variable).ok())?,
+            oidc_providers: oidc_providers_from_variables(oidc_environment_variable)?,
         })
     }
 }
 
-fn validated_base_url(
-    setting_name: &str,
-    base_url: Option<Cow<'static, str>>,
-) -> anyhow::Result<Option<Cow<'static, str>>> {
-    let Some(base_url) = base_url else {
-        return Ok(None);
-    };
-    let parsed_base_url: http::Uri = base_url
-        .parse()
-        .map_err(|error| anyhow::anyhow!("invalid {setting_name} {base_url}: {error}"))?;
-    let uses_http_scheme = matches!(parsed_base_url.scheme_str(), Some("http" | "https"));
-    if !uses_http_scheme || parsed_base_url.authority().is_none() {
-        bail!("invalid {setting_name} {base_url}: expected an http or https URL");
-    }
-    Ok(Some(base_url))
+fn required_setting(
+    value: Option<Cow<'static, str>>,
+    setting: EnvironmentVariable,
+) -> Result<Cow<'static, str>, ConfigurationError> {
+    value.ok_or(ConfigurationError::MissingSetting { setting })
 }
 
-fn optional_environment_variable(name: &str) -> anyhow::Result<Option<Cow<'static, str>>> {
-    match dotenvy::var(name) {
-        Ok(value) => Ok(Some(value.into())),
-        Err(dotenvy::Error::EnvVar(std::env::VarError::NotPresent)) => Ok(None),
-        Err(err) => bail!("invalid {name}: {err}"),
+fn stored_or_generated_encryption_key() -> Result<Cow<'static, str>, ConfigurationError> {
+    let stored_key = get_encryption_key_from_path().map_err(|source| {
+        ConfigurationError::UnreadableEncryptionKeyFile {
+            path: SECRET_KEY_PATH,
+            source,
+        }
+    })?;
+    if let Some(stored_key) = stored_key {
+        return Ok(stored_key.into());
     }
+    let (encryption_key, full_path) = generate_and_store_encryption_key().map_err(|source| {
+        ConfigurationError::UnwritableEncryptionKeyFile {
+            path: SECRET_KEY_PATH,
+            source,
+        }
+    })?;
+    warn!(
+        "Since {} is not provided, one is generated and stored at {}. This is not recommended for production use.",
+        EnvironmentVariable::SophoEncryptionKey,
+        full_path
+    );
+    Ok(encryption_key.into())
+}
+
+fn oidc_environment_variable(variable_name: &str) -> Result<Option<String>, ConfigurationError> {
+    match std::env::var(variable_name) {
+        Ok(value) => Ok(Some(value)),
+        Err(VarError::NotPresent) => Ok(None),
+        Err(source) => Err(ConfigurationError::InvalidOidcVariable {
+            variable_name: variable_name.to_string(),
+            source,
+        }),
+    }
+}
+
+fn environment_variable(variable: EnvironmentVariable) -> Result<String, VarError> {
+    std::env::var(variable.as_ref())
+}
+
+fn optional_environment_variable(
+    variable: EnvironmentVariable,
+) -> Result<Option<Cow<'static, str>>, ConfigurationError> {
+    match environment_variable(variable) {
+        Ok(value) => Ok(Some(value.into())),
+        Err(VarError::NotPresent) => Ok(None),
+        Err(source) => Err(ConfigurationError::InvalidEnvironmentVariable { variable, source }),
+    }
+}
+
+fn required_environment_variable(
+    variable: EnvironmentVariable,
+) -> Result<Cow<'static, str>, ConfigurationError> {
+    optional_environment_variable(variable)?
+        .ok_or(ConfigurationError::MissingEnvironmentVariable { variable })
 }
 
 #[derive(Clone)]
@@ -398,24 +430,28 @@ impl AppState {
 #[cfg(test)]
 mod tests {
     use super::oidc_providers_from_variables;
+    use crate::common::errors::ConfigurationError;
     use std::collections::HashMap;
 
     fn variable_reader(
         variables: HashMap<&'static str, &'static str>,
-    ) -> impl Fn(&str) -> Option<String> {
-        move |variable: &str| variables.get(variable).map(|value| value.to_string())
+    ) -> impl Fn(&str) -> Result<Option<String>, ConfigurationError> {
+        move |variable: &str| Ok(variables.get(variable).map(|value| value.to_string()))
     }
 
     #[test]
     fn configured_providers_require_every_variable() {
         let complete: HashMap<&str, &str> = [
-            ("OIDC_PROVIDERS", " Google "),
-            ("OIDC_GOOGLE_DISPLAY_NAME", "Google"),
-            ("OIDC_GOOGLE_ISSUER_URL", "https://accounts.google.com"),
-            ("OIDC_GOOGLE_CLIENT_ID", "client-id"),
-            ("OIDC_GOOGLE_CLIENT_SECRET", "client-secret"),
+            ("SOPHO_OIDC_PROVIDERS", " Google "),
+            ("SOPHO_OIDC_GOOGLE_DISPLAY_NAME", "Google"),
             (
-                "OIDC_GOOGLE_REDIRECT_URI",
+                "SOPHO_OIDC_GOOGLE_ISSUER_URL",
+                "https://accounts.google.com",
+            ),
+            ("SOPHO_OIDC_GOOGLE_CLIENT_ID", "client-id"),
+            ("SOPHO_OIDC_GOOGLE_CLIENT_SECRET", "client-secret"),
+            (
+                "SOPHO_OIDC_GOOGLE_REDIRECT_URI",
                 "https://app.example/api/v1/auth/oidc/google/callback",
             ),
         ]
@@ -428,17 +464,23 @@ mod tests {
         assert_eq!(providers[0].client_secret, "client-secret");
 
         let mut missing_secret = complete.clone();
-        missing_secret.remove("OIDC_GOOGLE_CLIENT_SECRET");
+        missing_secret.remove("SOPHO_OIDC_GOOGLE_CLIENT_SECRET");
         let error = oidc_providers_from_variables(variable_reader(missing_secret)).unwrap_err();
-        assert!(error.to_string().contains("OIDC_GOOGLE_CLIENT_SECRET"));
+        assert!(
+            error
+                .to_string()
+                .contains("SOPHO_OIDC_GOOGLE_CLIENT_SECRET")
+        );
 
         let mut unsafe_name = complete.clone();
-        unsafe_name.insert("OIDC_PROVIDERS", "goo gle");
+        unsafe_name.insert("SOPHO_OIDC_PROVIDERS", "goo gle");
         assert!(oidc_providers_from_variables(variable_reader(unsafe_name)).is_err());
 
         assert!(
-            oidc_providers_from_variables(|_| None).unwrap().is_empty(),
-            "without OIDC_PROVIDERS only password sign-in is offered"
+            oidc_providers_from_variables(|_| Ok(None))
+                .unwrap()
+                .is_empty(),
+            "without SOPHO_OIDC_PROVIDERS only password sign-in is offered"
         );
     }
 }
