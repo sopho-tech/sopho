@@ -47,7 +47,7 @@ pub async fn start_login(
     provider_name: &str,
 ) -> Result<StartedLogin, OidcLoginError> {
     let provider = provider_configuration(app_state, provider_name)?;
-    let (client, _) = discover_client(provider).await?;
+    let (client, _) = build_oidc_client(provider).await?;
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
     let (authorization_url, csrf_token, nonce) = client
         .authorize_url(
@@ -236,7 +236,7 @@ fn provider_configuration<'a>(
         .ok_or_else(|| OidcLoginError::UnknownProvider(provider_name.to_string()))
 }
 
-async fn discover_client(
+async fn build_oidc_client(
     provider: &OidcProviderConfiguration,
 ) -> Result<(DiscoveredClient, openidconnect::reqwest::Client), OidcLoginError> {
     let http_client = openidconnect::reqwest::ClientBuilder::new()
@@ -264,7 +264,7 @@ async fn verified_claims(
     attempt: &oidc_login_attempt::Model,
     code: String,
 ) -> Result<VerifiedClaims, OidcLoginError> {
-    let (client, http_client) = discover_client(provider).await?;
+    let (client, http_client) = build_oidc_client(provider).await?;
     let token_response = client
         .exchange_code(AuthorizationCode::new(code))
         .map_err(|error| OidcLoginError::Provider(format!("token endpoint: {error}")))?
