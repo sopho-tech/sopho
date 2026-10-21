@@ -1,6 +1,7 @@
 use crate::authentication::constants::SessionStatus;
 use crate::common::time_utils;
 use crate::entity;
+use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DbErr, EntityTrait,
     QueryFilter,
@@ -72,6 +73,41 @@ pub async fn create_session(
     let session_active_model: entity::session::ActiveModel = session.into();
     let session_active_model = session_active_model.insert(db).await?;
     Ok(session_active_model)
+}
+
+pub async fn rotate_session_tokens(
+    db: &DatabaseConnection,
+    rotated_session: entity::session::Model,
+    presented_refresh_token_hash: String,
+) -> Result<Option<entity::session::Model>, DbErr> {
+    let rotated_rows = entity::session::Entity::update_many()
+        .col_expr(
+            entity::session::Column::AccessTokenHash,
+            Expr::value(rotated_session.access_token_hash.clone()),
+        )
+        .col_expr(
+            entity::session::Column::RefreshTokenHash,
+            Expr::value(rotated_session.refresh_token_hash.clone()),
+        )
+        .col_expr(
+            entity::session::Column::AccessTokenExpiresAt,
+            Expr::value(rotated_session.access_token_expires_at),
+        )
+        .col_expr(
+            entity::session::Column::RefreshTokenExpiresAt,
+            Expr::value(rotated_session.refresh_token_expires_at),
+        )
+        .col_expr(
+            entity::session::Column::UpdatedAt,
+            Expr::value(rotated_session.updated_at),
+        )
+        .filter(entity::session::Column::Id.eq(rotated_session.id))
+        .filter(entity::session::Column::RefreshTokenHash.eq(presented_refresh_token_hash))
+        .filter(entity::session::Column::Status.eq(SessionStatus::Active.as_str()))
+        .exec(db)
+        .await?
+        .rows_affected;
+    Ok((rotated_rows == 1).then_some(rotated_session))
 }
 
 pub async fn deactivate_session(

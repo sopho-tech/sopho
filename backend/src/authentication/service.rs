@@ -417,7 +417,15 @@ async fn create_new_session(app_state: &AppState, user_id: Uuid) -> Result<dto::
     )
     .await?;
 
-    Ok(dto::SessionDto {
+    Ok(build_session_dto(session, access_token, refresh_token))
+}
+
+fn build_session_dto(
+    session: entity::session::Model,
+    access_token: String,
+    refresh_token: String,
+) -> dto::SessionDto {
+    dto::SessionDto {
         id: session.id,
         user_id: session.user_id,
         refresh_token,
@@ -427,7 +435,7 @@ async fn create_new_session(app_state: &AppState, user_id: Uuid) -> Result<dto::
         status: session.status,
         created_at: session.created_at.with_timezone(&Utc),
         updated_at: session.updated_at.with_timezone(&Utc),
-    })
+    }
 }
 
 fn generate_refresh_token() -> String {
@@ -548,13 +556,7 @@ pub async fn refresh_token(cookies: Cookies, app_state: AppState) -> impl IntoRe
         Ok(sess) => sess,
         Err(e) => {
             tracing::error!("Failed to get session by refresh token: {:?}", e);
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({
-                    "message": "Unauthorized",
-                    "error_code": codes::INVALID_REFRESH_TOKEN.as_str()
-                })),
-            );
+            return invalid_refresh_token_response();
         }
     };
 
@@ -569,11 +571,14 @@ pub async fn refresh_token(cookies: Cookies, app_state: AppState) -> impl IntoRe
         );
     }
 
-    // Create new session
-    let session_dto = match create_new_session(&app_state, old_session.user_id).await {
-        Ok(session) => session,
+    let session_dto = match rotate_session_tokens(&app_state, old_session).await {
+        Ok(Some(session_dto)) => session_dto,
+        Ok(None) => {
+            tracing::warn!("Refresh token was already used to rotate its session");
+            return invalid_refresh_token_response();
+        }
         Err(e) => {
-            tracing::error!("Failed to create new session: {:?}", e);
+            tracing::error!("Failed to rotate session tokens: {:?}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({
@@ -583,10 +588,42 @@ pub async fn refresh_token(cookies: Cookies, app_state: AppState) -> impl IntoRe
         }
     };
 
-    // Set cookies with new tokens (both access and refresh tokens)
     set_session_cookies(&cookies, &session_dto, &app_state);
 
     (StatusCode::OK, Json(serde_json::json!(session_dto)))
+}
+
+fn invalid_refresh_token_response() -> (StatusCode, Json<serde_json::Value>) {
+    (
+        StatusCode::UNAUTHORIZED,
+        Json(serde_json::json!({
+            "message": "Unauthorized",
+            "error_code": codes::INVALID_REFRESH_TOKEN.as_str()
+        })),
+    )
+}
+
+async fn rotate_session_tokens(
+    app_state: &AppState,
+    session: entity::session::Model,
+) -> Result<Option<dto::SessionDto>, DbErr> {
+    let refresh_token = generate_refresh_token();
+    let access_token = generate_access_token();
+    let presented_refresh_token_hash = session.refresh_token_hash.clone();
+    let rotated_session = repository::rotate_session_tokens(
+        &app_state.database_connection,
+        entity::session::Model {
+            refresh_token_hash: token_utils::hash_token(&refresh_token),
+            access_token_hash: token_utils::hash_token(&access_token),
+            refresh_token_expires_at: time_utils::now_plus_days_into(REFRESH_TOKEN_EXPIRY_DAYS),
+            access_token_expires_at: time_utils::now_plus_hours_into(ACCESS_TOKEN_EXPIRY_HOURS),
+            updated_at: time_utils::now_utc_into(),
+            ..session
+        },
+        presented_refresh_token_hash,
+    )
+    .await?;
+    Ok(rotated_session.map(|session| build_session_dto(session, access_token, refresh_token)))
 }
 
 fn invalidate_session_cookie(cookies: &Cookies, name: CookieName, app_state: &AppState) {
