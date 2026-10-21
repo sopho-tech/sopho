@@ -13,7 +13,7 @@ import {
   useDeleteSession,
   usePlatformPermission,
   useSignedInUser,
-} from "src/api/auth_api";
+} from "src/api/auth/queries";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { PLATFORM_PERMISSIONS } from "src/constants/platform_permissions";
 import { CreateWorkspaceForm } from "src/components/Onboarding/CreateWorkspaceForm";

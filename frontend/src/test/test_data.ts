@@ -1,4 +1,4 @@
-import type { UserDto } from "src/api/auth_api";
+import type { UserDto } from "src/api/auth/queries";
 import {
   ActorKind,
   type AttributionDto,

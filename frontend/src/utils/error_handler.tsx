@@ -1,5 +1,5 @@
 import { Mutation, Query, QueryKey } from "@tanstack/react-query";
-import { authApi } from "src/api/auth_api";
+import { refreshSessionTokens } from "src/api/auth/queries";
 import { ApiError } from "src/api/dto";
 import { APP_ROUTES } from "src/constants/app_routes";
 
@@ -23,7 +23,7 @@ const refreshAndRetry = async (
   isRefreshing = true;
   failedQueue.push({ query, mutation, variables });
   try {
-    const isRefreshed = await authApi.refreshToken();
+    const isRefreshed = await refreshSessionTokens();
     if (isRefreshed) {
       failedQueue.forEach(({ query, mutation, variables }) => {
         if (query) {

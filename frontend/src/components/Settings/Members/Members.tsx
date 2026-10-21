@@ -16,7 +16,7 @@ import {
   useUpdateMemberRole,
 } from "src/api/member/queries";
 import { useTenantPermission } from "src/api/tenant/queries";
-import { useOidcProviders } from "src/api/auth_api";
+import { useOidcProviders } from "src/api/auth/queries";
 import { PERMISSIONS } from "src/constants/permissions";
 import { InviteMemberForm } from "src/components/Settings/Members/InviteMemberForm";
 import { PendingInvitations } from "src/components/Settings/Members/PendingInvitations";

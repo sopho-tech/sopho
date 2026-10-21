@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "src/api/dto";
-import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
-import { PlatformPermission } from "src/constants/platform_permissions";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { PlatformPermission } from "src/constants/platform_permissions";
+import { ApiService } from "src/utils/api_client";
 
 export type CreateSessionDto = {
   email: string;
@@ -30,33 +30,35 @@ export const authKeys = {
   oidcProviders: () => [...authKeys.all, "oidcProviders"] as const,
 };
 
-export const authApi = {
+const authApi = {
   isSessionValid: async (): Promise<boolean> => {
-    const url = API_ENDPOINTS.AUTH.GET_SESSION;
-    const response = await ApiService.get({ url, onlyBody: false });
+    const response = await ApiService.get({
+      url: API_ENDPOINTS.AUTH.GET_SESSION,
+      onlyBody: false,
+    });
     return (response as Response).status === 200;
   },
+
   createSession: async (payload: CreateSessionDto) => {
-    const url = API_ENDPOINTS.AUTH.CREATE_SESSION;
     return ApiService.post({
-      url,
+      url: API_ENDPOINTS.AUTH.CREATE_SESSION,
       data: payload,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
   },
+
   getCurrentUser: async (): Promise<UserDto> => {
-    const url = API_ENDPOINTS.AUTH.GET_PROFILE_DETAILS;
-    const response = (await ApiService.get<UserDto>({
-      url,
+    const response = await ApiService.get({
+      url: API_ENDPOINTS.AUTH.GET_PROFILE_DETAILS,
       onlyBody: true,
-    })) as UserDto;
-    return response;
+    });
+    return response as UserDto;
   },
+
   deleteSession: async (): Promise<void> => {
     await ApiService.delete({ url: API_ENDPOINTS.AUTH.DELETE_SESSION });
   },
+
   getOidcProviders: async (): Promise<OidcProviderDto[]> => {
     const response = await ApiService.get({
       url: API_ENDPOINTS.AUTH.OIDC_PROVIDERS,
@@ -64,10 +66,13 @@ export const authApi = {
     });
     return response as OidcProviderDto[];
   },
-  refreshToken: async (): Promise<boolean> => {
-    const url = API_ENDPOINTS.AUTH.REFRESH_TOKEN;
+
+  refreshSessionTokens: async (): Promise<boolean> => {
     try {
-      await ApiService.post({ url, onlyBody: false });
+      await ApiService.post({
+        url: API_ENDPOINTS.AUTH.REFRESH_TOKEN,
+        onlyBody: false,
+      });
       return true;
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -78,12 +83,14 @@ export const authApi = {
   },
 };
 
+export const refreshSessionTokens = authApi.refreshSessionTokens;
+
 export const useSessionValid = () => {
   return useQuery({
     queryKey: authKeys.session(),
     queryFn: authApi.isSessionValid,
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -92,30 +99,15 @@ export const useCreateSession = (callbacks?: {
   onError?: (error: Error) => void;
 }) => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: authApi.createSession,
     onSuccess: () => {
-      // Invalidate the session query to refetch
-      void queryClient.invalidateQueries({
-        queryKey: authKeys.session(),
-      });
-
-      // Invalidate the currentUser query to ensure it refetches when Profile component mounts
-      void queryClient.invalidateQueries({
-        queryKey: authKeys.currentUser(),
-      });
-
-      // Call custom success callback if provided
-      if (callbacks?.onSuccess) {
-        callbacks.onSuccess();
-      }
+      void queryClient.invalidateQueries({ queryKey: authKeys.session() });
+      void queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
+      callbacks?.onSuccess?.();
     },
     onError: (error) => {
-      // Call custom error callback if provided
-      if (callbacks?.onError) {
-        callbacks.onError(error);
-      }
+      callbacks?.onError?.(error);
     },
   });
 };
@@ -125,8 +117,8 @@ export const useCurrentUser = (enabled: boolean = true) => {
     queryKey: authKeys.currentUser(),
     queryFn: authApi.getCurrentUser,
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnMount: true, // Always refetch on mount to ensure fresh data after login
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: true,
     enabled,
   });
 };
@@ -160,10 +152,7 @@ export const useDeleteSession = (callbacks?: {
       window.location.replace(APP_ROUTES.SIGN_IN);
     },
     onError: (error) => {
-      // Call custom error callback if provided
-      if (callbacks?.onError) {
-        callbacks.onError(error);
-      }
+      callbacks?.onError?.(error);
     },
   });
 };

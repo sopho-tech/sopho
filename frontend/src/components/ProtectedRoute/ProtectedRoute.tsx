@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
-import { useCurrentUser, useSessionValid } from "src/api/auth_api";
+import { useCurrentUser, useSessionValid } from "src/api/auth/queries";
 import { isUnauthorizedError } from "src/api/dto";
 
 export function ProtectedRoute() {

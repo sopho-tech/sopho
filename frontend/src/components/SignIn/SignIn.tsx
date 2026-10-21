@@ -17,7 +17,7 @@ import {
   useCreateSession,
   useOidcProviders,
   useSessionValid,
-} from "src/api/auth_api";
+} from "src/api/auth/queries";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import {
   SIGN_IN_ERROR_MESSAGES,

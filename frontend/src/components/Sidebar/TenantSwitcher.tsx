@@ -9,7 +9,7 @@ import {
 } from "src/api/tenant/queries";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { PLATFORM_PERMISSIONS } from "src/constants/platform_permissions";
-import { usePlatformPermission } from "src/api/auth_api";
+import { usePlatformPermission } from "src/api/auth/queries";
 import { useReceivedInvitations } from "src/api/invitation/queries";
 import { tenantPath, useTenantId } from "src/utils/tenant";
 import logo from "src/assets/images/logo.svg";
