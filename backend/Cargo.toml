@@ -63,3 +63,6 @@ testcontainers = { version = "0.28.0", features = ["reusable-containers"] }
 
 [lints]
 workspace = true
+
+[profile.dev.package."*"]
+debug = false
