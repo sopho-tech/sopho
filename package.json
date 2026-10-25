@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@commitlint/cli": "^21.2.3",
+    "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.3",
     "markdownlint-cli2": "^0.23.3",
     "oxlint": "^1.88.0",
@@ -12,6 +12,6 @@
     "stylelint": "^17.16.0",
     "stylelint-config-css-modules": "^4.6.0",
     "stylelint-config-standard": "^40.0.0",
-    "tombi": "^1.8.4"
+    "tombi": "^1.8.7"
   }
 }
