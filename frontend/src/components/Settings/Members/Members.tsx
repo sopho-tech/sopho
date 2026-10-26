@@ -23,7 +23,7 @@ import { PendingInvitations } from "src/components/Settings/Members/PendingInvit
 import { RemoveMemberDialog } from "src/components/Settings/Members/RemoveMemberDialog";
 import { UNSTYLED_LIST_STYLE } from "src/components/Settings/Members/constants";
 
-const REMOVE_MEMBER_TOOLTIP = { text: "Remove from workspace" };
+const REMOVE_MEMBER_TOOLTIP = { text: "Remove from tenant" };
 
 function MemberRow({
   member,
@@ -130,7 +130,7 @@ export function Members() {
 
   return (
     <Flex direction="column" gap="xl" overflow="scrollY">
-      <Heading accessibilityLevel={1} size="lg">
+      <Heading accessibilityLevel={2} size="2xl" textColor="black">
         Members
       </Heading>
       {failure && <BannerSlim type="error" message={failure.message} />}
@@ -145,21 +145,16 @@ export function Members() {
         providers.data.length > 0 &&
         roles.data && <InviteMemberForm roles={roles.data} />}
       {members.data && roles.data && (
-        <Flex direction="column" gap="sm">
-          <Text fontSize="sm" color="darkGrey">
-            People in this workspace
-          </Text>
-          <Flex as="ul" direction="column" gap="sm" sx={UNSTYLED_LIST_STYLE}>
-            {members.data.map((member) => (
-              <MemberRow
-                key={member.user_id}
-                member={member}
-                roles={roles.data}
-                onChangeRole={handleChangeRole}
-                onRemove={setMemberPendingRemoval}
-              />
-            ))}
-          </Flex>
+        <Flex as="ul" direction="column" gap="sm" sx={UNSTYLED_LIST_STYLE}>
+          {members.data.map((member) => (
+            <MemberRow
+              key={member.user_id}
+              member={member}
+              roles={roles.data}
+              onChangeRole={handleChangeRole}
+              onRemove={setMemberPendingRemoval}
+            />
+          ))}
         </Flex>
       )}
       {canInvite && <PendingInvitations />}
