@@ -5,4 +5,4 @@ pub mod error;
 mod repository;
 pub mod service;
 
-pub use controller::{tenant_routes, user_routes};
+pub use controller::{link_routes, tenant_routes, user_routes};

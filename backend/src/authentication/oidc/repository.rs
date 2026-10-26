@@ -2,7 +2,7 @@ use crate::entity::{identity, oidc_login_attempt};
 use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DbErr, EntityTrait,
-    PaginatorTrait, QueryFilter,
+    QueryFilter,
 };
 use uuid::Uuid;
 
@@ -18,14 +18,34 @@ pub async fn find_identity(
         .await
 }
 
-pub async fn count_identities_for_user(
+pub async fn find_identities_for_user(
     database_connection: &DatabaseConnection,
     user_id: Uuid,
-) -> Result<u64, DbErr> {
+) -> Result<Vec<identity::Model>, DbErr> {
     identity::Entity::find()
         .filter(identity::Column::UserId.eq(user_id))
-        .count(database_connection)
+        .all(database_connection)
         .await
+}
+
+pub async fn find_identities_for_users(
+    database_connection: &DatabaseConnection,
+    user_ids: Vec<Uuid>,
+) -> Result<Vec<identity::Model>, DbErr> {
+    identity::Entity::find()
+        .filter(identity::Column::UserId.is_in(user_ids))
+        .all(database_connection)
+        .await
+}
+
+pub async fn delete_identity(
+    connection: &impl ConnectionTrait,
+    identity_id: Uuid,
+) -> Result<u64, DbErr> {
+    Ok(identity::Entity::delete_by_id(identity_id)
+        .exec(connection)
+        .await?
+        .rows_affected)
 }
 
 pub async fn insert_identity(

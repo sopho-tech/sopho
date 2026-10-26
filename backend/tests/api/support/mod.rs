@@ -4,6 +4,7 @@ pub mod conversation;
 pub mod data_sources;
 pub mod database;
 pub mod identity_provider;
+pub mod mail_server;
 pub mod metadata_database;
 pub mod postgres_server;
 pub mod records;

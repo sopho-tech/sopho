@@ -1,17 +1,23 @@
+pub use crate::authentication::constants::UserStatus;
 use crate::authentication::constants::{
-    ACCESS_TOKEN_EXPIRY_HOURS, CookieName, REFRESH_TOKEN_EXPIRY_DAYS, SessionStatus,
+    ACCESS_TOKEN_EXPIRY_HOURS, ACCOUNT_DEACTIVATED_MESSAGE, CookieName, REFRESH_TOKEN_EXPIRY_DAYS,
+    SIGN_IN_BLOCK_MINUTES, SIGN_IN_FAILURE_LIMIT, SessionStatus, TOO_MANY_SIGN_IN_ATTEMPTS_MESSAGE,
 };
 use crate::authentication::constants::{
     INVALID_CREDENTIALS_MESSAGE, SESSION_NOT_FOUND_MESSAGE, USER_NOT_FOUND_MESSAGE,
 };
 use crate::authentication::dto;
-use crate::authentication::error::CredentialsError;
+use crate::authentication::error::{AccountCreationError, CredentialsError};
+pub use crate::authentication::password::error::{PasswordFlowError, PasswordRuleError};
+pub use crate::authentication::password::service::send_password_reset_email;
+pub use crate::authentication::password::service::{normalized_password, validate_new_password};
 use crate::authentication::repository;
+pub use crate::authentication::repository::UserPage;
 use crate::authentication::repository::{get_user, get_user_by_email};
 use crate::authorization::constants::PlatformRole;
 use crate::authorization::dto::{AuthenticatedUser, UserId};
 use crate::common::AppState;
-use crate::common::error_codes::codes;
+use crate::common::error_codes::{ErrorCode, codes};
 use crate::common::time_utils;
 use crate::common::token_utils;
 use crate::entity;
@@ -23,7 +29,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use getrandom;
 use sea_orm::DbErr;
 use time::OffsetDateTime;
@@ -255,11 +261,52 @@ pub async fn create_sso_user_transaction(
             email,
             full_name: full_name.to_string(),
             platform_role: PlatformRole::Member.as_str().to_string(),
+            email_verified_at: Some(time_utils::now_utc_into()),
+            status: UserStatus::Active.as_str().to_string(),
+            failed_sign_in_count: 0,
+            sign_in_blocked_until: None,
             created_at: time_utils::now_utc_into(),
             updated_at: time_utils::now_utc_into(),
         },
     )
     .await
+}
+
+pub async fn create_password_user_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    email: &str,
+    full_name: &str,
+    normalized_new_password: &str,
+) -> Result<entity::user::Model, AccountCreationError> {
+    let email = normalize_email(email);
+    let password_hash = hash_password(normalized_new_password)
+        .map_err(|error| AccountCreationError::PasswordHashing(error.to_string()))?;
+    Ok(repository::save_user(
+        txn,
+        entity::user::Model {
+            id: Uuid::new_v4(),
+            username: email.clone(),
+            password_hash: Some(password_hash),
+            email,
+            full_name: full_name.to_string(),
+            platform_role: PlatformRole::Member.as_str().to_string(),
+            email_verified_at: Some(time_utils::now_utc_into()),
+            status: UserStatus::Active.as_str().to_string(),
+            failed_sign_in_count: 0,
+            sign_in_blocked_until: None,
+            created_at: time_utils::now_utc_into(),
+            updated_at: time_utils::now_utc_into(),
+        },
+    )
+    .await?)
+}
+
+pub async fn mark_email_verified_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    user_id: Uuid,
+) -> Result<(), DbErr> {
+    repository::set_email_verified_if_missing(txn, user_id, time_utils::now_utc_into()).await?;
+    Ok(())
 }
 
 pub fn normalize_email(email: &str) -> String {
@@ -274,12 +321,108 @@ pub async fn verify_credentials(
     let user = get_user_by_email(&app_state.database_connection, normalize_email(email))
         .await?
         .ok_or(CredentialsError::InvalidCredentials)?;
+    let now = Utc::now();
+    if user
+        .sign_in_blocked_until
+        .is_some_and(|blocked_until| blocked_until > now)
+    {
+        return Err(CredentialsError::TooManyAttempts);
+    }
     let password_hash = user
         .password_hash
         .as_deref()
         .ok_or(CredentialsError::InvalidCredentials)?;
-    verify_password(password, password_hash).map_err(|_| CredentialsError::InvalidCredentials)?;
+    if verify_password(&normalized_password(password), password_hash).is_err() {
+        repository::increment_failed_sign_in_count(
+            &app_state.database_connection,
+            user.id,
+            now.into(),
+        )
+        .await?;
+        repository::block_sign_in_after_failures(
+            &app_state.database_connection,
+            user.id,
+            SIGN_IN_FAILURE_LIMIT,
+            (now + Duration::minutes(SIGN_IN_BLOCK_MINUTES)).into(),
+        )
+        .await?;
+        return Err(CredentialsError::InvalidCredentials);
+    }
+    if user.status == UserStatus::Deactivated.as_str() {
+        return Err(CredentialsError::AccountDeactivated);
+    }
+    if user.failed_sign_in_count > 0 || user.sign_in_blocked_until.is_some() {
+        repository::clear_failed_sign_ins(&app_state.database_connection, user.id, now.into())
+            .await?;
+    }
     Ok(user)
+}
+
+pub fn sign_in_options(app_state: &AppState) -> dto::SignInOptionsDto {
+    dto::SignInOptionsDto {
+        providers: crate::authentication::oidc::service::list_providers(app_state),
+        password_reset_available: crate::email_delivery::service::is_email_enabled(app_state),
+    }
+}
+
+pub async fn find_optional_user(
+    app_state: &AppState,
+    user_id: Uuid,
+) -> Result<Option<entity::user::Model>, DbErr> {
+    get_user(&app_state.database_connection, user_id).await
+}
+
+pub async fn list_users_page(
+    app_state: &AppState,
+    search: Option<String>,
+    page_index: u64,
+    page_size: u64,
+) -> Result<UserPage, DbErr> {
+    repository::find_users_page(
+        &app_state.database_connection,
+        search,
+        page_index,
+        page_size,
+    )
+    .await
+}
+
+pub async fn count_active_platform_administrators(app_state: &AppState) -> Result<u64, DbErr> {
+    repository::count_active_users_with_platform_role(
+        &app_state.database_connection,
+        PlatformRole::Administrator.as_str(),
+    )
+    .await
+}
+
+pub async fn deactivate_user_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    user_id: Uuid,
+) -> Result<(), DbErr> {
+    let now = time_utils::now_utc_into();
+    repository::set_user_status(txn, user_id, UserStatus::Deactivated, now).await?;
+    repository::deactivate_sessions_for_user(txn, user_id, None, now).await?;
+    Ok(())
+}
+
+pub async fn reactivate_user(app_state: &AppState, user_id: Uuid) -> Result<(), DbErr> {
+    repository::set_user_status(
+        &app_state.database_connection,
+        user_id,
+        UserStatus::Active,
+        time_utils::now_utc_into(),
+    )
+    .await?;
+    Ok(())
+}
+
+pub async fn current_session_id(
+    cookies: &Cookies,
+    app_state: &AppState,
+) -> Result<Uuid, AccessTokenValidationError> {
+    Ok(find_session_by_access_token_cookie(cookies, app_state)
+        .await?
+        .id)
 }
 
 pub async fn create_session(
@@ -295,6 +438,24 @@ pub async fn create_session(
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({
                     "message": INVALID_CREDENTIALS_MESSAGE
+                })),
+            );
+        }
+        Err(CredentialsError::TooManyAttempts) => {
+            return (
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(serde_json::json!({
+                    "message": TOO_MANY_SIGN_IN_ATTEMPTS_MESSAGE,
+                    "error_code": ErrorCode::TooManySignInAttempts.as_str()
+                })),
+            );
+        }
+        Err(CredentialsError::AccountDeactivated) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(serde_json::json!({
+                    "message": ACCOUNT_DEACTIVATED_MESSAGE,
+                    "error_code": ErrorCode::AccountDeactivated.as_str()
                 })),
             );
         }
@@ -664,7 +825,7 @@ pub async fn seed_admin_user(app_state: &AppState) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let password_hash = hash_password(password)
+    let password_hash = hash_password(&normalized_password(password))
         .map_err(|error| anyhow::anyhow!("could not hash the admin password: {error:?}"))?;
 
     let user = entity::user::Model {
@@ -674,6 +835,10 @@ pub async fn seed_admin_user(app_state: &AppState) -> anyhow::Result<()> {
         email,
         full_name: full_name.to_string(),
         platform_role: PlatformRole::Administrator.as_str().to_string(),
+        email_verified_at: None,
+        status: UserStatus::Active.as_str().to_string(),
+        failed_sign_in_count: 0,
+        sign_in_blocked_until: None,
         created_at: time_utils::now_utc_into(),
         updated_at: time_utils::now_utc_into(),
     };

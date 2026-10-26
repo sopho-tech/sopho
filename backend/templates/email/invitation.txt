@@ -1,0 +1,8 @@
+{% extends "email/layout.txt" %}
+{% block content %}{{ email.inviter_name }} invited you to join {{ email.tenant_name }} on Sopho as {{ email.role_name }}.
+
+Accept the invitation:
+{{ email.invitation_link }}
+
+The invitation expires on {{ email.expires_on }}.{% endblock %}
+{% block reason %}You received this email because {{ email.inviter_name }} invited this address to Sopho. If you weren't expecting it, you can ignore it.{% endblock %}

@@ -1,4 +1,7 @@
-use crate::tenant::invitation::constants::InvitationStatus;
+use crate::email_delivery::dto::EmailDeliveryDto;
+use crate::tenant::invitation::constants::{
+    InvitationDeliveryMethod, InvitationLinkNextStep, InvitationStatus,
+};
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -17,6 +20,13 @@ pub struct InvitationDto {
     pub status: InvitationStatus,
     pub invited_by_name: String,
     pub expires_at: DateTime<FixedOffset>,
+    pub email_delivery: Option<EmailDeliveryDto>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct InvitationDeliveryDto {
+    pub method: InvitationDeliveryMethod,
+    pub unavailable_reason: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -27,6 +37,28 @@ pub struct ReceivedInvitationDto {
     pub role_name: String,
     pub invited_by_name: String,
     pub expires_at: DateTime<FixedOffset>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct InvitationLinkTokenDto {
+    pub token: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct InvitationSignUpDto {
+    pub token: String,
+    pub full_name: String,
+    pub password: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct InvitationLinkDto {
+    pub tenant_name: String,
+    pub role_name: String,
+    pub invited_by_name: String,
+    pub email: String,
+    pub expires_at: DateTime<FixedOffset>,
+    pub next_step: InvitationLinkNextStep,
 }
 
 #[derive(Debug, Serialize)]

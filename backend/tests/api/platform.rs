@@ -1,6 +1,9 @@
 use crate::support::TestApp;
 use crate::support::canvas_builder::string_field;
-use crate::support::constants::{OWNER_ROLE, PLATFORM_MEMBER, TENANT_CREATE_PERMISSION};
+use crate::support::constants::{
+    EMAIL_MANAGE_PERMISSION, OWNER_ROLE, PLATFORM_MEMBER, TENANT_APPOINT_OWNER_PERMISSION,
+    TENANT_CREATE_PERMISSION, USER_MANAGE_PERMISSION,
+};
 use crate::support::database::count_rows;
 use crate::support::tenants::{create_user, sign_in};
 use reqwest::StatusCode;
@@ -58,7 +61,12 @@ async fn current_user_reports_platform_permissions() {
     let administrator_profile = app.get("/auth/me").await;
     assert_eq!(
         administrator_profile.body["platform_permissions"],
-        json!([TENANT_CREATE_PERMISSION])
+        json!([
+            TENANT_CREATE_PERMISSION,
+            USER_MANAGE_PERMISSION,
+            TENANT_APPOINT_OWNER_PERMISSION,
+            EMAIL_MANAGE_PERMISSION
+        ])
     );
 
     let member = sign_in(&app, &create_user(&app, "member", PLATFORM_MEMBER).await).await;

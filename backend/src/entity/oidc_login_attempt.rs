@@ -10,6 +10,7 @@ pub struct Model {
     pub nonce: String,
     pub code_verifier: String,
     pub expires_at: DateTimeWithTimeZone,
+    pub linking_user_id: Option<Uuid>,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

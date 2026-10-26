@@ -8,6 +8,10 @@ use crate::support::data_sources::{
     SqliteDemoDatabase, copy_sqlite_demo_database, create_postgres_sample_database, manifest_path,
 };
 use crate::support::identity_provider::mock_identity_providers;
+use crate::support::mail_server::{
+    SilentMailServer, shared_mail_server, shared_refusing_mail_server,
+    unreachable_email_configuration,
+};
 use crate::support::metadata_database::MetadataDatabase;
 use crate::support::postgres_server::{PostgresDatabase, shared_postgres_server};
 use fake_llm::FakeLlmServer;
@@ -17,7 +21,7 @@ use reqwest::{Client, Method, StatusCode};
 use sea_orm::ConnectionTrait;
 use sea_orm::sea_query::{Alias, Query};
 use serde_json::{Value, json};
-use sopho::{AppState, Configurations, OidcProviderConfiguration};
+use sopho::{AppState, Configurations, EmailConfiguration, OidcProviderConfiguration};
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
@@ -169,6 +173,16 @@ enum SingleSignOn {
     MockProviders,
 }
 
+enum EmailDelivery<'a> {
+    Disabled,
+    MailServer,
+    RefusingMailServer,
+    UnreachableMailServer,
+    SilentMailServer {
+        silent_mail_server: &'a SilentMailServer,
+    },
+}
+
 pub struct TestApp {
     pub admin: UserSession,
     pub fake_llm: FakeLlmServer,
@@ -190,14 +204,38 @@ impl Deref for TestApp {
 
 impl TestApp {
     pub async fn spawn() -> Self {
-        Self::spawn_with(SingleSignOn::Disabled).await
+        Self::spawn_with(SingleSignOn::Disabled, EmailDelivery::Disabled).await
     }
 
     pub async fn spawn_with_single_sign_on() -> Self {
-        Self::spawn_with(SingleSignOn::MockProviders).await
+        Self::spawn_with(SingleSignOn::MockProviders, EmailDelivery::Disabled).await
     }
 
-    async fn spawn_with(single_sign_on: SingleSignOn) -> Self {
+    pub async fn spawn_with_email() -> Self {
+        Self::spawn_with(SingleSignOn::Disabled, EmailDelivery::MailServer).await
+    }
+
+    pub async fn spawn_with_email_and_single_sign_on() -> Self {
+        Self::spawn_with(SingleSignOn::MockProviders, EmailDelivery::MailServer).await
+    }
+
+    pub async fn spawn_with_refusing_mail_server() -> Self {
+        Self::spawn_with(SingleSignOn::Disabled, EmailDelivery::RefusingMailServer).await
+    }
+
+    pub async fn spawn_with_unreachable_mail_server() -> Self {
+        Self::spawn_with(SingleSignOn::Disabled, EmailDelivery::UnreachableMailServer).await
+    }
+
+    pub async fn spawn_with_silent_mail_server(silent_mail_server: &SilentMailServer) -> Self {
+        Self::spawn_with(
+            SingleSignOn::Disabled,
+            EmailDelivery::SilentMailServer { silent_mail_server },
+        )
+        .await
+    }
+
+    async fn spawn_with(single_sign_on: SingleSignOn, email_delivery: EmailDelivery<'_>) -> Self {
         let metadata_database = MetadataDatabase::create().await;
         let fake_llm = FakeLlmServer::start(&manifest_path(FAKE_LLM_FIXTURES_RELATIVE_PATH))
             .await
@@ -213,10 +251,28 @@ impl TestApp {
             SingleSignOn::Disabled => Vec::new(),
             SingleSignOn::MockProviders => mock_identity_providers(&base_url).await,
         };
+        let email_configuration = match email_delivery {
+            EmailDelivery::Disabled => None,
+            EmailDelivery::MailServer => {
+                Some(shared_mail_server().await.email_configuration(&base_url))
+            }
+            EmailDelivery::RefusingMailServer => Some(
+                shared_refusing_mail_server()
+                    .await
+                    .email_configuration(&base_url),
+            ),
+            EmailDelivery::UnreachableMailServer => {
+                Some(unreachable_email_configuration(&base_url))
+            }
+            EmailDelivery::SilentMailServer { silent_mail_server } => {
+                Some(silent_mail_server.email_configuration(&base_url))
+            }
+        };
         let app_state = AppState::from_configurations(test_configurations(
             &metadata_database,
             &fake_llm,
             oidc_providers,
+            email_configuration,
         ))
         .await
         .expect("connect to the metadata database");
@@ -240,6 +296,12 @@ impl TestApp {
             postgres_sample_databases: Mutex::new(Vec::new()),
             _metadata_database: metadata_database,
         }
+    }
+
+    pub async fn deliver_due_emails(&self) {
+        sopho::deliver_due_emails(&self.app_state)
+            .await
+            .expect("deliver the queued emails");
     }
 
     pub async fn restart_initialization(&self) {
@@ -366,8 +428,9 @@ fn test_configurations(
     metadata_database: &MetadataDatabase,
     fake_llm: &FakeLlmServer,
     oidc_providers: Vec<OidcProviderConfiguration>,
+    email_configuration: Option<EmailConfiguration>,
 ) -> Configurations {
-    Configurations::builder()
+    let configurations_builder = Configurations::builder()
         .database_url(metadata_database.url())
         .port(0)
         .frontend_dir(FRONTEND_DIRECTORY_FOR_API_TESTS)
@@ -380,7 +443,11 @@ fn test_configurations(
         .admin_full_name(ADMIN_FULL_NAME)
         .anthropic_base_url(fake_llm.anthropic_base_url())
         .openai_base_url(fake_llm.openai_base_url())
-        .oidc_providers(oidc_providers)
-        .build()
-        .expect("build the test configuration")
+        .oidc_providers(oidc_providers);
+    match email_configuration {
+        Some(email_configuration) => configurations_builder.email(email_configuration),
+        None => configurations_builder,
+    }
+    .build()
+    .expect("build the test configuration")
 }

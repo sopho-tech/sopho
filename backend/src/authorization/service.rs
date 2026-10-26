@@ -150,11 +150,18 @@ pub fn require_capability(
     ))
 }
 
+pub fn has_platform_permission(
+    platform_role: PlatformRole,
+    permission: PlatformPermission,
+) -> bool {
+    platform_role.permissions().contains(&permission)
+}
+
 pub fn require_platform_permission(
     platform_role: PlatformRole,
     permission: PlatformPermission,
 ) -> Result<(), AuthorizationError> {
-    if platform_role.permissions().contains(&permission) {
+    if has_platform_permission(platform_role, permission) {
         return Ok(());
     }
     Err(AuthorizationError::MissingPermission(

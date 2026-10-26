@@ -1,3 +1,4 @@
+use crate::authentication::service::UserStatus;
 use crate::authorization::constants::{Permission, SystemRole};
 use crate::authorization::dto::{Actor, PermissionSet, TenantContext, TenantId, UserId};
 use crate::authorization::service as authorization_service;
@@ -11,6 +12,7 @@ use crate::tenant::membership::repository::TenantMemberRow;
 use sea_orm::TransactionTrait;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::str::FromStr;
 use uuid::Uuid;
 
 pub async fn add_member(
@@ -103,6 +105,11 @@ pub async fn list_members(
     let owner_count = rows
         .iter()
         .filter(|row| row.membership.role_id == owner_role.id)
+        .filter(|row| {
+            row.user
+                .as_ref()
+                .is_some_and(|user| user.status == UserStatus::Active.as_str())
+        })
         .count();
     let may_change_roles = tenant_context
         .permissions()
@@ -123,7 +130,11 @@ pub async fn list_members(
         let role_id = row.membership.role_id;
         let manageable =
             permissions_by_role_id[&role_id].is_subset_of(tenant_context.permissions());
-        let is_last_owner = role_id == owner_role.id && owner_count <= 1;
+        let is_active_account = row
+            .user
+            .as_ref()
+            .is_some_and(|user| user.status == UserStatus::Active.as_str());
+        let is_last_owner = role_id == owner_role.id && is_active_account && owner_count <= 1;
         members.push(MemberDto {
             member: member_identity(row)?,
             capabilities: MemberCapabilities {
@@ -198,6 +209,52 @@ pub async fn remove_member(
     Ok(())
 }
 
+pub async fn appoint_owner(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    user_id: Uuid,
+    actor: &Actor,
+) -> Result<(), MembershipError> {
+    let owner_role = owner_role(app_state, tenant_id).await?;
+    match repository::find_membership(&app_state.database_connection, tenant_id, user_id).await? {
+        Some(membership) => {
+            repository::make_owner(
+                &app_state.database_connection,
+                membership.id,
+                owner_role.id,
+                actor,
+            )
+            .await?;
+        }
+        None => {
+            repository::insert_membership(
+                &app_state.database_connection,
+                tenant_id,
+                user_id,
+                owner_role.id,
+                actor,
+            )
+            .await?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn active_owner_counts(
+    app_state: &AppState,
+) -> Result<HashMap<Uuid, u64>, MembershipError> {
+    let mut owner_counts: HashMap<Uuid, u64> = HashMap::new();
+    for membership in repository::list_active_memberships_with_role_name(
+        &app_state.database_connection,
+        SystemRole::Owner.as_str(),
+    )
+    .await?
+    {
+        *owner_counts.entry(membership.tenant_id).or_default() += 1;
+    }
+    Ok(owner_counts)
+}
+
 pub async fn list_roles(
     app_state: &AppState,
     tenant_context: &TenantContext,
@@ -237,11 +294,18 @@ fn member_identity(row: &TenantMemberRow) -> Result<TenantMemberDto, MembershipE
             row.membership.id
         ))
     })?;
+    let account_status = UserStatus::from_str(&user.status).map_err(|_| {
+        MembershipError::Internal(format!(
+            "User {} has an unknown status {}",
+            user.id, user.status
+        ))
+    })?;
     Ok(TenantMemberDto {
         user_id: user.id,
         full_name: user.full_name.clone(),
         email: user.email.clone(),
         role_name: role.name.clone(),
+        account_status,
     })
 }
 
@@ -309,11 +373,11 @@ async fn is_last_owner(
     if membership.role_id != owner_role_id {
         return Ok(false);
     }
-    let owner_count = repository::count_active_members_with_role(
+    let active_owner_user_ids = repository::find_active_member_user_ids_with_role(
         &app_state.database_connection,
         tenant_id,
         owner_role_id,
     )
     .await?;
-    Ok(owner_count <= 1)
+    Ok(active_owner_user_ids == [membership.user_id])
 }

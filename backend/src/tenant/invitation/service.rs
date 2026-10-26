@@ -4,19 +4,54 @@ use crate::authorization::dto::{Actor, TenantContext, TenantId, UserId};
 use crate::authorization::service as authorization_service;
 use crate::common::AppState;
 use crate::common::time_utils;
-use crate::entity::tenant_invitation;
-use crate::tenant::invitation::constants::{INVITATION_EXPIRY_DAYS, InvitationStatus};
+use crate::common::token_utils;
+use crate::email_delivery::constants::EmailStatus;
+use crate::email_delivery::dto::{EmailDeliveryDto, EmailMessage};
+use crate::email_delivery::service as email_delivery_service;
+use crate::email_template::dto::{InvitationEmail, RenderedEmail};
+use crate::email_template::service::{EmailTemplate, format_email_date};
+use crate::entity::{tenant_invitation, user};
+use crate::tenant::invitation::constants::{
+    INVITATION_EXPIRY_DAYS, INVITATION_LINK_PATH, INVITATIONS_UNAVAILABLE_MESSAGE,
+    InvitationDeliveryMethod, InvitationLinkNextStep, InvitationStatus,
+};
 use crate::tenant::invitation::dto::{
-    AcceptedInvitationDto, CreateInvitationDto, InvitationDto, ReceivedInvitationDto,
+    AcceptedInvitationDto, CreateInvitationDto, InvitationDeliveryDto, InvitationDto,
+    InvitationLinkDto, InvitationSignUpDto, ReceivedInvitationDto,
 };
 use crate::tenant::invitation::error::InvitationError;
 use crate::tenant::invitation::repository;
-use crate::tenant::invitation::repository::NewInvitation;
+use crate::tenant::invitation::repository::{NewInvitation, ReissuedLink};
 use crate::tenant::membership::service as membership_service;
-use sea_orm::TransactionTrait;
+use chrono::{DateTime, Utc};
 use sea_orm::prelude::DateTimeWithTimeZone;
+use sea_orm::{DatabaseTransaction, TransactionTrait};
 use std::collections::HashMap;
+use tower_cookies::Cookies;
 use uuid::Uuid;
+
+pub fn invitation_delivery_method(app_state: &AppState) -> InvitationDeliveryMethod {
+    if email_delivery_service::is_email_enabled(app_state) {
+        InvitationDeliveryMethod::Email
+    } else if !app_state.config.oidc_providers.is_empty() {
+        InvitationDeliveryMethod::SingleSignOn
+    } else {
+        InvitationDeliveryMethod::Unavailable
+    }
+}
+
+pub fn get_invitation_delivery(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+) -> Result<InvitationDeliveryDto, InvitationError> {
+    authorization_service::require_capability(tenant_context, Permission::MemberInvite)?;
+    let method = invitation_delivery_method(app_state);
+    Ok(InvitationDeliveryDto {
+        method,
+        unavailable_reason: (method == InvitationDeliveryMethod::Unavailable)
+            .then(|| INVITATIONS_UNAVAILABLE_MESSAGE.to_string()),
+    })
+}
 
 pub async fn create_invitation(
     app_state: &AppState,
@@ -24,8 +59,9 @@ pub async fn create_invitation(
     payload: CreateInvitationDto,
 ) -> Result<InvitationDto, InvitationError> {
     authorization_service::require_capability(tenant_context, Permission::MemberInvite)?;
-    if app_state.config.oidc_providers.is_empty() {
-        return Err(InvitationError::SingleSignOnRequired);
+    let delivery_method = invitation_delivery_method(app_state);
+    if delivery_method == InvitationDeliveryMethod::Unavailable {
+        return Err(InvitationError::InvitationsUnavailable);
     }
     let email = authentication_service::normalize_email(&payload.email);
     if !is_valid_email(&email) {
@@ -56,17 +92,62 @@ pub async fn create_invitation(
 
     let inviter =
         authentication_service::find_user_by_id(app_state, tenant_context.user_id()).await?;
+    let expires_at: DateTime<Utc> = time_utils::now_plus_days_into(INVITATION_EXPIRY_DAYS);
+    let link_token =
+        (delivery_method == InvitationDeliveryMethod::Email).then(token_utils::new_link_token);
+    let invitation_email = match &link_token {
+        Some(link_token) => Some(
+            render_invitation_email(
+                app_state,
+                InvitationEmailDetails {
+                    tenant_id,
+                    inviter: &inviter,
+                    role_name: &role.name,
+                    link_token,
+                    expires_at,
+                },
+            )
+            .await?,
+        ),
+        None => None,
+    };
+
+    let txn = app_state.database_connection.begin().await?;
     let invitation = repository::insert_invitation(
-        &app_state.database_connection,
+        &txn,
         tenant_id,
         NewInvitation {
             email: &email,
             role_id: role.id,
-            expires_at: time_utils::now_plus_days_into(INVITATION_EXPIRY_DAYS),
+            expires_at: expires_at.into(),
             invited_by_user_id: inviter.id,
+            token_hash: link_token.as_deref().map(token_utils::hash_token),
         },
     )
     .await?;
+    let email_delivery = match invitation_email {
+        Some(invitation_email) => {
+            let email_id = queue_invitation_email_transaction(
+                &txn,
+                app_state,
+                QueuedInvitationEmail {
+                    tenant_id,
+                    recipient: &invitation.email,
+                    requested_by_user_id: inviter.id,
+                    send_before: expires_at,
+                    rendered_email: invitation_email,
+                },
+            )
+            .await?;
+            repository::set_latest_email(&txn, invitation.id, email_id).await?;
+            Some(EmailDeliveryDto {
+                status: EmailStatus::Pending,
+                last_error: None,
+            })
+        }
+        None => None,
+    };
+    txn.commit().await?;
 
     Ok(InvitationDto {
         id: invitation.id,
@@ -75,6 +156,93 @@ pub async fn create_invitation(
         status: InvitationStatus::Pending,
         invited_by_name: inviter.full_name,
         expires_at: invitation.expires_at,
+        email_delivery,
+    })
+}
+
+pub async fn resend_invitation(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    invitation_id: Uuid,
+) -> Result<InvitationDto, InvitationError> {
+    authorization_service::require_capability(tenant_context, Permission::MemberInvite)?;
+    if !email_delivery_service::is_email_enabled(app_state) {
+        return Err(InvitationError::ResendNeedsEmail);
+    }
+    let tenant_id = tenant_context.tenant_id();
+    let invitation = repository::find_pending_invitation(
+        &app_state.database_connection,
+        tenant_id,
+        invitation_id,
+    )
+    .await?
+    .ok_or(InvitationError::NotFound)?;
+    let inviter = authentication_service::find_user_by_id(
+        app_state,
+        UserId::from_system_unchecked(invitation.invited_by_user_id),
+    )
+    .await?;
+    let role_name = lookup(
+        &role_names_by_id(app_state, std::slice::from_ref(&invitation)).await?,
+        invitation.role_id,
+        "role",
+    )?;
+    let link_token = token_utils::new_link_token();
+    let expires_at: DateTime<Utc> = time_utils::now_plus_days_into(INVITATION_EXPIRY_DAYS);
+    let invitation_email = render_invitation_email(
+        app_state,
+        InvitationEmailDetails {
+            tenant_id,
+            inviter: &inviter,
+            role_name: &role_name,
+            link_token: &link_token,
+            expires_at,
+        },
+    )
+    .await?;
+
+    let txn = app_state.database_connection.begin().await?;
+    let email_id = queue_invitation_email_transaction(
+        &txn,
+        app_state,
+        QueuedInvitationEmail {
+            tenant_id,
+            recipient: &invitation.email,
+            requested_by_user_id: tenant_context.user_id().get_uuid(),
+            send_before: expires_at,
+            rendered_email: invitation_email,
+        },
+    )
+    .await?;
+    let reissued = repository::reissue_pending_invitation_link(
+        &txn,
+        invitation.id,
+        ReissuedLink {
+            token_hash: token_utils::hash_token(&link_token),
+            expires_at: expires_at.into(),
+            latest_email_id: email_id,
+        },
+    )
+    .await?;
+    if reissued == 0 {
+        return Err(InvitationError::NotFound);
+    }
+    if let Some(previous_email_id) = invitation.latest_email_id {
+        email_delivery_service::cancel_email_transaction(&txn, previous_email_id).await?;
+    }
+    txn.commit().await?;
+
+    Ok(InvitationDto {
+        id: invitation.id,
+        email: invitation.email,
+        role_name,
+        status: InvitationStatus::Pending,
+        invited_by_name: inviter.full_name,
+        expires_at: expires_at.into(),
+        email_delivery: Some(EmailDeliveryDto {
+            status: EmailStatus::Pending,
+            last_error: None,
+        }),
     })
 }
 
@@ -90,6 +258,14 @@ pub async fn list_tenant_invitations(
     .await?;
     let role_names = role_names_by_id(app_state, &invitations).await?;
     let inviter_names = inviter_names_by_id(app_state, &invitations).await?;
+    let email_deliveries = email_delivery_service::find_delivery_statuses(
+        app_state,
+        invitations
+            .iter()
+            .filter_map(|invitation| invitation.latest_email_id)
+            .collect(),
+    )
+    .await?;
 
     let mut invitation_dtos = invitations
         .into_iter()
@@ -99,6 +275,9 @@ pub async fn list_tenant_invitations(
                 status: effective_status(&invitation),
                 role_name: lookup(&role_names, invitation.role_id, "role")?,
                 invited_by_name: lookup(&inviter_names, invitation.invited_by_user_id, "inviter")?,
+                email_delivery: invitation
+                    .latest_email_id
+                    .and_then(|email_id| email_deliveries.get(&email_id).cloned()),
                 email: invitation.email,
                 expires_at: invitation.expires_at,
             })
@@ -114,25 +293,63 @@ pub async fn revoke_invitation(
     invitation_id: Uuid,
 ) -> Result<(), InvitationError> {
     authorization_service::require_capability(tenant_context, Permission::MemberInvite)?;
-    let revoked = repository::revoke_pending_invitation(
+    let tenant_id = tenant_context.tenant_id();
+    let invitation = repository::find_pending_invitation(
         &app_state.database_connection,
-        tenant_context.tenant_id(),
+        tenant_id,
         invitation_id,
     )
-    .await?;
+    .await?
+    .ok_or(InvitationError::NotFound)?;
+    let txn = app_state.database_connection.begin().await?;
+    let revoked = repository::revoke_pending_invitation(&txn, tenant_id, invitation.id).await?;
     if revoked == 0 {
         return Err(InvitationError::NotFound);
     }
+    if let Some(email_id) = invitation.latest_email_id {
+        email_delivery_service::cancel_email_transaction(&txn, email_id).await?;
+    }
+    txn.commit().await?;
     Ok(())
 }
 
 pub async fn revoke_invitations_sent_by_transaction(
-    txn: &sea_orm::DatabaseTransaction,
+    txn: &DatabaseTransaction,
     tenant_id: &TenantId,
     invited_by_user_id: Uuid,
 ) -> Result<u64, sea_orm::DbErr> {
-    repository::revoke_pending_invitations_sent_by_transaction(txn, tenant_id, invited_by_user_id)
-        .await
+    let pending_invitations =
+        repository::find_pending_invitations_sent_by(txn, tenant_id, invited_by_user_id).await?;
+    let revoked = repository::revoke_pending_invitations_sent_by_transaction(
+        txn,
+        tenant_id,
+        invited_by_user_id,
+    )
+    .await?;
+    for email_id in pending_invitations
+        .iter()
+        .filter_map(|invitation| invitation.latest_email_id)
+    {
+        email_delivery_service::cancel_email_transaction(txn, email_id).await?;
+    }
+    Ok(revoked)
+}
+
+pub async fn revoke_every_invitation_sent_by_transaction(
+    txn: &DatabaseTransaction,
+    invited_by_user_id: Uuid,
+) -> Result<u64, sea_orm::DbErr> {
+    let pending_invitations =
+        repository::find_pending_invitations_sent_by_user(txn, invited_by_user_id).await?;
+    let revoked =
+        repository::revoke_pending_invitations_sent_by_user(txn, invited_by_user_id).await?;
+    for email_id in pending_invitations
+        .iter()
+        .filter_map(|invitation| invitation.latest_email_id)
+    {
+        email_delivery_service::cancel_email_transaction(txn, email_id).await?;
+    }
+    Ok(revoked)
 }
 
 pub async fn list_received_invitations(
@@ -192,10 +409,131 @@ pub async fn accept_invitation(
     if effective_status(&invitation) == InvitationStatus::Expired {
         return Err(InvitationError::Expired);
     }
+    accept_for_user(
+        app_state,
+        &user,
+        &invitation,
+        AcceptanceSource::ReceivedInvitations,
+    )
+    .await
+}
+
+pub async fn lookup_invitation_link(
+    app_state: &AppState,
+    link_token: &str,
+    signed_in_user: Option<UserId>,
+) -> Result<InvitationLinkDto, InvitationError> {
+    let invitation = find_invitation_by_link_token(app_state, link_token).await?;
+    let next_step = match signed_in_user {
+        Some(user_id) => {
+            let user = authentication_service::find_user_by_id(app_state, user_id).await?;
+            if authentication_service::normalize_email(&user.email) == invitation.email {
+                InvitationLinkNextStep::Join
+            } else {
+                InvitationLinkNextStep::WrongAccount
+            }
+        }
+        None => {
+            match authentication_service::find_optional_user_by_email(app_state, &invitation.email)
+                .await?
+            {
+                Some(_) => InvitationLinkNextStep::SignIn,
+                None => InvitationLinkNextStep::SignUp,
+            }
+        }
+    };
+    let tenant_names =
+        crate::tenant::service::find_tenant_names(app_state, vec![invitation.tenant_id]).await?;
+    let role_names = role_names_by_id(app_state, std::slice::from_ref(&invitation)).await?;
+    let inviter_names = inviter_names_by_id(app_state, std::slice::from_ref(&invitation)).await?;
+    Ok(InvitationLinkDto {
+        tenant_name: lookup(&tenant_names, invitation.tenant_id, "tenant")?,
+        role_name: lookup(&role_names, invitation.role_id, "role")?,
+        invited_by_name: lookup(&inviter_names, invitation.invited_by_user_id, "inviter")?,
+        email: invitation.email,
+        expires_at: invitation.expires_at,
+        next_step,
+    })
+}
+
+pub async fn sign_up_from_invitation_link(
+    app_state: &AppState,
+    cookies: &Cookies,
+    sign_up: InvitationSignUpDto,
+) -> Result<AcceptedInvitationDto, InvitationError> {
+    let invitation = find_invitation_by_link_token(app_state, &sign_up.token).await?;
+    if authentication_service::find_optional_user_by_email(app_state, &invitation.email)
+        .await?
+        .is_some()
+    {
+        return Err(InvitationError::AccountExists);
+    }
+    let full_name = sign_up.full_name.trim();
+    if full_name.is_empty() {
+        return Err(InvitationError::FullNameRequired);
+    }
+    let normalized_new_password =
+        authentication_service::validate_new_password(&sign_up.password, &invitation.email)?;
 
     let tenant_id = TenantId::from_system_unchecked(invitation.tenant_id);
+    let txn = app_state.database_connection.begin().await?;
+    let user = authentication_service::create_password_user_transaction(
+        &txn,
+        &invitation.email,
+        full_name,
+        &normalized_new_password,
+    )
+    .await?;
+    let accepted =
+        repository::accept_pending_invitation_transaction(&txn, invitation.id, user.id).await?;
+    if accepted == 0 {
+        return Err(InvitationError::LinkInvalid);
+    }
+    let new_user_id = UserId::from_system_unchecked(user.id);
+    membership_service::add_member_transaction(
+        &txn,
+        &tenant_id,
+        new_user_id,
+        invitation.role_id,
+        &Actor::human(new_user_id),
+    )
+    .await?;
+    txn.commit().await?;
+
+    authentication_service::start_session_for_user(app_state, cookies, user.id).await?;
+    Ok(AcceptedInvitationDto {
+        tenant_id: invitation.tenant_id,
+    })
+}
+
+pub async fn accept_invitation_link(
+    app_state: &AppState,
+    user_id: UserId,
+    link_token: &str,
+) -> Result<AcceptedInvitationDto, InvitationError> {
+    let invitation = find_invitation_by_link_token(app_state, link_token).await?;
+    let user = authentication_service::find_user_by_id(app_state, user_id).await?;
+    if authentication_service::normalize_email(&user.email) != invitation.email {
+        return Err(InvitationError::InvitationForAnotherAccount);
+    }
+    accept_for_user(app_state, &user, &invitation, AcceptanceSource::EmailedLink).await
+}
+
+enum AcceptanceSource {
+    ReceivedInvitations,
+    EmailedLink,
+}
+
+async fn accept_for_user(
+    app_state: &AppState,
+    user: &user::Model,
+    invitation: &tenant_invitation::Model,
+    acceptance_source: AcceptanceSource,
+) -> Result<AcceptedInvitationDto, InvitationError> {
+    let user_id = UserId::from_system_unchecked(user.id);
+    let tenant_id = TenantId::from_system_unchecked(invitation.tenant_id);
     let already_member =
-        membership_service::is_active_member(app_state, &tenant_id, user_id.get_uuid()).await?;
+        membership_service::is_active_member(app_state, &tenant_id, user.id).await?;
 
     let txn = app_state.database_connection.begin().await?;
     let accepted =
@@ -213,11 +551,88 @@ pub async fn accept_invitation(
         )
         .await?;
     }
+    if let AcceptanceSource::EmailedLink = acceptance_source {
+        authentication_service::mark_email_verified_transaction(&txn, user.id).await?;
+    }
     txn.commit().await?;
 
     Ok(AcceptedInvitationDto {
         tenant_id: invitation.tenant_id,
     })
+}
+
+async fn find_invitation_by_link_token(
+    app_state: &AppState,
+    link_token: &str,
+) -> Result<tenant_invitation::Model, InvitationError> {
+    let invitation = repository::find_pending_invitation_by_token_hash(
+        &app_state.database_connection,
+        &token_utils::hash_token(link_token),
+    )
+    .await?
+    .ok_or(InvitationError::LinkInvalid)?;
+    if effective_status(&invitation) == InvitationStatus::Expired {
+        return Err(InvitationError::LinkInvalid);
+    }
+    Ok(invitation)
+}
+
+struct InvitationEmailDetails<'a> {
+    tenant_id: &'a TenantId,
+    inviter: &'a user::Model,
+    role_name: &'a str,
+    link_token: &'a str,
+    expires_at: DateTime<Utc>,
+}
+
+struct QueuedInvitationEmail<'a> {
+    tenant_id: &'a TenantId,
+    recipient: &'a str,
+    requested_by_user_id: Uuid,
+    send_before: DateTime<Utc>,
+    rendered_email: RenderedEmail,
+}
+
+async fn render_invitation_email(
+    app_state: &AppState,
+    details: InvitationEmailDetails<'_>,
+) -> Result<RenderedEmail, InvitationError> {
+    let tenant_uuid = details.tenant_id.get_uuid();
+    let tenant_names =
+        crate::tenant::service::find_tenant_names(app_state, vec![tenant_uuid]).await?;
+    Ok(InvitationEmail {
+        inviter_name: details.inviter.full_name.clone(),
+        tenant_name: lookup(&tenant_names, tenant_uuid, "tenant")?,
+        role_name: details.role_name.to_string(),
+        invitation_link: email_delivery_service::public_link(
+            app_state,
+            &format!("{INVITATION_LINK_PATH}{}", details.link_token),
+        )?,
+        expires_on: format_email_date(details.expires_at),
+    }
+    .render()?)
+}
+
+async fn queue_invitation_email_transaction(
+    txn: &DatabaseTransaction,
+    app_state: &AppState,
+    queued_email: QueuedInvitationEmail<'_>,
+) -> Result<Uuid, InvitationError> {
+    Ok(email_delivery_service::enqueue_email_transaction(
+        txn,
+        app_state,
+        EmailMessage {
+            kind: queued_email.rendered_email.kind.to_string(),
+            recipient: queued_email.recipient.to_string(),
+            subject: queued_email.rendered_email.subject,
+            text_body: queued_email.rendered_email.text_body,
+            html_body: queued_email.rendered_email.html_body,
+            send_before: queued_email.send_before,
+            tenant_id: Some(queued_email.tenant_id.get_uuid()),
+            requested_by_user_id: Some(queued_email.requested_by_user_id),
+        },
+    )
+    .await?)
 }
 
 fn is_valid_email(email: &str) -> bool {

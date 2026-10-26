@@ -8,6 +8,12 @@ pub const AFTER_SIGN_IN_PATH: &str = "/";
 pub const SIGN_IN_ERROR_PARAMETER: &str = "error";
 pub const EMAIL_SCOPE: &str = "email";
 pub const PROFILE_SCOPE: &str = "profile";
+pub const PROFILE_PATH: &str = "/profile";
+pub const CONNECT_RESULT_PARAMETER: &str = "connect_result";
+pub const CONNECTED_PROVIDER_PARAMETER: &str = "provider";
+pub const SIGN_IN_METHOD_NOT_CONNECTED_MESSAGE: &str = "This sign-in method is not connected";
+pub const LAST_SIGN_IN_METHOD_MESSAGE: &str =
+    "This is your only way to sign in. Add another one before removing it";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, IntoStaticStr)]
 #[strum(serialize_all = "snake_case")]
@@ -16,10 +22,42 @@ pub enum SignInErrorCode {
     EmailNotVerified,
     SsoExpired,
     PasswordAccount,
+    AccountDeactivated,
 }
 
 impl SignInErrorCode {
     pub fn as_str(&self) -> &'static str {
         self.into()
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display, IntoStaticStr)]
+#[strum(serialize_all = "snake_case")]
+pub enum ConnectResult {
+    Connected,
+    EmailMismatch,
+    IdentityInUse,
+    AlreadyConnected,
+    EmailNotVerified,
+    AccountDeactivated,
+    SsoExpired,
+    SsoFailed,
+}
+
+impl ConnectResult {
+    pub fn as_str(&self) -> &'static str {
+        self.into()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CallbackPurpose {
+    SignIn,
+    Connect,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SignInMethodChange {
+    Added,
+    Removed,
 }

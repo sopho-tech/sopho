@@ -1,5 +1,6 @@
 use crate::support::constants::{
     ACTIVE_STATUS, PLATFORM_MEMBER, SYSTEM_ACTOR, TEST_USER_EMAIL_DOMAIN, TEST_USER_PASSWORD,
+    USER_STATUS_ACTIVE,
 };
 use crate::support::database::{Column, insert_row, now, select_uuid, update_rows};
 use crate::support::test_app::{TestApp, UserSession};
@@ -7,6 +8,7 @@ use argon2::Argon2;
 use argon2::password_hash::{PasswordHasher, SaltString, rand_core::OsRng};
 use reqwest::StatusCode;
 use sea_orm::Value;
+use std::sync::LazyLock;
 use uuid::Uuid;
 
 pub struct TestUser {
@@ -36,7 +38,7 @@ pub fn with_system_attribution(mut columns: Vec<Column<'_>>) -> Vec<Column<'_>> 
     columns
 }
 
-fn hashed_test_password() -> String {
+static HASHED_TEST_PASSWORD: LazyLock<String> = LazyLock::new(|| {
     Argon2::default()
         .hash_password(
             TEST_USER_PASSWORD.as_bytes(),
@@ -44,6 +46,10 @@ fn hashed_test_password() -> String {
         )
         .expect("hash the test password")
         .to_string()
+});
+
+fn hashed_test_password() -> String {
+    HASHED_TEST_PASSWORD.clone()
 }
 
 pub async fn create_user(app: &TestApp, label: &str, platform_role: &str) -> TestUser {
@@ -60,6 +66,7 @@ pub async fn create_user(app: &TestApp, label: &str, platform_role: &str) -> Tes
             ("email", email.clone().into()),
             ("full_name", full_name.clone().into()),
             ("platform_role", platform_role.into()),
+            ("status", USER_STATUS_ACTIVE.into()),
             ("created_at", now().into()),
             ("updated_at", now().into()),
         ],

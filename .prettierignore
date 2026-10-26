@@ -8,6 +8,7 @@ docs/out/
 docs/build/
 frontend/dist-ssr/
 backend/data/
+backend/templates/
 **/coverage/
 **/playwright-report/
 **/test-results/

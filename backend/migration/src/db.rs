@@ -19,6 +19,8 @@ pub enum Attribution {
 
 pub const ACTOR_KINDS: [&str; 3] = ["HUMAN", "AI", "SYSTEM"];
 pub const SYSTEM_ACTOR: &str = "SYSTEM";
+pub const USER_STATUSES: [&str; 2] = ["ACTIVE", "DEACTIVATED"];
+pub const EMAIL_STATUSES: [&str; 5] = ["PENDING", "SENDING", "SENT", "FAILED", "CANCELLED"];
 
 pub fn add_created_at_and_updated_at_timestamps(t: TableCreateStatement) -> TableCreateStatement {
     let mut t = t;

@@ -7,7 +7,7 @@ use crate::common::AppState;
 use crate::configuration::constants::ConfigurationKey;
 use crate::entity::tenant;
 use crate::tenant::constants::DEFAULT_TENANT_NAME;
-use crate::tenant::dto::TenantMembershipDto;
+use crate::tenant::dto::{TenantMembershipDto, UserTenantMembershipDto};
 use crate::tenant::error::TenantError;
 use crate::tenant::membership::service as membership_service;
 use crate::tenant::repository;
@@ -56,6 +56,48 @@ pub async fn create_tenant_for_user(
     .await
     .map_err(anyhow::Error::from)?;
     Ok(created_tenant)
+}
+
+pub async fn list_all_tenants(app_state: &AppState) -> Result<Vec<tenant::Model>, sea_orm::DbErr> {
+    repository::list_all_tenants(&app_state.database_connection).await
+}
+
+pub async fn find_tenant(
+    app_state: &AppState,
+    tenant_id: Uuid,
+) -> Result<Option<tenant::Model>, sea_orm::DbErr> {
+    repository::find_tenant_by_id(&app_state.database_connection, tenant_id).await
+}
+
+pub async fn memberships_by_user(
+    app_state: &AppState,
+    user_ids: Vec<Uuid>,
+) -> Result<std::collections::HashMap<Uuid, Vec<UserTenantMembershipDto>>, TenantError> {
+    let mut memberships: std::collections::HashMap<Uuid, Vec<UserTenantMembershipDto>> =
+        std::collections::HashMap::new();
+    for row in repository::list_memberships_for_users(&app_state.database_connection, user_ids)
+        .await
+        .map_err(anyhow::Error::from)?
+    {
+        let (Some(tenant), Some(role)) = (row.tenant, row.role) else {
+            return Err(TenantError::Internal(anyhow::anyhow!(
+                "Membership {} points at a missing tenant or role",
+                row.membership.id
+            )));
+        };
+        memberships
+            .entry(row.membership.user_id)
+            .or_default()
+            .push(UserTenantMembershipDto {
+                tenant_id: tenant.id,
+                tenant_name: tenant.name,
+                role_name: role.name,
+            });
+    }
+    for user_memberships in memberships.values_mut() {
+        user_memberships.sort_by(|first, second| first.tenant_name.cmp(&second.tenant_name));
+    }
+    Ok(memberships)
 }
 
 pub async fn find_tenant_names(

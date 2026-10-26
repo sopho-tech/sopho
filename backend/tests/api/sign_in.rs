@@ -1,7 +1,8 @@
 use crate::support::constants::{
-    ADMIN_EMAIL, ADMIN_PASSWORD, EMAIL_NOT_VERIFIED, LOGIN_ATTEMPT_TABLE, OIDC_STATE_COOKIE,
-    OTHER_SINGLE_SIGN_ON_PROVIDER, PASSWORD_ACCOUNT, PLATFORM_MEMBER, SINGLE_SIGN_ON_PROVIDER,
-    SSO_EXPIRED, SSO_FAILED, TENANT_CREATE_PERMISSION,
+    ADMIN_EMAIL, ADMIN_PASSWORD, EMAIL_MANAGE_PERMISSION, EMAIL_NOT_VERIFIED, LOGIN_ATTEMPT_TABLE,
+    OIDC_STATE_COOKIE, OTHER_SINGLE_SIGN_ON_PROVIDER, PASSWORD_ACCOUNT, PLATFORM_MEMBER,
+    SINGLE_SIGN_ON_PROVIDER, SSO_EXPIRED, SSO_FAILED, TENANT_APPOINT_OWNER_PERMISSION,
+    TENANT_CREATE_PERMISSION, USER_MANAGE_PERMISSION,
 };
 use crate::support::database::{count_rows, now, select_rows, update_rows};
 use crate::support::identity_provider::{
@@ -75,7 +76,12 @@ async fn password_login_is_refused_for_an_sso_only_user() {
     assert_eq!(signed_in.status, StatusCode::OK, "{}", signed_in.body);
     assert_eq!(
         signed_in_user(&administrator).await["platform_permissions"],
-        json!([TENANT_CREATE_PERMISSION]),
+        json!([
+            TENANT_CREATE_PERMISSION,
+            USER_MANAGE_PERMISSION,
+            TENANT_APPOINT_OWNER_PERMISSION,
+            EMAIL_MANAGE_PERMISSION
+        ]),
         "the seeded admin administers the platform"
     );
     assert_eq!(

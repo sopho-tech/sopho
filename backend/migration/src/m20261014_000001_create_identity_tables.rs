@@ -1,7 +1,7 @@
 use crate::db::add_created_at_and_updated_at_timestamps;
 use sea_orm_migration::{
     prelude::*,
-    schema::{boolean, pk_uuid, string, timestamp_with_time_zone, uuid, uuid_null},
+    schema::{boolean, pk_uuid, string, string_null, timestamp_with_time_zone, uuid, uuid_null},
 };
 
 #[derive(DeriveMigrationName)]
@@ -39,9 +39,11 @@ impl MigrationTrait for Migration {
         manager
             .create_index(
                 Index::create()
-                    .name("idx_identity_user")
+                    .name("idx_identity_user_provider_unique")
                     .table(Identity::Table)
                     .col(Identity::UserId)
+                    .col(Identity::ProviderName)
+                    .unique()
                     .to_owned(),
             )
             .await?;
@@ -56,6 +58,7 @@ impl MigrationTrait for Migration {
                     .col(string(OidcLoginAttempt::Nonce))
                     .col(string(OidcLoginAttempt::CodeVerifier))
                     .col(timestamp_with_time_zone(OidcLoginAttempt::ExpiresAt))
+                    .col(uuid_null(OidcLoginAttempt::LinkingUserId))
                     .to_owned(),
             ))
             .await?;
@@ -83,8 +86,21 @@ impl MigrationTrait for Migration {
                     .col(timestamp_with_time_zone(TenantInvitation::ExpiresAt))
                     .col(uuid(TenantInvitation::InvitedByUserId))
                     .col(uuid_null(TenantInvitation::AcceptedByUserId))
+                    .col(string_null(TenantInvitation::TokenHash))
+                    .col(uuid_null(TenantInvitation::LatestEmailId))
                     .to_owned(),
             ))
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .name("idx_tenant_invitation_token_hash_unique")
+                    .table(TenantInvitation::Table)
+                    .col(TenantInvitation::TokenHash)
+                    .unique()
+                    .to_owned(),
+            )
             .await?;
 
         manager
@@ -142,6 +158,7 @@ pub enum OidcLoginAttempt {
     Nonce,
     CodeVerifier,
     ExpiresAt,
+    LinkingUserId,
 }
 
 #[derive(DeriveIden)]
@@ -155,4 +172,6 @@ pub enum TenantInvitation {
     ExpiresAt,
     InvitedByUserId,
     AcceptedByUserId,
+    TokenHash,
+    LatestEmailId,
 }

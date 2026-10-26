@@ -10,4 +10,7 @@ pub mod token_utils;
 pub mod url_utils;
 
 pub use server_utils::{CreatedByQuery, PaginatedResponse, Pagination};
-pub use state::{AppState, Configurations, ConfigurationsBuilder, OidcProviderConfiguration};
+pub use state::{
+    AppState, Configurations, ConfigurationsBuilder, EmailConfiguration, OidcProviderConfiguration,
+    SmtpCredentials,
+};

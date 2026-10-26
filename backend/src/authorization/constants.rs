@@ -159,6 +159,12 @@ impl SystemRole {
 pub enum PlatformPermission {
     #[strum(serialize = "tenant:create")]
     TenantCreate,
+    #[strum(serialize = "user:manage")]
+    UserManage,
+    #[strum(serialize = "tenant:appoint_owner")]
+    TenantAppointOwner,
+    #[strum(serialize = "email:manage")]
+    EmailManage,
 }
 
 impl PlatformPermission {
@@ -186,7 +192,12 @@ impl PlatformRole {
 
     pub fn permissions(&self) -> Vec<PlatformPermission> {
         match self {
-            PlatformRole::Administrator => vec![PlatformPermission::TenantCreate],
+            PlatformRole::Administrator => vec![
+                PlatformPermission::TenantCreate,
+                PlatformPermission::UserManage,
+                PlatformPermission::TenantAppointOwner,
+                PlatformPermission::EmailManage,
+            ],
             PlatformRole::Member => Vec::new(),
         }
     }

@@ -3,9 +3,14 @@ use crate::support::constants::{
     ADMIN_ROLE, ALREADY_A_MEMBER_MESSAGE, ALREADY_INVITED_MESSAGE, EXPIRED_INVITATION_STATUS,
     INVALID_EMAIL_MESSAGE, INVITATION_EXPIRED_MESSAGE, INVITATION_NOT_FOUND_MESSAGE,
     INVITATION_TABLE, MEMBER_ROLE, OWNER_ROLE, PENDING_INVITATION_STATUS, PLATFORM_MEMBER,
-    ROLE_TOO_POWERFUL_MESSAGE, SINGLE_SIGN_ON_REQUIRED_MESSAGE, UNKNOWN_ROLE_MESSAGE, VIEWER_ROLE,
+    ROLE_TOO_POWERFUL_MESSAGE, UNKNOWN_ROLE_MESSAGE, VIEWER_ROLE,
 };
-use crate::support::database::{now, update_rows};
+use crate::support::constants::{
+    EMAIL_CANCELLED_STATUS, EMAIL_OUTBOX_TABLE, EMAIL_PENDING_STATUS, EMAIL_SENT_STATUS,
+    INVITATION_LINK_PATH, INVITATIONS_UNAVAILABLE_MESSAGE, RESEND_NEEDS_EMAIL_MESSAGE,
+};
+use crate::support::database::{now, select_rows, select_uuid, update_rows};
+use crate::support::mail_server::{link_in, shared_mail_server};
 use crate::support::tenants::{
     TenantMember, TestUser, add_member, create_tenant, create_user, join_tenant, sign_in,
 };
@@ -338,7 +343,7 @@ async fn received_invitations_list_only_what_the_caller_can_accept() {
 }
 
 #[tokio::test]
-async fn inviting_requires_a_single_sign_on_provider() {
+async fn inviting_needs_email_or_single_sign_on() {
     let app = TestApp::spawn().await;
     let tenant_id = create_tenant(&app, "acme").await;
     let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
@@ -346,9 +351,248 @@ async fn inviting_requires_a_single_sign_on_provider() {
     assert_refused(
         &invite(&owner, tenant_id, "newcomer@example.test", MEMBER_ROLE).await,
         StatusCode::CONFLICT,
-        SINGLE_SIGN_ON_REQUIRED_MESSAGE,
+        INVITATIONS_UNAVAILABLE_MESSAGE,
     );
     assert!(tenant_invitations(&owner, tenant_id).await.is_empty());
+}
+
+fn unique_recipient(label: &str) -> String {
+    format!("{label}-{}@example.test", Uuid::new_v4().simple())
+}
+
+async fn stored_token_hash(app: &TestApp, invitation_id: Uuid) -> Option<String> {
+    select_rows(
+        app,
+        INVITATION_TABLE,
+        &["token_hash"],
+        &[("id", invitation_id.into())],
+    )
+    .await[0]
+        .try_get("", "token_hash")
+        .expect("read the token hash")
+}
+
+async fn email_status(app: &TestApp, email_id: Uuid) -> String {
+    select_rows(
+        app,
+        EMAIL_OUTBOX_TABLE,
+        &["status"],
+        &[("id", email_id.into())],
+    )
+    .await[0]
+        .try_get("", "status")
+        .expect("read the email status")
+}
+
+fn token_in(link: &str) -> &str {
+    link.split_once("#token=")
+        .map(|(_, token)| token)
+        .expect("the link carries a token")
+}
+
+#[tokio::test]
+async fn inviting_with_email_on_emails_a_link() {
+    let app = TestApp::spawn_with_email().await;
+    let tenant_id = create_tenant(&app, "acme").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
+    let recipient = unique_recipient("emailed");
+
+    let response = invite(&owner, tenant_id, &recipient, MEMBER_ROLE).await;
+    assert_eq!(
+        response.body["email_delivery"]["status"],
+        EMAIL_PENDING_STATUS
+    );
+    let invitation_id = invitation_id(response);
+    app.deliver_due_emails().await;
+
+    let received = shared_mail_server().await.emails_to(&recipient).await;
+    assert_eq!(received.len(), 1);
+    assert_eq!(
+        received[0].subject,
+        format!("{} invited you to acme on Sopho", owner.user.full_name)
+    );
+    let link = link_in(
+        &received[0],
+        &format!("{}{INVITATION_LINK_PATH}", app.base_url()),
+    );
+    let token = token_in(&link);
+    assert_eq!(token.len(), 43);
+    assert_eq!(
+        stored_token_hash(&app, invitation_id).await,
+        Some(hex::encode(<sha2::Sha256 as sha2::Digest>::digest(
+            token.as_bytes()
+        )))
+    );
+}
+
+#[tokio::test]
+async fn resending_replaces_the_link_and_cancels_the_unsent_email() {
+    let app = TestApp::spawn_with_email().await;
+    let tenant_id = create_tenant(&app, "acme").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
+    let recipient = unique_recipient("resent");
+    let invitation_id = invitation_id(invite(&owner, tenant_id, &recipient, MEMBER_ROLE).await);
+    let first_email_id = select_uuid(
+        &app,
+        INVITATION_TABLE,
+        "latest_email_id",
+        &[("id", invitation_id.into())],
+    )
+    .await;
+    let first_token_hash = stored_token_hash(&app, invitation_id).await;
+    expire(&app, invitation_id).await;
+
+    let resent = owner
+        .session
+        .post(
+            &format!(
+                "{}/{invitation_id}/resend",
+                tenant_invitations_path(tenant_id)
+            ),
+            json!({}),
+        )
+        .await;
+    assert_eq!(resent.status, StatusCode::OK, "{}", resent.body);
+    assert_eq!(resent.body["status"], PENDING_INVITATION_STATUS);
+    assert_eq!(
+        resent.body["email_delivery"]["status"],
+        EMAIL_PENDING_STATUS
+    );
+
+    assert_eq!(
+        email_status(&app, first_email_id).await,
+        EMAIL_CANCELLED_STATUS
+    );
+    let second_email_id = select_uuid(
+        &app,
+        INVITATION_TABLE,
+        "latest_email_id",
+        &[("id", invitation_id.into())],
+    )
+    .await;
+    assert_ne!(second_email_id, first_email_id);
+    let second_token_hash = stored_token_hash(&app, invitation_id).await;
+    assert_ne!(second_token_hash, first_token_hash);
+
+    app.deliver_due_emails().await;
+    let received = shared_mail_server().await.emails_to(&recipient).await;
+    assert_eq!(received.len(), 1, "only the resent email goes out");
+    let link = link_in(
+        &received[0],
+        &format!("{}{INVITATION_LINK_PATH}", app.base_url()),
+    );
+    assert_eq!(
+        second_token_hash,
+        Some(hex::encode(<sha2::Sha256 as sha2::Digest>::digest(
+            token_in(&link).as_bytes()
+        )))
+    );
+    let pending = tenant_invitations(&owner, tenant_id).await;
+    assert_eq!(pending[0]["status"], PENDING_INVITATION_STATUS);
+}
+
+#[tokio::test]
+async fn resending_needs_email() {
+    let app = TestApp::spawn_with_single_sign_on().await;
+    let tenant_id = create_tenant(&app, "acme").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
+    let invitation_id =
+        invitation_id(invite(&owner, tenant_id, "newcomer@example.test", MEMBER_ROLE).await);
+
+    assert_refused(
+        &owner
+            .session
+            .post(
+                &format!(
+                    "{}/{invitation_id}/resend",
+                    tenant_invitations_path(tenant_id)
+                ),
+                json!({}),
+            )
+            .await,
+        StatusCode::CONFLICT,
+        RESEND_NEEDS_EMAIL_MESSAGE,
+    );
+    assert_eq!(stored_token_hash(&app, invitation_id).await, None);
+}
+
+#[tokio::test]
+async fn revoking_cancels_the_unsent_email() {
+    let app = TestApp::spawn_with_email().await;
+    let tenant_id = create_tenant(&app, "acme").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
+    let recipient = unique_recipient("revoked");
+    let invitation_id = invitation_id(invite(&owner, tenant_id, &recipient, MEMBER_ROLE).await);
+    let email_id = select_uuid(
+        &app,
+        INVITATION_TABLE,
+        "latest_email_id",
+        &[("id", invitation_id.into())],
+    )
+    .await;
+
+    let revoked = revoke(&owner, tenant_id, invitation_id).await;
+    assert_eq!(revoked.status, StatusCode::NO_CONTENT, "{}", revoked.body);
+
+    assert_eq!(email_status(&app, email_id).await, EMAIL_CANCELLED_STATUS);
+    app.deliver_due_emails().await;
+    assert!(
+        shared_mail_server()
+            .await
+            .emails_to(&recipient)
+            .await
+            .is_empty()
+    );
+}
+
+async fn delivery_method(app: &TestApp) -> Value {
+    let tenant_id = create_tenant(app, "acme").await;
+    let owner = join_tenant(app, tenant_id, "owner", OWNER_ROLE).await;
+    let viewer = join_tenant(app, tenant_id, "viewer", VIEWER_ROLE).await;
+    let delivery_path = format!("{}/delivery", tenant_invitations_path(tenant_id));
+    assert_eq!(
+        viewer.session.get(&delivery_path).await.status,
+        StatusCode::FORBIDDEN
+    );
+    let delivery = owner.session.get(&delivery_path).await;
+    assert_eq!(delivery.status, StatusCode::OK, "{}", delivery.body);
+    delivery.body
+}
+
+#[tokio::test]
+async fn the_delivery_method_follows_the_configuration() {
+    let with_email = delivery_method(&TestApp::spawn_with_email().await).await;
+    assert_eq!(with_email["method"], "EMAIL");
+    assert_eq!(with_email["unavailable_reason"], Value::Null);
+
+    let with_both = delivery_method(&TestApp::spawn_with_email_and_single_sign_on().await).await;
+    assert_eq!(with_both["method"], "EMAIL");
+
+    let with_single_sign_on = delivery_method(&TestApp::spawn_with_single_sign_on().await).await;
+    assert_eq!(with_single_sign_on["method"], "SINGLE_SIGN_ON");
+
+    let with_neither = delivery_method(&TestApp::spawn().await).await;
+    assert_eq!(with_neither["method"], "UNAVAILABLE");
+    assert_eq!(
+        with_neither["unavailable_reason"],
+        INVITATIONS_UNAVAILABLE_MESSAGE
+    );
+}
+
+#[tokio::test]
+async fn pending_invitations_show_their_email_status() {
+    let app = TestApp::spawn_with_email().await;
+    let tenant_id = create_tenant(&app, "acme").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
+    invite(&owner, tenant_id, &unique_recipient("status"), MEMBER_ROLE).await;
+
+    let queued = tenant_invitations(&owner, tenant_id).await;
+    assert_eq!(queued[0]["email_delivery"]["status"], EMAIL_PENDING_STATUS);
+
+    app.deliver_due_emails().await;
+    let sent = tenant_invitations(&owner, tenant_id).await;
+    assert_eq!(sent[0]["email_delivery"]["status"], EMAIL_SENT_STATUS);
+    assert_eq!(sent[0]["email_delivery"]["last_error"], Value::Null);
 }
 
 #[tokio::test]

@@ -186,6 +186,24 @@ pub enum ConfigurationError {
         variable_name: String,
         provider_name: String,
     },
+    #[error("missing {variable}, required when {host} is set", host = EnvironmentVariable::SophoSmtpHost)]
+    MissingEmailVariable { variable: EnvironmentVariable },
+    #[error("invalid {variable} {value:?}", variable = EnvironmentVariable::SophoSmtpPort)]
+    InvalidSmtpPort {
+        value: String,
+        #[source]
+        source: std::num::ParseIntError,
+    },
+    #[error("invalid {variable} {value:?}: expected tls, starttls or none", variable = EnvironmentVariable::SophoSmtpTls)]
+    InvalidSmtpTls { value: String },
+    #[error("set both {username} and {password}, or neither", username = EnvironmentVariable::SophoSmtpUsername, password = EnvironmentVariable::SophoSmtpPassword)]
+    IncompleteSmtpCredentials,
+    #[error("invalid {variable} {value:?}", variable = EnvironmentVariable::SophoEmailFrom)]
+    InvalidEmailFrom {
+        value: String,
+        #[source]
+        source: lettre::address::AddressError,
+    },
 }
 
 impl From<BaseUrlError> for ConfigurationError {

@@ -1,5 +1,5 @@
 [files]
-extend-exclude = ["*.lock", "package-lock.json", "backend/demo/", "/assets/", "frontend/src/test/msw/public/"]
+extend-exclude = ["*.lock", "package-lock.json", "backend/demo/", "/assets/", "frontend/src/test/msw/public/", "backend/src/authentication/password/common_passwords.txt"]
 
 [default.extend-words]
 emperical = "emperical"

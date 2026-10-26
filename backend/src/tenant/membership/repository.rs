@@ -1,12 +1,13 @@
+use crate::authentication::service::UserStatus;
 use crate::authorization::constants::MembershipStatus;
 use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::entity::{role, tenant_membership, user};
-use sea_orm::sea_query::Expr;
+use sea_orm::sea_query::{Expr, Query};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr,
-    EntityTrait, PaginatorTrait, QueryFilter, Set,
+    EntityTrait, QueryFilter, QuerySelect, Set,
 };
 use uuid::Uuid;
 
@@ -53,17 +54,96 @@ pub async fn find_active_membership(
         .await
 }
 
-pub async fn count_active_members_with_role(
+pub async fn find_active_member_user_ids_with_role(
     database_connection: &DatabaseConnection,
     tenant_id: &TenantId,
     role_id: Uuid,
-) -> Result<u64, DbErr> {
+) -> Result<Vec<Uuid>, DbErr> {
     tenant_membership::Entity::find()
+        .select_only()
+        .column(tenant_membership::Column::UserId)
         .filter(tenant_membership::Column::TenantId.eq(tenant_id.get_uuid()))
         .filter(tenant_membership::Column::RoleId.eq(role_id))
         .filter(tenant_membership::Column::Status.eq(MembershipStatus::Active.as_str()))
-        .count(database_connection)
+        .filter(tenant_membership::Column::UserId.in_subquery(active_user_ids()))
+        .into_tuple()
+        .all(database_connection)
         .await
+}
+
+pub async fn find_membership(
+    database_connection: &DatabaseConnection,
+    tenant_id: &TenantId,
+    user_id: Uuid,
+) -> Result<Option<tenant_membership::Model>, DbErr> {
+    tenant_membership::Entity::find()
+        .filter(tenant_membership::Column::TenantId.eq(tenant_id.get_uuid()))
+        .filter(tenant_membership::Column::UserId.eq(user_id))
+        .one(database_connection)
+        .await
+}
+
+pub async fn make_owner(
+    database_connection: &DatabaseConnection,
+    membership_id: Uuid,
+    owner_role_id: Uuid,
+    actor: &Actor,
+) -> Result<u64, DbErr> {
+    Ok(tenant_membership::Entity::update_many()
+        .col_expr(
+            tenant_membership::Column::RoleId,
+            Expr::value(owner_role_id),
+        )
+        .col_expr(
+            tenant_membership::Column::Status,
+            Expr::value(MembershipStatus::Active.as_str()),
+        )
+        .col_expr(
+            tenant_membership::Column::UpdatedAt,
+            Expr::value(time_utils::now_utc_into::<
+                sea_orm::prelude::DateTimeWithTimeZone,
+            >()),
+        )
+        .col_expr(
+            tenant_membership::Column::ModifiedByUserId,
+            Expr::value(actor.user_id()),
+        )
+        .col_expr(
+            tenant_membership::Column::ModifiedByActor,
+            Expr::value(actor.kind_name()),
+        )
+        .filter(tenant_membership::Column::Id.eq(membership_id))
+        .exec(database_connection)
+        .await?
+        .rows_affected)
+}
+
+pub async fn list_active_memberships_with_role_name(
+    database_connection: &DatabaseConnection,
+    role_name: &str,
+) -> Result<Vec<tenant_membership::Model>, DbErr> {
+    tenant_membership::Entity::find()
+        .filter(tenant_membership::Column::Status.eq(MembershipStatus::Active.as_str()))
+        .filter(
+            tenant_membership::Column::RoleId.in_subquery(
+                Query::select()
+                    .column(role::Column::Id)
+                    .from(role::Entity)
+                    .and_where(role::Column::Name.eq(role_name))
+                    .to_owned(),
+            ),
+        )
+        .filter(tenant_membership::Column::UserId.in_subquery(active_user_ids()))
+        .all(database_connection)
+        .await
+}
+
+fn active_user_ids() -> sea_orm::sea_query::SelectStatement {
+    Query::select()
+        .column(user::Column::Id)
+        .from(user::Entity)
+        .and_where(user::Column::Status.eq(UserStatus::Active.as_str()))
+        .to_owned()
 }
 
 pub async fn update_membership_role(

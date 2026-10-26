@@ -12,6 +12,8 @@ pub struct Model {
     pub expires_at: DateTimeWithTimeZone,
     pub invited_by_user_id: Uuid,
     pub accepted_by_user_id: Option<Uuid>,
+    pub token_hash: Option<String>,
+    pub latest_email_id: Option<Uuid>,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

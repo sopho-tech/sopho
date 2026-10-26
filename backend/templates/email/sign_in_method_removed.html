@@ -1,0 +1,8 @@
+{% extends "email/layout.html" %}
+{% block title %}{{ email.provider_display_name }} sign-in was removed from your Sopho account{% endblock %}
+{% block content %}
+<p style="margin: 0 0 16px">Hi {{ email.full_name }},</p>
+<p style="margin: 0 0 16px">{{ email.provider_display_name }} sign-in was removed from your Sopho account on {{ email.changed_at }}.</p>
+<p style="margin: 0">If it wasn't you, tell your Sopho administrator.</p>
+{% endblock %}
+{% block reason %}You received this email because the ways you sign in to Sopho changed.{% endblock %}

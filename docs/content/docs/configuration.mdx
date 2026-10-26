@@ -83,7 +83,7 @@ Use a strong password in production.
 
 ## Single Sign-On
 
-People can sign in through any OpenID Connect provider, such as Google, Microsoft Entra ID or Okta. Without a provider, Sopho offers password sign-in only, and nobody can be invited to a tenant, because invitees join by signing in through a provider.
+People can sign in through any OpenID Connect provider, such as Google, Microsoft Entra ID or Okta. Without a provider, people sign in with a password. Inviting people to a tenant needs a provider or [email](#email).
 
 `SOPHO_OIDC_PROVIDERS` lists the providers, separated by commas, for example `google,okta`. A name may contain letters, digits and dashes. Each provider then needs the following five variables, where `<NAME>` is the provider name in upper case with dashes turned into underscores (`my-idp` becomes `MY_IDP`). Sopho fails to start if any of them is missing.
 
@@ -95,7 +95,7 @@ People can sign in through any OpenID Connect provider, such as Google, Microsof
 | `SOPHO_OIDC_<NAME>_CLIENT_SECRET` | Client secret of that application                                                                     |
 | `SOPHO_OIDC_<NAME>_REDIRECT_URI`  | `https://<your Sopho host>/api/v1/auth/oidc/<name>/callback`. Register the same URI with the provider |
 
-Sopho asks for the `openid`, `email` and `profile` scopes. The provider must return the person's email, marked as verified, and their name. Someone signing in for the first time gets an account without a tenant and joins tenants by accepting invitations. An email that already belongs to an account with a password, such as the admin's, can't be used to sign in through a provider.
+Sopho asks for the `openid`, `email` and `profile` scopes. The provider must return the person's email, marked as verified, and their name. Someone signing in for the first time gets an account without a tenant and joins tenants by accepting invitations. Signing in through a provider that confirms the email of an existing account adds the provider to that account, once the account's email has been proven by an emailed link or another provider. The admin created at startup has not proven its email: it signs in with its password and connects a provider from its profile.
 
 For example, for Google:
 
@@ -106,4 +106,32 @@ SOPHO_OIDC_GOOGLE_ISSUER_URL=https://accounts.google.com
 SOPHO_OIDC_GOOGLE_CLIENT_ID=<client id>
 SOPHO_OIDC_GOOGLE_CLIENT_SECRET=<client secret>
 SOPHO_OIDC_GOOGLE_REDIRECT_URI=https://sopho.example.com/api/v1/auth/oidc/google/callback
+```
+
+## Email
+
+Sopho sends email to invite people, to reset forgotten passwords, and to tell people when the way they sign in changes. Email is on when `SOPHO_SMTP_HOST` is set. Sopho then needs the other settings below, and fails to start if one is missing or invalid.
+
+| Variable              | Purpose                                                                                                               |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `SOPHO_SMTP_HOST`     | Host of the mail server                                                                                               |
+| `SOPHO_SMTP_PORT`     | Port of the mail server, usually `587` or `465`                                                                       |
+| `SOPHO_SMTP_TLS`      | `starttls` (usually port 587), `tls` (usually port 465), or `none` for a local test server only                       |
+| `SOPHO_SMTP_USERNAME` | User name for the mail server. Set it together with the password, or leave both unset                                 |
+| `SOPHO_SMTP_PASSWORD` | Password for the mail server                                                                                          |
+| `SOPHO_EMAIL_FROM`    | Sender of every email, for example `Sopho <no-reply@example.com>`                                                     |
+| `SOPHO_PUBLIC_URL`    | The address people use to reach Sopho, for example `https://sopho.example.com`. Every link in an email starts with it |
+
+Emails wait in a queue in Sopho's database and are retried when the mail server can't take them, so a short outage delays emails instead of losing them. Platform administrators see every email and its status on the Emails page.
+
+For example:
+
+```bash
+SOPHO_SMTP_HOST=smtp.example.com
+SOPHO_SMTP_PORT=587
+SOPHO_SMTP_TLS=starttls
+SOPHO_SMTP_USERNAME=<user name>
+SOPHO_SMTP_PASSWORD=<password>
+SOPHO_EMAIL_FROM="Sopho <no-reply@example.com>"
+SOPHO_PUBLIC_URL=https://sopho.example.com
 ```

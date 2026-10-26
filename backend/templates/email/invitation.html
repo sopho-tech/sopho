@@ -1,0 +1,11 @@
+{% extends "email/layout.html" %}
+{% block title %}You're invited to {{ email.tenant_name }}{% endblock %}
+{% block content %}
+<p style="margin: 0 0 16px">{{ email.inviter_name }} invited you to join <strong>{{ email.tenant_name }}</strong> on Sopho as {{ email.role_name }}.</p>
+<p style="margin: 0 0 24px">
+  <a href="{{ email.invitation_link }}" style="display: inline-block; padding: 12px 20px; background-color: #5b4de0; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600">Accept the invitation</a>
+</p>
+<p style="margin: 0 0 8px">The invitation expires on {{ email.expires_on }}. If the button doesn't work, open this link:</p>
+<p style="margin: 0; word-break: break-all"><a href="{{ email.invitation_link }}" style="color: #5b4de0">{{ email.invitation_link }}</a></p>
+{% endblock %}
+{% block reason %}You received this email because {{ email.inviter_name }} invited this address to Sopho. If you weren't expecting it, you can ignore it.{% endblock %}

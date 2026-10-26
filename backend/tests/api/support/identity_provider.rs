@@ -165,9 +165,21 @@ fn redirect_location(response: &Response) -> String {
 }
 
 pub async fn start_sign_in(session: &UserSession, provider_name: &str) -> StartedSignIn {
+    start_provider_flow(session, provider_name, "start").await
+}
+
+pub async fn start_connect(session: &UserSession, provider_name: &str) -> StartedSignIn {
+    start_provider_flow(session, provider_name, "connect").await
+}
+
+async fn start_provider_flow(
+    session: &UserSession,
+    provider_name: &str,
+    flow: &str,
+) -> StartedSignIn {
     let response = session
         .client_without_redirects()
-        .get(session.api_url(&format!("/auth/oidc/{provider_name}/start")))
+        .get(session.api_url(&format!("/auth/oidc/{provider_name}/{flow}")))
         .send()
         .await
         .expect("start the single sign-on");

@@ -1,23 +1,31 @@
+use crate::authentication::constants::UserStatus;
 use crate::authentication::oidc::constants::{
-    EMAIL_SCOPE, LOGIN_ATTEMPT_EXPIRY_MINUTES, PROFILE_SCOPE,
+    CallbackPurpose, EMAIL_SCOPE, LOGIN_ATTEMPT_EXPIRY_MINUTES, PROFILE_SCOPE, SignInMethodChange,
 };
 use crate::authentication::oidc::dto::{
-    CallbackQuery, LoginSecrets, OidcProviderDto, StartedLogin, VerifiedClaims,
+    CallbackOutcome, CallbackQuery, LoginSecrets, OidcProviderDto, SignInMethodsDto,
+    SignInProviderDto, StartedLogin, VerifiedClaims,
 };
-use crate::authentication::oidc::error::OidcLoginError;
+use crate::authentication::oidc::error::{CallbackFailure, OidcLoginError, SignInMethodError};
 use crate::authentication::oidc::repository;
+use crate::authentication::repository as authentication_repository;
 use crate::authentication::service as authentication_service;
 use crate::common::time_utils;
 use crate::common::{AppState, OidcProviderConfiguration};
-use crate::entity::{identity, oidc_login_attempt};
+use crate::email_delivery::dto::EmailMessage;
+use crate::email_delivery::service as email_delivery_service;
+use crate::email_template::dto::{SignInMethodAddedEmail, SignInMethodRemovedEmail};
+use crate::email_template::service::{EmailTemplate, format_email_time};
+use crate::entity::{identity, oidc_login_attempt, user};
+use chrono::Utc;
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
 use openidconnect::{
     AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointMaybeSet, EndpointNotSet,
     EndpointSet, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
     TokenResponse,
 };
-use sea_orm::TransactionTrait;
 use sea_orm::prelude::DateTimeWithTimeZone;
+use sea_orm::{DatabaseTransaction, TransactionTrait};
 use tower_cookies::Cookies;
 use uuid::Uuid;
 
@@ -45,6 +53,7 @@ pub fn list_providers(app_state: &AppState) -> Vec<OidcProviderDto> {
 pub async fn start_login(
     app_state: &AppState,
     provider_name: &str,
+    linking_user_id: Option<Uuid>,
 ) -> Result<StartedLogin, OidcLoginError> {
     let provider = provider_configuration(app_state, provider_name)?;
     let (client, _) = build_oidc_client(provider).await?;
@@ -69,6 +78,7 @@ pub async fn start_login(
             nonce: nonce.secret().clone(),
             code_verifier: pkce_verifier.secret().clone(),
         },
+        linking_user_id,
     )
     .await?;
 
@@ -84,22 +94,58 @@ pub async fn complete_login(
     provider_name: &str,
     query: CallbackQuery,
     cookie_state: Option<String>,
-) -> Result<(), OidcLoginError> {
+) -> Result<CallbackOutcome, CallbackFailure> {
+    let sign_in_failure = |error| CallbackFailure {
+        purpose: CallbackPurpose::SignIn,
+        error,
+    };
+    let Some(state) = query.state else {
+        return Err(sign_in_failure(
+            query
+                .error
+                .map(OidcLoginError::Provider)
+                .unwrap_or(OidcLoginError::StateMismatch),
+        ));
+    };
+    require_matching_state(cookie_state.as_deref(), &state).map_err(sign_in_failure)?;
+    let attempt = consume_attempt(app_state, provider_name, &state)
+        .await
+        .map_err(sign_in_failure)?;
+    let purpose = match attempt.linking_user_id {
+        Some(_) => CallbackPurpose::Connect,
+        None => CallbackPurpose::SignIn,
+    };
+    let failure = |error| CallbackFailure { purpose, error };
     if let Some(provider_error) = query.error {
-        return Err(OidcLoginError::Provider(provider_error));
+        return Err(failure(OidcLoginError::Provider(provider_error)));
     }
-    let state = query.state.ok_or(OidcLoginError::StateMismatch)?;
-    require_matching_state(cookie_state.as_deref(), &state)?;
-    let attempt = consume_attempt(app_state, provider_name, &state).await?;
     let code = query.code.ok_or_else(|| {
-        OidcLoginError::Provider("the provider sent no authorization code".to_string())
+        failure(OidcLoginError::Provider(
+            "the provider sent no authorization code".to_string(),
+        ))
     })?;
+    let provider = provider_configuration(app_state, provider_name).map_err(failure)?;
+    let claims = verified_claims(provider, &attempt, code)
+        .await
+        .map_err(failure)?;
 
-    let provider = provider_configuration(app_state, provider_name)?;
-    let claims = verified_claims(provider, &attempt, code).await?;
-    let user_id = resolve_user(app_state, claims).await?;
-    authentication_service::start_session_for_user(app_state, cookies, user_id).await?;
-    Ok(())
+    match attempt.linking_user_id {
+        Some(linking_user_id) => {
+            connect_identity(app_state, linking_user_id, claims)
+                .await
+                .map_err(failure)?;
+            Ok(CallbackOutcome::Connected {
+                provider_name: provider_name.to_string(),
+            })
+        }
+        None => {
+            let user_id = resolve_user(app_state, claims).await.map_err(failure)?;
+            authentication_service::start_session_for_user(app_state, cookies, user_id)
+                .await
+                .map_err(|error| failure(error.into()))?;
+            Ok(CallbackOutcome::SignedIn)
+        }
+    }
 }
 
 pub fn require_matching_state(
@@ -116,6 +162,7 @@ pub async fn record_login_attempt(
     app_state: &AppState,
     provider_name: &str,
     secrets: LoginSecrets,
+    linking_user_id: Option<Uuid>,
 ) -> Result<(), OidcLoginError> {
     let now: DateTimeWithTimeZone = time_utils::now_utc_into();
     repository::delete_expired_login_attempts(&app_state.database_connection, now).await?;
@@ -128,6 +175,7 @@ pub async fn record_login_attempt(
             nonce: secrets.nonce,
             code_verifier: secrets.code_verifier,
             expires_at: time_utils::now_plus_minutes_into(LOGIN_ATTEMPT_EXPIRY_MINUTES),
+            linking_user_id,
             created_at: now,
             updated_at: now,
         },
@@ -167,34 +215,33 @@ pub async fn resolve_user(
     )
     .await?
     {
-        return Ok(existing_identity.user_id);
+        let identity_owner = authentication_repository::get_user(
+            &app_state.database_connection,
+            existing_identity.user_id,
+        )
+        .await?
+        .ok_or(OidcLoginError::AttemptNotFound)?;
+        require_active(&identity_owner)?;
+        return Ok(identity_owner.id);
     }
 
-    let email = claims
-        .email
-        .as_deref()
-        .map(authentication_service::normalize_email)
-        .filter(|email| !email.is_empty())
-        .ok_or(OidcLoginError::MissingEmail)?;
-    if !claims.email_verified {
-        return Err(OidcLoginError::EmailNotVerified);
-    }
-
+    let email = verified_email(&claims)?;
     if let Some(existing_user) =
         authentication_service::find_optional_user_by_email(app_state, &email).await?
     {
-        let verified_by_a_provider =
-            repository::count_identities_for_user(&app_state.database_connection, existing_user.id)
-                .await?
-                > 0;
-        if !verified_by_a_provider {
+        require_active(&existing_user)?;
+        if existing_user.email_verified_at.is_none() {
             return Err(OidcLoginError::AccountRequiresPasswordSignIn);
         }
-        repository::insert_identity(
-            &app_state.database_connection,
-            identity_for(existing_user.id, &claims, &email),
-        )
-        .await?;
+        let has_identity_at_provider =
+            repository::find_identities_for_user(&app_state.database_connection, existing_user.id)
+                .await?
+                .iter()
+                .any(|identity| identity.provider_name == claims.provider_name);
+        if has_identity_at_provider {
+            return Err(OidcLoginError::SecondIdentityAtProvider);
+        }
+        add_identity(app_state, &existing_user, &claims, &email).await?;
         return Ok(existing_user.id);
     }
 
@@ -209,6 +256,258 @@ pub async fn resolve_user(
     repository::insert_identity(&txn, identity_for(user.id, &claims, &email)).await?;
     txn.commit().await?;
     Ok(user.id)
+}
+
+pub async fn connect_identity(
+    app_state: &AppState,
+    linking_user_id: Uuid,
+    claims: VerifiedClaims,
+) -> Result<(), OidcLoginError> {
+    let linking_user =
+        authentication_repository::get_user(&app_state.database_connection, linking_user_id)
+            .await?
+            .ok_or(OidcLoginError::AttemptNotFound)?;
+    require_active(&linking_user)?;
+    let email = verified_email(&claims)?;
+    if email != authentication_service::normalize_email(&linking_user.email) {
+        return Err(OidcLoginError::EmailMismatch);
+    }
+    if let Some(existing_identity) = repository::find_identity(
+        &app_state.database_connection,
+        &claims.provider_name,
+        &claims.subject,
+    )
+    .await?
+    {
+        return Err(match existing_identity.user_id == linking_user.id {
+            true => OidcLoginError::AlreadyConnected,
+            false => OidcLoginError::IdentityInUse,
+        });
+    }
+    let has_identity_at_provider =
+        repository::find_identities_for_user(&app_state.database_connection, linking_user.id)
+            .await?
+            .iter()
+            .any(|identity| identity.provider_name == claims.provider_name);
+    if has_identity_at_provider {
+        return Err(OidcLoginError::AlreadyConnected);
+    }
+    add_identity(app_state, &linking_user, &claims, &email).await
+}
+
+pub async fn list_sign_in_methods(
+    app_state: &AppState,
+    user_id: Uuid,
+) -> Result<SignInMethodsDto, SignInMethodError> {
+    let account = authentication_repository::get_user(&app_state.database_connection, user_id)
+        .await?
+        .ok_or_else(|| sea_orm::DbErr::RecordNotFound(user_id.to_string()))?;
+    let identities =
+        repository::find_identities_for_user(&app_state.database_connection, user_id).await?;
+    let has_password = account.password_hash.is_some();
+    let can_disconnect = has_password || identities.len() > 1;
+
+    let mut providers: Vec<SignInProviderDto> = app_state
+        .config
+        .oidc_providers
+        .iter()
+        .map(|provider| {
+            let connected_identity = identities
+                .iter()
+                .find(|identity| identity.provider_name == provider.name);
+            SignInProviderDto {
+                name: provider.name.clone(),
+                display_name: provider.display_name.clone(),
+                connected: connected_identity.is_some(),
+                email: connected_identity.map(|identity| identity.email.clone()),
+                can_disconnect: connected_identity.is_some() && can_disconnect,
+            }
+        })
+        .collect();
+    providers.extend(
+        identities
+            .iter()
+            .filter(|identity| {
+                !app_state
+                    .config
+                    .oidc_providers
+                    .iter()
+                    .any(|provider| provider.name == identity.provider_name)
+            })
+            .map(|identity| SignInProviderDto {
+                name: identity.provider_name.clone(),
+                display_name: identity.provider_name.clone(),
+                connected: true,
+                email: Some(identity.email.clone()),
+                can_disconnect,
+            }),
+    );
+    Ok(SignInMethodsDto {
+        has_password,
+        providers,
+    })
+}
+
+pub async fn disconnect_provider(
+    app_state: &AppState,
+    user_id: Uuid,
+    provider_name: &str,
+) -> Result<(), SignInMethodError> {
+    let account = authentication_repository::get_user(&app_state.database_connection, user_id)
+        .await?
+        .ok_or_else(|| sea_orm::DbErr::RecordNotFound(user_id.to_string()))?;
+    let identities =
+        repository::find_identities_for_user(&app_state.database_connection, user_id).await?;
+    let identity = identities
+        .iter()
+        .find(|identity| identity.provider_name == provider_name)
+        .ok_or(SignInMethodError::NotConnected)?;
+    if account.password_hash.is_none() && identities.len() <= 1 {
+        return Err(SignInMethodError::LastSignInMethod);
+    }
+    let txn = app_state.database_connection.begin().await?;
+    repository::delete_identity(&txn, identity.id).await?;
+    queue_sign_in_method_notice_transaction(
+        &txn,
+        app_state,
+        &account,
+        provider_name,
+        SignInMethodChange::Removed,
+    )
+    .await?;
+    txn.commit().await?;
+    Ok(())
+}
+
+async fn add_identity(
+    app_state: &AppState,
+    account: &user::Model,
+    claims: &VerifiedClaims,
+    email: &str,
+) -> Result<(), OidcLoginError> {
+    let txn = app_state.database_connection.begin().await?;
+    repository::insert_identity(&txn, identity_for(account.id, claims, email)).await?;
+    authentication_service::mark_email_verified_transaction(&txn, account.id).await?;
+    queue_sign_in_method_notice_transaction(
+        &txn,
+        app_state,
+        account,
+        &claims.provider_name,
+        SignInMethodChange::Added,
+    )
+    .await
+    .map_err(|error| match error {
+        SignInMethodError::EmailDelivery(error) => OidcLoginError::EmailDelivery(error),
+        SignInMethodError::EmailTemplate(error) => OidcLoginError::EmailTemplate(error),
+        SignInMethodError::Database(error) => OidcLoginError::Database(error),
+        other => OidcLoginError::Internal(other.to_string()),
+    })?;
+    txn.commit().await?;
+    Ok(())
+}
+
+async fn queue_sign_in_method_notice_transaction(
+    txn: &DatabaseTransaction,
+    app_state: &AppState,
+    account: &user::Model,
+    provider_name: &str,
+    change: SignInMethodChange,
+) -> Result<(), SignInMethodError> {
+    if !email_delivery_service::is_email_enabled(app_state) {
+        return Ok(());
+    }
+    let provider_display_name = provider_display_name(app_state, provider_name);
+    let changed_at = format_email_time(Utc::now());
+    let rendered_email = match change {
+        SignInMethodChange::Added => SignInMethodAddedEmail {
+            full_name: account.full_name.clone(),
+            provider_display_name,
+            changed_at,
+        }
+        .render()?,
+        SignInMethodChange::Removed => SignInMethodRemovedEmail {
+            full_name: account.full_name.clone(),
+            provider_display_name,
+            changed_at,
+        }
+        .render()?,
+    };
+    email_delivery_service::enqueue_email_transaction(
+        txn,
+        app_state,
+        EmailMessage {
+            kind: rendered_email.kind.to_string(),
+            recipient: account.email.clone(),
+            subject: rendered_email.subject,
+            text_body: rendered_email.text_body,
+            html_body: rendered_email.html_body,
+            send_before: email_delivery_service::notice_send_before(),
+            tenant_id: None,
+            requested_by_user_id: Some(account.id),
+        },
+    )
+    .await?;
+    Ok(())
+}
+
+pub async fn connected_provider_display_names(
+    app_state: &AppState,
+    user_id: Uuid,
+) -> Result<Vec<String>, sea_orm::DbErr> {
+    Ok(
+        repository::find_identities_for_user(&app_state.database_connection, user_id)
+            .await?
+            .iter()
+            .map(|identity| provider_display_name(app_state, &identity.provider_name))
+            .collect(),
+    )
+}
+
+pub async fn provider_names_by_user(
+    app_state: &AppState,
+    user_ids: Vec<Uuid>,
+) -> Result<std::collections::HashMap<Uuid, Vec<String>>, sea_orm::DbErr> {
+    let mut provider_names: std::collections::HashMap<Uuid, Vec<String>> =
+        std::collections::HashMap::new();
+    for identity in
+        repository::find_identities_for_users(&app_state.database_connection, user_ids).await?
+    {
+        provider_names
+            .entry(identity.user_id)
+            .or_default()
+            .push(provider_display_name(app_state, &identity.provider_name));
+    }
+    Ok(provider_names)
+}
+
+fn provider_display_name(app_state: &AppState, provider_name: &str) -> String {
+    app_state
+        .config
+        .oidc_providers
+        .iter()
+        .find(|provider| provider.name == provider_name)
+        .map(|provider| provider.display_name.clone())
+        .unwrap_or_else(|| provider_name.to_string())
+}
+
+fn require_active(account: &user::Model) -> Result<(), OidcLoginError> {
+    if account.status == UserStatus::Deactivated.as_str() {
+        return Err(OidcLoginError::AccountDeactivated);
+    }
+    Ok(())
+}
+
+fn verified_email(claims: &VerifiedClaims) -> Result<String, OidcLoginError> {
+    let email = claims
+        .email
+        .as_deref()
+        .map(authentication_service::normalize_email)
+        .filter(|email| !email.is_empty())
+        .ok_or(OidcLoginError::MissingEmail)?;
+    if !claims.email_verified {
+        return Err(OidcLoginError::EmailNotVerified);
+    }
+    Ok(email)
 }
 
 fn identity_for(user_id: Uuid, claims: &VerifiedClaims, email: &str) -> identity::Model {

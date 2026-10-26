@@ -3,7 +3,8 @@ use crate::authorization::dto::Actor;
 use crate::common::time_utils;
 use crate::entity::{role, tenant, tenant_membership};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, QueryOrder,
+    Set,
 };
 use uuid::Uuid;
 
@@ -62,6 +63,39 @@ pub async fn list_memberships_for_user(
         .all(database_connection)
         .await?;
 
+    let mut rows = Vec::with_capacity(memberships.len());
+    for membership in memberships {
+        let tenant = find_tenant_by_id(database_connection, membership.tenant_id).await?;
+        let role = role::Entity::find_by_id(membership.role_id)
+            .one(database_connection)
+            .await?;
+        rows.push(TenantMembershipRow {
+            membership,
+            tenant,
+            role,
+        });
+    }
+    Ok(rows)
+}
+
+pub async fn list_all_tenants(
+    database_connection: &DatabaseConnection,
+) -> Result<Vec<tenant::Model>, DbErr> {
+    tenant::Entity::find()
+        .order_by_asc(tenant::Column::Name)
+        .all(database_connection)
+        .await
+}
+
+pub async fn list_memberships_for_users(
+    database_connection: &DatabaseConnection,
+    user_ids: Vec<Uuid>,
+) -> Result<Vec<TenantMembershipRow>, DbErr> {
+    let memberships = tenant_membership::Entity::find()
+        .filter(tenant_membership::Column::UserId.is_in(user_ids))
+        .filter(tenant_membership::Column::Status.eq(MembershipStatus::Active.as_str().to_string()))
+        .all(database_connection)
+        .await?;
     let mut rows = Vec::with_capacity(memberships.len());
     for membership in memberships {
         let tenant = find_tenant_by_id(database_connection, membership.tenant_id).await?;

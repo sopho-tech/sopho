@@ -1,7 +1,17 @@
+use crate::common::constants::LINK_TOKEN_BYTES;
+use base64::Engine as _;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use sha2::{Digest, Sha256};
 
 pub fn hash_token(token: &str) -> String {
     hex::encode(Sha256::digest(token.as_bytes()))
+}
+
+pub fn new_link_token() -> String {
+    let mut random_bytes = [0u8; LINK_TOKEN_BYTES];
+    getrandom::fill(&mut random_bytes)
+        .expect("the operating system random number generator failed");
+    URL_SAFE_NO_PAD.encode(random_bytes)
 }
 
 #[cfg(test)]
