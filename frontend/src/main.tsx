@@ -3,14 +3,22 @@ import { createRoot } from "react-dom/client";
 import "src/css/index.css";
 import { Home } from "src/components/Home/Home";
 import SignIn from "src/components/SignIn/SignIn";
+import { InvitationLink } from "src/components/InvitationLink";
+import { ForgotPassword, ResetPassword } from "src/components/PasswordReset";
 import { Settings } from "src/components/Settings";
 import { Connections } from "src/components/Connection/ConnectionsPage";
 import { AIConfiguration } from "src/components/Settings/AIConfiguration";
-import { Profile } from "src/components/Profile";
+import { Profile, ProfileRedirect } from "src/components/Profile";
 import { ProtectedRoute } from "src/components/ProtectedRoute";
 import { TenantIndexRedirect, TenantRoute } from "src/components/TenantRoute";
 import { Onboarding } from "src/components/Onboarding";
 import { Members } from "src/components/Settings/Members";
+import {
+  Emails,
+  PlatformIndexRedirect,
+  PlatformLayout,
+  Users,
+} from "src/components/Platform";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { ReactQueryClientProvider } from "src/utils/react_query_provider";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -37,6 +45,28 @@ const router = createBrowserRouter([
       {
         path: APP_ROUTES.ONBOARDING,
         element: <Onboarding />,
+      },
+      {
+        path: APP_ROUTES.PROFILE,
+        element: <ProfileRedirect />,
+      },
+      {
+        path: APP_ROUTES.PLATFORM,
+        element: <PlatformLayout />,
+        children: [
+          {
+            index: true,
+            element: <PlatformIndexRedirect />,
+          },
+          {
+            path: "users",
+            element: <Users />,
+          },
+          {
+            path: "emails",
+            element: <Emails />,
+          },
+        ],
       },
       {
         path: APP_ROUTES.TENANT,
@@ -127,6 +157,18 @@ const router = createBrowserRouter([
   {
     path: APP_ROUTES.SIGN_IN,
     element: <SignIn />,
+  },
+  {
+    path: APP_ROUTES.INVITATION,
+    element: <InvitationLink />,
+  },
+  {
+    path: APP_ROUTES.FORGOT_PASSWORD,
+    element: <ForgotPassword />,
+  },
+  {
+    path: APP_ROUTES.RESET_PASSWORD,
+    element: <ResetPassword />,
   },
 ]);
 

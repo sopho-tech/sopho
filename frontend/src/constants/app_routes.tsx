@@ -23,6 +23,14 @@ export const APP_ROUTES = {
   CONNECTION_NEW: "/settings/connection/new",
   CONNECTION_EDIT: "/settings/connection/:id/edit",
   SIGN_IN: "/signin",
+  PLATFORM: "/platform",
+  PLATFORM_ROUTES: {
+    USERS: "/platform/users",
+    EMAILS: "/platform/emails",
+  },
+  INVITATION: "/invitation",
+  FORGOT_PASSWORD: "/forgot-password",
+  RESET_PASSWORD: "/reset-password",
   PROFILE: "/profile",
   CONVERSATIONAL_ANALYTICS: "/conversational_analytics",
   CONVERSATIONAL_ANALYTICS_ROUTES: {

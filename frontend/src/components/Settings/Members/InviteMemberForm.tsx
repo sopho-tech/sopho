@@ -8,9 +8,35 @@ import {
   Text,
 } from "src/components/design-system";
 import { RoleDto } from "src/api/member/queries";
-import { InvitationDto, useCreateInvitation } from "src/api/invitation/queries";
+import {
+  InvitationDeliveryMethod,
+  InvitationDto,
+  useCreateInvitation,
+} from "src/api/invitation/queries";
 
-export function InviteMemberForm({ roles }: { roles: RoleDto[] }) {
+function invitedMessage(
+  deliveryMethod: InvitationDeliveryMethod,
+  email: string,
+): string {
+  switch (deliveryMethod) {
+    case "EMAIL":
+      return `Invited ${email}. Sopho is emailing them a link to join.`;
+    case "SINGLE_SIGN_ON":
+      return `Invited ${email}. Ask them to sign in at ${window.location.origin} with that email address to accept.`;
+    case "UNAVAILABLE":
+      throw new Error("Invitations are unavailable, so nobody was invited");
+  }
+}
+
+type InviteMemberFormProps = {
+  roles: RoleDto[];
+  deliveryMethod: InvitationDeliveryMethod;
+};
+
+export function InviteMemberForm({
+  roles,
+  deliveryMethod,
+}: InviteMemberFormProps) {
   const [email, setEmail] = useState("");
   const [roleName, setRoleName] = useState("");
   const [lastInvitedEmail, setLastInvitedEmail] = useState<string | null>(null);
@@ -42,7 +68,7 @@ export function InviteMemberForm({ roles }: { roles: RoleDto[] }) {
       {lastInvitedEmail && (
         <BannerSlim
           type="success"
-          message={`Invited ${lastInvitedEmail}. Ask them to sign in at ${window.location.origin} with that email address to accept.`}
+          message={invitedMessage(deliveryMethod, lastInvitedEmail)}
         />
       )}
       <Flex direction="row" alignItems="center" gap="sm">

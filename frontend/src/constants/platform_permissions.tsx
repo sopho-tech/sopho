@@ -1,5 +1,8 @@
 export const PLATFORM_PERMISSIONS = {
   TENANT_CREATE: "tenant:create",
+  USER_MANAGE: "user:manage",
+  TENANT_APPOINT_OWNER: "tenant:appoint_owner",
+  EMAIL_MANAGE: "email:manage",
 } as const;
 
 export type PlatformPermission =

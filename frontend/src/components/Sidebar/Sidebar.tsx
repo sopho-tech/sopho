@@ -7,12 +7,17 @@ import {
   IconButtonLinkState,
 } from "src/components/design-system";
 import { TenantSwitcher } from "src/components/Sidebar/TenantSwitcher";
+import { usePlatformNavigationItems } from "src/components/Platform/hooks";
 import { useTenantPath } from "src/utils/tenant";
 
 const HOME_TOOLTIP = { text: "Home", direction: "right" } as const;
 const NOTEBOOKS_TOOLTIP = { text: "Notebooks", direction: "right" } as const;
 const SETTINGS_TOOLTIP = { text: "Settings", direction: "right" } as const;
 const PROFILE_TOOLTIP = { text: "Profile", direction: "right" } as const;
+const ADMINISTRATION_TOOLTIP = {
+  text: "Administration",
+  direction: "right",
+} as const;
 const CONVERSATION_ANALYTICS_TOOLTIP = {
   text: "Conversational Analytics",
   direction: "right",
@@ -23,6 +28,7 @@ const withoutTrailingSlash = (path: string) => path.replace(/\/$/, "");
 export function Sidebar() {
   const location = useLocation();
   const toTenantPath = useTenantPath();
+  const platformNavigationItems = usePlatformNavigationItems();
 
   const getState = (path: string) => {
     const currentPath = withoutTrailingSlash(location.pathname);
@@ -100,6 +106,22 @@ export function Sidebar() {
               </NavLink>
             </NavigationMenu.Link>
           </NavigationMenu.Item>
+          {platformNavigationItems.length > 0 && (
+            <NavigationMenu.Item className={SidebarStyles.navItem}>
+              <NavigationMenu.Link asChild>
+                <NavLink
+                  to={APP_ROUTES.PLATFORM}
+                  className={SidebarStyles.link}
+                >
+                  <IconButtonLink
+                    type="key"
+                    state={IconButtonLinkState.INACTIVE}
+                    tooltip={ADMINISTRATION_TOOLTIP}
+                  />
+                </NavLink>
+              </NavigationMenu.Link>
+            </NavigationMenu.Item>
+          )}
           <NavigationMenu.Item className={SidebarStyles.navItem}>
             <NavigationMenu.Link asChild>
               <NavLink

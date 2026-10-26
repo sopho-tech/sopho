@@ -1,4 +1,8 @@
 import { Fragment } from "react";
+import {
+  invitationPath,
+  pendingInvitationToken,
+} from "src/utils/pending_invitation";
 import { Navigate, Outlet } from "react-router";
 import { isUnauthorizedError } from "src/api/dto";
 import { useMemberships } from "src/api/tenant/queries";
@@ -40,7 +44,11 @@ export function TenantRoute() {
 
 export function TenantIndexRedirect() {
   const memberships = useMemberships();
+  const pendingToken = pendingInvitationToken();
 
+  if (pendingToken) {
+    return <Navigate to={invitationPath(pendingToken)} replace />;
+  }
   if (memberships.isPending) return null;
   if (memberships.isError) {
     if (isUnauthorizedError(memberships.error)) return null;

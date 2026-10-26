@@ -6,6 +6,22 @@ import { tenantKeys } from "src/api/tenant/queries";
 
 export type InvitationStatus = "PENDING" | "EXPIRED";
 
+export type EmailStatus =
+  "PENDING" | "SENDING" | "SENT" | "FAILED" | "CANCELLED";
+
+export type EmailDeliveryDto = {
+  status: EmailStatus;
+  last_error: string | null;
+};
+
+export type InvitationDeliveryMethod =
+  "EMAIL" | "SINGLE_SIGN_ON" | "UNAVAILABLE";
+
+export type InvitationDeliveryDto = {
+  method: InvitationDeliveryMethod;
+  unavailable_reason: string | null;
+};
+
 export type InvitationDto = {
   id: string;
   email: string;
@@ -13,6 +29,7 @@ export type InvitationDto = {
   status: InvitationStatus;
   invited_by_name: string;
   expires_at: string;
+  email_delivery: EmailDeliveryDto | null;
 };
 
 export type ReceivedInvitationDto = {
@@ -36,6 +53,7 @@ export type CreateInvitationDto = {
 export const invitationKeys = {
   received: ["invitations", "received"] as const,
   tenant: (tenantId: string) => [tenantId, "invitations"] as const,
+  delivery: (tenantId: string) => [tenantId, "invitationDelivery"] as const,
 };
 
 const invitationApi = {
@@ -73,6 +91,27 @@ const invitationApi = {
       url: tenantApiUrl(tenantId, API_ENDPOINTS.INVITATION.TENANT),
       data: payload,
       headers: { "Content-Type": "application/json" },
+    });
+    return response as InvitationDto;
+  },
+
+  getDelivery: async (tenantId: string): Promise<InvitationDeliveryDto> => {
+    const response = await ApiService.get({
+      url: tenantApiUrl(tenantId, API_ENDPOINTS.INVITATION.DELIVERY),
+      onlyBody: true,
+    });
+    return response as InvitationDeliveryDto;
+  },
+
+  resend: async (
+    tenantId: string,
+    invitationId: string,
+  ): Promise<InvitationDto> => {
+    const response = await ApiService.post({
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.INVITATION.RESEND.replace(":invitation_id", invitationId),
+      ),
     });
     return response as InvitationDto;
   },
@@ -138,6 +177,28 @@ export const useRevokeInvitation = () => {
   return useMutation({
     mutationFn: (invitationId: string) =>
       invitationApi.revoke(tenantId, invitationId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: invitationKeys.tenant(tenantId),
+      }),
+  });
+};
+
+export const useInvitationDelivery = (enabled: boolean) => {
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: invitationKeys.delivery(tenantId),
+    queryFn: () => invitationApi.getDelivery(tenantId),
+    enabled,
+  });
+};
+
+export const useResendInvitation = () => {
+  const queryClient = useQueryClient();
+  const tenantId = useTenantId();
+  return useMutation({
+    mutationFn: (invitationId: string) =>
+      invitationApi.resend(tenantId, invitationId),
     onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: invitationKeys.tenant(tenantId),

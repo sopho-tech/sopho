@@ -11,11 +11,14 @@ export type TenantMembershipDto = {
   permissions: string[];
 };
 
+export type AccountStatus = "ACTIVE" | "DEACTIVATED";
+
 export type TenantMemberDto = {
   user_id: string;
   full_name: string;
   email: string;
   role_name: string;
+  account_status: AccountStatus;
 };
 
 export type CreatedTenantDto = {

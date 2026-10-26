@@ -4,6 +4,7 @@ import { useCurrentUser, useDeleteSession } from "src/api/auth/queries";
 import { Form } from "src/components/design-system/Form/Form";
 import { Button } from "src/components/design-system/Button/Button";
 import styles from "src/components/Profile/Profile.module.css";
+import { SignInMethods } from "src/components/Profile/SignInMethods";
 
 export function Profile() {
   const { data: user } = useCurrentUser();
@@ -65,6 +66,7 @@ export function Profile() {
           </Form.Fields>
         </Form>
       )}
+      <SignInMethods />
       <Button
         label="Sign Out"
         backgroundColor="accent"

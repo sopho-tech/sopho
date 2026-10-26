@@ -29,9 +29,9 @@ export const currentUserHandler = http.get(
   () => HttpResponse.json(TEST_USER),
 );
 
-export const noSingleSignOnProvidersHandler = http.get(
-  API_ENDPOINTS.AUTH.OIDC_PROVIDERS,
-  () => HttpResponse.json([]),
+export const emaillessSignInOptionsHandler = http.get(
+  API_ENDPOINTS.AUTH.SIGN_IN_OPTIONS,
+  () => HttpResponse.json({ providers: [], password_reset_available: false }),
 );
 
 type CanvasPageHandlersOptions = {
@@ -119,5 +119,5 @@ export function canvasPageHandlers({
 export const handlers = [
   signedInSessionHandler,
   currentUserHandler,
-  noSingleSignOnProvidersHandler,
+  emaillessSignInOptionsHandler,
 ];

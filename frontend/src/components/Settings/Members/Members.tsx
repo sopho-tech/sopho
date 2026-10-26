@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import {
+  Badge,
   BannerSlim,
   Flex,
   Heading,
@@ -16,7 +17,7 @@ import {
   useUpdateMemberRole,
 } from "src/api/member/queries";
 import { useTenantPermission } from "src/api/tenant/queries";
-import { useOidcProviders } from "src/api/auth/queries";
+import { useInvitationDelivery } from "src/api/invitation/queries";
 import { PERMISSIONS } from "src/constants/permissions";
 import { InviteMemberForm } from "src/components/Settings/Members/InviteMemberForm";
 import { PendingInvitations } from "src/components/Settings/Members/PendingInvitations";
@@ -52,7 +53,12 @@ function MemberRow({
       aria-label={member.email}
     >
       <Flex direction="column">
-        <Text fontSize="sm">{member.full_name}</Text>
+        <Flex direction="row" alignItems="center" gap="xs">
+          <Text fontSize="sm">{member.full_name}</Text>
+          {member.account_status === "DEACTIVATED" && (
+            <Badge variant="subtle">Deactivated</Badge>
+          )}
+        </Flex>
         <Text fontSize="xs" color="subtle">
           {member.email}
         </Text>
@@ -95,7 +101,7 @@ export function Members() {
   const members = useTenantMembers();
   const roles = useRoles();
   const canInvite = useTenantPermission(PERMISSIONS.MEMBER_INVITE);
-  const providers = useOidcProviders();
+  const invitationDelivery = useInvitationDelivery(canInvite);
   const updateMemberRole = useUpdateMemberRole();
   const removeMember = useRemoveMember();
   const [memberPendingRemoval, setMemberPendingRemoval] =
@@ -124,7 +130,7 @@ export function Members() {
   const failure =
     members.error ??
     roles.error ??
-    providers.error ??
+    invitationDelivery.error ??
     updateMemberRole.error ??
     removeMember.error;
 
@@ -134,16 +140,20 @@ export function Members() {
         Members
       </Heading>
       {failure && <BannerSlim type="error" message={failure.message} />}
-      {canInvite && providers.data && providers.data.length === 0 && (
+      {invitationDelivery.data?.unavailable_reason && (
         <BannerSlim
           type="info"
-          message="Inviting people needs a single sign-on provider, because invitees join by signing in with it. Configure one with the SOPHO_OIDC_PROVIDERS setting."
+          message={invitationDelivery.data.unavailable_reason}
         />
       )}
-      {canInvite &&
-        providers.data &&
-        providers.data.length > 0 &&
-        roles.data && <InviteMemberForm roles={roles.data} />}
+      {invitationDelivery.data &&
+        invitationDelivery.data.method !== "UNAVAILABLE" &&
+        roles.data && (
+          <InviteMemberForm
+            roles={roles.data}
+            deliveryMethod={invitationDelivery.data.method}
+          />
+        )}
       {members.data && roles.data && (
         <Flex as="ul" direction="column" gap="sm" sx={UNSTYLED_LIST_STYLE}>
           {members.data.map((member) => (
@@ -157,7 +167,9 @@ export function Members() {
           ))}
         </Flex>
       )}
-      {canInvite && <PendingInvitations />}
+      {invitationDelivery.data && (
+        <PendingInvitations deliveryMethod={invitationDelivery.data.method} />
+      )}
       {memberPendingRemoval && (
         <RemoveMemberDialog
           member={memberPendingRemoval}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
   BannerSlim,
@@ -9,40 +9,28 @@ import {
   Heading,
   Text,
 } from "src/components/design-system";
-import styles from "src/components/SignIn/SignIn.module.css";
-import { MeshGradient } from "@paper-design/shaders-react";
+import { AuthPageLayout } from "src/components/AuthPageLayout";
+import { authPageStyles } from "src/components/AuthPageLayout/auth_page_styles";
+import { SingleSignOnButton } from "src/components/SignIn/SingleSignOnButton";
 import { APP_ROUTES } from "src/constants/app_routes";
 import {
-  OidcProviderDto,
   useCreateSession,
-  useOidcProviders,
   useSessionValid,
+  useSignInOptions,
 } from "src/api/auth/queries";
-import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import {
   SIGN_IN_ERROR_MESSAGES,
   SIGN_IN_ERROR_PARAMETER,
+  SIGN_IN_FORM_DEFAULT_VALUES,
 } from "src/components/SignIn/constants";
-import logo from "src/assets/images/logo.svg";
+import {
+  invitationPath,
+  pendingInvitationToken,
+} from "src/utils/pending_invitation";
 
-function SingleSignOnButton({ provider }: { provider: OidcProviderDto }) {
-  const handleClick = useCallback(
-    () =>
-      window.location.assign(
-        API_ENDPOINTS.AUTH.OIDC_START.replace(":provider_name", provider.name),
-      ),
-    [provider.name],
-  );
-  return (
-    <Button
-      label={`Continue with ${provider.display_name}`}
-      shape="rectangle"
-      size="md"
-      backgroundColor="white"
-      fullWidth
-      onClick={handleClick}
-    />
-  );
+function pathAfterSignIn(): string {
+  const pendingToken = pendingInvitationToken();
+  return pendingToken ? invitationPath(pendingToken) : APP_ROUTES.INDEX;
 }
 
 export default function SignIn() {
@@ -52,26 +40,19 @@ export default function SignIn() {
   const errorMessage = errorCode
     ? SIGN_IN_ERROR_MESSAGES[errorCode]
     : undefined;
-  const providers = useOidcProviders();
+  const signInOptions = useSignInOptions();
   const { data: isAuthenticated, isLoading } = useSessionValid();
   const createSessionMutation = useCreateSession({
     onSuccess: () => {
-      void navigate(APP_ROUTES.INDEX, { replace: true });
+      void navigate(pathAfterSignIn(), { replace: true });
     },
   });
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      void navigate(APP_ROUTES.INDEX, { replace: true });
+      void navigate(pathAfterSignIn(), { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
-
-  const meshGradientColors = useMemo(
-    () => ["#fcfcfd", "#fcfcfd", "#e8e8fc", "#c6bcfb", "#b5a9f4"],
-    [],
-  );
-
-  const defaultFormValues = { email: "", password: "" };
 
   const handleSubmit = useCallback(
     (values: Record<string, unknown>) => {
@@ -90,101 +71,89 @@ export default function SignIn() {
     },
     [createSessionMutation],
   );
+  const handleForgotPassword = useCallback(
+    () => void navigate(APP_ROUTES.FORGOT_PASSWORD),
+    [navigate],
+  );
+
+  const providers = signInOptions.data?.providers ?? [];
 
   return (
-    <Flex
-      width={"100vw"}
-      height={"100vh"}
-      justifyContent="center"
-      alignItems="center"
-      className={styles.pageContainer}
-    >
-      <MeshGradient
-        colors={meshGradientColors}
-        distortion={0.8}
-        swirl={0.1}
-        grainMixer={0.47}
-        grainOverlay={0.3}
-        speed={1}
-        className={styles.backgroundGradient}
-      />
-      <Flex
-        direction="column"
-        shadow="sm"
-        borderRadius="lg"
-        paddingX="xl"
-        paddingY="xl"
-        gap="sm"
-        className={styles.formContainer}
-        backgroundColor="white"
+    <AuthPageLayout>
+      <Heading accessibilityLevel={1} size="xl" textAlign="center">
+        Welcome !
+      </Heading>
+      <Heading
+        accessibilityLevel={2}
+        size="sm"
+        textAlign="center"
+        textColor="subtle"
       >
-        <Flex justifyContent="center" alignItems="center" marginBottom="md">
-          <img src={logo} alt="Logo" className={styles.logo} />
+        Sign in with email and password
+      </Heading>
+      {errorMessage && <BannerSlim type="error" message={errorMessage} />}
+      {signInOptions.error && (
+        <BannerSlim type="error" message={signInOptions.error.message} />
+      )}
+      <Form
+        defaultValues={SIGN_IN_FORM_DEFAULT_VALUES}
+        onSubmit={handleSubmit}
+        className={authPageStyles.formRootContainer}
+        submitOnEnter={true}
+      >
+        <Form.Fields className={authPageStyles.fieldsContainer}>
+          <Form.Field
+            name="email"
+            required
+            errorMessage="Email is required"
+            className={authPageStyles.fieldContainer}
+          >
+            <Form.Input placeholder="email" icon="email" />
+          </Form.Field>
+          <Form.Field
+            name="password"
+            required
+            errorMessage="Password is required"
+            className={authPageStyles.fieldContainer}
+          >
+            <Form.Password placeholder="password" icon="lock" />
+          </Form.Field>
+        </Form.Fields>
+        {createSessionMutation.error && (
+          <Box role="alert">
+            <BannerSlim
+              type="error"
+              message={createSessionMutation.error.message}
+            />
+          </Box>
+        )}
+        <Form.Actions className={authPageStyles.formButtonRowContainer}>
+          <Form.Submit label="Sign In" />
+        </Form.Actions>
+      </Form>
+      {signInOptions.data?.password_reset_available && (
+        <Flex justifyContent="center">
+          <Button
+            label="Forgot password?"
+            shape="rectangle"
+            size="sm"
+            backgroundColor="ghost"
+            onClick={handleForgotPassword}
+          />
         </Flex>
-        <Heading accessibilityLevel={1} size="xl" textAlign="center">
-          Welcome !
-        </Heading>
-        <Heading
-          accessibilityLevel={2}
-          size="sm"
-          textAlign="center"
-          textColor="subtle"
-        >
-          Sign in with email and password
-        </Heading>
-        {errorMessage && <BannerSlim type="error" message={errorMessage} />}
-        {providers.error && (
-          <BannerSlim type="error" message={providers.error.message} />
-        )}
-        <Form
-          defaultValues={defaultFormValues}
-          onSubmit={handleSubmit}
-          className={styles.formRootContainer}
-          submitOnEnter={true}
-        >
-          <Form.Fields className={styles.fieldsContainer}>
-            <Form.Field
-              name="email"
-              required
-              errorMessage="Email is required"
-              className={styles.fieldContainer}
-            >
-              <Form.Input placeholder="email" icon="email" />
-            </Form.Field>
-            <Form.Field
-              name="password"
-              required
-              errorMessage="Password is required"
-              className={styles.fieldContainer}
-            >
-              <Form.Password placeholder="password" icon="lock" />
-            </Form.Field>
-          </Form.Fields>
-          {createSessionMutation.error && (
-            <Box role="alert">
-              <BannerSlim
-                type="error"
-                message={createSessionMutation.error.message}
-              />
-            </Box>
-          )}
-          <Form.Actions className={styles.formButtonRowContainer}>
-            <Form.Submit label="Sign In" />
-          </Form.Actions>
-        </Form>
-        {providers.data && providers.data.length > 0 && (
-          <Flex direction="column" gap="sm">
-            <Flex justifyContent="center">
-              <Text fontSize="xs" color="subtle">
-                or
-              </Text>
-            </Flex>
-            {providers.data.map((provider) => (
-              <SingleSignOnButton key={provider.name} provider={provider} />
-            ))}
+      )}
+      {providers.length > 0 && (
+        <Flex direction="column" gap="sm">
+          <Flex justifyContent="center">
+            <Text fontSize="xs" color="subtle">
+              or
+            </Text>
           </Flex>
-        )}
-      </Flex>
-    </Flex>
+          {providers.map((provider) => (
+            <SingleSignOnButton key={provider.name} provider={provider} />
+          ))}
+        </Flex>
+      )}
+    </AuthPageLayout>
   );
 }
