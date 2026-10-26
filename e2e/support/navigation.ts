@@ -3,6 +3,7 @@ export const APP_URLS = {
   SIGN_IN: "/signin",
   PROFILE: "/profile",
   CONNECTIONS: "/settings/connections",
+  MEMBERS: "/settings/members",
   NEW_CONNECTION: "/settings/connection/new",
   AI_CONFIGURATIONS: "/settings/ai-configurations",
   NEW_CONVERSATION: "/conversational_analytics/",

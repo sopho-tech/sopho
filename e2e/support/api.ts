@@ -30,6 +30,31 @@ export async function signIn(request: APIRequestContext): Promise<void> {
   expect(response.status(), await response.text()).toBe(200);
 }
 
+export async function inviteToTenant(
+  request: APIRequestContext,
+  tenantId: string,
+  email: string,
+  roleName: string,
+): Promise<void> {
+  const response = await request.post(
+    `${API_ROUTES.TENANT_SCOPE.replace(":tenantId", tenantId)}${API_ROUTES.INVITATIONS}`,
+    { data: { email, role_name: roleName } },
+  );
+  expect(response.status(), await response.text()).toBe(201);
+}
+
+export async function signUpFromInvitation(
+  request: APIRequestContext,
+  token: string,
+  fullName: string,
+  password: string,
+): Promise<void> {
+  const response = await request.post(API_ROUTES.INVITATION_SIGN_UP, {
+    data: { token, full_name: fullName, password },
+  });
+  expect(response.status(), await response.text()).toBe(201);
+}
+
 export async function defaultTenantId(
   request: APIRequestContext,
 ): Promise<string> {
