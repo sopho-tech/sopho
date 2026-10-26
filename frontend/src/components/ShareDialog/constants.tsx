@@ -8,7 +8,7 @@ export const VISIBILITY_OPTIONS: {
   label: string;
 }[] = [
   { value: "PRIVATE", label: "Only people with access" },
-  { value: "TENANT", label: "Everyone in this workspace" },
+  { value: "TENANT", label: "Everyone in this tenant" },
 ];
 
 export const ACCESS_LEVEL_OPTIONS: {

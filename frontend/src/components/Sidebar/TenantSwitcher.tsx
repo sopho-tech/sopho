@@ -14,7 +14,7 @@ import { useReceivedInvitations } from "src/api/invitation/queries";
 import { tenantPath, useTenantId } from "src/utils/tenant";
 import logo from "src/assets/images/logo.svg";
 
-function WorkspaceMenuItem({
+function TenantMenuItem({
   membership,
   isCurrent,
 }: {
@@ -40,7 +40,7 @@ export function TenantSwitcher() {
   const tenantId = useTenantId();
   const memberships = useMemberships();
   const currentMembership = useCurrentMembership();
-  const canCreateWorkspace = usePlatformPermission(
+  const canCreateTenant = usePlatformPermission(
     PLATFORM_PERMISSIONS.TENANT_CREATE,
   );
   const receivedInvitations = useReceivedInvitations();
@@ -54,7 +54,7 @@ export function TenantSwitcher() {
         <button
           type="button"
           className={SidebarStyles.link}
-          aria-label={`Workspace: ${currentMembership.tenant_name}`}
+          aria-label={`Tenant: ${currentMembership.tenant_name}`}
           title={currentMembership.tenant_name}
         >
           <img src={logo} alt="" className={SidebarStyles.logo} />
@@ -62,7 +62,7 @@ export function TenantSwitcher() {
       </DropdownMenu.Trigger>
       <DropdownMenu.Content side="right" align="start">
         {memberships.data?.map((membership) => (
-          <WorkspaceMenuItem
+          <TenantMenuItem
             key={membership.tenant_id}
             membership={membership}
             isCurrent={membership.tenant_id === tenantId}
@@ -73,9 +73,9 @@ export function TenantSwitcher() {
             {`Invitations (${receivedInvitations.data.length})`}
           </DropdownMenu.Item>
         )}
-        {canCreateWorkspace && (
+        {canCreateTenant && (
           <DropdownMenu.Item icon="add" onClick={handleOpenOnboarding}>
-            Create workspace
+            Create tenant
           </DropdownMenu.Item>
         )}
       </DropdownMenu.Content>

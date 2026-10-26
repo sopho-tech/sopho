@@ -163,7 +163,7 @@ pub async fn list_received_invitations(
             Ok(ReceivedInvitationDto {
                 id: invitation.id,
                 tenant_id: invitation.tenant_id,
-                tenant_name: lookup(&tenant_names, invitation.tenant_id, "workspace")?,
+                tenant_name: lookup(&tenant_names, invitation.tenant_id, "tenant")?,
                 role_name: lookup(&role_names, invitation.role_id, "role")?,
                 invited_by_name: lookup(&inviter_names, invitation.invited_by_user_id, "inviter")?,
                 expires_at: invitation.expires_at,

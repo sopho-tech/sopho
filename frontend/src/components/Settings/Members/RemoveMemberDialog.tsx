@@ -22,7 +22,7 @@ export function RemoveMemberDialog({
       handleDialogClose={onClose}
       size="sm"
       title={`Remove ${member.full_name}?`}
-      description="They lose access to this workspace immediately, along with anything shared with them in it."
+      description="They lose access to this tenant immediately, along with anything shared with them in it."
       info={
         <Flex gap="sm" justifyContent="flex-end">
           <Button

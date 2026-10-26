@@ -7,7 +7,7 @@ import { tenantPath } from "src/utils/tenant";
 
 const DEFAULT_FORM_VALUES = { name: "" };
 
-export function CreateWorkspaceForm() {
+export function CreateTenantForm() {
   const navigate = useNavigate();
   const createTenant = useCreateTenant({
     onSuccess: (tenant) => {
@@ -19,7 +19,7 @@ export function CreateWorkspaceForm() {
     (values: Record<string, unknown>) => {
       const name = values.name;
       if (typeof name !== "string") {
-        throw new Error("Workspace name must be text");
+        throw new Error("Tenant name must be text");
       }
       createTenant.mutate(name.trim());
     },
@@ -29,7 +29,7 @@ export function CreateWorkspaceForm() {
   return (
     <Flex direction="column" gap="sm">
       <Text fontSize="sm" color="darkGrey">
-        Create a workspace
+        Create a tenant
       </Text>
       {createTenant.error && (
         <BannerSlim type="error" message={createTenant.error.message} />
@@ -43,13 +43,13 @@ export function CreateWorkspaceForm() {
           <Form.Field
             name="name"
             required
-            errorMessage="Workspace name is required"
+            errorMessage="Tenant name is required"
           >
-            <Form.Input placeholder="Workspace name" />
+            <Form.Input placeholder="Tenant name" />
           </Form.Field>
         </Form.Fields>
         <Form.Actions>
-          <Form.Submit label="Create workspace" />
+          <Form.Submit label="Create tenant" />
         </Form.Actions>
       </Form>
     </Flex>

@@ -1,7 +1,7 @@
 use crate::support::constants::{ACTIVE_STATUS, USER_PRINCIPAL};
 use crate::support::database::{insert_row, now, update_rows};
+use crate::support::tenants::with_system_attribution;
 use crate::support::test_app::TestApp;
-use crate::support::workspaces::with_system_attribution;
 use sea_orm::Value;
 use uuid::Uuid;
 

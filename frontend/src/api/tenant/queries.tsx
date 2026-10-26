@@ -60,7 +60,7 @@ export const useCurrentMembership = (): TenantMembershipDto => {
     (candidate) => candidate.tenant_id === tenantId,
   );
   if (!membership) {
-    throw new Error("The current workspace membership is not loaded");
+    throw new Error("The current tenant membership is not loaded");
   }
   return membership;
 };

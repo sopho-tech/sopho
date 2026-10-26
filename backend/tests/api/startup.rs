@@ -2,7 +2,7 @@ use crate::support::TestApp;
 use crate::support::canvas_builder::string_field;
 use crate::support::constants::{DEMO_CANVAS_NAME, OWNER_ROLE, TENANT_VISIBILITY};
 use crate::support::records::{insert_canvas, insert_notebook, insert_sql_cell};
-use crate::support::workspaces::{create_workspace, join_workspace};
+use crate::support::tenants::{create_tenant, join_tenant};
 use reqwest::StatusCode;
 use serde_json::Value;
 use uuid::Uuid;
@@ -22,7 +22,7 @@ async fn a_fresh_database_boots_into_a_usable_default_tenant() {
     assert_eq!(
         memberships.len(),
         1,
-        "the admin owns exactly the default workspace"
+        "the admin owns exactly the default tenant"
     );
     assert_eq!(memberships[0]["role_name"], OWNER_ROLE);
     assert!(
@@ -41,7 +41,7 @@ async fn a_fresh_database_boots_into_a_usable_default_tenant() {
             .expect("canvases")
             .iter()
             .any(|canvas| string_field(canvas, "name") == DEMO_CANVAS_NAME),
-        "demo data is seeded into the default workspace"
+        "demo data is seeded into the default tenant"
     );
 }
 
@@ -61,12 +61,12 @@ async fn booting_twice_changes_nothing() {
 #[tokio::test]
 async fn existence_checks_report_missing_rows_as_missing() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "existence").await;
-    let owner = join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
+    let tenant_id = create_tenant(&app, "existence").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
     let canvas_id =
-        insert_canvas(&app, workspace, "canvas", owner.user.id, TENANT_VISIBILITY).await;
-    let notebook_id = insert_notebook(&app, workspace, canvas_id, "notebook").await;
-    let cell_id = insert_sql_cell(&app, workspace, notebook_id, "cell", "SELECT 1").await;
+        insert_canvas(&app, tenant_id, "canvas", owner.user.id, TENANT_VISIBILITY).await;
+    let notebook_id = insert_notebook(&app, tenant_id, canvas_id, "notebook").await;
+    let cell_id = insert_sql_cell(&app, tenant_id, notebook_id, "cell", "SELECT 1").await;
     let unknown_id = Uuid::new_v4();
 
     for (existing_path, missing_path) in [

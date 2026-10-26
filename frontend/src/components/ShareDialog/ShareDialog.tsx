@@ -104,7 +104,7 @@ function GrantRow({ grant, onChangeAccessLevel, onRevoke }: GrantRowProps) {
         <MemberLabel member={grant.principal} />
       ) : (
         <Text fontSize="sm" color="subtle">
-          No longer a member of this workspace
+          No longer a member of this tenant
         </Text>
       )}
       <Flex direction="row" alignItems="center" gap="xs">
@@ -242,7 +242,7 @@ export function ShareDialog({
         </Text>
         {shareableMembers.length === 0 ? (
           <Text fontSize="sm" color="subtle">
-            Everyone in this workspace already has access
+            Everyone in this tenant already has access
           </Text>
         ) : (
           <Flex direction="row" alignItems="center" gap="sm">

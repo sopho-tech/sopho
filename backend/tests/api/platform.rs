@@ -2,15 +2,15 @@ use crate::support::TestApp;
 use crate::support::canvas_builder::string_field;
 use crate::support::constants::{OWNER_ROLE, PLATFORM_MEMBER, TENANT_CREATE_PERMISSION};
 use crate::support::database::count_rows;
-use crate::support::workspaces::{create_user, sign_in};
+use crate::support::tenants::{create_user, sign_in};
 use reqwest::StatusCode;
 use serde_json::json;
 
 #[tokio::test]
-async fn only_platform_administrators_create_workspaces() {
+async fn only_platform_administrators_create_tenants() {
     let app = TestApp::spawn().await;
     app.login_as_admin().await;
-    let workspaces_before = count_rows(&app, "tenant", &[]).await;
+    let tenants_before = count_rows(&app, "tenant", &[]).await;
 
     let member = sign_in(&app, &create_user(&app, "member", PLATFORM_MEMBER).await).await;
     let refused = member
@@ -23,7 +23,7 @@ async fn only_platform_administrators_create_workspaces() {
     );
     assert_eq!(
         count_rows(&app, "tenant", &[]).await,
-        workspaces_before,
+        tenants_before,
         "a refused request creates nothing"
     );
 
@@ -40,7 +40,7 @@ async fn only_platform_administrators_create_workspaces() {
         .expect("memberships")
         .iter()
         .find(|membership| membership["tenant_id"] == created_id)
-        .expect("the creator belongs to the new workspace")
+        .expect("the creator belongs to the new tenant")
         .clone();
     assert_eq!(membership["role_name"], OWNER_ROLE);
 

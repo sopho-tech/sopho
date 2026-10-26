@@ -180,7 +180,7 @@ pub const PENDING_INVITATION_STATUS: &str = "PENDING";
 pub const EXPIRED_INVITATION_STATUS: &str = "EXPIRED";
 pub const INVITATION_NOT_FOUND_MESSAGE: &str = "Invitation not found";
 pub const INVALID_EMAIL_MESSAGE: &str = "Enter a valid email address";
-pub const ALREADY_A_MEMBER_MESSAGE: &str = "This person is already a member of the workspace";
+pub const ALREADY_A_MEMBER_MESSAGE: &str = "This person is already a member of the tenant";
 pub const ALREADY_INVITED_MESSAGE: &str = "This email already has a pending invitation";
 pub const INVITATION_EXPIRED_MESSAGE: &str = "This invitation has expired";
 pub const SINGLE_SIGN_ON_REQUIRED_MESSAGE: &str =
@@ -191,7 +191,7 @@ pub const ROLE_TOO_POWERFUL_MESSAGE: &str = "You can only grant roles whose perm
 pub const MEMBER_NOT_FOUND_MESSAGE: &str = "Member not found";
 pub const MEMBER_TOO_POWERFUL_MESSAGE: &str =
     "You can only manage members whose role permissions you hold";
-pub const LAST_OWNER_MESSAGE: &str = "A workspace needs at least one owner";
+pub const LAST_OWNER_MESSAGE: &str = "A tenant needs at least one owner";
 
 pub const ANSWER_QUERY: &str = "SELECT 1 AS answer";
 pub const NOTEBOOK_NOT_FOUND_MESSAGE: &str = "Notebook not found";

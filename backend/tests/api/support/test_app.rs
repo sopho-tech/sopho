@@ -86,7 +86,7 @@ impl UserSession {
         }
         let tenant_id = self
             .tenant_id
-            .unwrap_or_else(|| panic!("{path} is workspace-scoped but this session has none"));
+            .unwrap_or_else(|| panic!("{path} is tenant-scoped but this session has none"));
         format!("/{TENANT_PATH_SEGMENT}/{tenant_id}{path}")
     }
 

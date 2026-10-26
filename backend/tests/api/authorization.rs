@@ -12,10 +12,8 @@ use crate::support::records::{
     insert_canvas, insert_conversation, insert_grant, insert_notebook, insert_sql_cell,
     set_owner_and_visibility,
 };
+use crate::support::tenants::{create_custom_role, create_tenant, create_user, join_tenant};
 use crate::support::test_app::JsonResponse;
-use crate::support::workspaces::{
-    create_custom_role, create_user, create_workspace, join_workspace,
-};
 use crate::support::{TestApp, UserSession};
 use reqwest::StatusCode;
 use serde_json::{Value, json};
@@ -91,9 +89,9 @@ async fn named_connection(app: &TestApp, creator: &UserSession, name: &str) -> U
 #[tokio::test]
 async fn owner_can_read_and_write_own_private_canvas() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
-    let canvas_id = insert_canvas(&app, workspace, "own", member.user.id, PRIVATE_VISIBILITY).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
+    let canvas_id = insert_canvas(&app, tenant_id, "own", member.user.id, PRIVATE_VISIBILITY).await;
 
     assert_eq!(
         member.session.get(&canvas_path(canvas_id)).await.status,
@@ -118,11 +116,11 @@ async fn owner_can_read_and_write_own_private_canvas() {
 #[tokio::test]
 async fn member_cannot_reach_another_members_private_canvas() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
     let canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "someone else's",
         Uuid::new_v4(),
         PRIVATE_VISIBILITY,
@@ -144,11 +142,11 @@ async fn member_cannot_reach_another_members_private_canvas() {
 #[tokio::test]
 async fn admin_can_read_private_canvas_it_does_not_own() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let admin = join_workspace(&app, workspace, "admin", ADMIN_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let admin = join_tenant(&app, tenant_id, "admin", ADMIN_ROLE).await;
     let canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "someone else's",
         Uuid::new_v4(),
         PRIVATE_VISIBILITY,
@@ -170,10 +168,10 @@ async fn admin_can_read_private_canvas_it_does_not_own() {
 #[tokio::test]
 async fn tenant_visibility_grants_read_but_not_write() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
     let canvas_id =
-        insert_canvas(&app, workspace, "shared", Uuid::new_v4(), TENANT_VISIBILITY).await;
+        insert_canvas(&app, tenant_id, "shared", Uuid::new_v4(), TENANT_VISIBILITY).await;
 
     assert_eq!(
         member.session.get(&canvas_path(canvas_id)).await.status,
@@ -195,10 +193,10 @@ async fn tenant_visibility_grants_read_but_not_write() {
 #[tokio::test]
 async fn viewer_role_cannot_write_even_what_it_can_read() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let viewer = join_workspace(&app, workspace, "viewer", VIEWER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let viewer = join_tenant(&app, tenant_id, "viewer", VIEWER_ROLE).await;
     let canvas_id =
-        insert_canvas(&app, workspace, "shared", Uuid::new_v4(), TENANT_VISIBILITY).await;
+        insert_canvas(&app, tenant_id, "shared", Uuid::new_v4(), TENANT_VISIBILITY).await;
 
     assert_eq!(
         viewer.session.get(&canvas_path(canvas_id)).await.status,
@@ -217,14 +215,14 @@ async fn viewer_role_cannot_write_even_what_it_can_read() {
 #[tokio::test]
 async fn viewer_grant_allows_read_only_and_editor_grant_allows_write() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let reader = join_workspace(&app, workspace, "reader", MEMBER_ROLE).await;
-    let editor = join_workspace(&app, workspace, "editor", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let reader = join_tenant(&app, tenant_id, "reader", MEMBER_ROLE).await;
+    let editor = join_tenant(&app, tenant_id, "editor", MEMBER_ROLE).await;
     let read_canvas_id =
-        insert_canvas(&app, workspace, "read", Uuid::new_v4(), PRIVATE_VISIBILITY).await;
+        insert_canvas(&app, tenant_id, "read", Uuid::new_v4(), PRIVATE_VISIBILITY).await;
     insert_grant(
         &app,
-        workspace,
+        tenant_id,
         CANVAS_RESOURCE,
         read_canvas_id,
         reader.user.id,
@@ -232,10 +230,10 @@ async fn viewer_grant_allows_read_only_and_editor_grant_allows_write() {
     )
     .await;
     let write_canvas_id =
-        insert_canvas(&app, workspace, "write", Uuid::new_v4(), PRIVATE_VISIBILITY).await;
+        insert_canvas(&app, tenant_id, "write", Uuid::new_v4(), PRIVATE_VISIBILITY).await;
     insert_grant(
         &app,
-        workspace,
+        tenant_id,
         CANVAS_RESOURCE,
         write_canvas_id,
         editor.user.id,
@@ -285,26 +283,26 @@ async fn viewer_grant_allows_read_only_and_editor_grant_allows_write() {
 #[tokio::test]
 async fn subject_from_another_tenant_is_rejected_before_any_gate() {
     let app = TestApp::spawn().await;
-    let first = create_workspace(&app, "first").await;
-    let second = create_workspace(&app, "second").await;
-    let owner = join_workspace(&app, first, "owner", OWNER_ROLE).await;
+    let first = create_tenant(&app, "first").await;
+    let second = create_tenant(&app, "second").await;
+    let owner = join_tenant(&app, first, "owner", OWNER_ROLE).await;
     let canvas_id = insert_canvas(&app, second, "theirs", owner.user.id, TENANT_VISIBILITY).await;
 
     assert_eq!(
         owner.session.get(&canvas_path(canvas_id)).await.status,
         StatusCode::NOT_FOUND,
-        "owning the resource must not override workspace isolation"
+        "owning the resource must not override tenant isolation"
     );
 }
 
 #[tokio::test]
 async fn list_returns_exactly_what_the_gate_would_allow() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
     insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "own private",
         member.user.id,
         PRIVATE_VISIBILITY,
@@ -312,7 +310,7 @@ async fn list_returns_exactly_what_the_gate_would_allow() {
     .await;
     insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "tenant visible",
         Uuid::new_v4(),
         TENANT_VISIBILITY,
@@ -320,7 +318,7 @@ async fn list_returns_exactly_what_the_gate_would_allow() {
     .await;
     insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "someone elses private",
         Uuid::new_v4(),
         PRIVATE_VISIBILITY,
@@ -328,7 +326,7 @@ async fn list_returns_exactly_what_the_gate_would_allow() {
     .await;
     let granted_canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "granted private",
         Uuid::new_v4(),
         PRIVATE_VISIBILITY,
@@ -336,7 +334,7 @@ async fn list_returns_exactly_what_the_gate_would_allow() {
     .await;
     insert_grant(
         &app,
-        workspace,
+        tenant_id,
         CANVAS_RESOURCE,
         granted_canvas_id,
         member.user.id,
@@ -354,11 +352,11 @@ async fn list_returns_exactly_what_the_gate_would_allow() {
 #[tokio::test]
 async fn list_shows_everything_to_a_role_that_can_read_private() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let admin = join_workspace(&app, workspace, "admin", ADMIN_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let admin = join_tenant(&app, tenant_id, "admin", ADMIN_ROLE).await;
     insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "a private",
         Uuid::new_v4(),
         PRIVATE_VISIBILITY,
@@ -366,7 +364,7 @@ async fn list_shows_everything_to_a_role_that_can_read_private() {
     .await;
     insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "b tenant",
         Uuid::new_v4(),
         TENANT_VISIBILITY,
@@ -382,10 +380,10 @@ async fn list_shows_everything_to_a_role_that_can_read_private() {
 #[tokio::test]
 async fn list_never_crosses_tenants() {
     let app = TestApp::spawn().await;
-    let first = create_workspace(&app, "first").await;
-    let second = create_workspace(&app, "second").await;
-    let member = join_workspace(&app, first, "member", MEMBER_ROLE).await;
-    let admin = join_workspace(&app, first, "admin", ADMIN_ROLE).await;
+    let first = create_tenant(&app, "first").await;
+    let second = create_tenant(&app, "second").await;
+    let member = join_tenant(&app, first, "member", MEMBER_ROLE).await;
+    let admin = join_tenant(&app, first, "admin", ADMIN_ROLE).await;
     insert_canvas(&app, first, "mine", member.user.id, PRIVATE_VISIBILITY).await;
     insert_canvas(&app, second, "theirs", Uuid::new_v4(), TENANT_VISIBILITY).await;
 
@@ -393,20 +391,20 @@ async fn list_never_crosses_tenants() {
     assert_eq!(
         visible_canvas_names(&admin.session).await,
         vec!["mine"],
-        "read_private must not lift the workspace boundary"
+        "read_private must not lift the tenant boundary"
     );
 }
 
 #[tokio::test]
 async fn capabilities_reflect_what_the_gates_allow() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
-    let viewer = join_workspace(&app, workspace, "viewer", VIEWER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
+    let viewer = join_tenant(&app, tenant_id, "viewer", VIEWER_ROLE).await;
     let owned_canvas_id =
-        insert_canvas(&app, workspace, "owned", member.user.id, PRIVATE_VISIBILITY).await;
+        insert_canvas(&app, tenant_id, "owned", member.user.id, PRIVATE_VISIBILITY).await;
     let shared_canvas_id =
-        insert_canvas(&app, workspace, "shared", Uuid::new_v4(), TENANT_VISIBILITY).await;
+        insert_canvas(&app, tenant_id, "shared", Uuid::new_v4(), TENANT_VISIBILITY).await;
 
     let owned = member.session.get(&canvas_path(owned_canvas_id)).await;
     assert_eq!(
@@ -429,10 +427,10 @@ async fn capabilities_reflect_what_the_gates_allow() {
 #[tokio::test]
 async fn conversation_and_connection_dtos_carry_capabilities() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let administrator = join_workspace(&app, workspace, "administrator", ADMIN_ROLE).await;
-    let owner = join_workspace(&app, workspace, "owner", MEMBER_ROLE).await;
-    let reader = join_workspace(&app, workspace, "reader", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let administrator = join_tenant(&app, tenant_id, "administrator", ADMIN_ROLE).await;
+    let owner = join_tenant(&app, tenant_id, "owner", MEMBER_ROLE).await;
+    let reader = join_tenant(&app, tenant_id, "reader", MEMBER_ROLE).await;
     let connection_id = named_connection(&app, &administrator.session, "shared connection").await;
     set_owner_and_visibility(
         &app,
@@ -444,7 +442,7 @@ async fn conversation_and_connection_dtos_carry_capabilities() {
     .await;
     let conversation_id = insert_conversation(
         &app,
-        workspace,
+        tenant_id,
         "shared conversation",
         owner.user.id,
         TENANT_VISIBILITY,
@@ -482,9 +480,9 @@ async fn conversation_and_connection_dtos_carry_capabilities() {
 #[tokio::test]
 async fn created_and_updated_resources_carry_the_callers_capabilities() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
-    let administrator = join_workspace(&app, workspace, "administrator", ADMIN_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
+    let administrator = join_tenant(&app, tenant_id, "administrator", ADMIN_ROLE).await;
 
     let created_canvas = member
         .session
@@ -520,7 +518,7 @@ async fn created_and_updated_resources_carry_the_callers_capabilities() {
 
     let conversation_id = insert_conversation(
         &app,
-        workspace,
+        tenant_id,
         "question",
         member.user.id,
         PRIVATE_VISIBILITY,
@@ -544,18 +542,18 @@ async fn created_and_updated_resources_carry_the_callers_capabilities() {
 #[tokio::test]
 async fn a_child_resource_inherits_its_roots_decision() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let owner = join_workspace(&app, workspace, "owner", MEMBER_ROLE).await;
-    let other = join_workspace(&app, workspace, "other", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let owner = join_tenant(&app, tenant_id, "owner", MEMBER_ROLE).await;
+    let other = join_tenant(&app, tenant_id, "other", MEMBER_ROLE).await;
     let canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "private canvas",
         owner.user.id,
         PRIVATE_VISIBILITY,
     )
     .await;
-    let notebook_id = insert_notebook(&app, workspace, canvas_id, "Notebook").await;
+    let notebook_id = insert_notebook(&app, tenant_id, canvas_id, "Notebook").await;
     let notebook_path = format!("/notebook/{notebook_id}");
 
     assert_eq!(
@@ -573,11 +571,11 @@ async fn a_child_resource_inherits_its_roots_decision() {
 #[tokio::test]
 async fn notebook_list_inherits_the_reachability_of_its_canvas() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
     let own_canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "own canvas",
         member.user.id,
         PRIVATE_VISIBILITY,
@@ -585,7 +583,7 @@ async fn notebook_list_inherits_the_reachability_of_its_canvas() {
     .await;
     let tenant_canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "tenant canvas",
         Uuid::new_v4(),
         TENANT_VISIBILITY,
@@ -593,7 +591,7 @@ async fn notebook_list_inherits_the_reachability_of_its_canvas() {
     .await;
     let foreign_canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "someone else's canvas",
         Uuid::new_v4(),
         PRIVATE_VISIBILITY,
@@ -601,7 +599,7 @@ async fn notebook_list_inherits_the_reachability_of_its_canvas() {
     .await;
     let granted_canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "granted canvas",
         Uuid::new_v4(),
         PRIVATE_VISIBILITY,
@@ -609,24 +607,24 @@ async fn notebook_list_inherits_the_reachability_of_its_canvas() {
     .await;
     insert_grant(
         &app,
-        workspace,
+        tenant_id,
         CANVAS_RESOURCE,
         granted_canvas_id,
         member.user.id,
         VIEWER_ACCESS,
     )
     .await;
-    insert_notebook(&app, workspace, own_canvas_id, "a own").await;
-    insert_notebook(&app, workspace, tenant_canvas_id, "b tenant").await;
-    insert_notebook(&app, workspace, foreign_canvas_id, "c foreign").await;
-    insert_notebook(&app, workspace, granted_canvas_id, "d granted").await;
+    insert_notebook(&app, tenant_id, own_canvas_id, "a own").await;
+    insert_notebook(&app, tenant_id, tenant_canvas_id, "b tenant").await;
+    insert_notebook(&app, tenant_id, foreign_canvas_id, "c foreign").await;
+    insert_notebook(&app, tenant_id, granted_canvas_id, "d granted").await;
 
     assert_eq!(
         visible_notebook_names(&member.session).await,
         vec!["a own", "b tenant", "d granted"],
         "a notebook must be listed only when its canvas is reachable"
     );
-    let admin = join_workspace(&app, workspace, "admin", ADMIN_ROLE).await;
+    let admin = join_tenant(&app, tenant_id, "admin", ADMIN_ROLE).await;
     assert_eq!(
         visible_notebook_names(&admin.session).await,
         vec!["a own", "b tenant", "c foreign", "d granted"],
@@ -637,9 +635,9 @@ async fn notebook_list_inherits_the_reachability_of_its_canvas() {
 #[tokio::test]
 async fn notebook_list_never_crosses_tenants() {
     let app = TestApp::spawn().await;
-    let first = create_workspace(&app, "first").await;
-    let second = create_workspace(&app, "second").await;
-    let admin = join_workspace(&app, first, "admin", ADMIN_ROLE).await;
+    let first = create_tenant(&app, "first").await;
+    let second = create_tenant(&app, "second").await;
+    let admin = join_tenant(&app, first, "admin", ADMIN_ROLE).await;
     let mine = insert_canvas(&app, first, "mine", Uuid::new_v4(), TENANT_VISIBILITY).await;
     let theirs = insert_canvas(&app, second, "theirs", Uuid::new_v4(), TENANT_VISIBILITY).await;
     insert_notebook(&app, first, mine, "mine").await;
@@ -648,16 +646,16 @@ async fn notebook_list_never_crosses_tenants() {
     assert_eq!(
         visible_notebook_names(&admin.session).await,
         vec!["mine"],
-        "read_private must not lift the workspace boundary"
+        "read_private must not lift the tenant boundary"
     );
 }
 
 #[tokio::test]
 async fn connection_list_returns_exactly_what_the_gate_would_allow() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let administrator = join_workspace(&app, workspace, "administrator", ADMIN_ROLE).await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let administrator = join_tenant(&app, tenant_id, "administrator", ADMIN_ROLE).await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
     for (name, owner_user_id, visibility) in [
         ("a own private", member.user.id, PRIVATE_VISIBILITY),
         ("b tenant", Uuid::new_v4(), TENANT_VISIBILITY),
@@ -670,7 +668,7 @@ async fn connection_list_returns_exactly_what_the_gate_would_allow() {
         if name == "d granted private" {
             insert_grant(
                 &app,
-                workspace,
+                tenant_id,
                 CONNECTION_RESOURCE,
                 connection_id,
                 member.user.id,
@@ -698,10 +696,10 @@ async fn connection_list_returns_exactly_what_the_gate_would_allow() {
 #[tokio::test]
 async fn connection_list_never_crosses_tenants() {
     let app = TestApp::spawn().await;
-    let first = create_workspace(&app, "first").await;
-    let second = create_workspace(&app, "second").await;
-    let first_administrator = join_workspace(&app, first, "first-admin", ADMIN_ROLE).await;
-    let second_administrator = join_workspace(&app, second, "second-admin", ADMIN_ROLE).await;
+    let first = create_tenant(&app, "first").await;
+    let second = create_tenant(&app, "second").await;
+    let first_administrator = join_tenant(&app, first, "first-admin", ADMIN_ROLE).await;
+    let second_administrator = join_tenant(&app, second, "second-admin", ADMIN_ROLE).await;
     let mine = named_connection(&app, &first_administrator.session, "mine").await;
     set_owner_and_visibility(&app, "connection", mine, Uuid::new_v4(), PRIVATE_VISIBILITY).await;
     named_connection(&app, &second_administrator.session, "theirs").await;
@@ -709,18 +707,18 @@ async fn connection_list_never_crosses_tenants() {
     assert_eq!(
         visible_connection_names(&first_administrator.session).await,
         vec!["mine"],
-        "read_private must not lift the workspace boundary"
+        "read_private must not lift the tenant boundary"
     );
 }
 
 #[tokio::test]
 async fn search_does_not_surface_cells_of_unreachable_canvases() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
     let own_canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "own canvas",
         member.user.id,
         PRIVATE_VISIBILITY,
@@ -728,17 +726,17 @@ async fn search_does_not_surface_cells_of_unreachable_canvases() {
     .await;
     let foreign_canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "foreign canvas",
         Uuid::new_v4(),
         PRIVATE_VISIBILITY,
     )
     .await;
-    let own_notebook_id = insert_notebook(&app, workspace, own_canvas_id, "notebook").await;
-    let foreign_notebook_id = insert_notebook(&app, workspace, foreign_canvas_id, "notebook").await;
+    let own_notebook_id = insert_notebook(&app, tenant_id, own_canvas_id, "notebook").await;
+    let foreign_notebook_id = insert_notebook(&app, tenant_id, foreign_canvas_id, "notebook").await;
     insert_sql_cell(
         &app,
-        workspace,
+        tenant_id,
         own_notebook_id,
         "reachable query",
         "SELECT 1",
@@ -746,7 +744,7 @@ async fn search_does_not_surface_cells_of_unreachable_canvases() {
     .await;
     insert_sql_cell(
         &app,
-        workspace,
+        tenant_id,
         foreign_notebook_id,
         "private query",
         "SELECT 1",
@@ -758,19 +756,19 @@ async fn search_does_not_surface_cells_of_unreachable_canvases() {
         vec!["reachable query"],
         "search must not reveal cells living in a canvas the searcher cannot reach"
     );
-    let admin = join_workspace(&app, workspace, "admin", ADMIN_ROLE).await;
+    let admin = join_tenant(&app, tenant_id, "admin", ADMIN_ROLE).await;
     assert_eq!(
         search_result_names(&admin.session, "query", "sql_cells").await,
         vec!["private query", "reachable query"],
-        "read_private must reach cells in every canvas of the workspace"
+        "read_private must reach cells in every canvas of the tenant"
     );
 }
 
 #[tokio::test]
 async fn search_does_not_surface_unreachable_conversations() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
     for (name, owner_user_id, visibility) in [
         ("mine", member.user.id, PRIVATE_VISIBILITY),
         ("theirs", Uuid::new_v4(), PRIVATE_VISIBILITY),
@@ -778,7 +776,7 @@ async fn search_does_not_surface_unreachable_conversations() {
     ] {
         insert_conversation(
             &app,
-            workspace,
+            tenant_id,
             name,
             owner_user_id,
             visibility,
@@ -796,10 +794,10 @@ async fn search_does_not_surface_unreachable_conversations() {
 #[tokio::test]
 async fn agent_created_canvas_inherits_conversation_owner_and_visibility() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let administrator = join_workspace(&app, workspace, "administrator", ADMIN_ROLE).await;
-    let owner = join_workspace(&app, workspace, "owner", MEMBER_ROLE).await;
-    let other = join_workspace(&app, workspace, "other", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let administrator = join_tenant(&app, tenant_id, "administrator", ADMIN_ROLE).await;
+    let owner = join_tenant(&app, tenant_id, "owner", MEMBER_ROLE).await;
+    let other = join_tenant(&app, tenant_id, "other", MEMBER_ROLE).await;
     administrator
         .session
         .configure_live_ai_provider("anthropic")
@@ -827,7 +825,7 @@ async fn agent_created_canvas_inherits_conversation_owner_and_visibility() {
     .await;
     insert_grant(
         &app,
-        workspace,
+        tenant_id,
         CONVERSATION_RESOURCE,
         conversation_uuid,
         other.user.id,
@@ -851,7 +849,7 @@ async fn agent_created_canvas_inherits_conversation_owner_and_visibility() {
     );
     assert_eq!(
         sharing.body["visibility"], PRIVATE_VISIBILITY,
-        "a canvas generated from a private conversation must not become workspace visible"
+        "a canvas generated from a private conversation must not become tenant visible"
     );
     assert_eq!(
         other.session.get(&canvas_path(canvas_id)).await.status,
@@ -862,12 +860,12 @@ async fn agent_created_canvas_inherits_conversation_owner_and_visibility() {
 #[tokio::test]
 async fn granted_editor_cannot_reshare_canvas() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let owner = join_workspace(&app, workspace, "owner", MEMBER_ROLE).await;
-    let editor = join_workspace(&app, workspace, "editor", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let owner = join_tenant(&app, tenant_id, "owner", MEMBER_ROLE).await;
+    let editor = join_tenant(&app, tenant_id, "editor", MEMBER_ROLE).await;
     let canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "private",
         owner.user.id,
         PRIVATE_VISIBILITY,
@@ -875,7 +873,7 @@ async fn granted_editor_cannot_reshare_canvas() {
     .await;
     insert_grant(
         &app,
-        workspace,
+        tenant_id,
         CANVAS_RESOURCE,
         canvas_id,
         editor.user.id,
@@ -907,18 +905,18 @@ async fn granted_editor_cannot_reshare_canvas() {
 #[tokio::test]
 async fn custom_role_with_read_private_can_see_private_canvas() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
+    let tenant_id = create_tenant(&app, "t").await;
     create_custom_role(
         &app,
-        workspace,
+        tenant_id,
         AUDITOR_ROLE,
         &["canvas:read", "canvas:read_private"],
     )
     .await;
-    let auditor = join_workspace(&app, workspace, "auditor", AUDITOR_ROLE).await;
+    let auditor = join_tenant(&app, tenant_id, "auditor", AUDITOR_ROLE).await;
     let canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "someone else's",
         Uuid::new_v4(),
         PRIVATE_VISIBILITY,
@@ -942,12 +940,12 @@ async fn custom_role_with_read_private_can_see_private_canvas() {
 #[tokio::test]
 async fn only_someone_who_can_share_may_change_visibility() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let owner = join_workspace(&app, workspace, "owner", MEMBER_ROLE).await;
-    let other = join_workspace(&app, workspace, "other", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let owner = join_tenant(&app, tenant_id, "owner", MEMBER_ROLE).await;
+    let other = join_tenant(&app, tenant_id, "other", MEMBER_ROLE).await;
     let canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "private",
         owner.user.id,
         PRIVATE_VISIBILITY,
@@ -971,18 +969,18 @@ async fn only_someone_who_can_share_may_change_visibility() {
     assert_eq!(
         other.session.get(&canvas_path(canvas_id)).await.status,
         StatusCode::OK,
-        "once workspace-visible, every member can read it"
+        "once tenant-visible, every member can read it"
     );
 }
 
 #[tokio::test]
 async fn sharing_with_someone_outside_the_tenant_is_rejected() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let owner = join_workspace(&app, workspace, "owner", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let owner = join_tenant(&app, tenant_id, "owner", MEMBER_ROLE).await;
     let canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "private",
         owner.user.id,
         PRIVATE_VISIBILITY,
@@ -1009,12 +1007,12 @@ async fn sharing_with_someone_outside_the_tenant_is_rejected() {
 #[tokio::test]
 async fn sharing_state_names_the_owner_and_each_grantee() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let owner = join_workspace(&app, workspace, "owner", MEMBER_ROLE).await;
-    let grantee = join_workspace(&app, workspace, "grantee", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let owner = join_tenant(&app, tenant_id, "owner", MEMBER_ROLE).await;
+    let grantee = join_tenant(&app, tenant_id, "grantee", MEMBER_ROLE).await;
     let canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "private",
         owner.user.id,
         PRIVATE_VISIBILITY,

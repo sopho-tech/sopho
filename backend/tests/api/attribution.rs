@@ -15,9 +15,7 @@ use crate::support::database::{
     Column, backend, count_rows, now, select_rows, select_uuid, try_insert_row, update_rows,
 };
 use crate::support::records::{insert_grant, set_owner_and_visibility};
-use crate::support::workspaces::{
-    WorkspaceMember, create_user, create_workspace, join_workspace, sign_in,
-};
+use crate::support::tenants::{TenantMember, create_tenant, create_user, join_tenant, sign_in};
 use crate::support::{TestApp, UserSession};
 use reqwest::StatusCode;
 use sea_orm::{ConnectionTrait, DbBackend, DbErr, QueryResult, Statement};
@@ -60,10 +58,10 @@ struct RecordedAttribution {
 }
 
 struct Team {
-    workspace: Uuid,
-    editor: WorkspaceMember,
-    alice: WorkspaceMember,
-    bob: WorkspaceMember,
+    tenant_id: Uuid,
+    editor: TenantMember,
+    alice: TenantMember,
+    bob: TenantMember,
     connection_id: Uuid,
 }
 
@@ -156,10 +154,10 @@ async fn admin_user_id(app: &TestApp) -> Uuid {
 }
 
 async fn form_team(app: &TestApp) -> Team {
-    let workspace = create_workspace(app, "t").await;
-    let editor = join_workspace(app, workspace, "editor", ADMIN_ROLE).await;
-    let alice = join_workspace(app, workspace, "alice", MEMBER_ROLE).await;
-    let bob = join_workspace(app, workspace, "bob", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(app, "t").await;
+    let editor = join_tenant(app, tenant_id, "editor", ADMIN_ROLE).await;
+    let alice = join_tenant(app, tenant_id, "alice", MEMBER_ROLE).await;
+    let bob = join_tenant(app, tenant_id, "bob", MEMBER_ROLE).await;
     let connection_id = uuid_field(
         &app.create_named_sqlite_demo_connection_as(&editor.session, "warehouse")
             .await,
@@ -174,7 +172,7 @@ async fn form_team(app: &TestApp) -> Team {
     )
     .await;
     Team {
-        workspace,
+        tenant_id,
         editor,
         alice,
         bob,
@@ -231,7 +229,7 @@ async fn canvas_from_conversation(
 async fn let_bob_edit_the_conversation(app: &TestApp, team: &Team, conversation_id: &str) {
     insert_grant(
         app,
-        team.workspace,
+        team.tenant_id,
         CONVERSATION_RESOURCE,
         parse_uuid(conversation_id),
         team.bob.user.id,
@@ -357,7 +355,7 @@ async fn column_nullability(app: &TestApp, table: &str) -> HashMap<String, bool>
 
 async fn insert_attributed_canvas(
     app: &TestApp,
-    workspace: Uuid,
+    tenant_id: Uuid,
     owner_user_id: Uuid,
     created_by: &RecordedActor,
     modified_by: &RecordedActor,
@@ -367,7 +365,7 @@ async fn insert_attributed_canvas(
         "canvas",
         &[
             ("id", Uuid::new_v4().into()),
-            ("tenant_id", workspace.into()),
+            ("tenant_id", tenant_id.into()),
             ("owner_user_id", owner_user_id.into()),
             ("visibility", TENANT_VISIBILITY.into()),
             ("name", "checked".into()),
@@ -502,7 +500,7 @@ async fn every_table_in_scope_carries_attribution_columns() {
 #[tokio::test]
 async fn the_database_refuses_unattributed_rows() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
+    let tenant_id = create_tenant(&app, "t").await;
     let person = create_user(&app, "person", PLATFORM_MEMBER).await.id;
     let valid = RecordedActor::person(person);
     let invalid_pairs = [
@@ -526,18 +524,18 @@ async fn the_database_refuses_unattributed_rows() {
 
     for invalid in &invalid_pairs {
         assert_refused_by_a_check(
-            insert_attributed_canvas(&app, workspace, person, invalid, &valid).await,
+            insert_attributed_canvas(&app, tenant_id, person, invalid, &valid).await,
             &format!("created pair {invalid:?}"),
         );
         assert_refused_by_a_check(
-            insert_attributed_canvas(&app, workspace, person, &valid, invalid).await,
+            insert_attributed_canvas(&app, tenant_id, person, &valid, invalid).await,
             &format!("modified pair {invalid:?}"),
         );
     }
 
     insert_attributed_canvas(
         &app,
-        workspace,
+        tenant_id,
         person,
         &RecordedActor::system(),
         &RecordedActor::system(),
@@ -546,7 +544,7 @@ async fn the_database_refuses_unattributed_rows() {
     .expect("a system row is attributed");
     insert_attributed_canvas(
         &app,
-        workspace,
+        tenant_id,
         person,
         &RecordedActor::ai_for(person),
         &valid,
@@ -558,9 +556,9 @@ async fn the_database_refuses_unattributed_rows() {
 #[tokio::test]
 async fn requests_stamp_the_person_who_made_them() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "t").await;
-    let creator = join_workspace(&app, workspace, "creator", MEMBER_ROLE).await;
-    let editor = join_workspace(&app, workspace, "editor", ADMIN_ROLE).await;
+    let tenant_id = create_tenant(&app, "t").await;
+    let creator = join_tenant(&app, tenant_id, "creator", MEMBER_ROLE).await;
+    let editor = join_tenant(&app, tenant_id, "editor", ADMIN_ROLE).await;
     let creator_actor = RecordedActor::person(creator.user.id);
     let editor_actor = RecordedActor::person(editor.user.id);
 
@@ -737,19 +735,19 @@ async fn startup_work_is_stamped_as_the_system() {
 #[tokio::test]
 async fn membership_changes_name_who_made_them() {
     let app = TestApp::spawn_with_single_sign_on().await;
-    let workspace = create_workspace(&app, "acme").await;
-    let owner = join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
+    let tenant_id = create_tenant(&app, "acme").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
     let invitee = create_user(&app, "invitee", PLATFORM_MEMBER).await;
     let invitee_session = sign_in(&app, &invitee).await;
     let membership = [
-        ("tenant_id", workspace.into()),
+        ("tenant_id", tenant_id.into()),
         ("user_id", invitee.id.into()),
     ];
 
     let invited = owner
         .session
         .post(
-            &format!("/tenant/{workspace}/invitation"),
+            &format!("/tenant/{tenant_id}/invitation"),
             json!({ "email": invitee.email, "role_name": VIEWER_ROLE }),
         )
         .await;
@@ -781,20 +779,20 @@ async fn membership_changes_name_who_made_them() {
 }
 
 #[tokio::test]
-async fn a_new_workspace_names_its_creator_and_leaves_roles_to_the_system() {
+async fn a_new_tenant_names_its_creator_and_leaves_roles_to_the_system() {
     let app = TestApp::spawn().await;
     app.login_as_admin().await;
     let administrator = admin_user_id(&app).await;
 
     let created = app.post("/tenant", json!({ "name": "Analytics" })).await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.body);
-    let workspace = uuid_field(&created.body, "id");
+    let tenant_id = uuid_field(&created.body, "id");
 
     assert_eq!(
-        attribution_of(&app, "tenant", workspace).await.created_by,
+        attribution_of(&app, "tenant", tenant_id).await.created_by,
         RecordedActor::person(administrator)
     );
-    let roles = attributions(&app, "role", &[("tenant_id", workspace.into())]).await;
+    let roles = attributions(&app, "role", &[("tenant_id", tenant_id.into())]).await;
     assert!(!roles.is_empty());
     for role in &roles {
         assert_eq!(role.created_by, RecordedActor::system());
@@ -804,7 +802,7 @@ async fn a_new_workspace_names_its_creator_and_leaves_roles_to_the_system() {
             &app,
             "tenant_membership",
             &[
-                ("tenant_id", workspace.into()),
+                ("tenant_id", tenant_id.into()),
                 ("user_id", administrator.into()),
             ],
         )

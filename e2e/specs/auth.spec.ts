@@ -18,7 +18,7 @@ test(
     const tenantId = TENANT_HOME_URL_PATTERN.exec(new URL(page.url()).pathname)
       ?.groups?.tenantId;
     if (!tenantId) {
-      throw new Error(`no workspace id in ${page.url()}`);
+      throw new Error(`no tenant id in ${page.url()}`);
     }
 
     await page.goto(tenantUrl(tenantId, APP_URLS.PROFILE));

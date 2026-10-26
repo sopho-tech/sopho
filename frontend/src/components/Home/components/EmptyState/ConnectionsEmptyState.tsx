@@ -20,7 +20,7 @@ export function ConnectionsEmptyState({
       <EmptyState
         icon="plug"
         heading={HEADING}
-        description="A workspace admin can connect data sources for everyone to use"
+        description="A tenant admin can connect data sources for everyone to use"
       />
     );
   }

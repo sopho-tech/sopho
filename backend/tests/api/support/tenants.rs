@@ -15,7 +15,7 @@ pub struct TestUser {
     pub full_name: String,
 }
 
-pub struct WorkspaceMember {
+pub struct TenantMember {
     pub user: TestUser,
     pub session: UserSession,
 }
@@ -85,7 +85,7 @@ pub async fn sign_in(app: &TestApp, user: &TestUser) -> UserSession {
     session
 }
 
-pub async fn create_workspace(app: &TestApp, name: &str) -> Uuid {
+pub async fn create_tenant(app: &TestApp, name: &str) -> Uuid {
     let id = Uuid::new_v4();
     insert_row(
         app,
@@ -173,14 +173,14 @@ pub async fn create_custom_role(
     role_id
 }
 
-pub async fn join_workspace(
+pub async fn join_tenant(
     app: &TestApp,
     tenant_id: Uuid,
     label: &str,
     role_name: &str,
-) -> WorkspaceMember {
+) -> TenantMember {
     let user = create_user(app, label, PLATFORM_MEMBER).await;
     add_member(app, tenant_id, user.id, role_name).await;
     let session = sign_in(app, &user).await.in_tenant(tenant_id);
-    WorkspaceMember { user, session }
+    TenantMember { user, session }
 }

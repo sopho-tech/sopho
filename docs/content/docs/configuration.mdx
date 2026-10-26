@@ -83,7 +83,7 @@ Use a strong password in production.
 
 ## Single Sign-On
 
-People can sign in through any OpenID Connect provider, such as Google, Microsoft Entra ID or Okta. Without a provider, Sopho offers password sign-in only, and nobody can be invited to a workspace, because invitees join by signing in through a provider.
+People can sign in through any OpenID Connect provider, such as Google, Microsoft Entra ID or Okta. Without a provider, Sopho offers password sign-in only, and nobody can be invited to a tenant, because invitees join by signing in through a provider.
 
 `SOPHO_OIDC_PROVIDERS` lists the providers, separated by commas, for example `google,okta`. A name may contain letters, digits and dashes. Each provider then needs the following five variables, where `<NAME>` is the provider name in upper case with dashes turned into underscores (`my-idp` becomes `MY_IDP`). Sopho fails to start if any of them is missing.
 
@@ -95,7 +95,7 @@ People can sign in through any OpenID Connect provider, such as Google, Microsof
 | `SOPHO_OIDC_<NAME>_CLIENT_SECRET` | Client secret of that application                                                                     |
 | `SOPHO_OIDC_<NAME>_REDIRECT_URI`  | `https://<your Sopho host>/api/v1/auth/oidc/<name>/callback`. Register the same URI with the provider |
 
-Sopho asks for the `openid`, `email` and `profile` scopes. The provider must return the person's email, marked as verified, and their name. Someone signing in for the first time gets an account without a workspace and joins workspaces by accepting invitations. An email that already belongs to an account with a password, such as the admin's, can't be used to sign in through a provider.
+Sopho asks for the `openid`, `email` and `profile` scopes. The provider must return the person's email, marked as verified, and their name. Someone signing in for the first time gets an account without a tenant and joins tenants by accepting invitations. An email that already belongs to an account with a password, such as the admin's, can't be used to sign in through a provider.
 
 For example, for Google:
 

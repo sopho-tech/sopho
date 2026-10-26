@@ -44,7 +44,7 @@ export function Connections() {
             Connections
           </Heading>
           <Text fontSize="sm" color="subtle">
-            Manage the data sources available to your workspace.
+            Manage the data sources available to your tenant.
           </Text>
         </Flex>
         {canCreateConnection && (

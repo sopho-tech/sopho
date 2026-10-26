@@ -4,8 +4,8 @@ use crate::support::constants::{
     VIEWER_ACCESS, VIEWER_ROLE,
 };
 use crate::support::records::insert_canvas;
+use crate::support::tenants::{create_tenant, join_tenant};
 use crate::support::test_app::JsonResponse;
-use crate::support::workspaces::{create_workspace, join_workspace};
 use crate::support::{TestApp, UserSession};
 use reqwest::StatusCode;
 use serde_json::json;
@@ -60,10 +60,10 @@ fn assert_refused(response: &JsonResponse, status: StatusCode, message: &str) {
 #[tokio::test]
 async fn an_admin_cannot_promote_anyone_to_owner() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "promotion").await;
-    join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
-    let admin = join_workspace(&app, workspace, "admin", ADMIN_ROLE).await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "promotion").await;
+    join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
+    let admin = join_tenant(&app, tenant_id, "admin", ADMIN_ROLE).await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
 
     assert_refused(
         &change_role(&admin.session, member.user.id, OWNER_ROLE).await,
@@ -84,10 +84,10 @@ async fn an_admin_cannot_promote_anyone_to_owner() {
 #[tokio::test]
 async fn an_admin_cannot_change_or_remove_an_owner() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "owner_protection").await;
-    let owner = join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
-    let admin = join_workspace(&app, workspace, "admin", ADMIN_ROLE).await;
-    let fellow_admin = join_workspace(&app, workspace, "fellow", ADMIN_ROLE).await;
+    let tenant_id = create_tenant(&app, "owner_protection").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
+    let admin = join_tenant(&app, tenant_id, "admin", ADMIN_ROLE).await;
+    let fellow_admin = join_tenant(&app, tenant_id, "fellow", ADMIN_ROLE).await;
 
     assert_refused(
         &change_role(&admin.session, owner.user.id, MEMBER_ROLE).await,
@@ -111,8 +111,8 @@ async fn an_admin_cannot_change_or_remove_an_owner() {
 #[tokio::test]
 async fn the_last_owner_cannot_be_demoted_or_removed() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "last_owner").await;
-    let owner = join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
+    let tenant_id = create_tenant(&app, "last_owner").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
 
     assert_refused(
         &change_role(&owner.session, owner.user.id, ADMIN_ROLE).await,
@@ -125,7 +125,7 @@ async fn the_last_owner_cannot_be_demoted_or_removed() {
         LAST_OWNER_MESSAGE,
     );
 
-    let successor = join_workspace(&app, workspace, "successor", MEMBER_ROLE).await;
+    let successor = join_tenant(&app, tenant_id, "successor", MEMBER_ROLE).await;
     let promoted = change_role(&owner.session, successor.user.id, OWNER_ROLE).await;
     assert_eq!(promoted.status, StatusCode::OK, "{}", promoted.body);
     let stepped_down = change_role(&owner.session, owner.user.id, ADMIN_ROLE).await;
@@ -139,12 +139,12 @@ async fn the_last_owner_cannot_be_demoted_or_removed() {
 #[tokio::test]
 async fn removed_member_loses_access_immediately() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "removal").await;
-    let owner = join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "removal").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
     let canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "private",
         owner.user.id,
         PRIVATE_VISIBILITY,
@@ -170,7 +170,7 @@ async fn removed_member_loses_access_immediately() {
     assert_eq!(
         member.session.get("/canvas").await.status,
         StatusCode::NOT_FOUND,
-        "a removed member must lose the workspace on the next request"
+        "a removed member must lose the tenant on the next request"
     );
     let sharing = owner
         .session
@@ -192,10 +192,10 @@ async fn removed_member_loses_access_immediately() {
 #[tokio::test]
 async fn member_capabilities_match_what_the_rules_allow() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "capabilities").await;
-    let owner = join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
-    let admin = join_workspace(&app, workspace, "admin", ADMIN_ROLE).await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let tenant_id = create_tenant(&app, "capabilities").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
+    let admin = join_tenant(&app, tenant_id, "admin", ADMIN_ROLE).await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
     let owner_id = owner.user.id.to_string();
     let admin_id = admin.user.id.to_string();
     let member_id = member.user.id.to_string();
@@ -230,7 +230,7 @@ async fn member_capabilities_match_what_the_rules_allow() {
     );
     assert_eq!(seen_by_owner[&admin_id], (true, true));
 
-    let co_owner = join_workspace(&app, workspace, "co_owner", MEMBER_ROLE).await;
+    let co_owner = join_tenant(&app, tenant_id, "co_owner", MEMBER_ROLE).await;
     let promoted = change_role(&owner.session, co_owner.user.id, OWNER_ROLE).await;
     assert_eq!(promoted.status, StatusCode::OK, "{}", promoted.body);
     assert_eq!(

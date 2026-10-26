@@ -16,7 +16,7 @@ import {
 } from "src/api/auth/queries";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { PLATFORM_PERMISSIONS } from "src/constants/platform_permissions";
-import { CreateWorkspaceForm } from "src/components/Onboarding/CreateWorkspaceForm";
+import { CreateTenantForm } from "src/components/Onboarding/CreateTenantForm";
 import { ReceivedInvitations } from "src/components/Onboarding/ReceivedInvitations";
 
 export function Onboarding() {
@@ -24,7 +24,7 @@ export function Onboarding() {
   const signedInUser = useSignedInUser();
   const memberships = useMemberships();
   const receivedInvitations = useReceivedInvitations();
-  const canCreateWorkspace = usePlatformPermission(
+  const canCreateTenant = usePlatformPermission(
     PLATFORM_PERMISSIONS.TENANT_CREATE,
   );
   const signOut = useDeleteSession();
@@ -35,12 +35,10 @@ export function Onboarding() {
   }, [navigate]);
   const handleSignOut = useCallback(() => deleteSession(), [deleteSession]);
 
-  const hasWorkspaces = (memberships.data?.length ?? 0) > 0;
+  const hasTenants = (memberships.data?.length ?? 0) > 0;
   const invitations = receivedInvitations.data;
   const hasNothingToJoin =
-    invitations !== undefined &&
-    invitations.length === 0 &&
-    !canCreateWorkspace;
+    invitations !== undefined && invitations.length === 0 && !canCreateTenant;
 
   return (
     <Flex
@@ -60,7 +58,7 @@ export function Onboarding() {
       >
         <Flex direction="column" gap="xs">
           <Heading accessibilityLevel={1} size="xl" textAlign="center">
-            {hasWorkspaces ? "Join or create a workspace" : "Welcome to Sopho"}
+            {hasTenants ? "Join or create a tenant" : "Welcome to Sopho"}
           </Heading>
           <Heading
             accessibilityLevel={2}
@@ -68,7 +66,7 @@ export function Onboarding() {
             textAlign="center"
             textColor="subtle"
           >
-            Canvases, conversations and connections live inside a workspace
+            Canvases, conversations and connections live inside a tenant
           </Heading>
         </Flex>
         {memberships.error && (
@@ -83,14 +81,14 @@ export function Onboarding() {
         {invitations && invitations.length > 0 && (
           <ReceivedInvitations invitations={invitations} />
         )}
-        {canCreateWorkspace && <CreateWorkspaceForm />}
+        {canCreateTenant && <CreateTenantForm />}
         {hasNothingToJoin && (
           <Text fontSize="sm" color="subtle">
-            {`You are not part of a workspace yet. Ask a workspace admin to invite ${signedInUser.email}.`}
+            {`You are not part of a tenant yet. Ask a tenant admin to invite ${signedInUser.email}.`}
           </Text>
         )}
         <Flex direction="row" justifyContent="space-between" gap="sm">
-          {hasWorkspaces ? (
+          {hasTenants ? (
             <Button
               label="Back"
               shape="rectangle"

@@ -7,8 +7,8 @@ use crate::support::constants::{
 use crate::support::records::{
     insert_canvas, insert_dashboard, insert_notebook, insert_sql_cell, set_owner_and_visibility,
 };
+use crate::support::tenants::{create_tenant, join_tenant};
 use crate::support::test_app::JsonResponse;
-use crate::support::workspaces::{create_workspace, join_workspace};
 use crate::support::{TestApp, UserSession};
 use reqwest::StatusCode;
 use serde_json::{Value, json};
@@ -118,20 +118,20 @@ async fn grant_canvas(
 #[tokio::test]
 async fn adding_a_cell_needs_write_access_to_its_canvas() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "cell_create").await;
-    let owner = join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
+    let tenant_id = create_tenant(&app, "cell_create").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
     let canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "shared canvas",
         owner.user.id,
         TENANT_VISIBILITY,
     )
     .await;
-    let notebook_id = insert_notebook(&app, workspace, canvas_id, "notebook").await;
-    let bystander = join_workspace(&app, workspace, "bystander", MEMBER_ROLE).await;
-    let viewer = join_workspace(&app, workspace, "viewer", MEMBER_ROLE).await;
-    let editor = join_workspace(&app, workspace, "editor", MEMBER_ROLE).await;
+    let notebook_id = insert_notebook(&app, tenant_id, canvas_id, "notebook").await;
+    let bystander = join_tenant(&app, tenant_id, "bystander", MEMBER_ROLE).await;
+    let viewer = join_tenant(&app, tenant_id, "viewer", MEMBER_ROLE).await;
+    let editor = join_tenant(&app, tenant_id, "editor", MEMBER_ROLE).await;
     grant_canvas(&owner.session, canvas_id, viewer.user.id, VIEWER_ACCESS).await;
     grant_canvas(&owner.session, canvas_id, editor.user.id, EDITOR_ACCESS).await;
 
@@ -139,7 +139,7 @@ async fn adding_a_cell_needs_write_access_to_its_canvas() {
     assert_eq!(
         by_bystander.status,
         StatusCode::BAD_REQUEST,
-        "a workspace-visible canvas is readable, not writable"
+        "a tenant-visible canvas is readable, not writable"
     );
     assert_eq!(by_bystander.body["error"], NOTEBOOK_NOT_FOUND_MESSAGE);
     let by_viewer = create_sql_cell(&viewer.session, notebook_id, None).await;
@@ -156,8 +156,8 @@ async fn adding_a_cell_needs_write_access_to_its_canvas() {
 #[tokio::test]
 async fn a_cell_only_binds_to_connections_its_author_can_read() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "cell_connection").await;
-    let owner = join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
+    let tenant_id = create_tenant(&app, "cell_connection").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
     let private_connection_id = connection_with_visibility(
         &app,
         &owner.session,
@@ -174,16 +174,16 @@ async fn a_cell_only_binds_to_connections_its_author_can_read() {
         TENANT_VISIBILITY,
     )
     .await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
     let canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "member canvas",
         member.user.id,
         PRIVATE_VISIBILITY,
     )
     .await;
-    let notebook_id = insert_notebook(&app, workspace, canvas_id, "notebook").await;
+    let notebook_id = insert_notebook(&app, tenant_id, canvas_id, "notebook").await;
 
     let on_private_connection =
         create_sql_cell(&member.session, notebook_id, Some(private_connection_id)).await;
@@ -217,15 +217,15 @@ async fn a_cell_only_binds_to_connections_its_author_can_read() {
 #[tokio::test]
 async fn a_cell_cannot_move_to_another_notebook() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "cell_move").await;
-    let owner = join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
+    let tenant_id = create_tenant(&app, "cell_move").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
     let first_canvas_id =
-        insert_canvas(&app, workspace, "first", owner.user.id, PRIVATE_VISIBILITY).await;
+        insert_canvas(&app, tenant_id, "first", owner.user.id, PRIVATE_VISIBILITY).await;
     let second_canvas_id =
-        insert_canvas(&app, workspace, "second", owner.user.id, PRIVATE_VISIBILITY).await;
-    let first_notebook_id = insert_notebook(&app, workspace, first_canvas_id, "first").await;
-    let second_notebook_id = insert_notebook(&app, workspace, second_canvas_id, "second").await;
-    let cell_id = insert_sql_cell(&app, workspace, first_notebook_id, "cell", ANSWER_QUERY).await;
+        insert_canvas(&app, tenant_id, "second", owner.user.id, PRIVATE_VISIBILITY).await;
+    let first_notebook_id = insert_notebook(&app, tenant_id, first_canvas_id, "first").await;
+    let second_notebook_id = insert_notebook(&app, tenant_id, second_canvas_id, "second").await;
+    let cell_id = insert_sql_cell(&app, tenant_id, first_notebook_id, "cell", ANSWER_QUERY).await;
 
     let mut moved = cell(&owner.session, cell_id).await;
     moved["notebook_id"] = json!(second_notebook_id);
@@ -242,8 +242,8 @@ async fn a_cell_cannot_move_to_another_notebook() {
 #[tokio::test]
 async fn a_chart_only_reads_from_cells_of_its_own_notebook() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "chart_source").await;
-    let owner = join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
+    let tenant_id = create_tenant(&app, "chart_source").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
     let connection_id = connection_with_visibility(
         &app,
         &owner.session,
@@ -254,27 +254,27 @@ async fn a_chart_only_reads_from_cells_of_its_own_notebook() {
     .await;
     let private_canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "owner only",
         owner.user.id,
         PRIVATE_VISIBILITY,
     )
     .await;
-    let private_notebook_id = insert_notebook(&app, workspace, private_canvas_id, "private").await;
+    let private_notebook_id = insert_notebook(&app, tenant_id, private_canvas_id, "private").await;
     let private_source_id = created_id(
         &create_sql_cell(&owner.session, private_notebook_id, Some(connection_id)).await,
     );
 
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
     let member_canvas_id = insert_canvas(
         &app,
-        workspace,
+        tenant_id,
         "member canvas",
         member.user.id,
         PRIVATE_VISIBILITY,
     )
     .await;
-    let member_notebook_id = insert_notebook(&app, workspace, member_canvas_id, "member").await;
+    let member_notebook_id = insert_notebook(&app, tenant_id, member_canvas_id, "member").await;
     let own_source_id = created_id(
         &create_sql_cell(&member.session, member_notebook_id, Some(connection_id)).await,
     );
@@ -318,8 +318,8 @@ async fn a_chart_only_reads_from_cells_of_its_own_notebook() {
 #[tokio::test]
 async fn a_conversation_only_starts_on_a_connection_its_author_can_read() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "conversation_connection").await;
-    let owner = join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
+    let tenant_id = create_tenant(&app, "conversation_connection").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
     let private_connection_id = connection_with_visibility(
         &app,
         &owner.session,
@@ -336,7 +336,7 @@ async fn a_conversation_only_starts_on_a_connection_its_author_can_read() {
         TENANT_VISIBILITY,
     )
     .await;
-    let member = join_workspace(&app, workspace, "member", MEMBER_ROLE).await;
+    let member = join_tenant(&app, tenant_id, "member", MEMBER_ROLE).await;
     let start = async |connection_id: Uuid| {
         member
             .session
@@ -364,19 +364,19 @@ async fn a_conversation_only_starts_on_a_connection_its_author_can_read() {
 #[tokio::test]
 async fn a_dashboard_only_lays_out_charts_of_its_own_canvas() {
     let app = TestApp::spawn().await;
-    let workspace = create_workspace(&app, "dashboard_layout").await;
-    let owner = join_workspace(&app, workspace, "owner", OWNER_ROLE).await;
+    let tenant_id = create_tenant(&app, "dashboard_layout").await;
+    let owner = join_tenant(&app, tenant_id, "owner", OWNER_ROLE).await;
     let canvas_id =
-        insert_canvas(&app, workspace, "canvas", owner.user.id, PRIVATE_VISIBILITY).await;
+        insert_canvas(&app, tenant_id, "canvas", owner.user.id, PRIVATE_VISIBILITY).await;
     let other_canvas_id =
-        insert_canvas(&app, workspace, "other", owner.user.id, PRIVATE_VISIBILITY).await;
-    let notebook_id = insert_notebook(&app, workspace, canvas_id, "notebook").await;
-    let other_notebook_id = insert_notebook(&app, workspace, other_canvas_id, "other").await;
-    let dashboard_id = insert_dashboard(&app, workspace, canvas_id, "dashboard").await;
-    let chart_id = insert_sql_cell(&app, workspace, notebook_id, "chart", ANSWER_QUERY).await;
+        insert_canvas(&app, tenant_id, "other", owner.user.id, PRIVATE_VISIBILITY).await;
+    let notebook_id = insert_notebook(&app, tenant_id, canvas_id, "notebook").await;
+    let other_notebook_id = insert_notebook(&app, tenant_id, other_canvas_id, "other").await;
+    let dashboard_id = insert_dashboard(&app, tenant_id, canvas_id, "dashboard").await;
+    let chart_id = insert_sql_cell(&app, tenant_id, notebook_id, "chart", ANSWER_QUERY).await;
     let other_chart_id = insert_sql_cell(
         &app,
-        workspace,
+        tenant_id,
         other_notebook_id,
         "other chart",
         ANSWER_QUERY,

@@ -76,7 +76,7 @@ export function ConnectionNew() {
             New Connection
           </Heading>
           <Text fontSize="sm" color="subtle">
-            Connect a new data source to your workspace.
+            Connect a new data source to your tenant.
           </Text>
         </Flex>
         <Button
