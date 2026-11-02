@@ -12,3 +12,21 @@
   width: var(--border-width-medium);
   height: 100%;
 }
+
+.labelledSeparator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.labelledSeparator .horizontal {
+  flex: 1;
+  width: auto;
+}
+
+.label {
+  flex-shrink: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-grey-500);
+}

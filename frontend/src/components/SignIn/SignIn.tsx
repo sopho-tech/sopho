@@ -7,6 +7,7 @@ import {
   Flex,
   Form,
   Heading,
+  Separator,
   Text,
 } from "src/components/design-system";
 import { AuthPageLayout } from "src/components/AuthPageLayout";
@@ -80,17 +81,14 @@ export default function SignIn() {
 
   return (
     <AuthPageLayout>
-      <Heading accessibilityLevel={1} size="xl" textAlign="center">
-        Welcome !
-      </Heading>
-      <Heading
-        accessibilityLevel={2}
-        size="sm"
-        textAlign="center"
-        textColor="subtle"
-      >
-        Sign in with email and password
-      </Heading>
+      <Flex direction="column" alignItems="center" gap="2xs">
+        <Heading accessibilityLevel={1} size="xl" textAlign="center">
+          Welcome back
+        </Heading>
+        <Text fontSize="sm" color="subtle">
+          Sign in to your account
+        </Text>
+      </Flex>
       {errorMessage && <BannerSlim type="error" message={errorMessage} />}
       {signInOptions.error && (
         <BannerSlim type="error" message={signInOptions.error.message} />
@@ -108,7 +106,8 @@ export default function SignIn() {
             errorMessage="Email is required"
             className={authPageStyles.fieldContainer}
           >
-            <Form.Input placeholder="email" icon="email" />
+            <Form.Label className={authPageStyles.fieldLabel}>Email</Form.Label>
+            <Form.Input placeholder="name@company.com" fullWidth />
           </Form.Field>
           <Form.Field
             name="password"
@@ -116,7 +115,26 @@ export default function SignIn() {
             errorMessage="Password is required"
             className={authPageStyles.fieldContainer}
           >
-            <Form.Password placeholder="password" icon="lock" />
+            <Flex
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              width="100%"
+            >
+              <Form.Label className={authPageStyles.fieldLabel}>
+                Password
+              </Form.Label>
+              {signInOptions.data?.password_reset_available && (
+                <Button
+                  label="Forgot password?"
+                  shape="rectangle"
+                  size="sm"
+                  backgroundColor="ghost"
+                  onClick={handleForgotPassword}
+                />
+              )}
+            </Flex>
+            <Form.Password placeholder="••••••••" fullWidth />
           </Form.Field>
         </Form.Fields>
         {createSessionMutation.error && (
@@ -128,27 +146,12 @@ export default function SignIn() {
           </Box>
         )}
         <Form.Actions className={authPageStyles.formButtonRowContainer}>
-          <Form.Submit label="Sign In" />
+          <Form.Submit label="Sign in" size="md" fullWidth />
         </Form.Actions>
       </Form>
-      {signInOptions.data?.password_reset_available && (
-        <Flex justifyContent="center">
-          <Button
-            label="Forgot password?"
-            shape="rectangle"
-            size="sm"
-            backgroundColor="ghost"
-            onClick={handleForgotPassword}
-          />
-        </Flex>
-      )}
       {providers.length > 0 && (
         <Flex direction="column" gap="sm">
-          <Flex justifyContent="center">
-            <Text fontSize="xs" color="subtle">
-              or
-            </Text>
-          </Flex>
+          <Separator label="Or continue with" />
           {providers.map((provider) => (
             <SingleSignOnButton key={provider.name} provider={provider} />
           ))}

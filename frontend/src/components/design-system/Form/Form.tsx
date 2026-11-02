@@ -135,6 +135,7 @@ type FormInputProps = {
   icon?: IconType;
   className?: string;
   inputContainerClassName?: string;
+  fullWidth?: boolean;
 };
 
 const FormInput = ({
@@ -142,11 +143,14 @@ const FormInput = ({
   icon,
   className,
   inputContainerClassName,
+  fullWidth = false,
 }: FormInputProps) => {
   const { readonly } = useFormCompoundContext();
 
   return (
-    <div className={`${FormStyles.formFieldContainer} ${className || ""}`}>
+    <div
+      className={`${FormStyles.formFieldContainer} ${fullWidth ? FormStyles.fullWidthField : ""} ${className || ""}`}
+    >
       <TextField
         placeholder={placeholder}
         icon={icon}
@@ -293,6 +297,7 @@ type FormPasswordProps = {
   icon?: IconType;
   className?: string;
   inputContainerClassName?: string;
+  fullWidth?: boolean;
 };
 
 const FormPassword = ({
@@ -300,16 +305,20 @@ const FormPassword = ({
   icon,
   className,
   inputContainerClassName,
+  fullWidth = false,
 }: FormPasswordProps) => {
   const { readonly } = useFormCompoundContext();
 
   return (
-    <div className={`${FormStyles.formFieldContainer} ${className || ""}`}>
+    <div
+      className={`${FormStyles.formFieldContainer} ${fullWidth ? FormStyles.fullWidthField : ""} ${className || ""}`}
+    >
       <PasswordField
         placeholder={placeholder}
         icon={icon}
         readonly={readonly}
         containerClassName={inputContainerClassName}
+        fullWidth={fullWidth}
       />
     </div>
   );
@@ -335,10 +344,15 @@ FormActions.displayName = "Form.Actions";
 type FormSubmitProps = {
   label?: string;
   size?: ButtonSize;
+  fullWidth?: boolean;
 };
 
-const FormSubmit = ({ label = "Submit", size = "sm" }: FormSubmitProps) => {
-  return <SubscribeButton label={label} size={size} />;
+const FormSubmit = ({
+  label = "Submit",
+  size = "sm",
+  fullWidth = false,
+}: FormSubmitProps) => {
+  return <SubscribeButton label={label} size={size} fullWidth={fullWidth} />;
 };
 
 FormSubmit.displayName = "Form.Submit";

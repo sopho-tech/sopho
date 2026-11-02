@@ -24,6 +24,12 @@
   width: 100%;
 }
 
+.fullWidthField {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2xs);
+}
+
 .formLabelControlRow {
   display: flex;
   flex-direction: row;

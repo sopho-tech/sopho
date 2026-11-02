@@ -11,9 +11,9 @@ test(
   { tag: "@smoke" },
   async ({ page }) => {
     await page.goto(APP_URLS.SIGN_IN);
-    await page.getByPlaceholder("email").fill(ADMIN_EMAIL);
-    await page.getByPlaceholder("password").fill(ADMIN_PASSWORD);
-    await page.getByRole("button", { name: "Sign In" }).click();
+    await page.getByLabel("Email", { exact: true }).fill(ADMIN_EMAIL);
+    await page.getByLabel("Password", { exact: true }).fill(ADMIN_PASSWORD);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page).toHaveURL(TENANT_HOME_URL_PATTERN);
     const tenantId = TENANT_HOME_URL_PATTERN.exec(new URL(page.url()).pathname)
       ?.groups?.tenantId;
@@ -34,14 +34,16 @@ test("keeps a visitor with a wrong password on the sign-in page", async ({
   page,
 }) => {
   await page.goto(APP_URLS.SIGN_IN);
-  await page.getByPlaceholder("email").fill(ADMIN_EMAIL);
-  await page.getByPlaceholder("password").fill("not-the-admin-password");
+  await page.getByLabel("Email", { exact: true }).fill(ADMIN_EMAIL);
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill("not-the-admin-password");
   const signInResponse = page.waitForResponse(
     (response) =>
       response.url().endsWith(API_ROUTES.SESSION) &&
       response.request().method() === "POST",
   );
-  await page.getByRole("button", { name: "Sign In" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
   expect((await signInResponse).status()).toBe(401);
   await expect(page).toHaveURL(APP_URLS.SIGN_IN);

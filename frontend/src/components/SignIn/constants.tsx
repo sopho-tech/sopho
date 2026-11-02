@@ -1,4 +1,12 @@
+import { ProviderIcon } from "src/api/auth/queries";
+import googleLogo from "src/assets/images/providers/google.svg";
+
 export const SIGN_IN_ERROR_PARAMETER = "error";
+
+export const PROVIDER_LOGOS: Record<ProviderIcon, string | null> = {
+  GOOGLE: googleLogo,
+  GENERIC: null,
+};
 
 export const SIGN_IN_FORM_DEFAULT_VALUES = { email: "", password: "" };
 

@@ -76,9 +76,9 @@ async function signInWithPassword(
   password: string,
 ): Promise<void> {
   await page.goto(APP_URLS.SIGN_IN);
-  await page.getByPlaceholder("email").fill(email);
-  await page.getByPlaceholder("password").fill(password);
-  await page.getByRole("button", { name: "Sign In" }).click();
+  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
 async function signInAtIdentityProvider(
@@ -229,7 +229,8 @@ test("connecting single sign-on from the profile, then signing in with it", asyn
   await expect(visitor.page).toHaveURL(APP_URLS.SIGN_IN);
   await visitor.page
     .getByRole("button", {
-      name: `Continue with ${SINGLE_SIGN_ON_PROVIDER_DISPLAY_NAME}`,
+      name: SINGLE_SIGN_ON_PROVIDER_DISPLAY_NAME,
+      exact: true,
     })
     .click();
   await signInAtIdentityProvider(visitor.page, subject, connector);

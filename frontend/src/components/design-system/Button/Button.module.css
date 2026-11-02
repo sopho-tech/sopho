@@ -14,6 +14,17 @@
 
 .fullWidth {
   width: 100%;
+  box-sizing: border-box;
+}
+
+.contentCenter {
+  justify-content: center;
+}
+
+.leadingImage {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
 }
 
 .sizeSm {

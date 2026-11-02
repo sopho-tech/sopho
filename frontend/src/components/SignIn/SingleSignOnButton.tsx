@@ -1,6 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Button } from "src/components/design-system";
 import { OidcProviderDto } from "src/api/auth/queries";
+import { PROVIDER_LOGOS } from "src/components/SignIn/constants";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 
 type SingleSignOnButtonProps = {
@@ -18,13 +19,22 @@ export function SingleSignOnButton({
       API_ENDPOINTS.AUTH.OIDC_START.replace(":provider_name", provider.name),
     );
   }, [onBeforeRedirect, provider.name]);
+  const logo = PROVIDER_LOGOS[provider.icon];
+  const leadingImage = useMemo(
+    () => (logo ? { src: logo, alt: "" } : undefined),
+    [logo],
+  );
+
   return (
     <Button
-      label={`Continue with ${provider.display_name}`}
+      label={provider.display_name}
       shape="rectangle"
       size="md"
       backgroundColor="white"
       fullWidth
+      contentAlignment="center"
+      leadingImage={leadingImage}
+      leadingIconName={logo ? undefined : "key"}
       onClick={handleClick}
     />
   );

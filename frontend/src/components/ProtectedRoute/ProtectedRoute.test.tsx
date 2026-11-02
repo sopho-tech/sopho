@@ -28,7 +28,7 @@ describe("protected routes", () => {
     });
 
     await expect
-      .element(page.getByRole("button", { name: "Sign In" }))
+      .element(page.getByRole("button", { name: "Sign in", exact: true }))
       .toBeVisible();
     expect(router.state.location.pathname).toBe(APP_ROUTES.SIGN_IN);
     await expect

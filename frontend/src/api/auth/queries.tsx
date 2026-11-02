@@ -18,9 +18,12 @@ export type UserDto = {
   platform_permissions: string[];
 };
 
+export type ProviderIcon = "GOOGLE" | "GENERIC";
+
 export type OidcProviderDto = {
   name: string;
   display_name: string;
+  icon: ProviderIcon;
 };
 
 export type SignInOptionsDto = {

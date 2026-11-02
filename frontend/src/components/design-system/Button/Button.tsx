@@ -17,6 +17,7 @@ type ButtonProps = Omit<
 > &
   Omit<HTMLMotionProps<"button">, "children"> & {
     leadingIconName?: IconType;
+    leadingImage?: { src: string; alt: string };
     trailingIconName?: IconType;
     label: string;
     shape: "pill" | "rectangle" | "square" | "circle";
@@ -30,6 +31,7 @@ type ButtonProps = Omit<
       | "ghost"
       | "white";
     fullWidth?: boolean;
+    contentAlignment?: "start" | "center";
     size: ButtonSize;
     type?: ButtonType;
     emphasis?: ButtonEmphasis;
@@ -60,12 +62,14 @@ const buttonSizeToFontSize = {
 export const Button = ({
   onClick,
   leadingIconName,
+  leadingImage,
   trailingIconName,
   label,
   shape,
   backgroundColor,
   disabled = false,
   fullWidth = false,
+  contentAlignment = "start",
   size,
   type = "button",
   emphasis,
@@ -76,6 +80,8 @@ export const Button = ({
   const sizeClassName =
     styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`];
   const fullWidthClassName = fullWidth ? styles.fullWidth : "";
+  const contentAlignmentClassName =
+    contentAlignment === "center" ? styles.contentCenter : "";
   const textColor = getTextColor(backgroundColor);
   const iconColor =
     backgroundColor === "white" || backgroundColor === "ghost"
@@ -90,7 +96,7 @@ export const Button = ({
       disabled={disabled}
       data-shape={shape}
       data-emphasis={emphasis}
-      className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${fullWidthClassName}`}
+      className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${fullWidthClassName} ${contentAlignmentClassName}`}
       onClick={onClick}
       whileHover={disabled ? undefined : { scale: Scale.HOVER }}
       whileTap={disabled ? undefined : { scale: Scale.TAP }}
@@ -101,6 +107,13 @@ export const Button = ({
     >
       {leadingIconName && (
         <Icon type={leadingIconName} color={iconColor}></Icon>
+      )}
+      {leadingImage && (
+        <img
+          src={leadingImage.src}
+          alt={leadingImage.alt}
+          className={styles.leadingImage}
+        />
       )}
       <Text color={textColor} fontSize={buttonSizeToFontSize[size]}>
         {label}

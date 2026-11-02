@@ -5,9 +5,11 @@ import { ButtonSize } from "src/components/design-system/datatypes";
 export function SubscribeButton({
   label,
   size,
+  fullWidth = false,
 }: {
   label: string;
   size: ButtonSize;
+  fullWidth?: boolean;
 }) {
   const form = useFormContext();
   return (
@@ -23,6 +25,8 @@ export function SubscribeButton({
           shape="rectangle"
           type="submit"
           disabled={isSubmitting}
+          fullWidth={fullWidth}
+          contentAlignment="center"
         />
       )}
     </form.Subscribe>

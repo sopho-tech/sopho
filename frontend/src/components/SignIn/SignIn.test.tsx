@@ -40,9 +40,11 @@ describe("sign in", () => {
       initialPath: APP_ROUTES.SIGN_IN,
     });
 
-    await page.getByPlaceholder("email").fill(TEST_USER.email);
-    await page.getByPlaceholder("password").fill("correct-horse-battery");
-    await page.getByRole("button", { name: "Sign In" }).click();
+    await page.getByLabelText("Email", { exact: true }).fill(TEST_USER.email);
+    await page
+      .getByLabelText("Password", { exact: true })
+      .fill("correct-horse-battery");
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
     await expect.element(page.getByText("Home page")).toBeVisible();
     expect(router.state.location.pathname).toBe(APP_ROUTES.INDEX);
@@ -59,7 +61,7 @@ describe("sign in", () => {
       initialPath: APP_ROUTES.SIGN_IN,
     });
 
-    await page.getByRole("button", { name: "Sign In" }).click();
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
     await expect.element(page.getByText("Email is required")).toBeVisible();
     await expect.element(page.getByText("Password is required")).toBeVisible();
@@ -73,7 +75,7 @@ describe("sign in", () => {
     });
 
     await expect
-      .element(page.getByRole("button", { name: "Sign In" }))
+      .element(page.getByRole("button", { name: "Sign in", exact: true }))
       .toBeVisible();
     await expect
       .element(page.getByRole("button", { name: "Forgot password?" }))
