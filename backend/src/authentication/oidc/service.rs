@@ -1,6 +1,7 @@
 use crate::authentication::constants::UserStatus;
 use crate::authentication::oidc::constants::{
-    CallbackPurpose, EMAIL_SCOPE, LOGIN_ATTEMPT_EXPIRY_MINUTES, PROFILE_SCOPE, SignInMethodChange,
+    CallbackPurpose, EMAIL_SCOPE, GOOGLE_ISSUER_HOST, LOGIN_ATTEMPT_EXPIRY_MINUTES, PROFILE_SCOPE,
+    ProviderIcon, SignInMethodChange,
 };
 use crate::authentication::oidc::dto::{
     CallbackOutcome, CallbackQuery, LoginSecrets, OidcProviderDto, SignInMethodsDto,
@@ -46,8 +47,19 @@ pub fn list_providers(app_state: &AppState) -> Vec<OidcProviderDto> {
         .map(|provider| OidcProviderDto {
             name: provider.name.clone(),
             display_name: provider.display_name.clone(),
+            icon: provider_icon(&provider.issuer_url),
         })
         .collect()
+}
+
+fn provider_icon(issuer_url: &str) -> ProviderIcon {
+    let issuer_host = IssuerUrl::new(issuer_url.to_string())
+        .ok()
+        .and_then(|issuer| issuer.url().host_str().map(str::to_lowercase));
+    match issuer_host.as_deref() {
+        Some(GOOGLE_ISSUER_HOST) => ProviderIcon::Google,
+        _ => ProviderIcon::Generic,
+    }
 }
 
 pub async fn start_login(
@@ -600,4 +612,30 @@ fn equal_in_constant_time(first: &str, second: &str) -> bool {
             .zip(second.bytes())
             .fold(0u8, |difference, (left, right)| difference | (left ^ right))
             == 0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::provider_icon;
+    use crate::authentication::oidc::constants::ProviderIcon;
+
+    #[test]
+    fn the_icon_comes_from_the_issuer_host() {
+        assert_eq!(
+            provider_icon("https://accounts.google.com"),
+            ProviderIcon::Google
+        );
+        assert_eq!(
+            provider_icon("https://accounts.google.com/"),
+            ProviderIcon::Google
+        );
+        assert_eq!(
+            provider_icon("https://acme.okta.com"),
+            ProviderIcon::Generic
+        );
+        assert_eq!(
+            provider_icon("https://accounts.google.com.evil.example"),
+            ProviderIcon::Generic
+        );
+    }
 }

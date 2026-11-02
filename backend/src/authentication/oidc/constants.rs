@@ -1,3 +1,4 @@
+use serde::Serialize;
 use strum::{Display, IntoStaticStr};
 
 pub const OIDC_STATE_COOKIE_NAME: &str = "OIDC_STATE";
@@ -9,6 +10,14 @@ pub const SIGN_IN_ERROR_PARAMETER: &str = "error";
 pub const EMAIL_SCOPE: &str = "email";
 pub const PROFILE_SCOPE: &str = "profile";
 pub const PROFILE_PATH: &str = "/profile";
+pub const GOOGLE_ISSUER_HOST: &str = "accounts.google.com";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ProviderIcon {
+    Google,
+    Generic,
+}
 pub const CONNECT_RESULT_PARAMETER: &str = "connect_result";
 pub const CONNECTED_PROVIDER_PARAMETER: &str = "provider";
 pub const SIGN_IN_METHOD_NOT_CONNECTED_MESSAGE: &str = "This sign-in method is not connected";

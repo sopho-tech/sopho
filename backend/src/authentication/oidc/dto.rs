@@ -1,9 +1,11 @@
+use crate::authentication::oidc::constants::ProviderIcon;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize)]
 pub struct OidcProviderDto {
     pub name: String,
     pub display_name: String,
+    pub icon: ProviderIcon,
 }
 
 #[derive(Debug, Clone)]
