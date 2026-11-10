@@ -104,6 +104,7 @@ pub async fn send_password_reset_email(
         txn.rollback().await?;
         return Err(PasswordFlowError::TooManyResetEmails);
     }
+    let has_reset_link = prepared_email.reset_token.is_some();
     if let Some(reset_token) = prepared_email.reset_token {
         repository::insert_reset_token(&txn, reset_token).await?;
     }
@@ -119,6 +120,14 @@ pub async fn send_password_reset_email(
     )
     .await?;
     txn.commit().await?;
+    if has_reset_link {
+        tracing::info!("Password reset email queued for user {}", user.id);
+    } else {
+        tracing::info!(
+            "User {} has no password, so a no-password notice was queued instead of a reset link",
+            user.id
+        );
+    }
     Ok(())
 }
 
@@ -287,14 +296,27 @@ async fn queue_reset_email_for_address(
 ) -> Result<(), PasswordFlowError> {
     let Some(user) = authentication_service::find_optional_user_by_email(app_state, email).await?
     else {
+        tracing::info!("Password reset requested for an email no account uses; no email sent");
         return Ok(());
     };
     if user.status != UserStatus::Active.as_str() {
+        tracing::info!(
+            "Password reset requested for user {} whose status is {}; no email sent",
+            user.id,
+            user.status
+        );
         return Ok(());
     }
     match send_password_reset_email(app_state, &user, None).await {
-        Err(PasswordFlowError::TooManyResetEmails) => Ok(()),
-        other => other,
+        Ok(()) => Ok(()),
+        Err(PasswordFlowError::TooManyResetEmails) => {
+            tracing::info!(
+                "Password reset requested for user {} who reached the hourly limit; no email sent",
+                user.id
+            );
+            Ok(())
+        }
+        Err(other_error) => Err(other_error),
     }
 }
 
@@ -309,6 +331,10 @@ fn password_changed_email(
     changed_at: DateTime<Utc>,
 ) -> Result<Option<RenderedEmail>, PasswordFlowError> {
     if !email_delivery_service::is_email_enabled(app_state) {
+        tracing::info!(
+            "Email is not configured, so user {} gets no password-changed notice",
+            user.id
+        );
         return Ok(None);
     }
     Ok(Some(

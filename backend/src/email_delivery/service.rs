@@ -278,6 +278,7 @@ async fn deliver_claimed_email(
             now.into(),
         )
         .await?;
+        tracing::info!("Email {} was not sent: its links have expired", email.id);
         return Ok(());
     }
     let (Some(text_body), Some(html_body)) = (
@@ -291,6 +292,10 @@ async fn deliver_claimed_email(
             now.into(),
         )
         .await?;
+        tracing::info!(
+            "Email {} was not sent: its stored body could not be decrypted",
+            email.id
+        );
         return Ok(());
     };
     let message = match transport::build_message(
@@ -304,6 +309,7 @@ async fn deliver_claimed_email(
         Err(reason) => {
             repository::mark_email_failed(database_connection, email.id, &reason, now.into())
                 .await?;
+            tracing::info!("Email {} was not sent: {reason}", email.id);
             return Ok(());
         }
     };
@@ -312,10 +318,12 @@ async fn deliver_claimed_email(
     match transport::send_message(email_transport, message, send_timeout).await {
         Ok(()) => {
             repository::mark_email_sent(database_connection, email.id, Utc::now().into()).await?;
+            tracing::info!("Email {} was sent", email.id);
         }
         Err(SendFailure::Permanent { reason }) => {
             repository::mark_email_failed(database_connection, email.id, &reason, now.into())
                 .await?;
+            tracing::info!("Email {} failed permanently: {reason}", email.id);
         }
         Err(SendFailure::Temporary { reason }) => {
             let retry_at = usize::try_from(email.attempt_count - 1)
@@ -333,6 +341,10 @@ async fn deliver_claimed_email(
                         now.into(),
                     )
                     .await?;
+                    tracing::info!(
+                        "Email {} failed temporarily and will be retried at {retry_at}: {reason}",
+                        email.id
+                    );
                 }
                 None => {
                     repository::mark_email_failed(
@@ -342,6 +354,10 @@ async fn deliver_claimed_email(
                         now.into(),
                     )
                     .await?;
+                    tracing::info!(
+                        "Email {} failed and has no retries left: {reason}",
+                        email.id
+                    );
                 }
             }
         }

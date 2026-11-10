@@ -318,21 +318,32 @@ pub async fn verify_credentials(
     email: &str,
     password: &str,
 ) -> Result<entity::user::Model, CredentialsError> {
-    let user = get_user_by_email(&app_state.database_connection, normalize_email(email))
-        .await?
-        .ok_or(CredentialsError::InvalidCredentials)?;
+    let Some(user) =
+        get_user_by_email(&app_state.database_connection, normalize_email(email)).await?
+    else {
+        tracing::info!("Sign-in refused: no account uses the given email");
+        return Err(CredentialsError::InvalidCredentials);
+    };
     let now = Utc::now();
     if user
         .sign_in_blocked_until
         .is_some_and(|blocked_until| blocked_until > now)
     {
+        tracing::info!(
+            "Sign-in refused for user {}: blocked after too many failed attempts",
+            user.id
+        );
         return Err(CredentialsError::TooManyAttempts);
     }
-    let password_hash = user
-        .password_hash
-        .as_deref()
-        .ok_or(CredentialsError::InvalidCredentials)?;
+    let Some(password_hash) = user.password_hash.as_deref() else {
+        tracing::info!(
+            "Sign-in refused for user {}: the account has no password",
+            user.id
+        );
+        return Err(CredentialsError::InvalidCredentials);
+    };
     if verify_password(&normalized_password(password), password_hash).is_err() {
+        tracing::info!("Sign-in refused for user {}: wrong password", user.id);
         repository::increment_failed_sign_in_count(
             &app_state.database_connection,
             user.id,
@@ -349,6 +360,10 @@ pub async fn verify_credentials(
         return Err(CredentialsError::InvalidCredentials);
     }
     if user.status == UserStatus::Deactivated.as_str() {
+        tracing::info!(
+            "Sign-in refused for user {}: the account is deactivated",
+            user.id
+        );
         return Err(CredentialsError::AccountDeactivated);
     }
     if user.failed_sign_in_count > 0 || user.sign_in_blocked_until.is_some() {

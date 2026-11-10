@@ -328,6 +328,11 @@ pub async fn resolve_user(
         .await?
         .ok_or(OidcLoginError::AttemptNotFound)?;
         require_active(&federated_identity_owner)?;
+        tracing::info!(
+            "Single sign-on with {} matched the federated identity of user {}",
+            claims.provider_name,
+            federated_identity_owner.id
+        );
         return Ok(federated_identity_owner.id);
     }
 
@@ -350,6 +355,11 @@ pub async fn resolve_user(
             return Err(OidcLoginError::SecondFederatedIdentityAtProvider);
         }
         add_federated_identity(app_state, &existing_user, &claims, &email).await?;
+        tracing::info!(
+            "Single sign-on with {} was linked to existing user {} by verified email",
+            claims.provider_name,
+            existing_user.id
+        );
         return Ok(existing_user.id);
     }
 
@@ -364,6 +374,11 @@ pub async fn resolve_user(
     repository::insert_federated_identity(&txn, federated_identity_for(user.id, &claims, &email))
         .await?;
     txn.commit().await?;
+    tracing::info!(
+        "Single sign-on with {} created new user {}",
+        claims.provider_name,
+        user.id
+    );
     Ok(user.id)
 }
 
@@ -536,6 +551,11 @@ async fn queue_sign_in_method_notice_transaction(
     change: SignInMethodChange,
 ) -> Result<(), SignInMethodError> {
     if !email_delivery_service::is_email_enabled(app_state) {
+        tracing::info!(
+            "Email is not configured, so user {} gets no notice about the {} sign-in method change",
+            account.id,
+            provider_name
+        );
         return Ok(());
     }
     let provider_display_name = provider_display_name(app_state, provider_name);
