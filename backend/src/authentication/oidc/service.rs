@@ -1,7 +1,9 @@
 use crate::authentication::constants::UserStatus;
 use crate::authentication::oidc::constants::{
-    CallbackPurpose, EMAIL_SCOPE, GOOGLE_ISSUER_HOST, LOGIN_ATTEMPT_EXPIRY_MINUTES,
-    ONLY_SIGN_IN_METHOD_REASON, PROFILE_SCOPE, ProviderIcon, SignInMethodChange,
+    AFTER_SIGN_IN_PATH, CONNECT_RESULT_PARAMETER, CONNECTED_PROVIDER_PARAMETER, CallbackPurpose,
+    ConnectResult, EMAIL_SCOPE, GOOGLE_ISSUER_HOST, LOGIN_ATTEMPT_EXPIRY_MINUTES, OIDC_COOKIE_PATH,
+    OIDC_STATE_COOKIE_NAME, ONLY_SIGN_IN_METHOD_REASON, PROFILE_PATH, PROFILE_SCOPE, ProviderIcon,
+    SIGN_IN_ERROR_PARAMETER, SIGN_IN_PATH, SignInMethodChange,
 };
 use crate::authentication::oidc::dto::{
     CallbackOutcome, CallbackQuery, LoginSecrets, OidcProviderDto, SignInMethodsDto,
@@ -28,6 +30,7 @@ use openidconnect::{
 use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::{DatabaseTransaction, TransactionTrait};
 use tower_cookies::Cookies;
+use tower_cookies::cookie::{Cookie, SameSite};
 use uuid::Uuid;
 
 type DiscoveredClient = CoreClient<
@@ -62,7 +65,98 @@ fn provider_icon(issuer_url: &str) -> ProviderIcon {
     }
 }
 
-pub async fn start_login(
+pub async fn start_sign_in(app_state: &AppState, cookies: &Cookies, provider_name: &str) -> String {
+    match start_login(app_state, provider_name, None).await {
+        Ok(started) => {
+            cookies.add(state_cookie(app_state, started.state));
+            started.authorization_url
+        }
+        Err(error) => {
+            tracing::error!("Sign-in with {provider_name} could not start: {error}");
+            sign_in_failure_path(&error)
+        }
+    }
+}
+
+pub async fn start_connect(
+    app_state: &AppState,
+    cookies: &Cookies,
+    provider_name: &str,
+    linking_user_id: Uuid,
+) -> String {
+    match start_login(app_state, provider_name, Some(linking_user_id)).await {
+        Ok(started) => {
+            cookies.add(state_cookie(app_state, started.state));
+            started.authorization_url
+        }
+        Err(error) => {
+            tracing::error!("Connecting {provider_name} could not start: {error}");
+            connect_failure_path(error.connect_result())
+        }
+    }
+}
+
+pub async fn complete_callback(
+    app_state: &AppState,
+    cookies: &Cookies,
+    provider_name: &str,
+    query: CallbackQuery,
+) -> String {
+    let cookie_state = cookies
+        .get(OIDC_STATE_COOKIE_NAME)
+        .map(|cookie| cookie.value().to_string());
+    cookies.remove(state_cookie_removal());
+
+    match complete_login(app_state, cookies, provider_name, query, cookie_state).await {
+        Ok(CallbackOutcome::SignedIn) => AFTER_SIGN_IN_PATH.to_string(),
+        Ok(CallbackOutcome::Connected { provider_name }) => format!(
+            "{PROFILE_PATH}?{CONNECT_RESULT_PARAMETER}={}&{CONNECTED_PROVIDER_PARAMETER}={provider_name}",
+            ConnectResult::Connected.as_str()
+        ),
+        Err(failure) => {
+            tracing::error!(
+                "Single sign-on with {provider_name} failed: {}",
+                failure.error
+            );
+            match failure.purpose {
+                CallbackPurpose::SignIn => sign_in_failure_path(&failure.error),
+                CallbackPurpose::Connect => connect_failure_path(failure.error.connect_result()),
+            }
+        }
+    }
+}
+
+fn sign_in_failure_path(error: &OidcLoginError) -> String {
+    format!(
+        "{SIGN_IN_PATH}?{SIGN_IN_ERROR_PARAMETER}={}",
+        error.sign_in_error_code().as_str()
+    )
+}
+
+fn connect_failure_path(connect_result: ConnectResult) -> String {
+    format!(
+        "{PROFILE_PATH}?{CONNECT_RESULT_PARAMETER}={}",
+        connect_result.as_str()
+    )
+}
+
+fn state_cookie(app_state: &AppState, state: String) -> Cookie<'static> {
+    Cookie::build((OIDC_STATE_COOKIE_NAME, state))
+        .http_only(true)
+        .same_site(SameSite::Lax)
+        .path(OIDC_COOKIE_PATH)
+        .secure(app_state.config.cookie_secure)
+        .max_age(time::Duration::minutes(LOGIN_ATTEMPT_EXPIRY_MINUTES))
+        .build()
+}
+
+fn state_cookie_removal() -> Cookie<'static> {
+    Cookie::build((OIDC_STATE_COOKIE_NAME, ""))
+        .path(OIDC_COOKIE_PATH)
+        .build()
+}
+
+async fn start_login(
     app_state: &AppState,
     provider_name: &str,
     linking_user_id: Option<Uuid>,
@@ -100,7 +194,7 @@ pub async fn start_login(
     })
 }
 
-pub async fn complete_login(
+async fn complete_login(
     app_state: &AppState,
     cookies: &Cookies,
     provider_name: &str,
