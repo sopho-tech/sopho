@@ -9,8 +9,8 @@ export const API_ENDPOINTS = {
     OIDC_CONNECT: "/api/v1/auth/oidc/:provider_name/connect",
     OIDC_FEDERATED_IDENTITY:
       "/api/v1/auth/oidc/:provider_name/federated_identity",
-    SIGN_IN_OPTIONS: "/api/v1/auth/sign_in_option",
-    SIGN_IN_METHODS: "/api/v1/auth/sign_in_method",
+    SIGN_IN_PAGE_OPTIONS: "/api/v1/auth/sign_in_page_option",
+    MY_SIGN_IN_METHODS: "/api/v1/auth/my_sign_in_method",
     PASSWORD_RESET_REQUEST: "/api/v1/auth/password_reset_request",
     PASSWORD_RESET: "/api/v1/auth/password_reset",
     CHANGE_PASSWORD: "/api/v1/auth/password",

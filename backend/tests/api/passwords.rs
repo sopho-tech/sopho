@@ -480,9 +480,12 @@ async fn a_deactivated_account_is_told_only_after_the_right_password() {
 }
 
 #[tokio::test]
-async fn the_sign_in_options_say_whether_reset_is_available() {
+async fn the_sign_in_page_options_say_whether_reset_is_available() {
     let with_email = TestApp::spawn_with_email_and_single_sign_on().await;
-    let options = with_email.session(None).get("/auth/sign_in_option").await;
+    let options = with_email
+        .session(None)
+        .get("/auth/sign_in_page_option")
+        .await;
     assert_eq!(options.status, StatusCode::OK);
     assert_eq!(options.body["password_reset_available"], true);
     assert_eq!(
@@ -493,7 +496,7 @@ async fn the_sign_in_options_say_whether_reset_is_available() {
     let without_email = TestApp::spawn().await;
     let options = without_email
         .session(None)
-        .get("/auth/sign_in_option")
+        .get("/auth/sign_in_page_option")
         .await;
     assert_eq!(options.body["password_reset_available"], false);
     assert_eq!(options.body["providers"], Value::Array(Vec::new()));

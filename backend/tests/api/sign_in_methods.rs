@@ -372,7 +372,7 @@ async fn disconnect_refuses_the_last_sign_in_method() {
 }
 
 #[tokio::test]
-async fn the_sign_in_methods_list_says_what_can_be_disconnected() {
+async fn my_sign_in_methods_list_says_what_can_be_disconnected() {
     let app = TestApp::spawn_with_single_sign_on().await;
     let with_password = create_user(&app, "with-password", PLATFORM_MEMBER).await;
     add_federated_identity(
@@ -384,7 +384,7 @@ async fn the_sign_in_methods_list_says_what_can_be_disconnected() {
     .await;
     let password_session = sign_in(&app, &with_password).await;
 
-    let listed = password_session.get("/auth/sign_in_method").await;
+    let listed = password_session.get("/auth/my_sign_in_method").await;
     assert_eq!(listed.status, StatusCode::OK, "{}", listed.body);
     assert_eq!(listed.body["has_password"], true);
     let providers = listed.body["providers"].as_array().expect("providers");
@@ -423,7 +423,7 @@ async fn the_sign_in_methods_list_says_what_can_be_disconnected() {
         verified_claims(&single_sign_on_only.email, &single_sign_on_only.full_name),
     )
     .await;
-    let listed = single_sign_on_session.get("/auth/sign_in_method").await;
+    let listed = single_sign_on_session.get("/auth/my_sign_in_method").await;
     assert_eq!(listed.body["has_password"], false);
     let sole = listed.body["providers"]
         .as_array()

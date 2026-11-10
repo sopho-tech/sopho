@@ -17,7 +17,7 @@ import { APP_ROUTES } from "src/constants/app_routes";
 import {
   useCreateSession,
   useSessionValid,
-  useSignInOptions,
+  useSignInPageOptions,
 } from "src/api/auth/queries";
 import {
   SIGN_IN_ERROR_MESSAGES,
@@ -41,7 +41,7 @@ export default function SignIn() {
   const errorMessage = errorCode
     ? SIGN_IN_ERROR_MESSAGES[errorCode]
     : undefined;
-  const signInOptions = useSignInOptions();
+  const signInPageOptions = useSignInPageOptions();
   const { data: isAuthenticated, isLoading } = useSessionValid();
   const createSessionMutation = useCreateSession({
     onSuccess: () => {
@@ -77,7 +77,7 @@ export default function SignIn() {
     [navigate],
   );
 
-  const providers = signInOptions.data?.providers ?? [];
+  const providers = signInPageOptions.data?.providers ?? [];
 
   return (
     <AuthPageLayout>
@@ -90,8 +90,8 @@ export default function SignIn() {
         </Text>
       </Flex>
       {errorMessage && <BannerSlim type="error" message={errorMessage} />}
-      {signInOptions.error && (
-        <BannerSlim type="error" message={signInOptions.error.message} />
+      {signInPageOptions.error && (
+        <BannerSlim type="error" message={signInPageOptions.error.message} />
       )}
       <Form
         defaultValues={SIGN_IN_FORM_DEFAULT_VALUES}
@@ -119,7 +119,7 @@ export default function SignIn() {
               Password
             </Form.Label>
             <Form.Password placeholder="••••••••" fullWidth />
-            {signInOptions.data?.password_reset_available && (
+            {signInPageOptions.data?.password_reset_available && (
               <Button
                 label="Forgot password?"
                 shape="rectangle"

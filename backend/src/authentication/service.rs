@@ -373,8 +373,8 @@ pub async fn verify_credentials(
     Ok(user)
 }
 
-pub fn sign_in_options(app_state: &AppState) -> dto::SignInOptionsDto {
-    dto::SignInOptionsDto {
+pub fn sign_in_page_options(app_state: &AppState) -> dto::SignInPageOptionsDto {
+    dto::SignInPageOptionsDto {
         providers: crate::authentication::oidc::service::list_providers(app_state),
         password_reset_available: crate::email_delivery::service::is_email_enabled(app_state),
     }

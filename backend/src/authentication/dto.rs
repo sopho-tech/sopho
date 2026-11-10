@@ -22,7 +22,7 @@ pub struct SessionDto {
 }
 
 #[derive(Serialize)]
-pub struct SignInOptionsDto {
+pub struct SignInPageOptionsDto {
     pub providers: Vec<crate::authentication::oidc::dto::OidcProviderDto>,
     pub password_reset_available: bool,
 }

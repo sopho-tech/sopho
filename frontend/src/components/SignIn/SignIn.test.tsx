@@ -85,7 +85,7 @@ describe("sign in", () => {
   test("opens password reset when email is set up", async () => {
     worker.use(
       signedOutSessionHandler,
-      http.get(API_ENDPOINTS.AUTH.SIGN_IN_OPTIONS, () =>
+      http.get(API_ENDPOINTS.AUTH.SIGN_IN_PAGE_OPTIONS, () =>
         HttpResponse.json({ providers: [], password_reset_available: true }),
       ),
     );

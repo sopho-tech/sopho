@@ -15,7 +15,7 @@ import {
   INCOMPLETE_INVITATION_LINK_MESSAGE,
   INVITATION_SIGN_UP_FORM_DEFAULT_VALUES,
 } from "src/components/InvitationLink/constants";
-import { useDeleteSession, useSignInOptions } from "src/api/auth/queries";
+import { useDeleteSession, useSignInPageOptions } from "src/api/auth/queries";
 import { AcceptedInvitationDto } from "src/api/invitation/queries";
 import {
   InvitationLinkDto,
@@ -63,7 +63,7 @@ function InvitationSummary({ invitation }: { invitation: InvitationLinkDto }) {
 }
 
 function InvitationSignUp({ token, invitation }: InvitationStepProps) {
-  const signInOptions = useSignInOptions();
+  const signInPageOptions = useSignInPageOptions();
   const openJoinedTenant = useOpenJoinedTenant();
   const signUp = useSignUpFromInvitation({ onSuccess: openJoinedTenant });
   const { mutate: createAccount } = signUp;
@@ -82,7 +82,7 @@ function InvitationSignUp({ token, invitation }: InvitationStepProps) {
     },
     [createAccount, token],
   );
-  const providers = signInOptions.data?.providers ?? [];
+  const providers = signInPageOptions.data?.providers ?? [];
 
   return (
     <Flex direction="column" gap="sm">

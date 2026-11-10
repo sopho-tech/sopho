@@ -13,7 +13,7 @@ import {
   connectProviderUrl,
   refreshSessionTokens,
   useDisconnectProvider,
-  useSignInMethods,
+  useMySignInMethods,
 } from "src/api/auth/queries";
 import { ChangePasswordDialog } from "src/components/Profile/ChangePasswordDialog";
 import { DisconnectProviderDialog } from "src/components/Profile/DisconnectProviderDialog";
@@ -94,7 +94,7 @@ export function SignInMethods() {
   const [searchParams] = useSearchParams();
   const connectResult = searchParams.get(CONNECT_RESULT_PARAMETER);
   const connectedProviderName = searchParams.get(CONNECTED_PROVIDER_PARAMETER);
-  const signInMethods = useSignInMethods();
+  const mySignInMethods = useMySignInMethods();
   const disconnectProvider = useDisconnectProvider();
   const { mutate: disconnect, reset: resetDisconnect } = disconnectProvider;
   const [providerPendingDisconnect, setProviderPendingDisconnect] =
@@ -139,7 +139,7 @@ export function SignInMethods() {
     setIsPasswordChanged(true);
   }, []);
 
-  const connectedProvider = signInMethods.data?.providers.find(
+  const connectedProvider = mySignInMethods.data?.providers.find(
     (provider) => provider.name === connectedProviderName,
   );
   const connectFailureMessage =
@@ -164,8 +164,8 @@ export function SignInMethods() {
       {connectFailureMessage && (
         <BannerSlim type="error" message={connectFailureMessage} />
       )}
-      {signInMethods.error && (
-        <BannerSlim type="error" message={signInMethods.error.message} />
+      {mySignInMethods.error && (
+        <BannerSlim type="error" message={mySignInMethods.error.message} />
       )}
       {disconnectedProviderName && (
         <BannerSlim
@@ -173,7 +173,7 @@ export function SignInMethods() {
           message={`${disconnectedProviderName} is disconnected.`}
         />
       )}
-      {signInMethods.data && (
+      {mySignInMethods.data && (
         <Table
           columns={SIGN_IN_METHODS_TABLE_COLUMNS}
           aria-label="Sign-in methods"
@@ -183,14 +183,14 @@ export function SignInMethods() {
               <Flex direction="column" overflow="hidden">
                 <Text fontSize="sm">Password</Text>
                 <Text fontSize="xs" color="subtle">
-                  {signInMethods.data.has_password
+                  {mySignInMethods.data.has_password
                     ? "You can sign in with your password"
                     : "Not set. You sign in with single sign-on"}
                 </Text>
               </Flex>
             </Table.Cell>
             <Table.Cell align="end">
-              {signInMethods.data.has_password && (
+              {mySignInMethods.data.has_password && (
                 <Button
                   label="Change password"
                   shape="rectangle"
@@ -201,7 +201,7 @@ export function SignInMethods() {
               )}
             </Table.Cell>
           </Table.Row>
-          {signInMethods.data.providers.map((provider) => (
+          {mySignInMethods.data.providers.map((provider) => (
             <ProviderRow
               key={provider.name}
               provider={provider}

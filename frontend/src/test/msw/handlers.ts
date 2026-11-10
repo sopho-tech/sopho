@@ -29,8 +29,8 @@ export const currentUserHandler = http.get(
   () => HttpResponse.json(TEST_USER),
 );
 
-export const emaillessSignInOptionsHandler = http.get(
-  API_ENDPOINTS.AUTH.SIGN_IN_OPTIONS,
+export const emaillessSignInPageOptionsHandler = http.get(
+  API_ENDPOINTS.AUTH.SIGN_IN_PAGE_OPTIONS,
   () => HttpResponse.json({ providers: [], password_reset_available: false }),
 );
 
@@ -119,5 +119,5 @@ export function canvasPageHandlers({
 export const handlers = [
   signedInSessionHandler,
   currentUserHandler,
-  emaillessSignInOptionsHandler,
+  emaillessSignInPageOptionsHandler,
 ];

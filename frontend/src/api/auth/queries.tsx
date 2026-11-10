@@ -26,7 +26,7 @@ export type OidcProviderDto = {
   icon: ProviderIcon;
 };
 
-export type SignInOptionsDto = {
+export type SignInPageOptionsDto = {
   providers: OidcProviderDto[];
   password_reset_available: boolean;
 };
@@ -44,7 +44,7 @@ export type SignInProviderDto = {
   disconnect_blocked_reason: string | null;
 };
 
-export type SignInMethodsDto = {
+export type MySignInMethodsDto = {
   has_password: boolean;
   providers: SignInProviderDto[];
 };
@@ -63,8 +63,8 @@ export const authKeys = {
   all: ["auth"] as const,
   session: () => [...authKeys.all, "session"] as const,
   currentUser: () => [...authKeys.all, "currentUser"] as const,
-  signInOptions: () => [...authKeys.all, "signInOptions"] as const,
-  signInMethods: () => [...authKeys.all, "signInMethods"] as const,
+  signInPageOptions: () => [...authKeys.all, "signInPageOptions"] as const,
+  mySignInMethods: () => [...authKeys.all, "mySignInMethods"] as const,
 };
 
 const authApi = {
@@ -96,12 +96,12 @@ const authApi = {
     await ApiService.delete({ url: API_ENDPOINTS.AUTH.DELETE_SESSION });
   },
 
-  getSignInMethods: async (): Promise<SignInMethodsDto> => {
+  getMySignInMethods: async (): Promise<MySignInMethodsDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.AUTH.SIGN_IN_METHODS,
+      url: API_ENDPOINTS.AUTH.MY_SIGN_IN_METHODS,
       onlyBody: true,
     });
-    return response as SignInMethodsDto;
+    return response as MySignInMethodsDto;
   },
 
   changePassword: async ({
@@ -125,12 +125,12 @@ const authApi = {
     });
   },
 
-  getSignInOptions: async (): Promise<SignInOptionsDto> => {
+  getSignInPageOptions: async (): Promise<SignInPageOptionsDto> => {
     const response = await ApiService.get({
-      url: API_ENDPOINTS.AUTH.SIGN_IN_OPTIONS,
+      url: API_ENDPOINTS.AUTH.SIGN_IN_PAGE_OPTIONS,
       onlyBody: true,
     });
-    return response as SignInOptionsDto;
+    return response as SignInPageOptionsDto;
   },
 
   requestPasswordReset: async (
@@ -224,10 +224,10 @@ export const usePlatformPermission = (
 export const connectProviderUrl = (providerName: string): string =>
   API_ENDPOINTS.AUTH.OIDC_CONNECT.replace(":provider_name", providerName);
 
-export const useSignInMethods = () => {
+export const useMySignInMethods = () => {
   return useQuery({
-    queryKey: authKeys.signInMethods(),
-    queryFn: authApi.getSignInMethods,
+    queryKey: authKeys.mySignInMethods(),
+    queryFn: authApi.getMySignInMethods,
   });
 };
 
@@ -240,14 +240,14 @@ export const useDisconnectProvider = () => {
   return useMutation({
     mutationFn: authApi.disconnectProvider,
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: authKeys.signInMethods() }),
+      queryClient.invalidateQueries({ queryKey: authKeys.mySignInMethods() }),
   });
 };
 
-export const useSignInOptions = () => {
+export const useSignInPageOptions = () => {
   return useQuery({
-    queryKey: authKeys.signInOptions(),
-    queryFn: authApi.getSignInOptions,
+    queryKey: authKeys.signInPageOptions(),
+    queryFn: authApi.getSignInPageOptions,
     staleTime: Infinity,
   });
 };

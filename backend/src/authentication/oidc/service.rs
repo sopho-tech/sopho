@@ -6,7 +6,7 @@ use crate::authentication::oidc::constants::{
     SIGN_IN_ERROR_PARAMETER, SIGN_IN_PATH, SignInMethodChange,
 };
 use crate::authentication::oidc::dto::{
-    CallbackOutcome, CallbackQuery, LoginSecrets, OidcProviderDto, SignInMethodsDto,
+    CallbackOutcome, CallbackQuery, LoginSecrets, MySignInMethodsDto, OidcProviderDto,
     SignInProviderDto, StartedLogin, VerifiedClaims,
 };
 use crate::authentication::oidc::error::{CallbackFailure, OidcLoginError, SignInMethodError};
@@ -423,10 +423,10 @@ pub async fn connect_federated_identity(
     add_federated_identity(app_state, &linking_user, &claims, &email).await
 }
 
-pub async fn list_sign_in_methods(
+pub async fn list_my_sign_in_methods(
     app_state: &AppState,
     user_id: Uuid,
-) -> Result<SignInMethodsDto, SignInMethodError> {
+) -> Result<MySignInMethodsDto, SignInMethodError> {
     let account = authentication_repository::get_user(&app_state.database_connection, user_id)
         .await?
         .ok_or_else(|| sea_orm::DbErr::RecordNotFound(user_id.to_string()))?;
@@ -477,7 +477,7 @@ pub async fn list_sign_in_methods(
                 disconnect_blocked_reason: disconnect_blocked_reason.clone(),
             }),
     );
-    Ok(SignInMethodsDto {
+    Ok(MySignInMethodsDto {
         has_password,
         providers,
     })
