@@ -3,7 +3,8 @@ use crate::authorization::errors::AuthorizationError;
 use crate::common::error_codes::ErrorCode;
 use crate::email_delivery::error::EmailDeliveryError;
 use crate::platform::constants::{
-    APPOINTEE_DEACTIVATED_MESSAGE, CANNOT_DEACTIVATE_YOURSELF_MESSAGE, INVALID_PAGE_MESSAGE,
+    APPOINTEE_DEACTIVATED_MESSAGE, CANNOT_DEACTIVATE_YOURSELF_MESSAGE,
+    CANNOT_REMOVE_YOUR_OWN_ADMINISTRATOR_ROLE_MESSAGE, INVALID_PAGE_MESSAGE,
     LAST_PLATFORM_ADMINISTRATOR_MESSAGE, PLATFORM_ACCOUNT_DEACTIVATED_MESSAGE,
     PLATFORM_TENANT_NOT_FOUND_MESSAGE, PLATFORM_USER_NOT_FOUND_MESSAGE,
 };
@@ -21,6 +22,8 @@ pub enum PlatformError {
     TenantNotFound,
     #[error("{CANNOT_DEACTIVATE_YOURSELF_MESSAGE}")]
     CannotDeactivateYourself,
+    #[error("{CANNOT_REMOVE_YOUR_OWN_ADMINISTRATOR_ROLE_MESSAGE}")]
+    CannotRemoveYourOwnAdministratorRole,
     #[error("{LAST_PLATFORM_ADMINISTRATOR_MESSAGE}")]
     LastPlatformAdministrator,
     #[error("{APPOINTEE_DEACTIVATED_MESSAGE}")]
@@ -49,6 +52,9 @@ impl PlatformError {
             PlatformError::UserNotFound => Some(ErrorCode::UserNotFound),
             PlatformError::TenantNotFound => Some(ErrorCode::TenantNotFound),
             PlatformError::CannotDeactivateYourself => Some(ErrorCode::CannotDeactivateYourself),
+            PlatformError::CannotRemoveYourOwnAdministratorRole => {
+                Some(ErrorCode::CannotRemoveYourOwnAdministratorRole)
+            }
             PlatformError::LastPlatformAdministrator => Some(ErrorCode::LastPlatformAdministrator),
             PlatformError::AppointeeDeactivated => Some(ErrorCode::AppointeeDeactivated),
             PlatformError::AccountDeactivated => Some(ErrorCode::AccountDeactivated),

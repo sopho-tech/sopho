@@ -1,5 +1,6 @@
 import { ChangeEvent, useCallback, useState } from "react";
 import {
+  Avatar,
   Badge,
   BannerSlim,
   Box,
@@ -8,6 +9,7 @@ import {
   Heading,
   IconButton,
   Input,
+  Table,
   Text,
 } from "src/components/design-system";
 import {
@@ -15,40 +17,25 @@ import {
   PlatformUserDto,
   TenantSummaryDto,
   useDeactivateUser,
+  useMakeAdministrator,
+  useRemoveAdministrator,
   usePlatformUsers,
   useReactivateUser,
   useSendPasswordReset,
 } from "src/api/platform/queries";
+import { AdministratorRoleDialog } from "src/components/Platform/AdministratorRoleDialog";
 import { AppointOwnerDialog } from "src/components/Platform/AppointOwnerDialog";
 import { DeactivateUserDialog } from "src/components/Platform/DeactivateUserDialog";
 import { PlatformPagination } from "src/components/Platform/PlatformPagination";
+import { UserTenants } from "src/components/Platform/UserTenants";
 import {
   FIRST_PAGE,
   SEARCH_DEBOUNCE_MILLISECONDS,
   SEARCH_INPUT_STYLE,
   USER_ACTIONS_LABEL,
+  USERS_TABLE_COLUMNS,
 } from "src/components/Platform/constants";
-import { UNSTYLED_LIST_STYLE } from "src/components/Settings/Members/constants";
 import { useDebouncedValue } from "src/utils/hooks";
-
-function signInMethodsLabel(user: PlatformUserDto): string {
-  const methods = user.has_password
-    ? ["password", ...user.provider_names]
-    : user.provider_names;
-  return methods.length > 0
-    ? `Signs in with ${methods.join(", ")}`
-    : "No sign-in method";
-}
-
-function tenantsLabel(user: PlatformUserDto): string {
-  return user.tenants.length > 0
-    ? user.tenants
-        .map(
-          (membership) => `${membership.tenant_name} (${membership.role_name})`,
-        )
-        .join(", ")
-    : "Not in any tenant";
-}
 
 function tenantsWithoutOwnerMessage(tenants: TenantSummaryDto[]): string {
   const tenantNames = tenants.map((tenant) => tenant.tenant_name).join(", ");
@@ -62,6 +49,7 @@ type UserRowProps = {
   onReactivate: (user: PlatformUserDto) => void;
   onSendPasswordReset: (user: PlatformUserDto) => void;
   onAppointOwner: (user: PlatformUserDto) => void;
+  onChangeAdministratorRole: (user: PlatformUserDto) => void;
   isUpdating: boolean;
 };
 
@@ -71,6 +59,7 @@ function UserRow({
   onReactivate,
   onSendPasswordReset,
   onAppointOwner,
+  onChangeAdministratorRole,
   isUpdating,
 }: UserRowProps) {
   const handleDeactivate = useCallback(
@@ -89,76 +78,117 @@ function UserRow({
     () => onAppointOwner(user),
     [onAppointOwner, user],
   );
+  const handleChangeAdministratorRole = useCallback(
+    () => onChangeAdministratorRole(user),
+    [onChangeAdministratorRole, user],
+  );
   const { capabilities } = user;
   const hasActions =
+    capabilities.can_make_administrator ||
+    capabilities.can_remove_administrator ||
     capabilities.can_deactivate ||
     capabilities.can_reactivate ||
     capabilities.can_send_password_reset ||
     capabilities.can_appoint_owner;
 
   return (
-    <Flex
-      as="li"
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      gap="md"
-      aria-label={user.email}
-    >
-      <Flex direction="column">
-        <Flex direction="row" alignItems="center" gap="xs">
-          <Text fontSize="sm">{user.full_name}</Text>
-          {user.status === "DEACTIVATED" && (
-            <Badge variant="subtle">Deactivated</Badge>
+    <Table.Row aria-label={user.email}>
+      <Table.Cell>
+        <Avatar name={user.full_name} />
+        <Flex direction="column" overflow="hidden">
+          <Flex direction="row" alignItems="center" gap="xs">
+            <Text fontSize="sm" truncate>
+              {user.full_name}
+            </Text>
+            {user.is_current_user && <Badge variant="subtle">You</Badge>}
+            {user.is_platform_administrator && (
+              <Badge variant="command">Administrator</Badge>
+            )}
+            {user.status === "DEACTIVATED" && (
+              <Badge variant="yellow">Deactivated</Badge>
+            )}
+          </Flex>
+          <Text fontSize="xs" color="subtle" truncate>
+            {user.email}
+          </Text>
+        </Flex>
+      </Table.Cell>
+      <Table.Cell>
+        <Flex direction="row" gap="2xs" flexWrap="wrap">
+          {user.has_password && <Badge variant="subtle">Password</Badge>}
+          {user.provider_names.map((providerName) => (
+            <Badge key={providerName} variant="subtle">
+              {providerName}
+            </Badge>
+          ))}
+          {!user.has_password && user.provider_names.length === 0 && (
+            <Text fontSize="sm" color="subtle">
+              None
+            </Text>
           )}
         </Flex>
-        <Text fontSize="xs" color="subtle">
-          {user.email}
-        </Text>
-        <Text fontSize="xs" color="subtle">
-          {signInMethodsLabel(user)}
-        </Text>
-        <Text fontSize="xs" color="subtle">
-          {tenantsLabel(user)}
-        </Text>
-      </Flex>
-      {hasActions && (
-        <DropdownMenu modal={false}>
-          <DropdownMenu.Trigger>
-            <IconButton
-              type="more_horiz"
-              backgroundColor="default"
-              iconColor="black"
-              iconSize="md"
-              disabled={isUpdating}
-              aria-label={`${USER_ACTIONS_LABEL} for ${user.full_name}`}
-            />
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content>
-            {capabilities.can_send_password_reset && (
-              <DropdownMenu.Item icon="email" onClick={handleSendPasswordReset}>
-                Send password reset
-              </DropdownMenu.Item>
-            )}
-            {capabilities.can_appoint_owner && (
-              <DropdownMenu.Item icon="key" onClick={handleAppointOwner}>
-                Make owner of a tenant
-              </DropdownMenu.Item>
-            )}
-            {capabilities.can_reactivate && (
-              <DropdownMenu.Item icon="refresh" onClick={handleReactivate}>
-                Reactivate
-              </DropdownMenu.Item>
-            )}
-            {capabilities.can_deactivate && (
-              <DropdownMenu.Item icon="circle_x" onClick={handleDeactivate}>
-                Deactivate
-              </DropdownMenu.Item>
-            )}
-          </DropdownMenu.Content>
-        </DropdownMenu>
-      )}
-    </Flex>
+      </Table.Cell>
+      <Table.Cell>
+        <UserTenants tenants={user.tenants} />
+      </Table.Cell>
+      <Table.Cell align="end">
+        {hasActions && (
+          <DropdownMenu modal={false}>
+            <DropdownMenu.Trigger>
+              <IconButton
+                type="more_horiz"
+                backgroundColor="default"
+                iconColor="grey"
+                iconSize="md"
+                disabled={isUpdating}
+                aria-label={`${USER_ACTIONS_LABEL} for ${user.full_name}`}
+              />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content>
+              {capabilities.can_send_password_reset && (
+                <DropdownMenu.Item
+                  icon="email"
+                  onClick={handleSendPasswordReset}
+                >
+                  Send password reset
+                </DropdownMenu.Item>
+              )}
+              {capabilities.can_appoint_owner && (
+                <DropdownMenu.Item icon="key" onClick={handleAppointOwner}>
+                  Make owner of a tenant
+                </DropdownMenu.Item>
+              )}
+              {capabilities.can_make_administrator && (
+                <DropdownMenu.Item
+                  icon="user"
+                  onClick={handleChangeAdministratorRole}
+                >
+                  Make administrator
+                </DropdownMenu.Item>
+              )}
+              {capabilities.can_remove_administrator && (
+                <DropdownMenu.Item
+                  icon="user"
+                  onClick={handleChangeAdministratorRole}
+                >
+                  Remove administrator
+                </DropdownMenu.Item>
+              )}
+              {capabilities.can_reactivate && (
+                <DropdownMenu.Item icon="refresh" onClick={handleReactivate}>
+                  Reactivate
+                </DropdownMenu.Item>
+              )}
+              {capabilities.can_deactivate && (
+                <DropdownMenu.Item icon="circle_x" onClick={handleDeactivate}>
+                  Deactivate
+                </DropdownMenu.Item>
+              )}
+            </DropdownMenu.Content>
+          </DropdownMenu>
+        )}
+      </Table.Cell>
+    </Table.Row>
   );
 }
 
@@ -174,6 +204,14 @@ export function Users() {
     useState<PlatformUserDto | null>(null);
   const [userPendingAppointment, setUserPendingAppointment] =
     useState<PlatformUserDto | null>(null);
+  const [userPendingAdministratorChange, setUserPendingAdministratorChange] =
+    useState<PlatformUserDto | null>(null);
+  const makeAdministrator = useMakeAdministrator();
+  const removeAdministrator = useRemoveAdministrator();
+  const { mutate: makeAdministratorRole, reset: resetMakeAdministrator } =
+    makeAdministrator;
+  const { mutate: removeAdministratorRole, reset: resetRemoveAdministrator } =
+    removeAdministrator;
   const [notice, setNotice] = useState<string | null>(null);
   const [tenantsWithoutOwner, setTenantsWithoutOwner] = useState<
     TenantSummaryDto[]
@@ -235,6 +273,45 @@ export function Users() {
     },
     [sendReset],
   );
+  const handleChangeAdministratorRole = useCallback(
+    (user: PlatformUserDto) => {
+      resetMakeAdministrator();
+      resetRemoveAdministrator();
+      setUserPendingAdministratorChange(user);
+    },
+    [resetMakeAdministrator, resetRemoveAdministrator],
+  );
+  const handleCloseAdministratorChange = useCallback(
+    () => setUserPendingAdministratorChange(null),
+    [],
+  );
+  const handleConfirmAdministratorChange = useCallback(() => {
+    if (!userPendingAdministratorChange) {
+      throw new Error("No user is pending an administrator change");
+    }
+    setNotice(null);
+    const { id, full_name, is_platform_administrator } =
+      userPendingAdministratorChange;
+    if (is_platform_administrator) {
+      removeAdministratorRole(id, {
+        onSuccess: () => {
+          setUserPendingAdministratorChange(null);
+          setNotice(`${full_name} is no longer an administrator.`);
+        },
+      });
+      return;
+    }
+    makeAdministratorRole(id, {
+      onSuccess: () => {
+        setUserPendingAdministratorChange(null);
+        setNotice(`${full_name} is now an administrator.`);
+      },
+    });
+  }, [
+    makeAdministratorRole,
+    removeAdministratorRole,
+    userPendingAdministratorChange,
+  ]);
   const handleCloseAppointment = useCallback(
     () => setUserPendingAppointment(null),
     [],
@@ -262,10 +339,15 @@ export function Users() {
     users.error ?? reactivateUser.error ?? sendPasswordReset.error;
 
   return (
-    <Flex direction="column" gap="xl" overflow="scrollY">
-      <Heading accessibilityLevel={2} size="2xl" textColor="black">
-        Users
-      </Heading>
+    <Flex direction="column" gap="lg">
+      <Flex direction="column" gap="2xs">
+        <Heading accessibilityLevel={2} size="2xl" textColor="black">
+          Global Users
+        </Heading>
+        <Text fontSize="sm" color="subtle">
+          Manage every account on this Sopho installation.
+        </Text>
+      </Flex>
       <Box sx={SEARCH_INPUT_STYLE}>
         <Input
           value={searchText}
@@ -289,7 +371,13 @@ export function Users() {
             No users match your search.
           </Text>
         ) : (
-          <Flex as="ul" direction="column" gap="md" sx={UNSTYLED_LIST_STYLE}>
+          <Table columns={USERS_TABLE_COLUMNS} aria-label="Users">
+            <Table.Header>
+              <Table.HeaderCell>User</Table.HeaderCell>
+              <Table.HeaderCell>Sign-in methods</Table.HeaderCell>
+              <Table.HeaderCell>Tenants</Table.HeaderCell>
+              <Table.HeaderCell />
+            </Table.Header>
             {users.data.users.map((user) => (
               <UserRow
                 key={user.id}
@@ -298,12 +386,13 @@ export function Users() {
                 onReactivate={handleReactivate}
                 onSendPasswordReset={handleSendPasswordReset}
                 onAppointOwner={setUserPendingAppointment}
+                onChangeAdministratorRole={handleChangeAdministratorRole}
                 isUpdating={
                   reactivateUser.isPending || sendPasswordReset.isPending
                 }
               />
             ))}
-          </Flex>
+          </Table>
         ))}
       {users.data && (
         <PlatformPagination listPage={users.data} onPageChange={setPage} />
@@ -315,6 +404,17 @@ export function Users() {
           onClose={handleCloseDeactivation}
           isPending={deactivateUser.isPending}
           error={deactivateUser.error}
+        />
+      )}
+      {userPendingAdministratorChange && (
+        <AdministratorRoleDialog
+          user={userPendingAdministratorChange}
+          onConfirm={handleConfirmAdministratorChange}
+          onClose={handleCloseAdministratorChange}
+          isPending={
+            makeAdministrator.isPending || removeAdministrator.isPending
+          }
+          error={makeAdministrator.error ?? removeAdministrator.error}
         />
       )}
       {userPendingAppointment && (

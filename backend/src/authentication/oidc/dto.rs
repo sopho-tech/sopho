@@ -43,6 +43,7 @@ pub struct SignInProviderDto {
     pub connected: bool,
     pub email: Option<String>,
     pub can_disconnect: bool,
+    pub disconnect_blocked_reason: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

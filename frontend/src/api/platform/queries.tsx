@@ -13,6 +13,7 @@ export type PlatformUserTenantDto = {
   tenant_id: string;
   tenant_name: string;
   role_name: string;
+  role_display_name: string;
 };
 
 export type PlatformUserCapabilities = {
@@ -20,12 +21,16 @@ export type PlatformUserCapabilities = {
   can_reactivate: boolean;
   can_send_password_reset: boolean;
   can_appoint_owner: boolean;
+  can_make_administrator: boolean;
+  can_remove_administrator: boolean;
 };
 
 export type PlatformUserDto = {
   id: string;
   full_name: string;
   email: string;
+  is_current_user: boolean;
+  is_platform_administrator: boolean;
   status: AccountStatus;
   has_password: boolean;
   provider_names: string[];
@@ -55,11 +60,13 @@ export type PlatformTenantDto = {
   tenant_id: string;
   name: string;
   active_owner_count: number;
+  created_at: string;
 };
 
 export type EmailLogEntryDto = {
   id: string;
   kind: string;
+  kind_display_name: string;
   recipient: string;
   subject: string;
   status: EmailStatus;
@@ -128,6 +135,26 @@ const platformApi = {
       url: API_ENDPOINTS.PLATFORM.DEACTIVATE_USER.replace(":user_id", userId),
     });
     return response as DeactivatedUserDto;
+  },
+
+  makeAdministrator: async (userId: string) => {
+    await ApiService.post({
+      url: API_ENDPOINTS.PLATFORM.MAKE_ADMINISTRATOR.replace(
+        ":user_id",
+        userId,
+      ),
+      onlyBody: false,
+    });
+  },
+
+  removeAdministrator: async (userId: string) => {
+    await ApiService.post({
+      url: API_ENDPOINTS.PLATFORM.REMOVE_ADMINISTRATOR.replace(
+        ":user_id",
+        userId,
+      ),
+      onlyBody: false,
+    });
   },
 
   reactivateUser: async (userId: string) => {
@@ -206,6 +233,22 @@ export const useReactivateUser = () => {
   const invalidatePlatform = useInvalidatePlatform();
   return useMutation({
     mutationFn: platformApi.reactivateUser,
+    onSuccess: invalidatePlatform,
+  });
+};
+
+export const useMakeAdministrator = () => {
+  const invalidatePlatform = useInvalidatePlatform();
+  return useMutation({
+    mutationFn: platformApi.makeAdministrator,
+    onSuccess: invalidatePlatform,
+  });
+};
+
+export const useRemoveAdministrator = () => {
+  const invalidatePlatform = useInvalidatePlatform();
+  return useMutation({
+    mutationFn: platformApi.removeAdministrator,
     onSuccess: invalidatePlatform,
   });
 };

@@ -39,6 +39,7 @@
   gap: var(--space-md);
   padding-inline: 0;
   padding-bottom: var(--space-lg);
+  overflow: visible;
 }
 
 .formButtonRowContainer {
@@ -52,6 +53,23 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-2xs);
+}
+
+.passwordFieldContainer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  row-gap: var(--space-2xs);
+}
+
+.passwordFieldContainer > :nth-child(2) {
+  grid-row: 2;
+  grid-column: 1 / -1;
+}
+
+.passwordFieldContainer > :nth-child(3) {
+  grid-row: 1;
+  grid-column: 2;
 }
 
 .logo {

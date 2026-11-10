@@ -45,6 +45,7 @@ describe("invitation link", () => {
           { status: 404 },
         ),
       ),
+      http.get(API_ENDPOINTS.INVITATION.RECEIVED, () => HttpResponse.json([])),
       http.get(API_ENDPOINTS.TENANT.LIST, () =>
         HttpResponse.json([
           {

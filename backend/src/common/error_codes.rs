@@ -33,6 +33,7 @@ pub enum ErrorCode {
     SignInMethodNotConnected,
     LastSignInMethod,
     CannotDeactivateYourself,
+    CannotRemoveYourOwnAdministratorRole,
     LastPlatformAdministrator,
     AppointeeDeactivated,
     EmailNotRetryable,

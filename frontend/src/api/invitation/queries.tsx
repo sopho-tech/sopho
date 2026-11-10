@@ -26,9 +26,11 @@ export type InvitationDto = {
   id: string;
   email: string;
   role_name: string;
+  role_display_name: string;
   status: InvitationStatus;
   invited_by_name: string;
   expires_at: string;
+  expiry_label: string;
   email_delivery: EmailDeliveryDto | null;
 };
 
@@ -37,6 +39,7 @@ export type ReceivedInvitationDto = {
   tenant_id: string;
   tenant_name: string;
   role_name: string;
+  role_display_name: string;
   invited_by_name: string;
   expires_at: string;
 };

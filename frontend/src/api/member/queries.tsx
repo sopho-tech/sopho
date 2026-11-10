@@ -10,11 +10,14 @@ export type MemberCapabilities = {
 };
 
 export type MemberDto = TenantMemberDto & {
+  is_current_user: boolean;
   capabilities: MemberCapabilities;
 };
 
 export type RoleDto = {
   name: string;
+  display_name: string;
+  description: string | null;
   is_system: boolean;
   assignable: boolean;
 };

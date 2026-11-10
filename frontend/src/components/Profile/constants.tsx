@@ -19,3 +19,7 @@ export const CONNECT_RESULT_MESSAGES: Record<string, string> = {
   sso_expired: "That attempt expired or started in another browser. Try again.",
   sso_failed: "Connecting didn't complete. Try again.",
 };
+
+export const PROFILE_PAGE_STYLE = { maxWidth: "40rem" };
+export const ACCOUNT_TABLE_COLUMNS = "10rem minmax(0, 1fr)";
+export const SIGN_IN_METHODS_TABLE_COLUMNS = "minmax(0, 1fr) 10rem";

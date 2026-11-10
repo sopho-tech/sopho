@@ -205,6 +205,8 @@ async fn each_user_row_says_which_actions_apply() {
             "can_reactivate": false,
             "can_send_password_reset": true,
             "can_appoint_owner": true,
+            "can_make_administrator": false,
+            "can_remove_administrator": false,
         })
     );
     assert_eq!(
@@ -214,6 +216,8 @@ async fn each_user_row_says_which_actions_apply() {
             "can_reactivate": false,
             "can_send_password_reset": true,
             "can_appoint_owner": true,
+            "can_make_administrator": true,
+            "can_remove_administrator": false,
         })
     );
     assert_eq!(
@@ -223,6 +227,8 @@ async fn each_user_row_says_which_actions_apply() {
             "can_reactivate": true,
             "can_send_password_reset": false,
             "can_appoint_owner": false,
+            "can_make_administrator": false,
+            "can_remove_administrator": false,
         })
     );
 }

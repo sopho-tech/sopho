@@ -1,12 +1,12 @@
 .dialogOverlay {
-  background-color: var(--inactive-color-normal);
+  background-color: var(--dialog-overlay-color);
   position: fixed;
   inset: 0;
   animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dialogContent {
-  background-color: var(--color-grey-200);
+  background-color: var(--color-background);
   box-shadow: var(--shadow-xl);
   position: fixed;
   top: 50%;
@@ -14,7 +14,7 @@
   transform: translate(-50%, -50%);
   width: 50%;
   padding: var(--space-lg);
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--border-radius-xl);
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
@@ -33,7 +33,7 @@
 
 .dialogDescription {
   font-size: var(--font-size-sm);
-  color: var(--color-grey-700);
+  color: var(--color-grey-600);
   line-height: 1.5;
 }
 

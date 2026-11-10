@@ -57,6 +57,9 @@ pub async fn list_users(
             let status = account_status(&account)?;
             let is_active = status == UserStatus::Active;
             let has_password = account.password_hash.is_some();
+            let is_platform_administrator =
+                account.platform_role == PlatformRole::Administrator.as_str();
+            let is_current_user = account.id == actor.get_uuid();
             let is_last_active_administrator =
                 is_active_platform_administrator(&account) && active_administrator_count <= 1;
             Ok(PlatformUserDto {
@@ -67,7 +70,13 @@ pub async fn list_users(
                     can_reactivate: !is_active,
                     can_send_password_reset: is_active && has_password && is_email_enabled,
                     can_appoint_owner: is_active && may_appoint_owners,
+                    can_make_administrator: is_active && !is_platform_administrator,
+                    can_remove_administrator: is_platform_administrator
+                        && !is_current_user
+                        && !is_last_active_administrator,
                 },
+                is_current_user,
+                is_platform_administrator,
                 status,
                 has_password,
                 provider_names: provider_names.remove(&account.id).unwrap_or_default(),
@@ -162,6 +171,40 @@ pub async fn send_password_reset(
         .map_err(PlatformError::PasswordReset)
 }
 
+pub async fn make_administrator(
+    app_state: &AppState,
+    actor: UserId,
+    user_id: Uuid,
+) -> Result<(), PlatformError> {
+    require_platform_permission(app_state, actor, PlatformPermission::UserManage).await?;
+    let account = find_account(app_state, user_id).await?;
+    if account.status != UserStatus::Active.as_str() {
+        return Err(PlatformError::AccountDeactivated);
+    }
+    authentication_service::set_platform_role(app_state, account.id, PlatformRole::Administrator)
+        .await?;
+    Ok(())
+}
+
+pub async fn remove_administrator(
+    app_state: &AppState,
+    actor: UserId,
+    user_id: Uuid,
+) -> Result<(), PlatformError> {
+    require_platform_permission(app_state, actor, PlatformPermission::UserManage).await?;
+    let account = find_account(app_state, user_id).await?;
+    if account.id == actor.get_uuid() {
+        return Err(PlatformError::CannotRemoveYourOwnAdministratorRole);
+    }
+    if is_active_platform_administrator(&account)
+        && authentication_service::count_active_platform_administrators(app_state).await? <= 1
+    {
+        return Err(PlatformError::LastPlatformAdministrator);
+    }
+    authentication_service::set_platform_role(app_state, account.id, PlatformRole::Member).await?;
+    Ok(())
+}
+
 pub async fn list_tenants(
     app_state: &AppState,
     actor: UserId,
@@ -180,6 +223,7 @@ pub async fn list_tenants(
                 .unwrap_or_default(),
             tenant_id: found_tenant.id,
             name: found_tenant.name,
+            created_at: found_tenant.created_at,
         })
         .collect())
 }

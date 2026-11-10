@@ -21,7 +21,7 @@ export type DropdownMenuRootProps = {
   modal?: boolean;
 };
 
-function DropdownMenuRoot({ children, ...props }: DropdownMenuRootProps) {
+export function DropdownMenu({ children, ...props }: DropdownMenuRootProps) {
   return <RadixDropdownMenu.Root {...props}>{children}</RadixDropdownMenu.Root>;
 }
 
@@ -48,6 +48,7 @@ type DropdownMenuContentProps = {
   sideOffset?: number;
   alignOffset?: number;
   preventAutoFocus?: boolean;
+  minWidthOfTrigger?: boolean;
 };
 
 function DropdownMenuContent({
@@ -57,6 +58,7 @@ function DropdownMenuContent({
   sideOffset = 5,
   alignOffset,
   preventAutoFocus = false,
+  minWidthOfTrigger = false,
 }: DropdownMenuContentProps) {
   const autoFocusProps = preventAutoFocus
     ? {
@@ -67,7 +69,9 @@ function DropdownMenuContent({
   return (
     <RadixDropdownMenu.Portal>
       <RadixDropdownMenu.Content
-        className={styles.content}
+        className={classNames(styles.content, {
+          [styles.minWidthOfTrigger]: minWidthOfTrigger,
+        })}
         align={align}
         side={side}
         sideOffset={sideOffset}
@@ -135,9 +139,51 @@ function DropdownMenuItemWithDescriptionComponent({
   );
 }
 
-export const DropdownMenu = Object.assign(DropdownMenuRoot, {
-  Trigger: DropdownMenuTrigger,
-  Content: DropdownMenuContent,
-  Item: DropdownMenuItemComponent,
-  ItemWithDescription: DropdownMenuItemWithDescriptionComponent,
-});
+type DropdownMenuRadioGroupProps = {
+  value: string;
+  onValueChange: (value: string) => void;
+  children: ReactNode;
+};
+
+function DropdownMenuRadioGroup({
+  value,
+  onValueChange,
+  children,
+}: DropdownMenuRadioGroupProps) {
+  return (
+    <RadixDropdownMenu.RadioGroup value={value} onValueChange={onValueChange}>
+      {children}
+    </RadixDropdownMenu.RadioGroup>
+  );
+}
+
+type DropdownMenuRadioItemProps = {
+  value: string;
+  children: ReactNode;
+};
+
+function DropdownMenuRadioItem({
+  value,
+  children,
+}: DropdownMenuRadioItemProps) {
+  return (
+    <RadixDropdownMenu.RadioItem className={styles.item} value={value}>
+      <span className={styles.label}>{children}</span>
+      <RadixDropdownMenu.ItemIndicator className={styles.indicator}>
+        <Icon type="check" color="accent" size="sm" />
+      </RadixDropdownMenu.ItemIndicator>
+    </RadixDropdownMenu.RadioItem>
+  );
+}
+
+function DropdownMenuSeparator() {
+  return <RadixDropdownMenu.Separator className={styles.separator} />;
+}
+
+DropdownMenu.Trigger = DropdownMenuTrigger;
+DropdownMenu.Content = DropdownMenuContent;
+DropdownMenu.Item = DropdownMenuItemComponent;
+DropdownMenu.ItemWithDescription = DropdownMenuItemWithDescriptionComponent;
+DropdownMenu.RadioGroup = DropdownMenuRadioGroup;
+DropdownMenu.RadioItem = DropdownMenuRadioItem;
+DropdownMenu.Separator = DropdownMenuSeparator;

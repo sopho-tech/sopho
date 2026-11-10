@@ -41,6 +41,7 @@ export type SignInProviderDto = {
   connected: boolean;
   email: string | null;
   can_disconnect: boolean;
+  disconnect_blocked_reason: string | null;
 };
 
 export type SignInMethodsDto = {

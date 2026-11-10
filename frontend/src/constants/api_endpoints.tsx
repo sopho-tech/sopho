@@ -19,6 +19,8 @@ export const API_ENDPOINTS = {
     DEACTIVATE_USER: "/api/v1/platform/user/:user_id/deactivate",
     REACTIVATE_USER: "/api/v1/platform/user/:user_id/reactivate",
     SEND_PASSWORD_RESET: "/api/v1/platform/user/:user_id/password_reset",
+    MAKE_ADMINISTRATOR: "/api/v1/platform/user/:user_id/make_administrator",
+    REMOVE_ADMINISTRATOR: "/api/v1/platform/user/:user_id/remove_administrator",
     TENANTS: "/api/v1/platform/tenant",
     APPOINT_OWNER: "/api/v1/platform/tenant/:tenant_id/owner/:user_id",
     EMAILS: "/api/v1/platform/email",

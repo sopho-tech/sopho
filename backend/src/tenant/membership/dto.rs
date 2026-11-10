@@ -11,6 +11,7 @@ pub struct MemberCapabilities {
 pub struct MemberDto {
     #[serde(flatten)]
     pub member: TenantMemberDto,
+    pub is_current_user: bool,
     pub capabilities: MemberCapabilities,
 }
 
@@ -22,6 +23,8 @@ pub struct UpdateMemberRoleDto {
 #[derive(Debug, Serialize)]
 pub struct RoleDto {
     pub name: String,
+    pub display_name: String,
+    pub description: Option<String>,
     pub is_system: bool,
     pub assignable: bool,
 }

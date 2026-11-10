@@ -12,6 +12,7 @@ use crate::email_template::dto::{InvitationEmail, RenderedEmail};
 use crate::email_template::service::{EmailTemplate, format_email_date};
 use crate::entity::{tenant_invitation, user};
 use crate::tenant::invitation::constants::{
+    INVITATION_EXPIRED_LABEL, INVITATION_EXPIRES_TODAY_LABEL, INVITATION_EXPIRES_TOMORROW_LABEL,
     INVITATION_EXPIRY_DAYS, INVITATION_LINK_PATH, INVITATIONS_UNAVAILABLE_MESSAGE,
     InvitationDeliveryMethod, InvitationLinkNextStep, InvitationStatus,
 };
@@ -152,9 +153,11 @@ pub async fn create_invitation(
     Ok(InvitationDto {
         id: invitation.id,
         email: invitation.email,
+        role_display_name: authorization_service::role_display_name(&role.name),
         role_name: role.name,
         status: InvitationStatus::Pending,
         invited_by_name: inviter.full_name,
+        expiry_label: expiry_label(invitation.expires_at),
         expires_at: invitation.expires_at,
         email_delivery,
     })
@@ -235,9 +238,11 @@ pub async fn resend_invitation(
     Ok(InvitationDto {
         id: invitation.id,
         email: invitation.email,
+        role_display_name: authorization_service::role_display_name(&role_name),
         role_name,
         status: InvitationStatus::Pending,
         invited_by_name: inviter.full_name,
+        expiry_label: expiry_label(expires_at.into()),
         expires_at: expires_at.into(),
         email_delivery: Some(EmailDeliveryDto {
             status: EmailStatus::Pending,
@@ -270,10 +275,13 @@ pub async fn list_tenant_invitations(
     let mut invitation_dtos = invitations
         .into_iter()
         .map(|invitation| {
+            let role_name = lookup(&role_names, invitation.role_id, "role")?;
             Ok(InvitationDto {
                 id: invitation.id,
                 status: effective_status(&invitation),
-                role_name: lookup(&role_names, invitation.role_id, "role")?,
+                role_display_name: authorization_service::role_display_name(&role_name),
+                role_name,
+                expiry_label: expiry_label(invitation.expires_at),
                 invited_by_name: lookup(&inviter_names, invitation.invited_by_user_id, "inviter")?,
                 email_delivery: invitation
                     .latest_email_id
@@ -377,11 +385,13 @@ pub async fn list_received_invitations(
     let mut received = invitations
         .into_iter()
         .map(|invitation| {
+            let role_name = lookup(&role_names, invitation.role_id, "role")?;
             Ok(ReceivedInvitationDto {
                 id: invitation.id,
                 tenant_id: invitation.tenant_id,
                 tenant_name: lookup(&tenant_names, invitation.tenant_id, "tenant")?,
-                role_name: lookup(&role_names, invitation.role_id, "role")?,
+                role_display_name: authorization_service::role_display_name(&role_name),
+                role_name,
                 invited_by_name: lookup(&inviter_names, invitation.invited_by_user_id, "inviter")?,
                 expires_at: invitation.expires_at,
             })
@@ -653,6 +663,18 @@ fn effective_status(invitation: &tenant_invitation::Model) -> InvitationStatus {
         return InvitationStatus::Expired;
     }
     InvitationStatus::Pending
+}
+
+fn expiry_label(expires_at: DateTimeWithTimeZone) -> String {
+    let now: DateTimeWithTimeZone = time_utils::now_utc_into();
+    if expires_at <= now {
+        return INVITATION_EXPIRED_LABEL.to_string();
+    }
+    match (expires_at - now).num_days() {
+        0 => INVITATION_EXPIRES_TODAY_LABEL.to_string(),
+        1 => INVITATION_EXPIRES_TOMORROW_LABEL.to_string(),
+        days => format!("Expires in {days} days"),
+    }
 }
 
 fn lookup(names: &HashMap<Uuid, String>, id: Uuid, kind: &str) -> Result<String, InvitationError> {

@@ -24,6 +24,8 @@ pub struct PlatformUserCapabilities {
     pub can_reactivate: bool,
     pub can_send_password_reset: bool,
     pub can_appoint_owner: bool,
+    pub can_make_administrator: bool,
+    pub can_remove_administrator: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -31,6 +33,8 @@ pub struct PlatformUserDto {
     pub id: Uuid,
     pub full_name: String,
     pub email: String,
+    pub is_current_user: bool,
+    pub is_platform_administrator: bool,
     pub status: UserStatus,
     pub has_password: bool,
     pub provider_names: Vec<String>,
@@ -64,4 +68,5 @@ pub struct PlatformTenantDto {
     pub tenant_id: Uuid,
     pub name: String,
     pub active_owner_count: u64,
+    pub created_at: DateTime<FixedOffset>,
 }

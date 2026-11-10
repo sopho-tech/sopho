@@ -32,6 +32,7 @@ export function SingleSignOnButton({
       size="md"
       backgroundColor="white"
       fullWidth
+      outlined
       contentAlignment="center"
       leadingImage={leadingImage}
       leadingIconName={logo ? undefined : "key"}

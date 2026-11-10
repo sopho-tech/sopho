@@ -7,6 +7,7 @@ pub struct TenantMembershipDto {
     pub tenant_id: Uuid,
     pub tenant_name: String,
     pub role_name: String,
+    pub role_display_name: String,
     pub permissions: Vec<String>,
 }
 
@@ -16,6 +17,7 @@ pub struct TenantMemberDto {
     pub full_name: String,
     pub email: String,
     pub role_name: String,
+    pub role_display_name: String,
     pub account_status: UserStatus,
 }
 
@@ -24,6 +26,7 @@ pub struct UserTenantMembershipDto {
     pub tenant_id: Uuid,
     pub tenant_name: String,
     pub role_name: String,
+    pub role_display_name: String,
 }
 
 #[derive(Debug, Deserialize)]

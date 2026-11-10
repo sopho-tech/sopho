@@ -17,9 +17,11 @@ pub struct InvitationDto {
     pub id: Uuid,
     pub email: String,
     pub role_name: String,
+    pub role_display_name: String,
     pub status: InvitationStatus,
     pub invited_by_name: String,
     pub expires_at: DateTime<FixedOffset>,
+    pub expiry_label: String,
     pub email_delivery: Option<EmailDeliveryDto>,
 }
 
@@ -35,6 +37,7 @@ pub struct ReceivedInvitationDto {
     pub tenant_id: Uuid,
     pub tenant_name: String,
     pub role_name: String,
+    pub role_display_name: String,
     pub invited_by_name: String,
     pub expires_at: DateTime<FixedOffset>,
 }

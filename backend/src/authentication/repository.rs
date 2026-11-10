@@ -84,6 +84,24 @@ pub async fn count_active_users_with_platform_role(
         .await
 }
 
+pub async fn set_user_platform_role(
+    connection: &impl ConnectionTrait,
+    user_id: Uuid,
+    platform_role: &str,
+    now: sea_orm::prelude::DateTimeWithTimeZone,
+) -> Result<u64, DbErr> {
+    Ok(entity::user::Entity::update_many()
+        .col_expr(
+            entity::user::Column::PlatformRole,
+            Expr::value(platform_role),
+        )
+        .col_expr(entity::user::Column::UpdatedAt, Expr::value(now))
+        .filter(entity::user::Column::Id.eq(user_id))
+        .exec(connection)
+        .await?
+        .rows_affected)
+}
+
 pub async fn set_user_status(
     connection: &impl ConnectionTrait,
     user_id: Uuid,

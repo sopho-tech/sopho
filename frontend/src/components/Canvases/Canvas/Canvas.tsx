@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate, useParams } from "react-router";
 import { useCanvas, useUpdateCanvas } from "src/api/canvas/queries";
 import { useDashboardByCanvasId } from "src/api/dashboard/queries";
 import { useNotebooksByCanvasId } from "src/api/notebook/queries";
-import { Button, Flex, InlineEdit } from "src/components/design-system";
+import { Flex, IconButton, InlineEdit } from "src/components/design-system";
 import { ShareDialog } from "src/components/ShareDialog";
 import { useStore } from "src/store";
 import { AiSummaryRow } from "src/components/Dashboard/AiSummaryRow";
@@ -11,6 +11,11 @@ import { CanvasButtons } from "src/components/Canvases/CanvasButtons";
 import { AttributionLine } from "src/components/Attribution";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { useTenantPath } from "src/utils/tenant";
+
+const SHARE_CANVAS_TOOLTIP = {
+  text: "share",
+  direction: "bottom",
+} as const;
 
 export function Canvas() {
   const params = useParams();
@@ -98,12 +103,13 @@ export function Canvas() {
           />
           <Flex direction="row" alignItems="center" gap="sm">
             {capabilities.can_share && (
-              <Button
-                label="Share"
-                shape="rectangle"
-                size="md"
-                backgroundColor="lightgrey"
+              <IconButton
+                type="share"
                 onClick={handleOpenShareDialog}
+                backgroundColor="default"
+                iconColor="grey"
+                tooltip={SHARE_CANVAS_TOOLTIP}
+                aria-label="Share"
               />
             )}
             <CanvasButtons

@@ -11,6 +11,8 @@ pub const EMAIL_SCOPE: &str = "email";
 pub const PROFILE_SCOPE: &str = "profile";
 pub const PROFILE_PATH: &str = "/profile";
 pub const GOOGLE_ISSUER_HOST: &str = "accounts.google.com";
+pub const ONLY_SIGN_IN_METHOD_REASON: &str =
+    "This is your only way to sign in. Connect another sign-in method before you disconnect it.";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]

@@ -2,6 +2,9 @@ use serde::Serialize;
 use strum::{Display, EnumString, IntoStaticStr};
 
 pub const INVITATION_EXPIRY_DAYS: i64 = 7;
+pub const INVITATION_EXPIRED_LABEL: &str = "Expired";
+pub const INVITATION_EXPIRES_TODAY_LABEL: &str = "Expires today";
+pub const INVITATION_EXPIRES_TOMORROW_LABEL: &str = "Expires tomorrow";
 pub const INVITATION_NOT_FOUND_MESSAGE: &str = "Invitation not found";
 pub const INVALID_EMAIL_MESSAGE: &str = "Enter a valid email address";
 pub const ALREADY_A_MEMBER_MESSAGE: &str = "This person is already a member of the tenant";

@@ -13,12 +13,7 @@ import { ProtectedRoute } from "src/components/ProtectedRoute";
 import { TenantIndexRedirect, TenantRoute } from "src/components/TenantRoute";
 import { Onboarding } from "src/components/Onboarding";
 import { Members } from "src/components/Settings/Members";
-import {
-  Emails,
-  PlatformIndexRedirect,
-  PlatformLayout,
-  Users,
-} from "src/components/Platform";
+import { Emails, PlatformRoute, Tenants, Users } from "src/components/Platform";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { ReactQueryClientProvider } from "src/utils/react_query_provider";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -49,24 +44,6 @@ const router = createBrowserRouter([
       {
         path: APP_ROUTES.PROFILE,
         element: <ProfileRedirect />,
-      },
-      {
-        path: APP_ROUTES.PLATFORM,
-        element: <PlatformLayout />,
-        children: [
-          {
-            index: true,
-            element: <PlatformIndexRedirect />,
-          },
-          {
-            path: "users",
-            element: <Users />,
-          },
-          {
-            path: "emails",
-            element: <Emails />,
-          },
-        ],
       },
       {
         path: APP_ROUTES.TENANT,
@@ -121,6 +98,23 @@ const router = createBrowserRouter([
               {
                 path: "connection/:id/edit",
                 element: <ConnectionEdit />,
+              },
+              {
+                element: <PlatformRoute />,
+                children: [
+                  {
+                    path: "users",
+                    element: <Users />,
+                  },
+                  {
+                    path: "tenants",
+                    element: <Tenants />,
+                  },
+                  {
+                    path: "emails",
+                    element: <Emails />,
+                  },
+                ],
               },
             ],
           },

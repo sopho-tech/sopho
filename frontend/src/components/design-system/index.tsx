@@ -7,10 +7,6 @@ export type { MotionFlexProps } from "src/components/design-system/MotionFlex";
 export { Grid, GridItem } from "src/components/design-system/Grid";
 export { Button } from "src/components/design-system/Button";
 export { IconButton } from "src/components/design-system/IconButton";
-export {
-  IconButtonLink,
-  State as IconButtonLinkState,
-} from "src/components/design-system/IconButtonLink";
 export { Icon } from "src/components/design-system/Icon";
 export { InlineEdit } from "src/components/design-system/InlineEdit";
 export { Heading } from "src/components/design-system/Heading";
@@ -90,3 +86,17 @@ export type {
 } from "src/components/design-system/Popover";
 export { Spinner } from "src/components/design-system/Spinner";
 export { ShimmeringText } from "src/components/design-system/ShimmeringText";
+export { SectionLayout } from "src/components/design-system/SectionLayout";
+export type {
+  SectionLayoutProps,
+  SectionNavigationItem,
+} from "src/components/design-system/SectionLayout";
+export {
+  CollapsibleSidebar,
+  useCollapsibleSidebar,
+} from "src/components/design-system/CollapsibleSidebar";
+export type { CollapsibleSidebarProps } from "src/components/design-system/CollapsibleSidebar";
+export { Avatar } from "src/components/design-system/Avatar";
+export type { AvatarProps } from "src/components/design-system/Avatar";
+export { Table } from "src/components/design-system/Table";
+export { ActionList } from "src/components/design-system/ActionList";

@@ -113,28 +113,21 @@ export default function SignIn() {
             name="password"
             required
             errorMessage="Password is required"
-            className={authPageStyles.fieldContainer}
+            className={authPageStyles.passwordFieldContainer}
           >
-            <Flex
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              width="100%"
-            >
-              <Form.Label className={authPageStyles.fieldLabel}>
-                Password
-              </Form.Label>
-              {signInOptions.data?.password_reset_available && (
-                <Button
-                  label="Forgot password?"
-                  shape="rectangle"
-                  size="sm"
-                  backgroundColor="ghost"
-                  onClick={handleForgotPassword}
-                />
-              )}
-            </Flex>
+            <Form.Label className={authPageStyles.fieldLabel}>
+              Password
+            </Form.Label>
             <Form.Password placeholder="••••••••" fullWidth />
+            {signInOptions.data?.password_reset_available && (
+              <Button
+                label="Forgot password?"
+                shape="rectangle"
+                size="sm"
+                backgroundColor="ghost"
+                onClick={handleForgotPassword}
+              />
+            )}
           </Form.Field>
         </Form.Fields>
         {createSessionMutation.error && (

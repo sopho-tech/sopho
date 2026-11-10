@@ -23,4 +23,15 @@ impl EmailKind {
     pub fn as_str(&self) -> &'static str {
         self.into()
     }
+
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            EmailKind::Invitation => "Invitation",
+            EmailKind::PasswordReset => "Password reset",
+            EmailKind::NoPassword => "No password",
+            EmailKind::PasswordChanged => "Password changed",
+            EmailKind::SignInMethodAdded => "Sign-in method added",
+            EmailKind::SignInMethodRemoved => "Sign-in method removed",
+        }
+    }
 }

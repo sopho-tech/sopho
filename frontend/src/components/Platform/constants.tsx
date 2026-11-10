@@ -4,25 +4,6 @@ import { BadgeProps } from "src/components/design-system/Badge";
 export const FIRST_PAGE = 1;
 export const SEARCH_DEBOUNCE_MILLISECONDS = 300;
 
-export const PLATFORM_ASIDE_STYLE = {
-  backgroundColor: "var(--color-primary-100)",
-};
-export const PLATFORM_NAVIGATION_LIST_STYLE = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "var(--space-2xs)",
-  listStyle: "none",
-  margin: 0,
-  padding: 0,
-} as const;
-export const PLATFORM_NAVIGATION_ITEM_STYLE = {
-  borderRadius: "var(--border-radius-lg)",
-  transition: "var(--transition-bg-color)",
-};
-export const PLATFORM_ACTIVE_NAVIGATION_ITEM_STYLE = {
-  ...PLATFORM_NAVIGATION_ITEM_STYLE,
-  backgroundColor: "var(--color-grey-100)",
-};
 export const SEARCH_INPUT_STYLE = { maxWidth: "24rem" };
 
 export const EMAIL_STATUS_NAMES: Record<EmailStatus, string> = {
@@ -40,7 +21,7 @@ export const EMAIL_STATUS_BADGE_VARIANTS: Record<
   PENDING: "blue",
   SENDING: "blue",
   SENT: "green",
-  FAILED: "yellow",
+  FAILED: "red",
   CANCELLED: "subtle",
 };
 
@@ -66,3 +47,19 @@ export const EMAIL_STATUS_FILTERS: EmailStatusFilter[] = [
 ];
 
 export const USER_ACTIONS_LABEL = "User actions";
+
+export const USERS_TABLE_COLUMNS =
+  "minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 1.2fr) 2.5rem";
+export const TENANTS_TABLE_COLUMNS = "minmax(0, 1fr) 10rem 10rem";
+export const EMAILS_TABLE_COLUMNS =
+  "minmax(0, 1.2fr) minmax(0, 1.4fr) 9rem 6rem 5rem 10rem 2.5rem";
+export const EMAIL_ACTIONS_LABEL = "Email actions";
+
+export const VISIBLE_TENANT_COUNT = 2;
+export const TENANT_ROLE_GRID_STYLE = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, max-content) max-content",
+  alignItems: "center",
+  columnGap: "var(--space-sm)",
+  rowGap: "var(--space-2xs)",
+};

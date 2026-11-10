@@ -1,37 +1,44 @@
 import { useMemo } from "react";
 import { usePlatformPermission } from "src/api/auth/queries";
+import { SectionNavigationItem } from "src/components/design-system";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { PLATFORM_PERMISSIONS } from "src/constants/platform_permissions";
+import { useTenantPath } from "src/utils/tenant";
 
-export type PlatformNavigationItem = {
-  id: string;
-  label: string;
-  to: string;
-};
-
-export function usePlatformNavigationItems(): PlatformNavigationItem[] {
+export function usePlatformNavigationItems(): SectionNavigationItem[] {
+  const toTenantPath = useTenantPath();
   const canManageUsers = usePlatformPermission(
     PLATFORM_PERMISSIONS.USER_MANAGE,
+  );
+  const canCreateTenant = usePlatformPermission(
+    PLATFORM_PERMISSIONS.TENANT_CREATE,
   );
   const canManageEmails = usePlatformPermission(
     PLATFORM_PERMISSIONS.EMAIL_MANAGE,
   );
   return useMemo(() => {
-    const items: PlatformNavigationItem[] = [];
+    const items: SectionNavigationItem[] = [];
     if (canManageUsers) {
       items.push({
         id: "users",
-        label: "Users",
-        to: APP_ROUTES.PLATFORM_ROUTES.USERS,
+        label: "Global Users",
+        to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.USERS),
+      });
+    }
+    if (canCreateTenant) {
+      items.push({
+        id: "tenants",
+        label: "Global Tenants",
+        to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.TENANTS),
       });
     }
     if (canManageEmails) {
       items.push({
         id: "emails",
         label: "Emails",
-        to: APP_ROUTES.PLATFORM_ROUTES.EMAILS,
+        to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.EMAILS),
       });
     }
     return items;
-  }, [canManageUsers, canManageEmails]);
+  }, [toTenantPath, canManageUsers, canCreateTenant, canManageEmails]);
 }

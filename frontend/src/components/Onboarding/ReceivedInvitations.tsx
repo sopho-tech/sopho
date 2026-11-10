@@ -1,6 +1,13 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router";
-import { BannerSlim, Button, Flex, Text } from "src/components/design-system";
+import {
+  ActionList,
+  Avatar,
+  BannerSlim,
+  Button,
+  Flex,
+  Text,
+} from "src/components/design-system";
 import {
   AcceptedInvitationDto,
   ReceivedInvitationDto,
@@ -23,27 +30,21 @@ function InvitationRow({
     [invitation.id, onAccept],
   );
   return (
-    <Flex
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      gap="md"
-    >
-      <Flex direction="column">
-        <Text fontSize="sm">{invitation.tenant_name}</Text>
-        <Text fontSize="xs" color="subtle">
-          {`Invited by ${invitation.invited_by_name} as ${invitation.role_name}`}
-        </Text>
-      </Flex>
-      <Button
-        label="Accept"
-        shape="rectangle"
-        size="sm"
-        backgroundColor="accent"
-        onClick={handleAccept}
-        disabled={isAccepting}
-      />
-    </Flex>
+    <ActionList.Item
+      leading={<Avatar name={invitation.tenant_name} />}
+      title={invitation.tenant_name}
+      description={`${invitation.invited_by_name} invited you as ${invitation.role_display_name}`}
+      trailing={
+        <Button
+          label="Accept"
+          shape="rectangle"
+          size="sm"
+          backgroundColor="accent"
+          onClick={handleAccept}
+          disabled={isAccepting}
+        />
+      }
+    />
   );
 }
 
@@ -65,21 +66,23 @@ export function ReceivedInvitations({
   const { mutate: accept } = acceptInvitation;
 
   return (
-    <Flex direction="column" gap="sm">
-      <Text fontSize="sm" color="darkGrey">
+    <Flex direction="column" gap="xs">
+      <Text fontSize="xs" color="darkGrey">
         Invitations
       </Text>
       {acceptInvitation.error && (
         <BannerSlim type="error" message={acceptInvitation.error.message} />
       )}
-      {invitations.map((invitation) => (
-        <InvitationRow
-          key={invitation.id}
-          invitation={invitation}
-          onAccept={accept}
-          isAccepting={acceptInvitation.isPending}
-        />
-      ))}
+      <ActionList aria-label="Invitations">
+        {invitations.map((invitation) => (
+          <InvitationRow
+            key={invitation.id}
+            invitation={invitation}
+            onAccept={accept}
+            isAccepting={acceptInvitation.isPending}
+          />
+        ))}
+      </ActionList>
     </Flex>
   );
 }

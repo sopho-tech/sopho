@@ -14,3 +14,9 @@
 .navItemActive {
   background-color: var(--color-grey-100);
 }
+
+.aside {
+  flex-shrink: 0;
+  min-width: var(--section-sidebar-min-width);
+  background-color: var(--color-primary-100);
+}

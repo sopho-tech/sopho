@@ -91,6 +91,7 @@ pub async fn memberships_by_user(
             .push(UserTenantMembershipDto {
                 tenant_id: tenant.id,
                 tenant_name: tenant.name,
+                role_display_name: authorization_service::role_display_name(&role.name),
                 role_name: role.name,
             });
     }
@@ -138,6 +139,7 @@ pub async fn list_tenants_for_user(
         response_dto_list.push(TenantMembershipDto {
             tenant_id: tenant.id,
             tenant_name: tenant.name,
+            role_display_name: authorization_service::role_display_name(&role.name),
             role_name: role.name,
             permissions,
         });

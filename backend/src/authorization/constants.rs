@@ -124,6 +124,24 @@ impl SystemRole {
         <Self as VariantArray>::VARIANTS.to_vec()
     }
 
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            SystemRole::Owner => "Owner",
+            SystemRole::Admin => "Admin",
+            SystemRole::Member => "Member",
+            SystemRole::Viewer => "Viewer",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            SystemRole::Owner => "Full access, including deleting the tenant",
+            SystemRole::Admin => "Manages members, connections and AI settings",
+            SystemRole::Member => "Creates and shares notebooks and conversations",
+            SystemRole::Viewer => "Views notebooks, dashboards and conversations",
+        }
+    }
+
     pub fn permissions(&self) -> Vec<Permission> {
         match self {
             SystemRole::Owner => Permission::all(),

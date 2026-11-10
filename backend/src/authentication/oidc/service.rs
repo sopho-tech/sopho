@@ -1,7 +1,7 @@
 use crate::authentication::constants::UserStatus;
 use crate::authentication::oidc::constants::{
-    CallbackPurpose, EMAIL_SCOPE, GOOGLE_ISSUER_HOST, LOGIN_ATTEMPT_EXPIRY_MINUTES, PROFILE_SCOPE,
-    ProviderIcon, SignInMethodChange,
+    CallbackPurpose, EMAIL_SCOPE, GOOGLE_ISSUER_HOST, LOGIN_ATTEMPT_EXPIRY_MINUTES,
+    ONLY_SIGN_IN_METHOD_REASON, PROFILE_SCOPE, ProviderIcon, SignInMethodChange,
 };
 use crate::authentication::oidc::dto::{
     CallbackOutcome, CallbackQuery, LoginSecrets, OidcProviderDto, SignInMethodsDto,
@@ -318,6 +318,8 @@ pub async fn list_sign_in_methods(
         repository::find_identities_for_user(&app_state.database_connection, user_id).await?;
     let has_password = account.password_hash.is_some();
     let can_disconnect = has_password || identities.len() > 1;
+    let disconnect_blocked_reason =
+        (!can_disconnect).then(|| ONLY_SIGN_IN_METHOD_REASON.to_string());
 
     let mut providers: Vec<SignInProviderDto> = app_state
         .config
@@ -333,6 +335,8 @@ pub async fn list_sign_in_methods(
                 connected: connected_identity.is_some(),
                 email: connected_identity.map(|identity| identity.email.clone()),
                 can_disconnect: connected_identity.is_some() && can_disconnect,
+                disconnect_blocked_reason: connected_identity
+                    .and(disconnect_blocked_reason.clone()),
             }
         })
         .collect();
@@ -352,6 +356,7 @@ pub async fn list_sign_in_methods(
                 connected: true,
                 email: Some(identity.email.clone()),
                 can_disconnect,
+                disconnect_blocked_reason: disconnect_blocked_reason.clone(),
             }),
     );
     Ok(SignInMethodsDto {

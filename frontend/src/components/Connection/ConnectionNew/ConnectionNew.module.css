@@ -9,6 +9,7 @@
   flex-direction: column;
   gap: var(--space-lg);
   padding: unset;
+  overflow: visible;
 }
 
 .formField {

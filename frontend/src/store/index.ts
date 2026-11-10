@@ -8,3 +8,4 @@ export type { CellSlice } from "src/store/cellSlice";
 export type { ChartCellSlice } from "src/store/chartCellSlice";
 export type { ConnectionSlice } from "src/store/connectionSlice";
 export type { CommandMenuSlice } from "src/store/commandMenuSlice";
+export type { SidebarSlice } from "src/store/sidebarSlice";

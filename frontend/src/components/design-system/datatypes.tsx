@@ -22,10 +22,15 @@ export type IconColor =
   | "grey"
   | "lightgrey"
   | "red"
-  | "transparent";
+  | "transparent"
+  | "current";
 
 export type IconType =
   | "add"
+  | "chevrons_up_down"
+  | "panel_left_open"
+  | "panel_left_close"
+  | "share"
   | "home"
   | "book"
   | "settings"
@@ -181,6 +186,7 @@ export type SharedLayoutProps = {
   alignItems?: AlignItems;
   alignContent?: AlignContent;
   alignSelf?: AlignItems;
+  flexWrap?: "wrap" | "nowrap";
   top?: SpacingValue;
   bottom?: SpacingValue;
   left?: SpacingValue;

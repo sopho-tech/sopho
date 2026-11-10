@@ -3,11 +3,13 @@ import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { useTenantId } from "src/utils/tenant";
 import { Permission } from "src/constants/permissions";
+import { platformKeys } from "src/api/platform/queries";
 
 export type TenantMembershipDto = {
   tenant_id: string;
   tenant_name: string;
   role_name: string;
+  role_display_name: string;
   permissions: string[];
 };
 
@@ -18,6 +20,7 @@ export type TenantMemberDto = {
   full_name: string;
   email: string;
   role_name: string;
+  role_display_name: string;
   account_status: AccountStatus;
 };
 
@@ -78,9 +81,10 @@ export const useCreateTenant = (callbacks?: {
   return useMutation({
     mutationFn: tenantApi.createTenant,
     onSuccess: async (tenant) => {
-      await queryClient.invalidateQueries({
-        queryKey: tenantKeys.memberships,
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: tenantKeys.memberships }),
+        queryClient.invalidateQueries({ queryKey: platformKeys.all }),
+      ]);
       callbacks?.onSuccess?.(tenant);
     },
   });

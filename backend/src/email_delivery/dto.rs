@@ -18,6 +18,7 @@ pub struct EmailMessage {
 pub struct EmailLogEntryDto {
     pub id: Uuid,
     pub kind: String,
+    pub kind_display_name: String,
     pub recipient: String,
     pub subject: String,
     pub status: EmailStatus,

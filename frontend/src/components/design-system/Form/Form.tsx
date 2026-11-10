@@ -274,7 +274,7 @@ type FormSelectProps = {
 };
 
 const FormSelect = ({
-  groupName = "Options",
+  groupName,
   placeholder = "Select an option",
   options,
 }: FormSelectProps) => {

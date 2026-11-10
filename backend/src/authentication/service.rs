@@ -405,6 +405,21 @@ pub async fn deactivate_user_transaction(
     Ok(())
 }
 
+pub async fn set_platform_role(
+    app_state: &AppState,
+    user_id: Uuid,
+    platform_role: PlatformRole,
+) -> Result<(), DbErr> {
+    repository::set_user_platform_role(
+        &app_state.database_connection,
+        user_id,
+        platform_role.as_str(),
+        time_utils::now_utc_into(),
+    )
+    .await?;
+    Ok(())
+}
+
 pub async fn reactivate_user(app_state: &AppState, user_id: Uuid) -> Result<(), DbErr> {
     repository::set_user_status(
         &app_state.database_connection,

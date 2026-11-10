@@ -1,81 +1,103 @@
-import { useCallback, useMemo } from "react";
-import { Flex } from "src/components/design-system/Flex/Flex";
-import { useCurrentUser, useDeleteSession } from "src/api/auth/queries";
-import { Form } from "src/components/design-system/Form/Form";
-import { Button } from "src/components/design-system/Button/Button";
-import styles from "src/components/Profile/Profile.module.css";
+import { useCallback } from "react";
+import {
+  Avatar,
+  BannerSlim,
+  Button,
+  Flex,
+  Heading,
+  Table,
+  Text,
+} from "src/components/design-system";
+import { useDeleteSession, useSignedInUser } from "src/api/auth/queries";
 import { SignInMethods } from "src/components/Profile/SignInMethods";
+import {
+  ACCOUNT_TABLE_COLUMNS,
+  PROFILE_PAGE_STYLE,
+} from "src/components/Profile/constants";
+
+function AccountDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <Table.Row aria-label={label}>
+      <Table.Cell>
+        <Text fontSize="sm" color="darkGrey">
+          {label}
+        </Text>
+      </Table.Cell>
+      <Table.Cell>
+        <Text fontSize="sm" truncate>
+          {value}
+        </Text>
+      </Table.Cell>
+    </Table.Row>
+  );
+}
 
 export function Profile() {
-  const { data: user } = useCurrentUser();
-  const deleteSessionMutation = useDeleteSession({
-    onError: (error) => {
-      console.error("Sign out failed", error);
-    },
-  });
-
-  const defaultValues = useMemo(
-    () =>
-      user
-        ? {
-            id: user.id,
-            username: user.username,
-            email: user.email || "",
-            full_name: user.full_name || "",
-          }
-        : null,
-    [user],
-  );
-
-  const handleSubmit = useCallback(() => {}, []);
-  const handleSignOut = useCallback(() => {
-    deleteSessionMutation.mutate();
-  }, [deleteSessionMutation]);
+  const user = useSignedInUser();
+  const signOut = useDeleteSession();
+  const { mutate: deleteSession } = signOut;
+  const handleSignOut = useCallback(() => deleteSession(), [deleteSession]);
 
   return (
     <Flex
       flex="grow"
-      gap="xl"
-      paddingX="2xl"
-      paddingY="xs"
-      marginTop="xs"
-      marginBottom="xs"
-      marginLeft="xs"
-      marginRight="xs"
       direction="column"
+      paddingX="2xl"
+      paddingY="lg"
+      overflow="scrollY"
     >
-      {defaultValues && (
-        <Form defaultValues={defaultValues} onSubmit={handleSubmit} readonly>
-          <Form.Fields className={styles.fieldsContainer}>
-            <Form.Field name="id" className={styles.fieldContainer}>
-              <Form.Label>User ID</Form.Label>
-              <Form.Input />
-            </Form.Field>
-            <Form.Field name="username" className={styles.fieldContainer}>
-              <Form.Label>Username</Form.Label>
-              <Form.Input />
-            </Form.Field>
-            <Form.Field name="email" className={styles.fieldContainer}>
-              <Form.Label>Email</Form.Label>
-              <Form.Input />
-            </Form.Field>
-            <Form.Field name="full_name" className={styles.fieldContainer}>
-              <Form.Label>Full Name</Form.Label>
-              <Form.Input />
-            </Form.Field>
-          </Form.Fields>
-        </Form>
-      )}
-      <SignInMethods />
-      <Button
-        label="Sign Out"
-        backgroundColor="accent"
-        size="md"
-        shape="rectangle"
-        leadingIconName="logout"
-        onClick={handleSignOut}
-        disabled={deleteSessionMutation.isPending}
-      />
+      <Flex direction="column" gap="xl" width="100%" sx={PROFILE_PAGE_STYLE}>
+        <Flex
+          direction="row"
+          justifyContent="space-between"
+          alignItems="flex-start"
+          gap="md"
+        >
+          <Flex direction="column" gap="2xs">
+            <Heading accessibilityLevel={2} size="2xl" textColor="black">
+              Profile
+            </Heading>
+            <Text fontSize="sm" color="subtle">
+              Your account details and how you sign in.
+            </Text>
+          </Flex>
+          <Button
+            label="Sign out"
+            leadingIconName="logout"
+            shape="rectangle"
+            size="sm"
+            backgroundColor="white"
+            onClick={handleSignOut}
+            disabled={signOut.isPending}
+          />
+        </Flex>
+        {signOut.error && (
+          <BannerSlim type="error" message={signOut.error.message} />
+        )}
+        <Flex direction="row" alignItems="center" gap="sm">
+          <Avatar name={user.full_name} />
+          <Flex direction="column" overflow="hidden">
+            <Text fontSize="sm" truncate>
+              {user.full_name}
+            </Text>
+            <Text fontSize="xs" color="subtle" truncate>
+              {user.email}
+            </Text>
+          </Flex>
+        </Flex>
+        <Flex direction="column" gap="sm">
+          <Heading accessibilityLevel={3} size="lg">
+            Account
+          </Heading>
+          <Table columns={ACCOUNT_TABLE_COLUMNS} aria-label="Account">
+            <AccountDetail label="Full name" value={user.full_name} />
+            <AccountDetail label="Email" value={user.email} />
+            <AccountDetail label="Username" value={user.username} />
+            <AccountDetail label="User ID" value={user.id} />
+          </Table>
+        </Flex>
+        <SignInMethods />
+      </Flex>
     </Flex>
   );
 }

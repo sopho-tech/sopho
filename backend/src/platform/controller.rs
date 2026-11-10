@@ -36,6 +36,14 @@ pub fn routes(app_state: AppState) -> Router {
         .route("/user/{user_id}/deactivate", post(deactivate_user))
         .route("/user/{user_id}/reactivate", post(reactivate_user))
         .route("/user/{user_id}/password_reset", post(send_password_reset))
+        .route(
+            "/user/{user_id}/make_administrator",
+            post(make_administrator),
+        )
+        .route(
+            "/user/{user_id}/remove_administrator",
+            post(remove_administrator),
+        )
         .route("/tenant", get(list_tenants))
         .route("/tenant/{tenant_id}/owner/{user_id}", put(appoint_owner))
         .route("/email", get(list_email_log))
@@ -82,6 +90,28 @@ async fn send_password_reset(
     Path(UserPath { user_id }): Path<UserPath>,
 ) -> Response {
     match service::send_password_reset(&app_state, authenticated_user.user_id(), user_id).await {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => platform_error_response(error).into_response(),
+    }
+}
+
+async fn make_administrator(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+    Path(UserPath { user_id }): Path<UserPath>,
+) -> Response {
+    match service::make_administrator(&app_state, authenticated_user.user_id(), user_id).await {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => platform_error_response(error).into_response(),
+    }
+}
+
+async fn remove_administrator(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+    Path(UserPath { user_id }): Path<UserPath>,
+) -> Response {
+    match service::remove_administrator(&app_state, authenticated_user.user_id(), user_id).await {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(error) => platform_error_response(error).into_response(),
     }
@@ -139,6 +169,7 @@ fn platform_error_response(error: PlatformError) -> (StatusCode, Json<Value>) {
         | PlatformError::EmailDelivery(EmailDeliveryError::NotFound) => StatusCode::NOT_FOUND,
         PlatformError::InvalidPage => StatusCode::BAD_REQUEST,
         PlatformError::CannotDeactivateYourself
+        | PlatformError::CannotRemoveYourOwnAdministratorRole
         | PlatformError::LastPlatformAdministrator
         | PlatformError::AppointeeDeactivated
         | PlatformError::AccountDeactivated

@@ -137,6 +137,7 @@ pub async fn list_members(
         let is_last_owner = role_id == owner_role.id && is_active_account && owner_count <= 1;
         members.push(MemberDto {
             member: member_identity(row)?,
+            is_current_user: row.membership.user_id == tenant_context.user_id().get_uuid(),
             capabilities: MemberCapabilities {
                 can_change_role: may_change_roles && manageable && !is_last_owner,
                 can_remove: may_remove_members && manageable && !is_last_owner,
@@ -265,6 +266,8 @@ pub async fn list_roles(
             .await?
             .is_subset_of(tenant_context.permissions());
         roles.push(RoleDto {
+            display_name: authorization_service::role_display_name(&role.name),
+            description: authorization_service::role_description(&role.name),
             name: role.name,
             is_system: role.is_system,
             assignable,
@@ -305,6 +308,7 @@ fn member_identity(row: &TenantMemberRow) -> Result<TenantMemberDto, MembershipE
         full_name: user.full_name.clone(),
         email: user.email.clone(),
         role_name: role.name.clone(),
+        role_display_name: authorization_service::role_display_name(&role.name),
         account_status,
     })
 }

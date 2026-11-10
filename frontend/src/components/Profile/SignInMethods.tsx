@@ -5,6 +5,7 @@ import {
   Button,
   Flex,
   Heading,
+  Table,
   Text,
 } from "src/components/design-system";
 import {
@@ -14,14 +15,16 @@ import {
   useDisconnectProvider,
   useSignInMethods,
 } from "src/api/auth/queries";
-import { ChangePasswordForm } from "src/components/Profile/ChangePasswordForm";
+import { ChangePasswordDialog } from "src/components/Profile/ChangePasswordDialog";
+import { DisconnectProviderDialog } from "src/components/Profile/DisconnectProviderDialog";
 import {
   CONNECTED_PROVIDER_PARAMETER,
   CONNECTED_RESULT,
   CONNECT_RESULT_MESSAGES,
   CONNECT_RESULT_PARAMETER,
+  PASSWORD_CHANGED_MESSAGE,
+  SIGN_IN_METHODS_TABLE_COLUMNS,
 } from "src/components/Profile/constants";
-import { UNSTYLED_LIST_STYLE } from "src/components/Settings/Members/constants";
 import { APP_ROUTES } from "src/constants/app_routes";
 
 async function connectProvider(providerName: string) {
@@ -34,56 +37,56 @@ async function connectProvider(providerName: string) {
 function ProviderRow({
   provider,
   onDisconnect,
-  isDisconnecting,
 }: {
   provider: SignInProviderDto;
-  onDisconnect: (providerName: string) => void;
-  isDisconnecting: boolean;
+  onDisconnect: (provider: SignInProviderDto) => void;
 }) {
   const handleConnect = useCallback(() => {
     void connectProvider(provider.name);
   }, [provider.name]);
   const handleDisconnect = useCallback(
-    () => onDisconnect(provider.name),
-    [onDisconnect, provider.name],
+    () => onDisconnect(provider),
+    [onDisconnect, provider],
   );
 
   return (
-    <Flex
-      as="li"
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      gap="md"
-      aria-label={provider.display_name}
-    >
-      <Flex direction="column">
-        <Text fontSize="sm">{provider.display_name}</Text>
-        <Text fontSize="xs" color="subtle">
-          {provider.connected
-            ? `Connected as ${provider.email ?? provider.display_name}`
-            : "Not connected"}
-        </Text>
-      </Flex>
-      {provider.connected ? (
-        <Button
-          label="Disconnect"
-          shape="rectangle"
-          size="sm"
-          backgroundColor="white"
-          onClick={handleDisconnect}
-          disabled={!provider.can_disconnect || isDisconnecting}
-        />
-      ) : (
-        <Button
-          label="Connect"
-          shape="rectangle"
-          size="sm"
-          backgroundColor="accent"
-          onClick={handleConnect}
-        />
-      )}
-    </Flex>
+    <Table.Row aria-label={provider.display_name}>
+      <Table.Cell>
+        <Flex direction="column" overflow="hidden">
+          <Text fontSize="sm">{provider.display_name}</Text>
+          <Text fontSize="xs" color="subtle" truncate>
+            {provider.connected
+              ? `Connected as ${provider.email ?? provider.display_name}`
+              : "Not connected"}
+          </Text>
+          {provider.disconnect_blocked_reason && (
+            <Text fontSize="xs" color="subtle">
+              {provider.disconnect_blocked_reason}
+            </Text>
+          )}
+        </Flex>
+      </Table.Cell>
+      <Table.Cell align="end">
+        {provider.connected ? (
+          <Button
+            label="Disconnect"
+            shape="rectangle"
+            size="sm"
+            backgroundColor="white"
+            onClick={handleDisconnect}
+            disabled={!provider.can_disconnect}
+          />
+        ) : (
+          <Button
+            label="Connect"
+            shape="rectangle"
+            size="sm"
+            backgroundColor="accent"
+            onClick={handleConnect}
+          />
+        )}
+      </Table.Cell>
+    </Table.Row>
   );
 }
 
@@ -93,12 +96,48 @@ export function SignInMethods() {
   const connectedProviderName = searchParams.get(CONNECTED_PROVIDER_PARAMETER);
   const signInMethods = useSignInMethods();
   const disconnectProvider = useDisconnectProvider();
-  const { mutate: disconnect } = disconnectProvider;
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const handleChangePassword = useCallback(
-    () => setIsChangingPassword(true),
+  const { mutate: disconnect, reset: resetDisconnect } = disconnectProvider;
+  const [providerPendingDisconnect, setProviderPendingDisconnect] =
+    useState<SignInProviderDto | null>(null);
+  const [disconnectedProviderName, setDisconnectedProviderName] = useState<
+    string | null
+  >(null);
+  const handleDisconnect = useCallback(
+    (provider: SignInProviderDto) => {
+      resetDisconnect();
+      setProviderPendingDisconnect(provider);
+    },
+    [resetDisconnect],
+  );
+  const handleCloseDisconnect = useCallback(
+    () => setProviderPendingDisconnect(null),
     [],
   );
+  const handleConfirmDisconnect = useCallback(() => {
+    if (!providerPendingDisconnect) {
+      throw new Error("No provider is pending disconnect");
+    }
+    disconnect(providerPendingDisconnect.name, {
+      onSuccess: () => {
+        setDisconnectedProviderName(providerPendingDisconnect.display_name);
+        setProviderPendingDisconnect(null);
+      },
+    });
+  }, [disconnect, providerPendingDisconnect]);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isPasswordChanged, setIsPasswordChanged] = useState(false);
+  const handleChangePassword = useCallback(() => {
+    setIsPasswordChanged(false);
+    setIsChangingPassword(true);
+  }, []);
+  const handleCloseChangePassword = useCallback(
+    () => setIsChangingPassword(false),
+    [],
+  );
+  const handlePasswordChanged = useCallback(() => {
+    setIsChangingPassword(false);
+    setIsPasswordChanged(true);
+  }, []);
 
   const connectedProvider = signInMethods.data?.providers.find(
     (provider) => provider.name === connectedProviderName,
@@ -109,10 +148,13 @@ export function SignInMethods() {
       : undefined;
 
   return (
-    <Flex direction="column" gap="md">
-      <Heading accessibilityLevel={2} size="lg">
+    <Flex direction="column" gap="sm">
+      <Heading accessibilityLevel={3} size="lg">
         Sign-in methods
       </Heading>
+      {isPasswordChanged && (
+        <BannerSlim type="success" message={PASSWORD_CHANGED_MESSAGE} />
+      )}
       {connectResult === CONNECTED_RESULT && connectedProvider && (
         <BannerSlim
           type="success"
@@ -125,47 +167,63 @@ export function SignInMethods() {
       {signInMethods.error && (
         <BannerSlim type="error" message={signInMethods.error.message} />
       )}
-      {disconnectProvider.error && (
-        <BannerSlim type="error" message={disconnectProvider.error.message} />
+      {disconnectedProviderName && (
+        <BannerSlim
+          type="success"
+          message={`${disconnectedProviderName} is disconnected.`}
+        />
       )}
       {signInMethods.data && (
-        <Flex as="ul" direction="column" gap="sm" sx={UNSTYLED_LIST_STYLE}>
-          <Flex
-            as="li"
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            gap="md"
-            aria-label="Password"
-          >
-            <Flex direction="column">
-              <Text fontSize="sm">Password</Text>
-              <Text fontSize="xs" color="subtle">
-                {signInMethods.data.has_password
-                  ? "You can sign in with your password"
-                  : "Not set. You sign in with single sign-on"}
-              </Text>
-            </Flex>
-            {signInMethods.data.has_password && !isChangingPassword && (
-              <Button
-                label="Change password"
-                shape="rectangle"
-                size="sm"
-                backgroundColor="white"
-                onClick={handleChangePassword}
-              />
-            )}
-          </Flex>
-          {isChangingPassword && <ChangePasswordForm />}
+        <Table
+          columns={SIGN_IN_METHODS_TABLE_COLUMNS}
+          aria-label="Sign-in methods"
+        >
+          <Table.Row aria-label="Password">
+            <Table.Cell>
+              <Flex direction="column" overflow="hidden">
+                <Text fontSize="sm">Password</Text>
+                <Text fontSize="xs" color="subtle">
+                  {signInMethods.data.has_password
+                    ? "You can sign in with your password"
+                    : "Not set. You sign in with single sign-on"}
+                </Text>
+              </Flex>
+            </Table.Cell>
+            <Table.Cell align="end">
+              {signInMethods.data.has_password && (
+                <Button
+                  label="Change password"
+                  shape="rectangle"
+                  size="sm"
+                  backgroundColor="white"
+                  onClick={handleChangePassword}
+                />
+              )}
+            </Table.Cell>
+          </Table.Row>
           {signInMethods.data.providers.map((provider) => (
             <ProviderRow
               key={provider.name}
               provider={provider}
-              onDisconnect={disconnect}
-              isDisconnecting={disconnectProvider.isPending}
+              onDisconnect={handleDisconnect}
             />
           ))}
-        </Flex>
+        </Table>
+      )}
+      {isChangingPassword && (
+        <ChangePasswordDialog
+          onChanged={handlePasswordChanged}
+          onClose={handleCloseChangePassword}
+        />
+      )}
+      {providerPendingDisconnect && (
+        <DisconnectProviderDialog
+          provider={providerPendingDisconnect}
+          onConfirm={handleConfirmDisconnect}
+          onClose={handleCloseDisconnect}
+          isPending={disconnectProvider.isPending}
+          error={disconnectProvider.error}
+        />
       )}
     </Flex>
   );

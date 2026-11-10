@@ -49,6 +49,11 @@
   color: var(--color-yellow-900);
 }
 
+.red {
+  background-color: var(--color-red-200);
+  color: var(--color-red-800);
+}
+
 .command {
   background-color: var(--color-primary-100);
   color: var(--color-primary-600);

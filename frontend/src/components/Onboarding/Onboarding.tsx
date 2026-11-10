@@ -1,5 +1,4 @@
 import { useCallback } from "react";
-import { useNavigate } from "react-router";
 import {
   BannerSlim,
   Button,
@@ -9,66 +8,44 @@ import {
 } from "src/components/design-system";
 import { useMemberships } from "src/api/tenant/queries";
 import { useReceivedInvitations } from "src/api/invitation/queries";
-import {
-  useDeleteSession,
-  usePlatformPermission,
-  useSignedInUser,
-} from "src/api/auth/queries";
-import { APP_ROUTES } from "src/constants/app_routes";
-import { PLATFORM_PERMISSIONS } from "src/constants/platform_permissions";
-import { CreateTenantForm } from "src/components/Onboarding/CreateTenantForm";
+import { useDeleteSession, useSignedInUser } from "src/api/auth/queries";
+import { AuthPageLayout } from "src/components/AuthPageLayout";
 import { ReceivedInvitations } from "src/components/Onboarding/ReceivedInvitations";
+import { TenantList } from "src/components/Onboarding/TenantList";
+
+const TENANT_LISTS_STYLE = { maxHeight: "50vh" };
 
 export function Onboarding() {
-  const navigate = useNavigate();
   const signedInUser = useSignedInUser();
   const memberships = useMemberships();
   const receivedInvitations = useReceivedInvitations();
-  const canCreateTenant = usePlatformPermission(
-    PLATFORM_PERMISSIONS.TENANT_CREATE,
-  );
   const signOut = useDeleteSession();
   const { mutate: deleteSession } = signOut;
 
-  const handleBack = useCallback(() => {
-    void navigate(APP_ROUTES.INDEX);
-  }, [navigate]);
   const handleSignOut = useCallback(() => deleteSession(), [deleteSession]);
 
-  const hasTenants = (memberships.data?.length ?? 0) > 0;
-  const invitations = receivedInvitations.data;
+  const hasTenants =
+    memberships.data !== undefined && memberships.data.length > 0;
+  const hasInvitations =
+    receivedInvitations.data !== undefined &&
+    receivedInvitations.data.length > 0;
   const hasNothingToJoin =
-    invitations !== undefined && invitations.length === 0 && !canCreateTenant;
+    memberships.data !== undefined &&
+    receivedInvitations.data !== undefined &&
+    !hasTenants &&
+    !hasInvitations;
 
   return (
-    <Flex
-      width="100vw"
-      height="100vh"
-      justifyContent="center"
-      alignItems="center"
-    >
-      <Flex
-        direction="column"
-        shadow="sm"
-        borderRadius="lg"
-        paddingX="xl"
-        paddingY="xl"
-        gap="lg"
-        backgroundColor="white"
-      >
-        <Flex direction="column" gap="xs">
-          <Heading accessibilityLevel={1} size="xl" textAlign="center">
-            {hasTenants ? "Join or create a tenant" : "Welcome to Sopho"}
-          </Heading>
-          <Heading
-            accessibilityLevel={2}
-            size="sm"
-            textAlign="center"
-            textColor="subtle"
-          >
-            Canvases, conversations and connections live inside a tenant
-          </Heading>
-        </Flex>
+    <AuthPageLayout>
+      <Flex direction="column" alignItems="center" gap="2xs">
+        <Heading accessibilityLevel={1} size="xl" textAlign="center">
+          {hasTenants ? "Choose a tenant" : "Welcome to Sopho"}
+        </Heading>
+        <Text fontSize="sm" color="subtle">
+          {`Signed in as ${signedInUser.email}`}
+        </Text>
+      </Flex>
+      <Flex direction="column" gap="lg" paddingTop="lg">
         {memberships.error && (
           <BannerSlim type="error" message={memberships.error.message} />
         )}
@@ -78,37 +55,36 @@ export function Onboarding() {
             message={receivedInvitations.error.message}
           />
         )}
-        {invitations && invitations.length > 0 && (
-          <ReceivedInvitations invitations={invitations} />
+        {(hasInvitations || hasTenants) && (
+          <Flex
+            direction="column"
+            gap="lg"
+            overflow="scrollY"
+            sx={TENANT_LISTS_STYLE}
+          >
+            {hasInvitations && (
+              <ReceivedInvitations invitations={receivedInvitations.data} />
+            )}
+            {hasTenants && <TenantList memberships={memberships.data} />}
+          </Flex>
         )}
-        {canCreateTenant && <CreateTenantForm />}
         {hasNothingToJoin && (
-          <Text fontSize="sm" color="subtle">
-            {`You are not part of a tenant yet. Ask a tenant admin to invite ${signedInUser.email}.`}
-          </Text>
+          <BannerSlim
+            type="info"
+            message={`You are not part of a tenant yet. Ask a tenant admin to invite ${signedInUser.email}.`}
+          />
         )}
-        <Flex direction="row" justifyContent="space-between" gap="sm">
-          {hasTenants ? (
-            <Button
-              label="Back"
-              shape="rectangle"
-              size="md"
-              backgroundColor="transparent"
-              onClick={handleBack}
-            />
-          ) : (
-            <Flex />
-          )}
+        <Flex direction="row" justifyContent="flex-end">
           <Button
             label="Sign out"
             shape="rectangle"
-            size="md"
+            size="sm"
             backgroundColor="transparent"
             onClick={handleSignOut}
             disabled={signOut.isPending}
           />
         </Flex>
       </Flex>
-    </Flex>
+    </AuthPageLayout>
   );
 }

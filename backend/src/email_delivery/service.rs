@@ -14,6 +14,7 @@ use crate::email_delivery::error::EmailDeliveryError;
 use crate::email_delivery::repository;
 pub use crate::email_delivery::transport::EmailTransport;
 use crate::email_delivery::transport::{self, SendFailure};
+use crate::email_template::service as email_template_service;
 use crate::entity::email_outbox;
 use chrono::{Duration, Utc};
 use sea_orm::DatabaseTransaction;
@@ -210,7 +211,16 @@ pub async fn list_email_log(
                     email.id, email.status
                 ))
             })?;
+            let kind_display_name = email_template_service::email_kind_display_name(&email.kind)
+                .ok_or_else(|| {
+                    EmailDeliveryError::Internal(format!(
+                        "Email {} has an unknown kind {}",
+                        email.id, email.kind
+                    ))
+                })?
+                .to_string();
             Ok(EmailLogEntryDto {
+                kind_display_name,
                 can_retry: status == EmailStatus::Failed
                     && email.encrypted_text_body.is_some()
                     && email.send_before > now,
