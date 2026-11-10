@@ -61,6 +61,7 @@ export const SINGLE_SIGN_ON_REDIRECT_URI = `${SOPHO_BASE_URL}/api/v1/auth/oidc/$
 export const DOCKER_SHUTDOWN_TIMEOUT_MILLISECONDS = 10_000;
 
 export const INVITED_ROLE = "MEMBER";
+export const INVITED_ROLE_DISPLAY_NAME = "Member";
 export const INVITEE_EMAIL_DOMAIN = "example.test";
 export const INVITEE_PASSWORD = "violet harbour lantern seventeen";
 export const RESET_PASSWORD = "copper meadow whistle eleven";

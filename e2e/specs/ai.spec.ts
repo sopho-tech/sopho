@@ -32,9 +32,9 @@ test("configures the Anthropic provider", async ({
   await page.getByRole("textbox", { name: "API key" }).fill(FAKE_LLM_API_KEY);
   await page.getByRole("button", { name: "Save" }).click();
 
-  await expect(
-    page.getByText("Anthropic — live (connection verified)"),
-  ).toBeVisible();
+  await expect(page.getByRole("row", { name: "Anthropic" })).toContainText(
+    "Verified",
+  );
 });
 
 test("answers a question with SQL and a chart", async ({

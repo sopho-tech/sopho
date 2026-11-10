@@ -11,6 +11,7 @@ import {
   INVITATION_LINK_PATH,
   INVITATION_SUBJECT,
   INVITED_ROLE,
+  INVITED_ROLE_DISPLAY_NAME,
   INVITEE_EMAIL_DOMAIN,
   INVITEE_PASSWORD,
   MOCK_IDENTITY_CLAIMS_FIELD,
@@ -107,17 +108,15 @@ test("a new person joins from the emailed link", async ({
 }) => {
   const newcomer = newPerson("newcomer");
   await signedInPage.goto(tenantUrl(tenantId, APP_URLS.MEMBERS));
-  await signedInPage.getByPlaceholder("Email address").fill(newcomer.email);
+  await signedInPage.getByRole("button", { name: "Invite people" }).click();
   await signedInPage
-    .getByRole("combobox")
-    .filter({ hasText: /^Role$/ })
-    .click();
+    .getByRole("textbox", { name: "Email" })
+    .fill(newcomer.email);
+  await signedInPage.getByRole("combobox", { name: "Role" }).click();
   await signedInPage
-    .getByRole("option", { name: INVITED_ROLE, exact: true })
+    .getByRole("option", { name: new RegExp(`^${INVITED_ROLE_DISPLAY_NAME}`) })
     .click();
-  await signedInPage
-    .getByRole("button", { name: "Invite", exact: true })
-    .click();
+  await signedInPage.getByRole("button", { name: "Send invitation" }).click();
   await expect(
     signedInPage.getByText(
       `Invited ${newcomer.email}. Sopho is emailing them a link to join.`,
@@ -141,8 +140,8 @@ test("a new person joins from the emailed link", async ({
 
   await signedInPage.reload();
   await expect(
-    signedInPage.getByRole("listitem", { name: newcomer.email }),
-  ).toContainText(INVITED_ROLE);
+    signedInPage.getByRole("row", { name: newcomer.email }),
+  ).toContainText(INVITED_ROLE_DISPLAY_NAME);
 });
 
 test("forgot password emails a link that sets a new password", async ({
@@ -210,7 +209,7 @@ test("connecting single sign-on from the profile, then signing in with it", asyn
 
   await visitor.page.goto(APP_URLS.PROFILE);
   await visitor.page
-    .getByRole("listitem", { name: SINGLE_SIGN_ON_PROVIDER_DISPLAY_NAME })
+    .getByRole("row", { name: SINGLE_SIGN_ON_PROVIDER_DISPLAY_NAME })
     .getByRole("button", { name: "Connect" })
     .click();
   await signInAtIdentityProvider(visitor.page, subject, connector);
@@ -220,7 +219,7 @@ test("connecting single sign-on from the profile, then signing in with it", asyn
     ),
   ).toBeVisible();
   await expect(
-    visitor.page.getByRole("listitem", {
+    visitor.page.getByRole("row", {
       name: SINGLE_SIGN_ON_PROVIDER_DISPLAY_NAME,
     }),
   ).toContainText(`Connected as ${connector.email}`);

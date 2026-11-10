@@ -2,6 +2,7 @@ use serde::Serialize;
 use strum::{Display, EnumString, IntoStaticStr};
 
 pub const INVITATION_EXPIRY_DAYS: i64 = 7;
+pub const HOURS_IN_HALF_A_DAY: i64 = 12;
 pub const INVITATION_EXPIRED_LABEL: &str = "Expired";
 pub const INVITATION_EXPIRES_TODAY_LABEL: &str = "Expires today";
 pub const INVITATION_EXPIRES_TOMORROW_LABEL: &str = "Expires tomorrow";

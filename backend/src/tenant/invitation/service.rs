@@ -12,9 +12,10 @@ use crate::email_template::dto::{InvitationEmail, RenderedEmail};
 use crate::email_template::service::{EmailTemplate, format_email_date};
 use crate::entity::{tenant_invitation, user};
 use crate::tenant::invitation::constants::{
-    INVITATION_EXPIRED_LABEL, INVITATION_EXPIRES_TODAY_LABEL, INVITATION_EXPIRES_TOMORROW_LABEL,
-    INVITATION_EXPIRY_DAYS, INVITATION_LINK_PATH, INVITATIONS_UNAVAILABLE_MESSAGE,
-    InvitationDeliveryMethod, InvitationLinkNextStep, InvitationStatus,
+    HOURS_IN_HALF_A_DAY, INVITATION_EXPIRED_LABEL, INVITATION_EXPIRES_TODAY_LABEL,
+    INVITATION_EXPIRES_TOMORROW_LABEL, INVITATION_EXPIRY_DAYS, INVITATION_LINK_PATH,
+    INVITATIONS_UNAVAILABLE_MESSAGE, InvitationDeliveryMethod, InvitationLinkNextStep,
+    InvitationStatus,
 };
 use crate::tenant::invitation::dto::{
     AcceptedInvitationDto, CreateInvitationDto, InvitationDeliveryDto, InvitationDto,
@@ -670,7 +671,9 @@ fn expiry_label(expires_at: DateTimeWithTimeZone) -> String {
     if expires_at <= now {
         return INVITATION_EXPIRED_LABEL.to_string();
     }
-    match (expires_at - now).num_days() {
+    let rounded_days_left =
+        (expires_at - now + chrono::Duration::hours(HOURS_IN_HALF_A_DAY)).num_days();
+    match rounded_days_left {
         0 => INVITATION_EXPIRES_TODAY_LABEL.to_string(),
         1 => INVITATION_EXPIRES_TOMORROW_LABEL.to_string(),
         days => format!("Expires in {days} days"),

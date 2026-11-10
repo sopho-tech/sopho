@@ -118,6 +118,12 @@ fn rendered_email(
     })
 }
 
+pub fn email_kind_display_name(kind: &str) -> Option<&'static str> {
+    EmailKind::from_str(kind)
+        .ok()
+        .map(|email_kind| email_kind.display_name())
+}
+
 #[cfg(test)]
 mod tests {
     use super::{EmailTemplate, format_email_date, format_email_time};
@@ -235,10 +241,4 @@ mod tests {
         assert_eq!(format_email_date(moment), "2 November 2026");
         assert_eq!(format_email_time(moment), "2 November 2026, 09:05 UTC");
     }
-}
-
-pub fn email_kind_display_name(kind: &str) -> Option<&'static str> {
-    EmailKind::from_str(kind)
-        .ok()
-        .map(|email_kind| email_kind.display_name())
 }

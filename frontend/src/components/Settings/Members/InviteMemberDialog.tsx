@@ -32,9 +32,24 @@ export function InviteMemberDialog({
       setEmail(event.target.value),
     [],
   );
+  const canInvite =
+    email.trim().length > 0 && roleName !== "" && !createInvitation.isPending;
   const handleInvite = useCallback(
-    () => invite({ email, role_name: roleName }, { onSuccess: onInvited }),
+    () =>
+      invite(
+        { email: email.trim(), role_name: roleName },
+        { onSuccess: onInvited },
+      ),
     [invite, email, roleName, onInvited],
+  );
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "Enter" && canInvite) {
+        event.preventDefault();
+        handleInvite();
+      }
+    },
+    [canInvite, handleInvite],
   );
 
   return (
@@ -55,6 +70,7 @@ export function InviteMemberDialog({
             <Input
               value={email}
               onChange={handleEmailChange}
+              onKeyDown={handleKeyDown}
               placeholder="name@company.com"
               type="email"
               aria-label="Email"
@@ -101,9 +117,7 @@ export function InviteMemberDialog({
               backgroundColor="accent"
               size="sm"
               shape="rectangle"
-              disabled={
-                !email.trim() || !roleName || createInvitation.isPending
-              }
+              disabled={!canInvite}
             />
           </Flex>
         </Flex>

@@ -376,6 +376,18 @@ async fn is_allowed(
     }
 }
 
+pub fn role_display_name(role_name: &str) -> String {
+    SystemRole::from_str(role_name)
+        .map(|system_role| system_role.display_name().to_string())
+        .unwrap_or_else(|_| role_name.to_string())
+}
+
+pub fn role_description(role_name: &str) -> Option<String> {
+    SystemRole::from_str(role_name)
+        .ok()
+        .map(|system_role| system_role.description().to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::{AccessDecision, decide_without_grant, grant_satisfies};
@@ -599,16 +611,4 @@ mod tests {
             );
         }
     }
-}
-
-pub fn role_display_name(role_name: &str) -> String {
-    SystemRole::from_str(role_name)
-        .map(|system_role| system_role.display_name().to_string())
-        .unwrap_or_else(|_| role_name.to_string())
-}
-
-pub fn role_description(role_name: &str) -> Option<String> {
-    SystemRole::from_str(role_name)
-        .ok()
-        .map(|system_role| system_role.description().to_string())
 }

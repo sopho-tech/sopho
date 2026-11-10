@@ -1,5 +1,4 @@
 import { EmailStatus } from "src/api/invitation/queries";
-export const UNSTYLED_LIST_STYLE = { listStyle: "none", margin: 0, padding: 0 };
 
 export const EMAIL_STATUS_LABELS: Record<EmailStatus, string> = {
   PENDING: "Queued",
