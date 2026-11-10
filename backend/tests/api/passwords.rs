@@ -106,7 +106,7 @@ async fn make_single_sign_on_only(app: &TestApp, user: &TestUser) {
     .await;
     insert_row(
         app,
-        "identity",
+        "federated_identity",
         &[
             ("id", Uuid::new_v4().into()),
             ("user_id", user.id.into()),

@@ -47,7 +47,7 @@ impl SignInErrorCode {
 pub enum ConnectResult {
     Connected,
     EmailMismatch,
-    IdentityInUse,
+    FederatedIdentityInUse,
     AlreadyConnected,
     EmailNotVerified,
     AccountDeactivated,

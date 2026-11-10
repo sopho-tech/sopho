@@ -108,7 +108,7 @@ async fn password_login_is_refused_for_an_sso_only_user() {
 }
 
 #[tokio::test]
-async fn a_returning_identity_signs_in_as_the_same_user() {
+async fn a_returning_federated_identity_signs_in_as_the_same_user() {
     let app = TestApp::spawn_with_single_sign_on().await;
 
     let first = app.session(None);
@@ -139,13 +139,13 @@ async fn a_returning_identity_signs_in_as_the_same_user() {
     assert_eq!(
         signed_in_user(&first).await["id"],
         signed_in_user(&second).await["id"],
-        "the identity, not the email, decides who signs in"
+        "the federated identity, not the email, decides who signs in"
     );
     assert_eq!(
         count_rows(&app, "user", &[]).await,
         users_after_first_sign_in
     );
-    assert_eq!(count_rows(&app, "identity", &[]).await, 1);
+    assert_eq!(count_rows(&app, "federated_identity", &[]).await, 1);
 }
 
 #[tokio::test]
@@ -168,7 +168,7 @@ async fn a_verified_email_never_links_to_a_password_account() {
         StatusCode::UNAUTHORIZED
     );
     assert_eq!(
-        count_rows(&app, "identity", &[]).await,
+        count_rows(&app, "federated_identity", &[]).await,
         0,
         "an account whose email no identity provider verified is never taken over"
     );
@@ -215,7 +215,7 @@ async fn a_verified_email_links_accounts_created_through_single_sign_on() {
         signed_in_user(&first).await["id"]
     );
     assert_eq!(count_rows(&app, "user", &[]).await, users_before + 1);
-    assert_eq!(count_rows(&app, "identity", &[]).await, 2);
+    assert_eq!(count_rows(&app, "federated_identity", &[]).await, 2);
 }
 
 #[tokio::test]
@@ -255,11 +255,11 @@ async fn an_unverified_email_is_refused_and_creates_nothing() {
     assert_eq!(without_email.error_code(), Some(EMAIL_NOT_VERIFIED));
 
     assert_eq!(count_rows(&app, "user", &[]).await, users_before);
-    assert_eq!(count_rows(&app, "identity", &[]).await, 0);
+    assert_eq!(count_rows(&app, "federated_identity", &[]).await, 0);
 }
 
 #[tokio::test]
-async fn a_new_verified_identity_creates_a_member_without_a_password() {
+async fn a_new_verified_federated_identity_creates_a_member_without_a_password() {
     let app = TestApp::spawn_with_single_sign_on().await;
     let users_before = count_rows(&app, "user", &[]).await;
 

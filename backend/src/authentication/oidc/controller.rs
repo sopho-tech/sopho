@@ -22,7 +22,10 @@ pub fn routes() -> Router<AppState> {
         .route("/{provider_name}/start", get(start_login))
         .route("/{provider_name}/connect", get(start_connect))
         .route("/{provider_name}/callback", get(complete_login))
-        .route("/{provider_name}/identity", delete(disconnect_provider))
+        .route(
+            "/{provider_name}/federated_identity",
+            delete(disconnect_provider),
+        )
 }
 
 async fn list_providers(State(app_state): State<AppState>) -> impl IntoResponse {

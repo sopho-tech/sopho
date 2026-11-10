@@ -10,7 +10,7 @@ export const CHANGE_PASSWORD_FORM_DEFAULT_VALUES = {
 export const CONNECT_RESULT_MESSAGES: Record<string, string> = {
   email_mismatch:
     "That account's email doesn't match your Sopho email, so it wasn't connected.",
-  identity_in_use:
+  federated_identity_in_use:
     "That sign-in is already connected to another Sopho account.",
   already_connected: "That sign-in method is already connected.",
   email_not_verified:

@@ -19,7 +19,7 @@ use crate::email_delivery::dto::EmailMessage;
 use crate::email_delivery::service as email_delivery_service;
 use crate::email_template::dto::{SignInMethodAddedEmail, SignInMethodRemovedEmail};
 use crate::email_template::service::{EmailTemplate, format_email_time};
-use crate::entity::{identity, oidc_login_attempt, user};
+use crate::entity::{federated_identity, oidc_login_attempt, user};
 use chrono::Utc;
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
 use openidconnect::{
@@ -237,7 +237,7 @@ async fn complete_login(
 
     match attempt.linking_user_id {
         Some(linking_user_id) => {
-            connect_identity(app_state, linking_user_id, claims)
+            connect_federated_identity(app_state, linking_user_id, claims)
                 .await
                 .map_err(failure)?;
             Ok(CallbackOutcome::Connected {
@@ -314,21 +314,21 @@ pub async fn resolve_user(
     app_state: &AppState,
     claims: VerifiedClaims,
 ) -> Result<Uuid, OidcLoginError> {
-    if let Some(existing_identity) = repository::find_identity(
+    if let Some(existing_federated_identity) = repository::find_federated_identity(
         &app_state.database_connection,
         &claims.provider_name,
         &claims.subject,
     )
     .await?
     {
-        let identity_owner = authentication_repository::get_user(
+        let federated_identity_owner = authentication_repository::get_user(
             &app_state.database_connection,
-            existing_identity.user_id,
+            existing_federated_identity.user_id,
         )
         .await?
         .ok_or(OidcLoginError::AttemptNotFound)?;
-        require_active(&identity_owner)?;
-        return Ok(identity_owner.id);
+        require_active(&federated_identity_owner)?;
+        return Ok(federated_identity_owner.id);
     }
 
     let email = verified_email(&claims)?;
@@ -339,15 +339,17 @@ pub async fn resolve_user(
         if existing_user.email_verified_at.is_none() {
             return Err(OidcLoginError::AccountRequiresPasswordSignIn);
         }
-        let has_identity_at_provider =
-            repository::find_identities_for_user(&app_state.database_connection, existing_user.id)
-                .await?
-                .iter()
-                .any(|identity| identity.provider_name == claims.provider_name);
-        if has_identity_at_provider {
-            return Err(OidcLoginError::SecondIdentityAtProvider);
+        let has_federated_identity_at_provider = repository::find_federated_identities_for_user(
+            &app_state.database_connection,
+            existing_user.id,
+        )
+        .await?
+        .iter()
+        .any(|federated_identity| federated_identity.provider_name == claims.provider_name);
+        if has_federated_identity_at_provider {
+            return Err(OidcLoginError::SecondFederatedIdentityAtProvider);
         }
-        add_identity(app_state, &existing_user, &claims, &email).await?;
+        add_federated_identity(app_state, &existing_user, &claims, &email).await?;
         return Ok(existing_user.id);
     }
 
@@ -359,12 +361,13 @@ pub async fn resolve_user(
         .ok_or(OidcLoginError::MissingProfile)?;
     let txn = app_state.database_connection.begin().await?;
     let user = authentication_service::create_sso_user_transaction(&txn, &email, full_name).await?;
-    repository::insert_identity(&txn, identity_for(user.id, &claims, &email)).await?;
+    repository::insert_federated_identity(&txn, federated_identity_for(user.id, &claims, &email))
+        .await?;
     txn.commit().await?;
     Ok(user.id)
 }
 
-pub async fn connect_identity(
+pub async fn connect_federated_identity(
     app_state: &AppState,
     linking_user_id: Uuid,
     claims: VerifiedClaims,
@@ -378,27 +381,31 @@ pub async fn connect_identity(
     if email != authentication_service::normalize_email(&linking_user.email) {
         return Err(OidcLoginError::EmailMismatch);
     }
-    if let Some(existing_identity) = repository::find_identity(
+    if let Some(existing_federated_identity) = repository::find_federated_identity(
         &app_state.database_connection,
         &claims.provider_name,
         &claims.subject,
     )
     .await?
     {
-        return Err(match existing_identity.user_id == linking_user.id {
-            true => OidcLoginError::AlreadyConnected,
-            false => OidcLoginError::IdentityInUse,
-        });
+        return Err(
+            match existing_federated_identity.user_id == linking_user.id {
+                true => OidcLoginError::AlreadyConnected,
+                false => OidcLoginError::FederatedIdentityInUse,
+            },
+        );
     }
-    let has_identity_at_provider =
-        repository::find_identities_for_user(&app_state.database_connection, linking_user.id)
-            .await?
-            .iter()
-            .any(|identity| identity.provider_name == claims.provider_name);
-    if has_identity_at_provider {
+    let has_federated_identity_at_provider = repository::find_federated_identities_for_user(
+        &app_state.database_connection,
+        linking_user.id,
+    )
+    .await?
+    .iter()
+    .any(|federated_identity| federated_identity.provider_name == claims.provider_name);
+    if has_federated_identity_at_provider {
         return Err(OidcLoginError::AlreadyConnected);
     }
-    add_identity(app_state, &linking_user, &claims, &email).await
+    add_federated_identity(app_state, &linking_user, &claims, &email).await
 }
 
 pub async fn list_sign_in_methods(
@@ -408,10 +415,11 @@ pub async fn list_sign_in_methods(
     let account = authentication_repository::get_user(&app_state.database_connection, user_id)
         .await?
         .ok_or_else(|| sea_orm::DbErr::RecordNotFound(user_id.to_string()))?;
-    let identities =
-        repository::find_identities_for_user(&app_state.database_connection, user_id).await?;
+    let federated_identities =
+        repository::find_federated_identities_for_user(&app_state.database_connection, user_id)
+            .await?;
     let has_password = account.password_hash.is_some();
-    let can_disconnect = has_password || identities.len() > 1;
+    let can_disconnect = has_password || federated_identities.len() > 1;
     let disconnect_blocked_reason =
         (!can_disconnect).then(|| ONLY_SIGN_IN_METHOD_REASON.to_string());
 
@@ -420,35 +428,36 @@ pub async fn list_sign_in_methods(
         .oidc_providers
         .iter()
         .map(|provider| {
-            let connected_identity = identities
+            let connected_federated_identity = federated_identities
                 .iter()
-                .find(|identity| identity.provider_name == provider.name);
+                .find(|federated_identity| federated_identity.provider_name == provider.name);
             SignInProviderDto {
                 name: provider.name.clone(),
                 display_name: provider.display_name.clone(),
-                connected: connected_identity.is_some(),
-                email: connected_identity.map(|identity| identity.email.clone()),
-                can_disconnect: connected_identity.is_some() && can_disconnect,
-                disconnect_blocked_reason: connected_identity
+                connected: connected_federated_identity.is_some(),
+                email: connected_federated_identity
+                    .map(|federated_identity| federated_identity.email.clone()),
+                can_disconnect: connected_federated_identity.is_some() && can_disconnect,
+                disconnect_blocked_reason: connected_federated_identity
                     .and(disconnect_blocked_reason.clone()),
             }
         })
         .collect();
     providers.extend(
-        identities
+        federated_identities
             .iter()
-            .filter(|identity| {
+            .filter(|federated_identity| {
                 !app_state
                     .config
                     .oidc_providers
                     .iter()
-                    .any(|provider| provider.name == identity.provider_name)
+                    .any(|provider| provider.name == federated_identity.provider_name)
             })
-            .map(|identity| SignInProviderDto {
-                name: identity.provider_name.clone(),
-                display_name: identity.provider_name.clone(),
+            .map(|federated_identity| SignInProviderDto {
+                name: federated_identity.provider_name.clone(),
+                display_name: federated_identity.provider_name.clone(),
                 connected: true,
-                email: Some(identity.email.clone()),
+                email: Some(federated_identity.email.clone()),
                 can_disconnect,
                 disconnect_blocked_reason: disconnect_blocked_reason.clone(),
             }),
@@ -467,17 +476,18 @@ pub async fn disconnect_provider(
     let account = authentication_repository::get_user(&app_state.database_connection, user_id)
         .await?
         .ok_or_else(|| sea_orm::DbErr::RecordNotFound(user_id.to_string()))?;
-    let identities =
-        repository::find_identities_for_user(&app_state.database_connection, user_id).await?;
-    let identity = identities
+    let federated_identities =
+        repository::find_federated_identities_for_user(&app_state.database_connection, user_id)
+            .await?;
+    let federated_identity = federated_identities
         .iter()
-        .find(|identity| identity.provider_name == provider_name)
+        .find(|federated_identity| federated_identity.provider_name == provider_name)
         .ok_or(SignInMethodError::NotConnected)?;
-    if account.password_hash.is_none() && identities.len() <= 1 {
+    if account.password_hash.is_none() && federated_identities.len() <= 1 {
         return Err(SignInMethodError::LastSignInMethod);
     }
     let txn = app_state.database_connection.begin().await?;
-    repository::delete_identity(&txn, identity.id).await?;
+    repository::delete_federated_identity(&txn, federated_identity.id).await?;
     queue_sign_in_method_notice_transaction(
         &txn,
         app_state,
@@ -490,14 +500,15 @@ pub async fn disconnect_provider(
     Ok(())
 }
 
-async fn add_identity(
+async fn add_federated_identity(
     app_state: &AppState,
     account: &user::Model,
     claims: &VerifiedClaims,
     email: &str,
 ) -> Result<(), OidcLoginError> {
     let txn = app_state.database_connection.begin().await?;
-    repository::insert_identity(&txn, identity_for(account.id, claims, email)).await?;
+    repository::insert_federated_identity(&txn, federated_identity_for(account.id, claims, email))
+        .await?;
     authentication_service::mark_email_verified_transaction(&txn, account.id).await?;
     queue_sign_in_method_notice_transaction(
         &txn,
@@ -566,10 +577,12 @@ pub async fn connected_provider_display_names(
     user_id: Uuid,
 ) -> Result<Vec<String>, sea_orm::DbErr> {
     Ok(
-        repository::find_identities_for_user(&app_state.database_connection, user_id)
+        repository::find_federated_identities_for_user(&app_state.database_connection, user_id)
             .await?
             .iter()
-            .map(|identity| provider_display_name(app_state, &identity.provider_name))
+            .map(|federated_identity| {
+                provider_display_name(app_state, &federated_identity.provider_name)
+            })
             .collect(),
     )
 }
@@ -580,13 +593,17 @@ pub async fn provider_names_by_user(
 ) -> Result<std::collections::HashMap<Uuid, Vec<String>>, sea_orm::DbErr> {
     let mut provider_names: std::collections::HashMap<Uuid, Vec<String>> =
         std::collections::HashMap::new();
-    for identity in
-        repository::find_identities_for_users(&app_state.database_connection, user_ids).await?
+    for federated_identity in
+        repository::find_federated_identities_for_users(&app_state.database_connection, user_ids)
+            .await?
     {
         provider_names
-            .entry(identity.user_id)
+            .entry(federated_identity.user_id)
             .or_default()
-            .push(provider_display_name(app_state, &identity.provider_name));
+            .push(provider_display_name(
+                app_state,
+                &federated_identity.provider_name,
+            ));
     }
     Ok(provider_names)
 }
@@ -621,8 +638,12 @@ fn verified_email(claims: &VerifiedClaims) -> Result<String, OidcLoginError> {
     Ok(email)
 }
 
-fn identity_for(user_id: Uuid, claims: &VerifiedClaims, email: &str) -> identity::Model {
-    identity::Model {
+fn federated_identity_for(
+    user_id: Uuid,
+    claims: &VerifiedClaims,
+    email: &str,
+) -> federated_identity::Model {
+    federated_identity::Model {
         id: Uuid::new_v4(),
         user_id,
         provider_name: claims.provider_name.clone(),

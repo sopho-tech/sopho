@@ -118,7 +118,7 @@ const authApi = {
 
   disconnectProvider: async (providerName: string) => {
     await ApiService.delete({
-      url: API_ENDPOINTS.AUTH.OIDC_IDENTITY.replace(
+      url: API_ENDPOINTS.AUTH.OIDC_FEDERATED_IDENTITY.replace(
         ":provider_name",
         providerName,
       ),

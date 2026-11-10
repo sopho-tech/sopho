@@ -28,11 +28,11 @@ pub enum OidcLoginError {
     #[error("This account has been deactivated")]
     AccountDeactivated,
     #[error("This account already signs in with another account at this provider")]
-    SecondIdentityAtProvider,
+    SecondFederatedIdentityAtProvider,
     #[error("The provider's email does not match this account's email")]
     EmailMismatch,
     #[error("This sign-in is connected to another account")]
-    IdentityInUse,
+    FederatedIdentityInUse,
     #[error("This account is already connected to this provider")]
     AlreadyConnected,
     #[error("{0}")]
@@ -58,9 +58,9 @@ impl OidcLoginError {
             | OidcLoginError::StateMismatch => SignInErrorCode::SsoExpired,
             OidcLoginError::AccountRequiresPasswordSignIn => SignInErrorCode::PasswordAccount,
             OidcLoginError::AccountDeactivated => SignInErrorCode::AccountDeactivated,
-            OidcLoginError::SecondIdentityAtProvider
+            OidcLoginError::SecondFederatedIdentityAtProvider
             | OidcLoginError::EmailMismatch
-            | OidcLoginError::IdentityInUse
+            | OidcLoginError::FederatedIdentityInUse
             | OidcLoginError::AlreadyConnected
             | OidcLoginError::EmailDelivery(_)
             | OidcLoginError::EmailTemplate(_)
@@ -80,10 +80,9 @@ impl OidcLoginError {
                 ConnectResult::EmailNotVerified
             }
             OidcLoginError::EmailMismatch => ConnectResult::EmailMismatch,
-            OidcLoginError::IdentityInUse => ConnectResult::IdentityInUse,
-            OidcLoginError::AlreadyConnected | OidcLoginError::SecondIdentityAtProvider => {
-                ConnectResult::AlreadyConnected
-            }
+            OidcLoginError::FederatedIdentityInUse => ConnectResult::FederatedIdentityInUse,
+            OidcLoginError::AlreadyConnected
+            | OidcLoginError::SecondFederatedIdentityAtProvider => ConnectResult::AlreadyConnected,
             OidcLoginError::AccountDeactivated => ConnectResult::AccountDeactivated,
             OidcLoginError::AttemptNotFound
             | OidcLoginError::AttemptExpired

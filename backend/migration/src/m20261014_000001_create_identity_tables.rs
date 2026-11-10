@@ -13,13 +13,13 @@ impl MigrationTrait for Migration {
         manager
             .create_table(add_created_at_and_updated_at_timestamps(
                 Table::create()
-                    .table(Identity::Table)
-                    .col(pk_uuid(Identity::Id))
-                    .col(uuid(Identity::UserId))
-                    .col(string(Identity::ProviderName))
-                    .col(string(Identity::Subject))
-                    .col(string(Identity::Email))
-                    .col(boolean(Identity::EmailVerified))
+                    .table(FederatedIdentity::Table)
+                    .col(pk_uuid(FederatedIdentity::Id))
+                    .col(uuid(FederatedIdentity::UserId))
+                    .col(string(FederatedIdentity::ProviderName))
+                    .col(string(FederatedIdentity::Subject))
+                    .col(string(FederatedIdentity::Email))
+                    .col(boolean(FederatedIdentity::EmailVerified))
                     .to_owned(),
             ))
             .await?;
@@ -27,10 +27,10 @@ impl MigrationTrait for Migration {
         manager
             .create_index(
                 Index::create()
-                    .name("idx_identity_provider_subject_unique")
-                    .table(Identity::Table)
-                    .col(Identity::ProviderName)
-                    .col(Identity::Subject)
+                    .name("idx_federated_identity_provider_subject_unique")
+                    .table(FederatedIdentity::Table)
+                    .col(FederatedIdentity::ProviderName)
+                    .col(FederatedIdentity::Subject)
                     .unique()
                     .to_owned(),
             )
@@ -39,10 +39,10 @@ impl MigrationTrait for Migration {
         manager
             .create_index(
                 Index::create()
-                    .name("idx_identity_user_provider_unique")
-                    .table(Identity::Table)
-                    .col(Identity::UserId)
-                    .col(Identity::ProviderName)
+                    .name("idx_federated_identity_user_provider_unique")
+                    .table(FederatedIdentity::Table)
+                    .col(FederatedIdentity::UserId)
+                    .col(FederatedIdentity::ProviderName)
                     .unique()
                     .to_owned(),
             )
@@ -133,13 +133,13 @@ impl MigrationTrait for Migration {
             .drop_table(Table::drop().table(OidcLoginAttempt::Table).to_owned())
             .await?;
         manager
-            .drop_table(Table::drop().table(Identity::Table).to_owned())
+            .drop_table(Table::drop().table(FederatedIdentity::Table).to_owned())
             .await
     }
 }
 
 #[derive(DeriveIden)]
-pub enum Identity {
+pub enum FederatedIdentity {
     Table,
     Id,
     UserId,

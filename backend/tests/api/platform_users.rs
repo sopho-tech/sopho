@@ -144,7 +144,7 @@ async fn deactivating_ends_sessions_and_blocks_both_kinds_of_sign_in() {
     let user = create_user(&app, "leaver", PLATFORM_MEMBER).await;
     insert_row(
         &app,
-        "identity",
+        "federated_identity",
         &[
             ("id", Uuid::new_v4().into()),
             ("user_id", user.id.into()),

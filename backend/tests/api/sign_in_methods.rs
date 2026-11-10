@@ -19,10 +19,10 @@ fn verified_claims(email: &str, full_name: &str) -> Value {
     json!({ "email": email, "email_verified": true, "name": full_name })
 }
 
-async fn identities_of(app: &TestApp, user: &TestUser) -> Vec<(String, String)> {
+async fn federated_identities_of(app: &TestApp, user: &TestUser) -> Vec<(String, String)> {
     select_rows(
         app,
-        "identity",
+        "federated_identity",
         &["provider_name", "subject"],
         &[("user_id", user.id.into())],
     )
@@ -37,10 +37,15 @@ async fn identities_of(app: &TestApp, user: &TestUser) -> Vec<(String, String)> 
     .collect()
 }
 
-async fn add_identity(app: &TestApp, user: &TestUser, provider_name: &str, subject: &str) {
+async fn add_federated_identity(
+    app: &TestApp,
+    user: &TestUser,
+    provider_name: &str,
+    subject: &str,
+) {
     insert_row(
         app,
-        "identity",
+        "federated_identity",
         &[
             ("id", Uuid::new_v4().into()),
             ("user_id", user.id.into()),
@@ -122,7 +127,7 @@ async fn sso_links_into_an_account_with_a_proven_email() {
     assert!(outcome.is_signed_in(), "{}", outcome.location);
     assert_eq!(signed_in_user_id(&browser).await, user.id.to_string());
     assert_eq!(
-        identities_of(&app, &user).await,
+        federated_identities_of(&app, &user).await,
         vec![(
             SINGLE_SIGN_ON_PROVIDER.to_string(),
             "proven-subject".to_string()
@@ -148,7 +153,7 @@ async fn sso_refuses_an_account_whose_email_is_not_proven() {
     .await;
 
     assert_eq!(outcome.error_code(), Some(PASSWORD_ACCOUNT));
-    assert!(identities_of(&app, &user).await.is_empty());
+    assert!(federated_identities_of(&app, &user).await.is_empty());
 }
 
 #[tokio::test]
@@ -156,7 +161,7 @@ async fn sso_refuses_a_second_subject_at_the_same_provider() {
     let app = TestApp::spawn_with_single_sign_on().await;
     let user = create_user(&app, "reassigned", PLATFORM_MEMBER).await;
     prove_email(&app, &user).await;
-    add_identity(&app, &user, SINGLE_SIGN_ON_PROVIDER, "original-subject").await;
+    add_federated_identity(&app, &user, SINGLE_SIGN_ON_PROVIDER, "original-subject").await;
 
     let outcome = sign_in_with_provider(
         &app.session(None),
@@ -167,14 +172,14 @@ async fn sso_refuses_a_second_subject_at_the_same_provider() {
     .await;
 
     assert_eq!(outcome.error_code(), Some(SSO_FAILED));
-    assert_eq!(identities_of(&app, &user).await.len(), 1);
+    assert_eq!(federated_identities_of(&app, &user).await.len(), 1);
 }
 
 #[tokio::test]
 async fn sso_refuses_a_deactivated_account() {
     let app = TestApp::spawn_with_single_sign_on().await;
     let user = create_user(&app, "departed", PLATFORM_MEMBER).await;
-    add_identity(&app, &user, SINGLE_SIGN_ON_PROVIDER, "departed-subject").await;
+    add_federated_identity(&app, &user, SINGLE_SIGN_ON_PROVIDER, "departed-subject").await;
     set_user_columns(&app, &user, &[("status", USER_STATUS_DEACTIVATED.into())]).await;
 
     let outcome = sign_in_with_provider(
@@ -210,7 +215,7 @@ async fn connect_adds_the_provider_and_proves_the_email() {
         format!("{CONNECT_RESULT_LOCATION_PREFIX}connected&provider={SINGLE_SIGN_ON_PROVIDER}")
     );
     assert_eq!(
-        identities_of(&app, &user).await,
+        federated_identities_of(&app, &user).await,
         vec![(
             SINGLE_SIGN_ON_PROVIDER.to_string(),
             "connected-subject".to_string()
@@ -262,14 +267,14 @@ async fn connect_refuses_a_different_email() {
         location,
         format!("{CONNECT_RESULT_LOCATION_PREFIX}email_mismatch")
     );
-    assert!(identities_of(&app, &user).await.is_empty());
+    assert!(federated_identities_of(&app, &user).await.is_empty());
 }
 
 #[tokio::test]
-async fn connect_refuses_an_identity_owned_by_another_account() {
+async fn connect_refuses_a_federated_identity_owned_by_another_account() {
     let app = TestApp::spawn_with_single_sign_on().await;
     let owner = create_user(&app, "owner", PLATFORM_MEMBER).await;
-    add_identity(&app, &owner, SINGLE_SIGN_ON_PROVIDER, "shared-subject").await;
+    add_federated_identity(&app, &owner, SINGLE_SIGN_ON_PROVIDER, "shared-subject").await;
     let user = create_user(&app, "latecomer", PLATFORM_MEMBER).await;
     let session = sign_in(&app, &user).await;
 
@@ -283,9 +288,9 @@ async fn connect_refuses_an_identity_owned_by_another_account() {
 
     assert_eq!(
         location,
-        format!("{CONNECT_RESULT_LOCATION_PREFIX}identity_in_use")
+        format!("{CONNECT_RESULT_LOCATION_PREFIX}federated_identity_in_use")
     );
-    assert!(identities_of(&app, &user).await.is_empty());
+    assert!(federated_identities_of(&app, &user).await.is_empty());
 }
 
 #[tokio::test]
@@ -293,7 +298,7 @@ async fn disconnect_refuses_the_last_sign_in_method() {
     let app = TestApp::spawn_with_email_and_single_sign_on().await;
     let single_sign_on_only = create_user(&app, "sso-only", PLATFORM_MEMBER).await;
     remove_password(&app, &single_sign_on_only).await;
-    add_identity(
+    add_federated_identity(
         &app,
         &single_sign_on_only,
         SINGLE_SIGN_ON_PROVIDER,
@@ -313,14 +318,21 @@ async fn disconnect_refuses_the_last_sign_in_method() {
     );
 
     let refused = single_sign_on_session
-        .delete(&format!("/auth/oidc/{SINGLE_SIGN_ON_PROVIDER}/identity"))
+        .delete(&format!(
+            "/auth/oidc/{SINGLE_SIGN_ON_PROVIDER}/federated_identity"
+        ))
         .await;
     assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.body);
     assert_eq!(refused.body["error_code"], LAST_SIGN_IN_METHOD_CODE);
-    assert_eq!(identities_of(&app, &single_sign_on_only).await.len(), 1);
+    assert_eq!(
+        federated_identities_of(&app, &single_sign_on_only)
+            .await
+            .len(),
+        1
+    );
 
     let with_password = create_user(&app, "with-password", PLATFORM_MEMBER).await;
-    add_identity(
+    add_federated_identity(
         &app,
         &with_password,
         SINGLE_SIGN_ON_PROVIDER,
@@ -329,7 +341,9 @@ async fn disconnect_refuses_the_last_sign_in_method() {
     .await;
     let password_session = sign_in(&app, &with_password).await;
     let disconnected = password_session
-        .delete(&format!("/auth/oidc/{SINGLE_SIGN_ON_PROVIDER}/identity"))
+        .delete(&format!(
+            "/auth/oidc/{SINGLE_SIGN_ON_PROVIDER}/federated_identity"
+        ))
         .await;
     assert_eq!(
         disconnected.status,
@@ -337,14 +351,20 @@ async fn disconnect_refuses_the_last_sign_in_method() {
         "{}",
         disconnected.body
     );
-    assert!(identities_of(&app, &with_password).await.is_empty());
+    assert!(
+        federated_identities_of(&app, &with_password)
+            .await
+            .is_empty()
+    );
     assert_eq!(
         queued_notices(&app, &with_password, SIGN_IN_METHOD_REMOVED_EMAIL_KIND).await,
         1
     );
     assert_eq!(
         password_session
-            .delete(&format!("/auth/oidc/{SINGLE_SIGN_ON_PROVIDER}/identity"))
+            .delete(&format!(
+                "/auth/oidc/{SINGLE_SIGN_ON_PROVIDER}/federated_identity"
+            ))
             .await
             .status,
         StatusCode::NOT_FOUND
@@ -355,7 +375,7 @@ async fn disconnect_refuses_the_last_sign_in_method() {
 async fn the_sign_in_methods_list_says_what_can_be_disconnected() {
     let app = TestApp::spawn_with_single_sign_on().await;
     let with_password = create_user(&app, "with-password", PLATFORM_MEMBER).await;
-    add_identity(
+    add_federated_identity(
         &app,
         &with_password,
         SINGLE_SIGN_ON_PROVIDER,
@@ -388,7 +408,7 @@ async fn the_sign_in_methods_list_says_what_can_be_disconnected() {
 
     let single_sign_on_only = create_user(&app, "sso-only", PLATFORM_MEMBER).await;
     remove_password(&app, &single_sign_on_only).await;
-    add_identity(
+    add_federated_identity(
         &app,
         &single_sign_on_only,
         SINGLE_SIGN_ON_PROVIDER,
