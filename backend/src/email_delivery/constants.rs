@@ -1,6 +1,3 @@
-use serde::{Deserialize, Serialize};
-use strum::{Display, EnumString, IntoStaticStr};
-
 pub const RETRY_DELAYS_MINUTES: [i64; 5] = [1, 5, 30, 120, 360];
 pub const SENDING_LEASE_MINUTES: i64 = 5;
 pub const SENDER_POLL_INTERVAL_SECONDS: u64 = 5;
@@ -15,21 +12,4 @@ pub const EMAIL_NOT_FOUND_MESSAGE: &str = "Email not found";
 pub const EMAIL_NOT_RETRYABLE_MESSAGE: &str =
     "Only a failed email whose links are still valid can be retried";
 
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Display, EnumString, IntoStaticStr,
-)]
-#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum EmailStatus {
-    Pending,
-    Sending,
-    Sent,
-    Failed,
-    Cancelled,
-}
-
-impl EmailStatus {
-    pub fn as_str(&self) -> &'static str {
-        self.into()
-    }
-}
+pub use sopho_common::email_status::EmailStatus;

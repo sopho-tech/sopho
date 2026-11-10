@@ -2,6 +2,9 @@ use sea_orm_migration::{
     prelude::*,
     schema::{string, timestamp_with_time_zone, uuid_null},
 };
+use sopho_common::actor_kind::ActorKind;
+use sopho_common::email_status::EmailStatus;
+use sopho_common::user_status::UserStatus;
 
 #[derive(Iden)]
 pub enum GeneralIds {
@@ -17,10 +20,17 @@ pub enum Attribution {
     ModifiedByActor,
 }
 
-pub const ACTOR_KINDS: [&str; 3] = ["HUMAN", "AI", "SYSTEM"];
-pub const SYSTEM_ACTOR: &str = "SYSTEM";
-pub const USER_STATUSES: [&str; 2] = ["ACTIVE", "DEACTIVATED"];
-pub const EMAIL_STATUSES: [&str; 5] = ["PENDING", "SENDING", "SENT", "FAILED", "CANCELLED"];
+pub fn actor_kind_names() -> Vec<&'static str> {
+    ActorKind::all().iter().map(ActorKind::as_str).collect()
+}
+
+pub fn user_status_names() -> Vec<&'static str> {
+    UserStatus::all().iter().map(UserStatus::as_str).collect()
+}
+
+pub fn email_status_names() -> Vec<&'static str> {
+    EmailStatus::all().iter().map(EmailStatus::as_str).collect()
+}
 
 pub fn add_created_at_and_updated_at_timestamps(t: TableCreateStatement) -> TableCreateStatement {
     let mut t = t;
@@ -36,12 +46,12 @@ pub fn add_attribution_columns(table: TableCreateStatement) -> TableCreateStatem
         .col(string(Attribution::CreatedByActor))
         .col(uuid_null(Attribution::ModifiedByUserId))
         .col(string(Attribution::ModifiedByActor))
-        .check(Expr::col(Attribution::CreatedByActor).is_in(ACTOR_KINDS))
+        .check(Expr::col(Attribution::CreatedByActor).is_in(actor_kind_names()))
         .check(person_matches_actor(
             Attribution::CreatedByActor,
             Attribution::CreatedByUserId,
         ))
-        .check(Expr::col(Attribution::ModifiedByActor).is_in(ACTOR_KINDS))
+        .check(Expr::col(Attribution::ModifiedByActor).is_in(actor_kind_names()))
         .check(person_matches_actor(
             Attribution::ModifiedByActor,
             Attribution::ModifiedByUserId,
@@ -51,9 +61,9 @@ pub fn add_attribution_columns(table: TableCreateStatement) -> TableCreateStatem
 
 fn person_matches_actor(actor_column: Attribution, user_column: Attribution) -> SimpleExpr {
     Expr::col(actor_column.clone())
-        .eq(SYSTEM_ACTOR)
+        .eq(ActorKind::System.as_str())
         .and(Expr::col(user_column.clone()).is_null())
         .or(Expr::col(actor_column)
-            .ne(SYSTEM_ACTOR)
+            .ne(ActorKind::System.as_str())
             .and(Expr::col(user_column).is_not_null()))
 }

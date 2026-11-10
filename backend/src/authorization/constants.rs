@@ -324,25 +324,7 @@ impl AccessLevel {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Display, EnumString, IntoStaticStr)]
-#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum ActorKind {
-    Human,
-    Ai,
-    System,
-}
-
-impl ActorKind {
-    pub fn as_str(&self) -> &'static str {
-        self.into()
-    }
-
-    pub fn from_str(value: &str) -> Result<Self, String> {
-        <Self as std::str::FromStr>::from_str(value)
-            .map_err(|_| format!("Invalid actor kind: {}", value))
-    }
-}
+pub use sopho_common::actor_kind::ActorKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {

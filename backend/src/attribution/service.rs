@@ -15,7 +15,8 @@ impl AttributionNames {
         actor: &str,
         user_id: Option<Uuid>,
     ) -> Result<AttributionDto, AttributionError> {
-        let actor_kind = ActorKind::from_str(actor).map_err(AttributionError::UnknownActor)?;
+        let actor_kind =
+            ActorKind::from_actor_kind_name(actor).map_err(AttributionError::UnknownActor)?;
         let user = match (actor_kind, user_id) {
             (ActorKind::System, None) => None,
             (ActorKind::System, Some(user_id)) => {

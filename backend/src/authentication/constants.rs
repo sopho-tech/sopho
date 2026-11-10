@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fmt;
-use strum::{Display, EnumString, IntoStaticStr};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -60,19 +59,7 @@ impl From<SessionStatus> for String {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Display, EnumString, IntoStaticStr)]
-#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum UserStatus {
-    Active,
-    Deactivated,
-}
-
-impl UserStatus {
-    pub fn as_str(&self) -> &'static str {
-        self.into()
-    }
-}
+pub use sopho_common::user_status::UserStatus;
 
 pub const ACCESS_TOKEN_EXPIRY_HOURS: i64 = 1;
 pub const SIGN_IN_FAILURE_LIMIT: i32 = 10;

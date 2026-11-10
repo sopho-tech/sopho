@@ -1,4 +1,4 @@
-use crate::db::{Attribution, GeneralIds, SYSTEM_ACTOR};
+use crate::db::{Attribution, GeneralIds};
 use crate::m20250221_000001_create_configuration_table::Configuration;
 use crate::m20250315_000001_create_dashboard_table::Dashboard;
 use crate::m20250317_000001_create_conversation_table::Conversation;
@@ -12,6 +12,7 @@ use crate::m20260520_000001_create_suggested_question_table::SuggestedQuestion;
 use crate::m20260810_000001_create_ai_summary_table::AiSummary;
 use crate::m20260818_000001_create_tenancy_tables::Tenant;
 use sea_orm_migration::prelude::*;
+use sopho_common::actor_kind::ActorKind;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -133,8 +134,8 @@ impl MigrationTrait for Migration {
                         default_tenant_id.into(),
                         DEFAULT_TENANT_NAME.into(),
                         DEFAULT_TENANT_STATUS.into(),
-                        SYSTEM_ACTOR.into(),
-                        SYSTEM_ACTOR.into(),
+                        ActorKind::System.as_str().into(),
+                        ActorKind::System.as_str().into(),
                     ])
                     .to_owned(),
             )

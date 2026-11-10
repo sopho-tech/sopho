@@ -1,4 +1,4 @@
-use crate::db::{EMAIL_STATUSES, add_created_at_and_updated_at_timestamps};
+use crate::db::{add_created_at_and_updated_at_timestamps, email_status_names};
 use sea_orm_migration::{
     prelude::*,
     schema::{
@@ -66,7 +66,7 @@ impl MigrationTrait for Migration {
                     .col(timestamp_with_time_zone_null(EmailOutbox::SentAt))
                     .col(uuid_null(EmailOutbox::TenantId))
                     .col(uuid_null(EmailOutbox::RequestedByUserId))
-                    .check(Expr::col(EmailOutbox::Status).is_in(EMAIL_STATUSES))
+                    .check(Expr::col(EmailOutbox::Status).is_in(email_status_names()))
                     .to_owned(),
             ))
             .await?;
