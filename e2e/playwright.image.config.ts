@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 import {
   SOPHO_IMAGE_VARIABLE,
   SOPHO_UPGRADE_FROM_IMAGE_VARIABLE,
+  REDUCED_MOTION_CONTEXT_OPTIONS,
 } from "e2e/support/constants";
 import type { SophoTarget } from "e2e/support/fixtures";
 import { requiredEnvironmentVariable } from "e2e/support/sopho_image";
@@ -24,6 +25,7 @@ export default defineConfig<{ sophoTarget: SophoTarget }>({
   ],
   use: {
     trace: "on-first-retry",
+    contextOptions: REDUCED_MOTION_CONTEXT_OPTIONS,
   },
   projects: [
     {

@@ -35,6 +35,7 @@ import {
   SOPHO_BASE_URL,
   SOPHO_BINARY_PATH,
   SOPHO_PORT,
+  REDUCED_MOTION_CONTEXT_OPTIONS,
 } from "e2e/support/constants";
 
 const DOCKER_GRACEFUL_SHUTDOWN = {
@@ -68,6 +69,7 @@ export default defineConfig({
   globalSetup: "./global_setup.ts",
   use: {
     trace: "on-first-retry",
+    contextOptions: REDUCED_MOTION_CONTEXT_OPTIONS,
   },
   projects: [
     {

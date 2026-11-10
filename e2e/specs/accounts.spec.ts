@@ -12,6 +12,7 @@ import {
   INVITATION_SUBJECT,
   INVITED_ROLE,
   INVITED_ROLE_DISPLAY_NAME,
+  REDUCED_MOTION_CONTEXT_OPTIONS,
   INVITEE_EMAIL_DOMAIN,
   INVITEE_PASSWORD,
   MOCK_IDENTITY_CLAIMS_FIELD,
@@ -47,7 +48,10 @@ async function openVisitorPage(
   browser: Browser,
   baseURL: string | undefined,
 ): Promise<{ context: BrowserContext; page: Page }> {
-  const context = await browser.newContext({ baseURL });
+  const context = await browser.newContext({
+    baseURL,
+    ...REDUCED_MOTION_CONTEXT_OPTIONS,
+  });
   return { context, page: await context.newPage() };
 }
 

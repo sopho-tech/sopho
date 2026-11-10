@@ -1,8 +1,13 @@
 import { useMemo } from "react";
 import { MeshGradient } from "@paper-design/shaders-react";
+import { useReducedMotion } from "motion/react";
 import { Flex } from "src/components/design-system";
 import styles from "src/components/AuthPageLayout/AuthPageLayout.module.css";
-import { AUTH_PAGE_GRADIENT_COLORS } from "src/components/AuthPageLayout/constants";
+import {
+  AUTH_PAGE_GRADIENT_COLORS,
+  AUTH_PAGE_GRADIENT_SPEED,
+  AUTH_PAGE_GRADIENT_STILL_SPEED,
+} from "src/components/AuthPageLayout/constants";
 import logo from "src/assets/images/logo.svg";
 
 type AuthPageLayoutProps = {
@@ -11,6 +16,7 @@ type AuthPageLayoutProps = {
 
 export function AuthPageLayout({ children }: AuthPageLayoutProps) {
   const meshGradientColors = useMemo(() => [...AUTH_PAGE_GRADIENT_COLORS], []);
+  const prefersReducedMotion = useReducedMotion();
 
   return (
     <Flex
@@ -26,7 +32,11 @@ export function AuthPageLayout({ children }: AuthPageLayoutProps) {
         swirl={0.1}
         grainMixer={0.47}
         grainOverlay={0.3}
-        speed={1}
+        speed={
+          prefersReducedMotion
+            ? AUTH_PAGE_GRADIENT_STILL_SPEED
+            : AUTH_PAGE_GRADIENT_SPEED
+        }
         className={styles.backgroundGradient}
       />
       <Flex
