@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { RowData } from "@tanstack/react-table";
 import {
   TableType,
   DataTableProps,
@@ -13,7 +14,7 @@ import { Flex } from "src/components/design-system/Flex";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
 import { Text } from "src/components/design-system/Text";
 
-export function DataTable<T>({
+export function DataTable<T extends RowData>({
   tableType = TableType.FULL,
   columns,
   data,
@@ -50,9 +51,7 @@ export function DataTable<T>({
   const rowDragging = useRowDragging(table);
   const rows = table.getRowModel().rows;
   const [hoveredColumnId, setHoveredColumnId] = useState<string | null>(null);
-  const isResizingColumn = Boolean(
-    table.getState().columnSizingInfo?.isResizingColumn,
-  );
+  const isResizingColumn = Boolean(table.state.columnResizing.isResizingColumn);
 
   if (data === undefined || data === null || data.length === 0) {
     return <Text color="subtle">{emptyMessage}</Text>;

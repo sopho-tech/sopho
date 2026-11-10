@@ -1,4 +1,5 @@
 import * as RadixSelect from "@radix-ui/react-select";
+import { isValidElement } from "react";
 import SelectStyles from "src/components/design-system/Select/Select.module.css";
 import { Icon } from "src/components/design-system/Icon";
 
@@ -145,10 +146,10 @@ const SelectItem = ({
     textValue={textValue ?? (typeof children === "string" ? children : "")}
     className={SelectStyles.selectItem}
   >
-    {typeof children === "string" ? (
-      <RadixSelect.ItemText>{children}</RadixSelect.ItemText>
-    ) : (
+    {isValidElement(children) ? (
       <RadixSelect.ItemText asChild>{children}</RadixSelect.ItemText>
+    ) : (
+      <RadixSelect.ItemText>{children}</RadixSelect.ItemText>
     )}
     {description && (
       <span className={SelectStyles.selectItemDescription}>{description}</span>

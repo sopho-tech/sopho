@@ -2,14 +2,30 @@ import {
   ColumnDef,
   createColumnHelper,
   flexRender,
-  getCoreRowModel,
-  useReactTable,
+  useTable,
   PaginationState,
   OnChangeFn,
   CellContext,
+  RowData,
+  columnSizingFeature,
+  rowPaginationFeature,
+  tableFeatures,
 } from "@tanstack/react-table";
 import styles from "src/components/Table/Table.module.css";
 import { Pagination } from "src/components/design-system/Pagination";
+
+const tableComponentFeatures = tableFeatures({
+  columnSizingFeature,
+  rowPaginationFeature,
+});
+
+type TableComponentFeatures = typeof tableComponentFeatures;
+
+type TableComponentColumnDef<T extends RowData> = ColumnDef<
+  TableComponentFeatures,
+  T,
+  unknown
+>;
 
 export enum TableType {
   FULL = "FULL",
@@ -25,12 +41,14 @@ export const rowHoverClasses = {
   hide: styles.rowHoverHide,
 };
 
-export type ColumnConfig<T> = {
+export type ColumnConfig<T extends RowData> = {
   key: string;
   header: string;
   size?: number;
   type: "accessor" | "display";
-  cell?: (props: CellContext<T, unknown>) => React.ReactNode;
+  cell?: (
+    props: CellContext<TableComponentFeatures, T, unknown>,
+  ) => React.ReactNode;
   accessor?: keyof T;
   fill?: boolean;
 };
@@ -47,7 +65,7 @@ export type PaginationConfig = {
   paginationContainerClassName?: string;
 };
 
-type TableProps<T> = {
+type TableProps<T extends RowData> = {
   tableType?: TableType;
   size?: TableSize;
   columns: ColumnConfig<T>[];
@@ -69,9 +87,9 @@ type TableProps<T> = {
   isRowSelected?: (row: T) => boolean;
 };
 
-function useCreateReactTable<T>(
+function useCreateReactTable<T extends RowData>(
   tableType: TableType,
-  reactTableColumns: ColumnDef<T, unknown>[],
+  reactTableColumns: TableComponentColumnDef<T>[],
   data: T[],
   paginationConfig: PaginationConfig | undefined,
 ) {
@@ -91,15 +109,15 @@ function useCreateReactTable<T>(
     return {};
   })();
 
-  return useReactTable({
+  return useTable({
+    features: tableComponentFeatures,
     columns: reactTableColumns,
     data: data ?? [],
-    getCoreRowModel: getCoreRowModel(),
     ...paginationState,
   });
 }
 
-export function Table<T>({
+export function Table<T extends RowData>({
   tableType = TableType.FULL,
   size = "default",
   columns,
@@ -122,7 +140,7 @@ export function Table<T>({
 }: TableProps<T>) {
   const isCompact = size === "compact";
   const isPlain = variant === "plain";
-  const columnHelper = createColumnHelper<T>();
+  const columnHelper = createColumnHelper<TableComponentFeatures, T>();
 
   const columnConfigMap = new Map<string, ColumnConfig<T>>();
   columns.forEach((col) => {
@@ -135,14 +153,16 @@ export function Table<T>({
   const getColumnWidth = (columnId: string, fallback: number) =>
     columnConfigMap.get(columnId)?.fill ? "100%" : fallback;
 
-  const reactTableColumns: ColumnDef<T, unknown>[] = columns.map((col) => {
+  const reactTableColumns: TableComponentColumnDef<T>[] = columns.map((col) => {
     if (col.type === "accessor") {
       return columnHelper.accessor(
         col.accessor as Parameters<typeof columnHelper.accessor>[0],
         {
           header: col.header,
           cell:
-            col.cell || ((props: CellContext<T, unknown>) => props.getValue()),
+            col.cell ||
+            ((props: CellContext<TableComponentFeatures, T, unknown>) =>
+              props.getValue()),
           size: col.size,
         },
       );
@@ -220,7 +240,7 @@ export function Table<T>({
                 onClick={() => onRowClick?.(row.original)}
                 style={{ cursor: onRowClick ? "pointer" : "default" }}
               >
-                {row.getVisibleCells().map((cell) => (
+                {row.getAllCells().map((cell) => (
                   <td
                     key={cell.id}
                     className={`${styles.tableDataCell} ${isCompact ? styles.tableDataCellCompact : ""} ${isPlain ? styles.tableDataCellPlain : ""} ${tableDataCellStyle}`}

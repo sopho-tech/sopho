@@ -22,7 +22,7 @@ export type DashboardDto = {
 };
 
 export function convertRGLayoutToDto(
-  layout: Layout[],
+  layout: Layout,
   notebookId: string,
 ): LayoutDto[] {
   return layout.map((item) => ({
@@ -35,7 +35,7 @@ export function convertRGLayoutToDto(
   }));
 }
 
-export function convertDtoToRGLayout(layoutDto: LayoutDto[]): Layout[] {
+export function convertDtoToRGLayout(layoutDto: LayoutDto[]): Layout {
   return layoutDto.map((item) => ({
     i: item.cell_id,
     x: item.x_position,

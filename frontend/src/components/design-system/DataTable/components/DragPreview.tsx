@@ -1,9 +1,10 @@
-import { Table } from "@tanstack/react-table";
+import { Table, RowData } from "@tanstack/react-table";
+import type { DataTableFeatures } from "src/components/design-system/DataTable/features";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
 
-export function createDragPreview<T>(
+export function createDragPreview<T extends RowData>(
   rowElement: HTMLTableRowElement,
-  table: Table<T>,
+  table: Table<DataTableFeatures, T>,
 ): HTMLDivElement {
   const tableWidth = table.getCenterTotalSize();
 

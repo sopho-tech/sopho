@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
-import RGL, { WidthProvider, Layout } from "react-grid-layout";
+import GridLayout, {
+  Layout,
+  LayoutItem,
+  useContainerWidth,
+} from "react-grid-layout";
 import { useDashboardByCanvasId } from "src/api/dashboard/queries";
 import { useCanvasCapabilities } from "src/api/canvas/queries";
 import { useCellsByNotebookId } from "src/api/notebook/queries";
@@ -26,8 +30,6 @@ import { useStore, DashboardMode } from "src/store";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { useTenantPath } from "src/utils/tenant";
 
-const ReactGridLayout = WidthProvider(RGL);
-
 export function Dashboard() {
   const params = useParams();
   const navigate = useNavigate();
@@ -46,6 +48,7 @@ export function Dashboard() {
   const setShowChartBrowser = useStore(
     (state) => state.dashboard.setShowChartBrowser,
   );
+  const { width, containerRef, mounted } = useContainerWidth();
 
   useDashboardSave(dashboardQuery.data);
 
@@ -81,7 +84,7 @@ export function Dashboard() {
   }, [dashboardQuery.data, setLayout]);
 
   const handleLayoutChange = useCallback(
-    (newLayout: Layout[]) => {
+    (newLayout: Layout) => {
       if (isEditing) {
         setLayout(newLayout);
       }
@@ -100,17 +103,16 @@ export function Dashboard() {
     handleDrag();
   }, [handleDrag]);
 
-  const handleOnDropDragOver = useCallback(
-    () => ({ w: DEFAULT_CHART_WIDTH, h: DEFAULT_CHART_HEIGHT }),
-    [],
-  );
-
   const handleOnDrop = useCallback(
-    (droppedLayout: Layout[], itemLayout: Layout, e: DragEvent) => {
-      if (!e.dataTransfer) {
+    (
+      droppedLayout: Layout,
+      itemLayout: LayoutItem | undefined,
+      event: Event,
+    ) => {
+      if (!(event instanceof DragEvent) || !event.dataTransfer || !itemLayout) {
         return;
       }
-      const cellId = e.dataTransfer.getData("application/x-sopho-cell-id");
+      const cellId = event.dataTransfer.getData("application/x-sopho-cell-id");
       const latestLayout = useStore.getState().dashboard.layout;
       const existingIds = new Set(latestLayout.map((item) => item.i));
       const newLayout = droppedLayout.map((item) => {
@@ -130,8 +132,27 @@ export function Dashboard() {
     [setLayout],
   );
 
-  const margin = useMemo<[number, number]>(() => [20, 20], []);
-  const containerPadding = useMemo<[number, number]>(() => [0, 0], []);
+  const gridConfig = useMemo(
+    () => ({
+      cols: GRID_COLUMN_COUNT,
+      rowHeight: 100,
+      margin: [20, 20] as const,
+      containerPadding: [0, 0] as const,
+    }),
+    [],
+  );
+  const dragConfig = useMemo(
+    () => ({ enabled: isEditing, handle: `.${styles.dragHandle}` }),
+    [isEditing],
+  );
+  const resizeConfig = useMemo(() => ({ enabled: isEditing }), [isEditing]);
+  const dropConfig = useMemo(
+    () => ({
+      enabled: true,
+      defaultItem: { w: DEFAULT_CHART_WIDTH, h: DEFAULT_CHART_HEIGHT },
+    }),
+    [],
+  );
 
   const renderContent = () => {
     if (showNoChartCellsEmptyState) {
@@ -165,27 +186,25 @@ export function Dashboard() {
         />
       );
     }
+    if (!mounted) {
+      return null;
+    }
     return (
-      <ReactGridLayout
+      <GridLayout
         className={`${styles.layout} ${isEditing ? styles.layoutEditing : ""}`}
+        width={width}
         layout={layout}
-        cols={GRID_COLUMN_COUNT}
-        rowHeight={100}
-        margin={margin}
-        containerPadding={containerPadding}
+        gridConfig={gridConfig}
+        dragConfig={dragConfig}
+        resizeConfig={resizeConfig}
+        dropConfig={dropConfig}
         onLayoutChange={handleLayoutChange}
         onDragStart={handleDragStart}
         onDrag={handleDrag}
         onDragStop={handleDragStop}
         onResize={handleDrag}
         onResizeStop={handleDrag}
-        useCSSTransforms={true}
-        draggableHandle={`.${styles.dragHandle}`}
-        isDraggable={isEditing}
-        isResizable={isEditing}
         onDrop={handleOnDrop}
-        onDropDragOver={handleOnDropDragOver}
-        isDroppable={true}
       >
         {layout.map((layoutItem) => (
           <div key={layoutItem.i} className={styles.gridItem}>
@@ -195,13 +214,13 @@ export function Dashboard() {
             />
           </div>
         ))}
-      </ReactGridLayout>
+      </GridLayout>
     );
   };
 
   return (
     <Flex gap="2xs" flex="grow">
-      <Flex flex="grow" alignItems="stretch">
+      <Flex ref={containerRef} flex="grow" alignItems="stretch">
         {renderContent()}
       </Flex>
       <ChartBrowser />

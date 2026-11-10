@@ -1,15 +1,12 @@
 import {
-  ColumnDef,
-  getCoreRowModel,
-  useReactTable,
+  useTable,
   PaginationState,
   OnChangeFn,
-  getSortedRowModel,
   SortingState,
-  getFilteredRowModel,
-  getPaginationRowModel,
+  ReactTable,
   Table,
   Row,
+  RowData,
 } from "@tanstack/react-table";
 import { ColumnDataType } from "src/constants/database_types";
 import { Pagination } from "src/components/design-system/Pagination";
@@ -18,6 +15,11 @@ import {
   PaginationConfig,
   ColumnConfig,
 } from "src/components/design-system/DataTable/types";
+import {
+  dataTableFeatures,
+  DataTableColumnDef,
+  DataTableFeatures,
+} from "src/components/design-system/DataTable/features";
 import styles from "src/components/design-system/DataTable/DataTable.module.css";
 
 export function getAlignmentClass(
@@ -99,7 +101,7 @@ export function getFontClass(dataType: ColumnDataType | undefined): string {
   return "";
 }
 
-export function getColumnWidthStyle<T>(
+export function getColumnWidthStyle<T extends RowData>(
   columnConfig: ColumnConfig<T> | undefined,
   resolvedColumnSize: number,
 ): React.CSSProperties {
@@ -113,8 +115,11 @@ export function getColumnWidthStyle<T>(
   };
 }
 
-export function getDisplayRowNumber<T>(table: Table<T>, row: Row<T>): number {
-  const { pageIndex, pageSize } = table.getState().pagination;
+export function getDisplayRowNumber<T extends RowData>(
+  table: Table<DataTableFeatures, T>,
+  row: Row<DataTableFeatures, T>,
+): number {
+  const { pageIndex, pageSize } = table.atoms.pagination.get();
   const positionInCurrentPage = table
     .getRowModel()
     .rows.findIndex((rowInCurrentPage) => rowInCurrentPage.id === row.id);
@@ -126,9 +131,9 @@ export function getDisplayRowNumber<T>(table: Table<T>, row: Row<T>): number {
   return pageIndex * pageSize + positionInCurrentPage + 1;
 }
 
-export function useCreateReactTable<T>(
+export function useCreateReactTable<T extends RowData>(
   tableType: TableType,
-  reactTableColumns: ColumnDef<T, unknown>[],
+  reactTableColumns: DataTableColumnDef<T>[],
   data: T[],
   paginationConfig: PaginationConfig | undefined,
   setSorting: OnChangeFn<SortingState>,
@@ -141,9 +146,9 @@ export function useCreateReactTable<T>(
   getRowId?: (row: T) => string,
 ) {
   const baseConfig = {
+    features: dataTableFeatures,
     columns: reactTableColumns,
     data: data ?? [],
-    getCoreRowModel: getCoreRowModel(),
     ...(getRowId && { getRowId }),
   };
 
@@ -151,8 +156,7 @@ export function useCreateReactTable<T>(
     tableType === TableType.FULL
       ? {
           ...baseConfig,
-          getSortedRowModel: getSortedRowModel(),
-          getFilteredRowModel: getFilteredRowModel(),
+          manualPagination: true,
           onSortingChange: setSorting,
           globalFilterFn: "auto" as const,
           state: { globalFilter, sorting },
@@ -174,6 +178,8 @@ export function useCreateReactTable<T>(
               state: { pagination: paginationConfig.pagination },
               onPaginationChange: paginationConfig.onPaginationChange,
               manualPagination: true,
+              manualSorting: true,
+              manualFiltering: true,
             };
           })()
         : (() => {
@@ -184,9 +190,6 @@ export function useCreateReactTable<T>(
             }
             return {
               ...baseConfig,
-              getSortedRowModel: getSortedRowModel(),
-              getFilteredRowModel: getFilteredRowModel(),
-              getPaginationRowModel: getPaginationRowModel(),
               onSortingChange: setSorting,
               onPaginationChange: setPagination,
               globalFilterFn: "auto" as const,
@@ -200,13 +203,13 @@ export function useCreateReactTable<T>(
             };
           })();
 
-  return useReactTable(fullConfig);
+  return useTable(fullConfig);
 }
 
-export function renderPaginationControl<T>(
+export function renderPaginationControl<T extends RowData>(
   tableType: TableType,
   paginationConfig: PaginationConfig | undefined,
-  table: Table<T>,
+  table: ReactTable<DataTableFeatures, T>,
   showRowsPerPage: boolean = true,
 ): React.ReactNode {
   const onChangePageSize = (newPageSize: string) => {
@@ -219,8 +222,8 @@ export function renderPaginationControl<T>(
     return (
       <Pagination
         totalPages={table.getPageCount()}
-        currentPage={table.getState().pagination.pageIndex}
-        pageSize={table.getState().pagination.pageSize}
+        currentPage={table.state.pagination.pageIndex}
+        pageSize={table.state.pagination.pageSize}
         totalItems={table.getRowCount()}
         onChangePageSize={onChangePageSize}
         onPageClick={onPageClick}
