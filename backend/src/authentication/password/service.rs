@@ -5,7 +5,9 @@ use crate::authentication::password::constants::{
     MAXIMUM_PASSWORD_CHARACTERS, MINIMUM_PASSWORD_CHARACTERS, RESET_EMAILS_PER_HOUR,
     RESET_LINK_EXPIRY_MINUTES, RESET_LINK_PATH, SERVICE_NAME_IN_PASSWORD, SIGN_IN_PAGE_PATH,
 };
-use crate::authentication::password::dto::{ChangePasswordDto, PasswordResetDto};
+use crate::authentication::password::dto::{
+    ChangePasswordDto, PasswordResetDto, PreparedResetEmail, QueuedAccountEmail,
+};
 use crate::authentication::password::error::{PasswordFlowError, PasswordRuleError};
 use crate::authentication::password::repository;
 use crate::authentication::repository as authentication_repository;
@@ -118,12 +120,6 @@ pub async fn send_password_reset_email(
     .await?;
     txn.commit().await?;
     Ok(())
-}
-
-struct PreparedResetEmail {
-    rendered_email: RenderedEmail,
-    send_before: DateTime<Utc>,
-    reset_token: Option<password_reset_token::Model>,
 }
 
 async fn prepare_reset_email(
@@ -326,13 +322,6 @@ fn password_changed_email(
         }
         .render()?,
     ))
-}
-
-struct QueuedAccountEmail<'a> {
-    user: &'a user::Model,
-    rendered_email: RenderedEmail,
-    send_before: DateTime<Utc>,
-    requested_by_user_id: Option<Uuid>,
 }
 
 async fn queue_email_transaction(

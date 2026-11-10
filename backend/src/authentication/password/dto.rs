@@ -1,4 +1,8 @@
+use crate::email_template::dto::RenderedEmail;
+use crate::entity::{password_reset_token, user};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct PasswordResetRequestDto {
@@ -20,4 +24,17 @@ pub struct ChangePasswordDto {
 #[derive(Debug, Serialize)]
 pub struct PasswordResetRequestedDto {
     pub message: String,
+}
+
+pub struct PreparedResetEmail {
+    pub rendered_email: RenderedEmail,
+    pub send_before: DateTime<Utc>,
+    pub reset_token: Option<password_reset_token::Model>,
+}
+
+pub struct QueuedAccountEmail<'a> {
+    pub user: &'a user::Model,
+    pub rendered_email: RenderedEmail,
+    pub send_before: DateTime<Utc>,
+    pub requested_by_user_id: Option<Uuid>,
 }
