@@ -3,8 +3,8 @@ use crate::common::EmailConfiguration;
 use crate::common::cryptography_utils::{decrypt, encrypt};
 use crate::common::time_utils;
 use crate::email_delivery::constants::{
-    EMAIL_LOG_RETENTION_DAYS, EXPIRED_EMAIL_MESSAGE, EmailStatus, NOTICE_SEND_WINDOW_HOURS,
-    RETRY_DELAYS_MINUTES, SENDER_BATCH_SIZE, SENDER_POLL_INTERVAL_SECONDS, SENDING_LEASE_MINUTES,
+    EXPIRED_EMAIL_MESSAGE, EmailStatus, NOTICE_SEND_WINDOW_HOURS, RETRY_DELAYS_MINUTES,
+    SENDER_BATCH_SIZE, SENDER_POLL_INTERVAL_SECONDS, SENDING_LEASE_MINUTES,
     UNDECRYPTABLE_EMAIL_MESSAGE,
 };
 use crate::email_delivery::dto::{
@@ -150,14 +150,6 @@ pub fn start_email_sender(app_state: AppState) {
             }
         }
     });
-}
-
-pub async fn delete_expired_email_log(app_state: &AppState) -> Result<u64, EmailDeliveryError> {
-    let cutoff = Utc::now() - Duration::days(EMAIL_LOG_RETENTION_DAYS);
-    Ok(
-        repository::delete_emails_created_before(&app_state.database_connection, cutoff.into())
-            .await?,
-    )
 }
 
 pub async fn find_delivery_statuses(

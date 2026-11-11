@@ -6,7 +6,6 @@ use tokio_cron_scheduler::{Job, JobScheduler};
 use tracing::{error, info};
 
 const SUGGESTED_QUESTION_DAILY_CRON: &str = "0 0 3 * * *";
-const EMAIL_LOG_CLEANUP_DAILY_CRON: &str = "0 30 3 * * *";
 
 const SCHEDULER_METADATA_TABLE: &str = "scheduler_job";
 const SCHEDULER_NOTIFICATION_TABLE: &str = "scheduler_notification";
@@ -36,22 +35,6 @@ async fn start_scheduler(app_state: AppState) -> anyhow::Result<()> {
         })
     })?;
     sched.add(job).await?;
-
-    let cleanup_state = app_state.clone();
-    let email_log_cleanup_job =
-        Job::new_async(EMAIL_LOG_CLEANUP_DAILY_CRON, move |_uuid, _lock| {
-            let cleanup_state = cleanup_state.clone();
-            Box::pin(async move {
-                match crate::email_delivery::service::delete_expired_email_log(&cleanup_state).await
-                {
-                    Ok(deleted_emails) => {
-                        info!("scheduler: deleted {deleted_emails} old email log rows")
-                    }
-                    Err(e) => error!("scheduler: failed to delete old email log rows: {e}"),
-                }
-            })
-        })?;
-    sched.add(email_log_cleanup_job).await?;
 
     sched.start().await?;
     info!("scheduler started");

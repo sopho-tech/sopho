@@ -2,7 +2,6 @@ pub const RETRY_DELAYS_MINUTES: [i64; 5] = [1, 5, 30, 120, 360];
 pub const SENDING_LEASE_MINUTES: i64 = 5;
 pub const SENDER_POLL_INTERVAL_SECONDS: u64 = 5;
 pub const SENDER_BATCH_SIZE: u64 = 50;
-pub const EMAIL_LOG_RETENTION_DAYS: i64 = 90;
 pub const NOTICE_SEND_WINDOW_HOURS: i64 = 24;
 pub const UNDECRYPTABLE_EMAIL_MESSAGE: &str = "The email could not be decrypted";
 pub const EXPIRED_EMAIL_MESSAGE: &str = "Its links expired before it could be sent";

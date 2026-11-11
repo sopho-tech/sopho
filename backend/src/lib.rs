@@ -71,10 +71,6 @@ pub async fn deliver_due_emails(app_state: &AppState) -> anyhow::Result<()> {
     Ok(email_delivery::service::deliver_due_emails(app_state).await?)
 }
 
-pub async fn delete_expired_email_log(app_state: &AppState) -> anyhow::Result<u64> {
-    Ok(email_delivery::service::delete_expired_email_log(app_state).await?)
-}
-
 fn api_router(app_state: AppState) -> Router {
     let tenant_scoped_routes = Router::new()
         .nest("/dashboard", dashboard::routes(app_state.clone()))

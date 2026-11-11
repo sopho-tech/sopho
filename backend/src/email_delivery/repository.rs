@@ -222,17 +222,6 @@ pub async fn clear_bodies_of_expired_failed_emails(
         .rows_affected)
 }
 
-pub async fn delete_emails_created_before(
-    database_connection: &DatabaseConnection,
-    cutoff: DateTimeWithTimeZone,
-) -> Result<u64, DbErr> {
-    Ok(email_outbox::Entity::delete_many()
-        .filter(email_outbox::Column::CreatedAt.lt(cutoff))
-        .exec(database_connection)
-        .await?
-        .rows_affected)
-}
-
 pub async fn count_emails_to_recipient_since(
     connection: &impl ConnectionTrait,
     recipient: &str,

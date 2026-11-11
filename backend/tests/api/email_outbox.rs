@@ -472,33 +472,3 @@ async fn an_email_that_cannot_be_decrypted_fails_with_the_reason() {
             .is_empty()
     );
 }
-
-#[tokio::test]
-async fn log_rows_older_than_ninety_days_are_deleted() {
-    let app = TestApp::spawn_with_email().await;
-    let (tenant_id, owner) = tenant_with_owner(&app).await;
-    let old_recipient = unique_recipient("old");
-    let recent_recipient = unique_recipient("recent");
-    invite_by_email(&owner, tenant_id, &old_recipient).await;
-    invite_by_email(&owner, tenant_id, &recent_recipient).await;
-    update_queued_email(
-        &app,
-        &old_recipient,
-        &[("created_at", (now() - Duration::days(91)).into())],
-    )
-    .await;
-    update_queued_email(
-        &app,
-        &recent_recipient,
-        &[("created_at", (now() - Duration::days(89)).into())],
-    )
-    .await;
-
-    let deleted = sopho::delete_expired_email_log(&app.app_state)
-        .await
-        .expect("delete the old email log rows");
-
-    assert_eq!(deleted, 1);
-    assert!(queued_emails_to(&app, &old_recipient).await.is_empty());
-    assert_eq!(queued_emails_to(&app, &recent_recipient).await.len(), 1);
-}
