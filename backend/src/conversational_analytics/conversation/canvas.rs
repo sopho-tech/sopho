@@ -1,6 +1,8 @@
 use crate::ai::canvas_generation_agent;
 use crate::ai::dto::{CanvasCandidate, ConversationHistory, Event, EventChannels};
-use crate::canvas::dto::CanvasChangeSummary;
+use crate::authorization::dto::TenantId;
+
+use crate::canvas::dto::{CanvasAuthorship, CanvasChangeSummary};
 use crate::canvas::service as canvas_service;
 use crate::common::AppState;
 use crate::conversational_analytics::conversation::constants::CONVERSATION_HISTORY_SCAN_MESSAGE_LIMIT;
@@ -11,6 +13,8 @@ use uuid::Uuid;
 
 pub async fn generate(
     app_state: &AppState,
+    tenant_id: &TenantId,
+    authorship: CanvasAuthorship,
     conversation_id: Uuid,
     connection_id: Uuid,
     conversation_history: &ConversationHistory,
@@ -18,9 +22,10 @@ pub async fn generate(
 ) -> anyhow::Result<()> {
     channels.send(Event::GeneratingCanvas).await?;
 
-    let candidates = load(app_state, conversation_id).await;
+    let candidates = load(app_state, tenant_id, conversation_id).await;
     let plan =
-        canvas_generation_agent::execute(app_state, conversation_history, &candidates).await?;
+        canvas_generation_agent::execute(app_state, tenant_id, conversation_history, &candidates)
+            .await?;
 
     let target_canvas_id = plan.resolve_target_canvas(&candidates);
     let target =
@@ -30,9 +35,16 @@ pub async fn generate(
         anyhow::bail!("the canvas plan contained no usable cells");
     }
 
-    let summary =
-        canvas_service::apply_canvas_plan(app_state, connection_id, plan, target_canvas_id, ops)
-            .await?;
+    let summary = canvas_service::apply_canvas_plan(
+        app_state,
+        tenant_id,
+        authorship,
+        connection_id,
+        plan,
+        target_canvas_id,
+        ops,
+    )
+    .await?;
     channels.send(generated_event(summary)).await?;
     Ok(())
 }
@@ -53,8 +65,12 @@ fn generated_event(summary: CanvasChangeSummary) -> Event {
     }
 }
 
-async fn load(app_state: &AppState, conversation_id: Uuid) -> Vec<CanvasCandidate> {
-    let canvas_ids = match collect_canvas_ids(app_state, conversation_id).await {
+async fn load(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    conversation_id: Uuid,
+) -> Vec<CanvasCandidate> {
+    let canvas_ids = match collect_canvas_ids(app_state, tenant_id, conversation_id).await {
         Ok(ids) => ids,
         Err(e) => {
             tracing::error!("conversation canvases: failed to collect canvas ids: {e}");
@@ -64,15 +80,17 @@ async fn load(app_state: &AppState, conversation_id: Uuid) -> Vec<CanvasCandidat
     if canvas_ids.is_empty() {
         return Vec::new();
     }
-    canvas_service::list_canvas_candidates(app_state, &canvas_ids).await
+    canvas_service::list_canvas_candidates(app_state, tenant_id, &canvas_ids).await
 }
 
 async fn collect_canvas_ids(
     app_state: &AppState,
+    tenant_id: &TenantId,
     conversation_id: Uuid,
 ) -> anyhow::Result<Vec<Uuid>> {
     let mut messages = message_service::list_messages_for_conversation(
         &app_state.database_connection,
+        tenant_id,
         conversation_id,
         Some(CONVERSATION_HISTORY_SCAN_MESSAGE_LIMIT as u64),
         true,
@@ -83,6 +101,7 @@ async fn collect_canvas_ids(
     let message_ids: Vec<Uuid> = messages.iter().map(|message| message.id).collect();
     let contents = message_content_service::list_message_content_for_messages(
         &app_state.database_connection,
+        tenant_id,
         &message_ids,
     )
     .await?;

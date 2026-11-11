@@ -1,0 +1,16 @@
+[package]
+name = "sopho-common"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "sopho_common"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1.0.197", features = ["derive"] }
+strum = { version = "0.28", features = ["derive"] }
+
+[lints]
+workspace = true

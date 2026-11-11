@@ -1,5 +1,6 @@
 use crate::authentication::dto;
 use crate::authentication::service;
+use crate::authorization::dto::AuthenticatedUser;
 use crate::common::AppState;
 use axum::{
     Router,
@@ -16,7 +17,31 @@ pub fn routes(app_state: AppState) -> Router {
         .route("/session", delete(delete_session))
         .route("/refresh", post(refresh_token))
         .route("/me", get(get_current_user))
+        .route("/sign_in_page_option", get(get_sign_in_page_options))
+        .route("/my_sign_in_method", get(get_my_sign_in_methods))
+        .merge(crate::authentication::password::controller::routes())
+        .nest("/oidc", crate::authentication::oidc::controller::routes())
         .with_state(app_state)
+}
+
+async fn get_sign_in_page_options(State(app_state): State<AppState>) -> impl IntoResponse {
+    axum::Json(service::sign_in_page_options(&app_state))
+}
+
+async fn get_my_sign_in_methods(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+) -> axum::response::Response {
+    match crate::authentication::oidc::service::list_my_sign_in_methods(
+        &app_state,
+        authenticated_user.user_id().get_uuid(),
+    )
+    .await
+    {
+        Ok(my_sign_in_methods) => axum::Json(my_sign_in_methods).into_response(),
+        Err(error) => crate::authentication::oidc::controller::sign_in_method_error_response(error)
+            .into_response(),
+    }
 }
 
 async fn get_session(cookies: Cookies, State(app_state): State<AppState>) -> impl IntoResponse {

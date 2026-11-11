@@ -7,6 +7,7 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
+    pub tenant_id: Uuid,
     pub entity_type: String,
     pub entity_id: Uuid,
     pub status: String,
@@ -21,6 +22,10 @@ pub struct Model {
     pub user_prompt_used: Option<String>,
     pub generated_at: Option<DateTimeWithTimeZone>,
     pub requested_at: DateTimeWithTimeZone,
+    pub created_by_user_id: Option<Uuid>,
+    pub created_by_actor: String,
+    pub modified_by_user_id: Option<Uuid>,
+    pub modified_by_actor: String,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

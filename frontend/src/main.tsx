@@ -3,11 +3,17 @@ import { createRoot } from "react-dom/client";
 import "src/css/index.css";
 import { Home } from "src/components/Home/Home";
 import SignIn from "src/components/SignIn/SignIn";
+import { InvitationLink } from "src/components/InvitationLink";
+import { ForgotPassword, ResetPassword } from "src/components/PasswordReset";
 import { Settings } from "src/components/Settings";
 import { Connections } from "src/components/Connection/ConnectionsPage";
 import { AIConfiguration } from "src/components/Settings/AIConfiguration";
-import { Profile } from "src/components/Profile";
+import { Profile, ProfileRedirect } from "src/components/Profile";
 import { ProtectedRoute } from "src/components/ProtectedRoute";
+import { TenantIndexRedirect, TenantRoute } from "src/components/TenantRoute";
+import { Onboarding } from "src/components/Onboarding";
+import { Members } from "src/components/Settings/Members";
+import { Emails, PlatformRoute, Tenants, Users } from "src/components/Platform";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { ReactQueryClientProvider } from "src/utils/react_query_provider";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -29,77 +35,114 @@ const router = createBrowserRouter([
     children: [
       {
         path: APP_ROUTES.INDEX,
-        element: <Home />,
+        element: <TenantIndexRedirect />,
       },
       {
-        path: APP_ROUTES.CONVERSATIONAL_ANALYTICS,
-        element: <ConversationalAnalytics />,
-        children: [
-          {
-            path: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX,
-            element: <NewConversationPanel />,
-          },
-          {
-            path: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION,
-            element: <ExistingConversationPanel />,
-          },
-          {
-            path: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATIONS,
-            element: <ConversationList />,
-          },
-        ],
-      },
-      {
-        path: APP_ROUTES.SETTINGS,
-        element: <Settings />,
-        children: [
-          {
-            index: true,
-            element: (
-              <Navigate to={APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS} replace />
-            ),
-          },
-          {
-            path: "connections",
-            element: <Connections />,
-          },
-          {
-            path: "ai-configurations",
-            element: <AIConfiguration />,
-          },
-          {
-            path: "connection/new",
-            element: <ConnectionNew />,
-          },
-          {
-            path: "connection/:id/edit",
-            element: <ConnectionEdit />,
-          },
-        ],
+        path: APP_ROUTES.ONBOARDING,
+        element: <Onboarding />,
       },
       {
         path: APP_ROUTES.PROFILE,
-        element: <Profile />,
+        element: <ProfileRedirect />,
       },
       {
-        path: APP_ROUTES.CANVASES,
-        element: <Canvases />,
-      },
-      {
-        path: APP_ROUTES.CANVAS,
-        element: <Canvas />,
+        path: APP_ROUTES.TENANT,
+        element: <TenantRoute />,
         children: [
           {
             index: true,
-            element: <CanvasIndexRedirect />,
+            element: <Home />,
           },
           {
-            path: APP_ROUTES.CANVAS_ROUTES.NOTEBOOK,
-            element: <Notebook />,
+            path: "conversational_analytics",
+            element: <ConversationalAnalytics />,
+            children: [
+              {
+                index: true,
+                element: <NewConversationPanel />,
+              },
+              {
+                path: "conversation/:id",
+                element: <ExistingConversationPanel />,
+              },
+              {
+                path: "conversations",
+                element: <ConversationList />,
+              },
+            ],
           },
           {
-            path: APP_ROUTES.CANVAS_ROUTES.DASHBOARD,
-            element: <Dashboard />,
+            path: "settings",
+            element: <Settings />,
+            children: [
+              {
+                index: true,
+                element: <Navigate to="connections" replace />,
+              },
+              {
+                path: "connections",
+                element: <Connections />,
+              },
+              {
+                path: "ai-configurations",
+                element: <AIConfiguration />,
+              },
+              {
+                path: "members",
+                element: <Members />,
+              },
+              {
+                path: "connection/new",
+                element: <ConnectionNew />,
+              },
+              {
+                path: "connection/:id/edit",
+                element: <ConnectionEdit />,
+              },
+              {
+                element: <PlatformRoute />,
+                children: [
+                  {
+                    path: "users",
+                    element: <Users />,
+                  },
+                  {
+                    path: "tenants",
+                    element: <Tenants />,
+                  },
+                  {
+                    path: "emails",
+                    element: <Emails />,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            path: "profile",
+            element: <Profile />,
+          },
+          {
+            path: "canvas",
+            element: <Canvases />,
+          },
+          {
+            path: "canvas/:id",
+            element: <Canvas />,
+            children: [
+              {
+                index: true,
+                element: <CanvasIndexRedirect />,
+              },
+              {
+                path: APP_ROUTES.CANVAS_ROUTES.NOTEBOOK,
+                element: <Notebook />,
+              },
+              {
+                path: APP_ROUTES.CANVAS_ROUTES.DASHBOARD,
+                element: <Dashboard />,
+              },
+            ],
           },
         ],
       },
@@ -108,6 +151,18 @@ const router = createBrowserRouter([
   {
     path: APP_ROUTES.SIGN_IN,
     element: <SignIn />,
+  },
+  {
+    path: APP_ROUTES.INVITATION,
+    element: <InvitationLink />,
+  },
+  {
+    path: APP_ROUTES.FORGOT_PASSWORD,
+    element: <ForgotPassword />,
+  },
+  {
+    path: APP_ROUTES.RESET_PASSWORD,
+    element: <ResetPassword />,
   },
 ]);
 

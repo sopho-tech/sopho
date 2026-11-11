@@ -1,7 +1,7 @@
-use crate::db::add_created_at_and_updated_at_timestamps;
+use crate::db::{add_created_at_and_updated_at_timestamps, user_status_names};
 use sea_orm_migration::{
     prelude::*,
-    schema::{pk_uuid, string},
+    schema::{integer, pk_uuid, string, string_null, timestamp_with_time_zone_null},
 };
 
 #[derive(DeriveMigrationName)]
@@ -16,9 +16,15 @@ impl MigrationTrait for Migration {
                     .table(User::Table)
                     .col(pk_uuid(User::Id))
                     .col(string(User::Username))
-                    .col(string(User::PasswordHash))
+                    .col(string_null(User::PasswordHash))
                     .col(string(User::Email))
                     .col(string(User::FullName))
+                    .col(string(User::PlatformRole))
+                    .col(timestamp_with_time_zone_null(User::EmailVerifiedAt))
+                    .col(string(User::Status))
+                    .col(integer(User::FailedSignInCount).default(0))
+                    .col(timestamp_with_time_zone_null(User::SignInBlockedUntil))
+                    .check(Expr::col(User::Status).is_in(user_status_names()))
                     .to_owned(),
             ))
             .await
@@ -39,4 +45,9 @@ pub enum User {
     PasswordHash,
     Email,
     FullName,
+    PlatformRole,
+    EmailVerifiedAt,
+    Status,
+    FailedSignInCount,
+    SignInBlockedUntil,
 }

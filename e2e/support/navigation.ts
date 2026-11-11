@@ -3,15 +3,22 @@ export const APP_URLS = {
   SIGN_IN: "/signin",
   PROFILE: "/profile",
   CONNECTIONS: "/settings/connections",
+  MEMBERS: "/settings/members",
   NEW_CONNECTION: "/settings/connection/new",
   AI_CONFIGURATIONS: "/settings/ai-configurations",
   NEW_CONVERSATION: "/conversational_analytics/",
 } as const;
 
-export function canvasNotebookUrl(canvasId: string): string {
-  return `/canvas/${canvasId}/notebook`;
+export const TENANT_HOME_URL_PATTERN = /\/t\/(?<tenantId>[0-9a-f-]{36})\/?$/;
+
+export function tenantUrl(tenantId: string, path: string): string {
+  return `/t/${tenantId}${path}`;
 }
 
-export function canvasDashboardUrl(canvasId: string): string {
-  return `/canvas/${canvasId}/dashboard`;
+export function canvasNotebookUrl(tenantId: string, canvasId: string): string {
+  return tenantUrl(tenantId, `/canvas/${canvasId}/notebook`);
+}
+
+export function canvasDashboardUrl(tenantId: string, canvasId: string): string {
+  return tenantUrl(tenantId, `/canvas/${canvasId}/dashboard`);
 }

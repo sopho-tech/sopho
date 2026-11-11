@@ -157,7 +157,11 @@ ul ul li {
   --color-hover: var(--color-grey-200);
   --color-text: var(--color-grey-900);
   --color-text-placeholder: var(--color-grey-500);
+  --color-text-on-accent: var(--color-grey-100);
   --overlay-color: hsl(0deg 0% 0% / 60%);
+  --dialog-overlay-color: hsl(250deg 10% 10% / 35%);
+  --input-background: var(--color-background);
+  --focus-ring: 0 0 0 3px var(--color-primary-200);
   --inactive-color-normal: rgb(0 0 0 / 50%);
   --inactive-color-high: rgb(0 0 0 / 10%);
   --shadow-color: hsl(0deg 0% 0% / 20%);
@@ -176,6 +180,7 @@ ul ul li {
     var(--font-family-secondary);
 
   /* Typography Scale */
+  --font-size-2xs: 0.625rem; /* 10px */
   --font-size-xs: 0.75rem; /* 12px */
   --font-size-sm: 0.875rem; /* 14px */
   --font-size-base: 1rem; /* 16px */
@@ -314,7 +319,7 @@ ul ul li {
   --border-dark-medium: var(--border-width-medium) var(--border-style-solid)
     var(--border-color-dark);
   --border-focus-medium: var(--border-width-medium) var(--border-style-solid)
-    var(--border-color-dark);
+    var(--border-color-focus);
 
   /* Border Radius */
   --border-radius-none: 0;
@@ -332,8 +337,17 @@ ul ul li {
   --icon-xl: 2rem;
   --icon-2xl: 3rem;
 
+  /* sidebar */
+  --sidebar-width-collapsed: calc(
+    var(--icon-xl) + 2 * var(--space-2xs) + 2 * var(--space-xs)
+  );
+  --sidebar-width-expanded: 15rem;
+  --section-sidebar-min-width: 12rem;
+
   /* Shadow System */
   --shadow-2xs: 0 1px 2px hsl(0deg 0% 0% / 8%), 0 1px 1px hsl(0deg 0% 0% / 12%);
+  --shadow-outline: inset 0 0 0 var(--border-width-medium)
+    var(--border-color-dark);
   --shadow-xs: 0 1px 3px hsl(0deg 0% 0% / 12%), 0 1px 2px hsl(0deg 0% 0% / 24%);
   --shadow-sm: 0 3px 6px hsl(0deg 0% 0% / 15%), 0 2px 4px hsl(0deg 0% 0% / 12%);
   --shadow-md:
@@ -363,6 +377,16 @@ ul ul li {
   --transition-duration-short: 0.2s;
   --transition-easing-default: ease;
   --transition-easing-standard-decelerate: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-sidebar-width: width var(--transition-duration-short)
+    var(--transition-easing-standard-decelerate);
+  --transition-fade: opacity var(--transition-duration-short)
+    var(--transition-easing-standard-decelerate);
+  --transition-color: color var(--transition-duration-short)
+    var(--transition-easing-standard-decelerate);
+  --opacity-disabled: 0.4;
+  --avatar-size: 2rem;
+  --avatar-size-sm: 1.25rem;
+  --table-row-min-height: 3.5rem;
   --transition-bg-color:
     background-color var(--transition-duration-short)
       var(--transition-easing-default),

@@ -21,7 +21,7 @@
 .textArea:focus {
   outline: none;
   border: var(--border-focus-medium);
-  box-shadow: var(--shadow-2xs);
+  box-shadow: var(--focus-ring);
 }
 
 .textArea:disabled {

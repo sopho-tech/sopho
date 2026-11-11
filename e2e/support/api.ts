@@ -30,11 +30,58 @@ export async function signIn(request: APIRequestContext): Promise<void> {
   expect(response.status(), await response.text()).toBe(200);
 }
 
+export async function inviteToTenant(
+  request: APIRequestContext,
+  tenantId: string,
+  email: string,
+  roleName: string,
+): Promise<void> {
+  const response = await request.post(
+    `${API_ROUTES.TENANT_SCOPE.replace(":tenantId", tenantId)}${API_ROUTES.INVITATIONS}`,
+    { data: { email, role_name: roleName } },
+  );
+  expect(response.status(), await response.text()).toBe(201);
+}
+
+export async function signUpFromInvitation(
+  request: APIRequestContext,
+  token: string,
+  fullName: string,
+  password: string,
+): Promise<void> {
+  const response = await request.post(API_ROUTES.INVITATION_SIGN_UP, {
+    data: { token, full_name: fullName, password },
+  });
+  expect(response.status(), await response.text()).toBe(201);
+}
+
+export async function defaultTenantId(
+  request: APIRequestContext,
+): Promise<string> {
+  const memberships = await readJson<{ tenant_id: string }[]>(
+    await request.get(API_ROUTES.TENANTS),
+    200,
+  );
+  expect(memberships).toHaveLength(1);
+  return memberships[0].tenant_id;
+}
+
+async function tenantApiRoute(
+  request: APIRequestContext,
+  route: string,
+): Promise<string> {
+  const tenantScope = API_ROUTES.TENANT_SCOPE.replace(
+    ":tenantId",
+    await defaultTenantId(request),
+  );
+  return `${tenantScope}${route}`;
+}
+
 export async function findDemoConnection(
   request: APIRequestContext,
 ): Promise<IdentifiedRecord> {
   const connections = await readJson<IdentifiedRecord[]>(
-    await request.get(API_ROUTES.CONNECTIONS),
+    await request.get(await tenantApiRoute(request, API_ROUTES.CONNECTIONS)),
     200,
   );
   const demoConnection = connections.find(
@@ -51,20 +98,26 @@ export async function createCanvas(
   name: string,
 ): Promise<CreatedCanvas> {
   const canvas = await readJson<IdentifiedRecord>(
-    await request.post(API_ROUTES.CANVASES, {
+    await request.post(await tenantApiRoute(request, API_ROUTES.CANVASES), {
       data: { name, description: "Created by the end-to-end tests" },
     }),
     201,
   );
   const notebooks = await readJson<IdentifiedRecord[]>(
     await request.get(
-      API_ROUTES.NOTEBOOKS_BY_CANVAS.replace(":canvasId", canvas.id),
+      await tenantApiRoute(
+        request,
+        API_ROUTES.NOTEBOOKS_BY_CANVAS.replace(":canvasId", canvas.id),
+      ),
     ),
     200,
   );
   const dashboard = await readJson<CreatedCanvas["dashboard"]>(
     await request.get(
-      API_ROUTES.DASHBOARD_BY_CANVAS.replace(":canvasId", canvas.id),
+      await tenantApiRoute(
+        request,
+        API_ROUTES.DASHBOARD_BY_CANVAS.replace(":canvasId", canvas.id),
+      ),
     ),
     200,
   );
@@ -79,7 +132,7 @@ export async function createSqlCell(
   query: string,
 ): Promise<IdentifiedRecord> {
   return readJson<IdentifiedRecord>(
-    await request.post(API_ROUTES.CELLS, {
+    await request.post(await tenantApiRoute(request, API_ROUTES.CELLS), {
       data: {
         notebook_id: notebookId,
         connection_id: connectionId,
@@ -99,7 +152,7 @@ export async function createOrderStatusChart(
   sqlCellId: string,
 ): Promise<IdentifiedRecord> {
   return readJson<IdentifiedRecord>(
-    await request.post(API_ROUTES.CELLS, {
+    await request.post(await tenantApiRoute(request, API_ROUTES.CELLS), {
       data: {
         notebook_id: notebookId,
         connection_id: connectionId,
@@ -136,7 +189,10 @@ export async function placeChartOnDashboard(
   chartCellId: string,
 ): Promise<void> {
   const response = await request.put(
-    API_ROUTES.DASHBOARD.replace(":dashboardId", canvas.dashboard.id),
+    await tenantApiRoute(
+      request,
+      API_ROUTES.DASHBOARD.replace(":dashboardId", canvas.dashboard.id),
+    ),
     {
       data: {
         ...canvas.dashboard,
@@ -160,9 +216,12 @@ export async function configureAnthropicProvider(
   request: APIRequestContext,
 ): Promise<void> {
   const configuration = await readJson<{ status: string }>(
-    await request.put(API_ROUTES.AI_CONFIGURATION, {
-      data: { provider: "anthropic", api_key: FAKE_LLM_API_KEY },
-    }),
+    await request.put(
+      await tenantApiRoute(request, API_ROUTES.AI_CONFIGURATION),
+      {
+        data: { provider: "anthropic", api_key: FAKE_LLM_API_KEY },
+      },
+    ),
     200,
   );
   expect(configuration.status).toBe("live");
@@ -173,7 +232,12 @@ export async function getCanvas(
   canvasId: string,
 ): Promise<IdentifiedRecord> {
   return readJson<IdentifiedRecord>(
-    await request.get(API_ROUTES.CANVAS.replace(":canvasId", canvasId)),
+    await request.get(
+      await tenantApiRoute(
+        request,
+        API_ROUTES.CANVAS.replace(":canvasId", canvasId),
+      ),
+    ),
     200,
   );
 }
@@ -183,7 +247,12 @@ export async function executeCell(
   cellId: string,
 ): Promise<{ data: Record<string, unknown>[] }> {
   return readJson<{ data: Record<string, unknown>[] }>(
-    await request.post(API_ROUTES.EXECUTE_CELL.replace(":cellId", cellId)),
+    await request.post(
+      await tenantApiRoute(
+        request,
+        API_ROUTES.EXECUTE_CELL.replace(":cellId", cellId),
+      ),
+    ),
     200,
   );
 }

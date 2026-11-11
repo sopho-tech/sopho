@@ -25,27 +25,33 @@ pub(crate) fn get_database_url(connection_entity: &entity::connection::Model) ->
 
 pub fn validate_sqlite_path(path: &str) -> Result<(), ValidationError> {
     if path.trim().is_empty() {
-        return Err(ValidationError("Database path cannot be empty".to_string()));
+        return Err(ValidationError {
+            message: "Database path cannot be empty".to_string(),
+        });
     }
     if path.contains("..") {
-        return Err(ValidationError(
-            "Database path cannot contain path traversal (..)".to_string(),
-        ));
+        return Err(ValidationError {
+            message: "Database path cannot contain path traversal (..)".to_string(),
+        });
     }
     let path = path.trim();
     let is_absolute = path.starts_with('/');
     let is_relative = path.starts_with("./");
     if !is_absolute && !is_relative {
-        return Err(ValidationError(format!(
-            "Database path must be absolute (/path/to/db.sqlite) or relative (./path/to/db.sqlite), got: {}",
-            path
-        )));
+        return Err(ValidationError {
+            message: format!(
+                "Database path must be absolute (/path/to/db.sqlite) or relative (./path/to/db.sqlite), got: {}",
+                path
+            ),
+        });
     }
     if !path.ends_with(".sqlite") && !path.ends_with(".db") && !path.ends_with(".sqlite3") {
-        return Err(ValidationError(format!(
-            "Database path must end with .sqlite, .sqlite3, or .db extension, got: {}",
-            path
-        )));
+        return Err(ValidationError {
+            message: format!(
+                "Database path must end with .sqlite, .sqlite3, or .db extension, got: {}",
+                path
+            ),
+        });
     }
     Ok(())
 }

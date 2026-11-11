@@ -19,6 +19,7 @@ import {
 import { useStore } from "src/store";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 
 export function ConnectionNew() {
   const [sourceType, setSourceType] = useState<string | null>(null);
@@ -27,6 +28,7 @@ export function ConnectionNew() {
     (state) => state.connection.setConnectionDetailsPageState,
   );
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const sourceTypeOptions = Object.values(SourceTypeEnum).map((type) => ({
     value: type,
     label: type.charAt(0) + type.slice(1).toLowerCase(),
@@ -47,7 +49,7 @@ export function ConnectionNew() {
     };
     createMutation.mutate(payload);
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    void navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    void navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
   };
 
   const onChangeHandler = (fieldName: string, value: string) => {
@@ -58,7 +60,7 @@ export function ConnectionNew() {
 
   const handleBack = () => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    void navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    void navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
   };
 
   return (
@@ -74,7 +76,7 @@ export function ConnectionNew() {
             New Connection
           </Heading>
           <Text fontSize="sm" color="subtle">
-            Connect a new data source to your workspace.
+            Connect a new data source to your tenant.
           </Text>
         </Flex>
         <Button

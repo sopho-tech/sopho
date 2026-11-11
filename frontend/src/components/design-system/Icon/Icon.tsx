@@ -56,6 +56,11 @@ import {
   Plug,
   Bot,
   PanelLeft,
+  PanelLeftClose,
+  Share2,
+  Clock,
+  PanelLeftOpen,
+  ChevronsUpDown,
   MessageCircle,
   Copy,
   Database,
@@ -72,6 +77,11 @@ import {
 
 const iconMap: Record<IconType, LucideIcon> = {
   add: Plus,
+  chevrons_up_down: ChevronsUpDown,
+  panel_left_open: PanelLeftOpen,
+  panel_left_close: PanelLeftClose,
+  share: Share2,
+  clock: Clock,
   home: Home,
   book: BookOpen,
   settings: Settings,

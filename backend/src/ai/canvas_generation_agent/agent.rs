@@ -2,12 +2,14 @@ use super::system_prompt::SystemPrompt;
 use super::user_prompt::UserPrompt;
 use crate::ai::agent_utils::{AgentName, ModelRole};
 use crate::ai::dto::{CanvasCandidate, CanvasPlan, ConversationHistory};
+use crate::authorization::dto::TenantId;
 use crate::common::AppState;
 use anyhow::Result;
 use tracing::info;
 
 pub async fn execute(
     app_state: &AppState,
+    tenant_id: &TenantId,
     conversation_history: &ConversationHistory,
     candidates: &[CanvasCandidate],
 ) -> Result<CanvasPlan> {
@@ -17,7 +19,7 @@ pub async fn execute(
         candidates.len()
     );
 
-    let model_client = app_state.require_model_client().await?;
+    let model_client = app_state.require_model_client(tenant_id).await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
         AgentName::CanvasGenerationAgent,

@@ -48,7 +48,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum Configuration {
+pub enum Configuration {
     Table,
     Key,
     Value,

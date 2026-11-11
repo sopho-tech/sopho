@@ -29,7 +29,7 @@
 
 .button:disabled {
   cursor: not-allowed;
-  opacity: 0.4;
+  opacity: var(--opacity-disabled);
 }
 
 .button:disabled:active {

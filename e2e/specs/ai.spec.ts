@@ -15,26 +15,34 @@ import {
   ORDER_STATUS_SQL,
 } from "e2e/support/constants";
 import { expect, test } from "e2e/support/fixtures";
-import { APP_URLS, canvasDashboardUrl } from "e2e/support/navigation";
+import {
+  APP_URLS,
+  canvasDashboardUrl,
+  tenantUrl,
+} from "e2e/support/navigation";
 
-test("configures the Anthropic provider", async ({ signedInPage: page }) => {
-  await page.goto(APP_URLS.AI_CONFIGURATIONS);
+test("configures the Anthropic provider", async ({
+  signedInPage: page,
+  tenantId,
+}) => {
+  await page.goto(tenantUrl(tenantId, APP_URLS.AI_CONFIGURATIONS));
 
   await page.getByRole("combobox").click();
   await page.getByRole("option", { name: "Anthropic" }).click();
   await page.getByRole("textbox", { name: "API key" }).fill(FAKE_LLM_API_KEY);
   await page.getByRole("button", { name: "Save" }).click();
 
-  await expect(
-    page.getByText("Anthropic — live (connection verified)"),
-  ).toBeVisible();
+  await expect(page.getByRole("row", { name: "Anthropic" })).toContainText(
+    "Verified",
+  );
 });
 
 test("answers a question with SQL and a chart", async ({
   signedInPage: page,
+  tenantId,
 }) => {
   await configureAnthropicProvider(page.request);
-  await page.goto(APP_URLS.NEW_CONVERSATION);
+  await page.goto(tenantUrl(tenantId, APP_URLS.NEW_CONVERSATION));
 
   await page.getByRole("combobox").click();
   await page.getByRole("option", { name: DEMO_CONNECTION_NAME }).click();
@@ -56,7 +64,7 @@ test("answers a question with SQL and a chart", async ({
   await expect(page.getByText(ORDER_STATUS_SQL)).toBeVisible();
 });
 
-test("summarises a dashboard", async ({ signedInPage: page }) => {
+test("summarises a dashboard", async ({ signedInPage: page, tenantId }) => {
   await configureAnthropicProvider(page.request);
   const demoConnection = await findDemoConnection(page.request);
   const canvas = await createCanvas(page.request, "Summarised dashboard");
@@ -74,7 +82,7 @@ test("summarises a dashboard", async ({ signedInPage: page }) => {
     sqlCell.id,
   );
   await placeChartOnDashboard(page.request, canvas, chartCell.id);
-  await page.goto(canvasDashboardUrl(canvas.canvasId));
+  await page.goto(canvasDashboardUrl(tenantId, canvas.canvasId));
 
   await page
     .getByRole("button", { name: "Summarise dashboard", exact: true })

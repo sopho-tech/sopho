@@ -5,9 +5,11 @@ import {
   useDeleteConversation,
 } from "src/api/conversational_analytics";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 
 export function useDeleteConversationDialog(conversationId: string) {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const { id: routeConversationId } = useParams<{ id: string }>();
   const [deleteTarget, setDeleteTarget] = useState<ConversationDto | null>(
     null,
@@ -62,7 +64,9 @@ export function useDeleteConversationDialog(conversationId: string) {
     deleteConversation.mutate(id, {
       onSuccess: () => {
         if (routeConversationId === id && id === conversationId) {
-          void navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
+          void navigate(
+            toTenantPath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX),
+          );
         }
         setOpen(false);
         if (unmountTimerRef.current) clearTimeout(unmountTimerRef.current);
@@ -78,6 +82,7 @@ export function useDeleteConversationDialog(conversationId: string) {
     routeConversationId,
     conversationId,
     navigate,
+    toTenantPath,
   ]);
 
   return {

@@ -36,13 +36,13 @@ async function createOrderStatusCanvas(
 test(
   "renders a chart cell",
   { tag: "@smoke" },
-  async ({ signedInPage: page }) => {
+  async ({ signedInPage: page, tenantId }) => {
     const { canvas } = await createOrderStatusCanvas(
       page.request,
       "Chart smoke test",
     );
 
-    await page.goto(canvasNotebookUrl(canvas.canvasId));
+    await page.goto(canvasNotebookUrl(tenantId, canvas.canvasId));
 
     await expect(page.getByText("Orders", { exact: true })).toBeVisible();
     await expect(
@@ -51,14 +51,17 @@ test(
   },
 );
 
-test("shows the chart on the dashboard", async ({ signedInPage: page }) => {
+test("shows the chart on the dashboard", async ({
+  signedInPage: page,
+  tenantId,
+}) => {
   const { canvas, chartCellId } = await createOrderStatusCanvas(
     page.request,
     "Dashboard chart",
   );
   await placeChartOnDashboard(page.request, canvas, chartCellId);
 
-  await page.goto(canvasDashboardUrl(canvas.canvasId));
+  await page.goto(canvasDashboardUrl(tenantId, canvas.canvasId));
 
   await expect(
     page.getByRole("heading", { name: "Orders by status chart" }),

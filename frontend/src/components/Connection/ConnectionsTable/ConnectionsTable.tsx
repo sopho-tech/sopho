@@ -1,4 +1,9 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { CreatedByFilter } from "src/api/dto";
+import { CreatedByFilterControl } from "src/components/Attribution";
+import { describeActor } from "src/components/Attribution/describeActor";
+import { CREATED_BY_LABEL } from "src/components/Attribution/constants";
+import { Flex } from "src/components/design-system";
 import ConnectionsStyles from "src/components/Connection/ConnectionsPage/ConnectionsPage.module.css";
 import { StatusBadge } from "src/components/StatusBadge/StatusBadge";
 import { ActionButtons } from "src/components/ActionButtons";
@@ -17,15 +22,22 @@ import { formatTimestamp } from "src/utils/timestamp_utils";
 import { ConnectionsEmptyState } from "src/components/Home/components/EmptyState";
 import { useNavigate, generatePath } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 
 export function ConnectionsTable() {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const setConnectionId = useStore((state) => state.connection.setConnectionId);
   const setConnectionDetailsPageState = useStore(
     (state) => state.connection.setConnectionDetailsPageState,
   );
   const deleteMutation = useDeleteConnection();
-  const { data: connectionsData, isLoading, isError } = useConnections();
+  const [createdBy, setCreatedBy] = useState<CreatedByFilter | null>(null);
+  const {
+    data: connectionsData,
+    isLoading,
+    isError,
+  } = useConnections(createdBy);
   const tableData = useMemo(() => connectionsData ?? [], [connectionsData]);
 
   const handleViewConnection = useCallback(
@@ -38,9 +50,11 @@ export function ConnectionsTable() {
 
   const handleEditConnection = useCallback(
     (id: string) => {
-      void navigate(generatePath(APP_ROUTES.CONNECTION_EDIT, { id }));
+      void navigate(
+        toTenantPath(generatePath(APP_ROUTES.CONNECTION_EDIT, { id })),
+      );
     },
-    [navigate],
+    [navigate, toTenantPath],
   );
 
   const handleDelete = useCallback(
@@ -103,6 +117,13 @@ export function ConnectionsTable() {
         size: 300,
       },
       {
+        key: "created_by",
+        header: CREATED_BY_LABEL,
+        type: "display",
+        cell: (props) => describeActor(props.row.original.created_by),
+        size: 180,
+      },
+      {
         key: "created_at",
         header: "Created On",
         type: "accessor",
@@ -117,6 +138,7 @@ export function ConnectionsTable() {
         cell: (props) => (
           <ActionButtons
             connectionId={props.row.original.id}
+            capabilities={props.row.original.capabilities}
             onViewClick={handleViewConnection}
             onEditClick={handleEditConnection}
             onDeleteClick={handleDelete}
@@ -129,14 +151,22 @@ export function ConnectionsTable() {
   );
 
   const render = () => {
-    if (tableData && tableData.length > 0) {
+    if (tableData.length > 0 || createdBy !== null) {
       return (
-        <Table
-          columns={columns}
-          data={tableData}
-          isLoading={isLoading}
-          isError={isError}
-        />
+        <Flex direction="column" gap="md">
+          <Flex direction="row">
+            <CreatedByFilterControl
+              value={createdBy}
+              onValueChange={setCreatedBy}
+            />
+          </Flex>
+          <Table
+            columns={columns}
+            data={tableData}
+            isLoading={isLoading}
+            isError={isError}
+          />
+        </Flex>
       );
     }
     return (

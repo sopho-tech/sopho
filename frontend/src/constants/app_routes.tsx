@@ -2,8 +2,12 @@ export const SEARCH_PARAMS = {
   CELL: "cell",
 };
 
+export const TENANT_ROUTE_PARAMETER = "tenantId";
+
 export const APP_ROUTES = {
   INDEX: "/",
+  ONBOARDING: "/onboarding",
+  TENANT: "/t/:tenantId",
   CANVAS: "/canvas/:id",
   CANVASES: "/canvas",
   CANVAS_ROUTES: {
@@ -14,10 +18,17 @@ export const APP_ROUTES = {
   SETTINGS_ROUTES: {
     CONNECTIONS: "/settings/connections",
     AI_CONFIGURATIONS: "/settings/ai-configurations",
+    MEMBERS: "/settings/members",
+    USERS: "/settings/users",
+    TENANTS: "/settings/tenants",
+    EMAILS: "/settings/emails",
   },
   CONNECTION_NEW: "/settings/connection/new",
   CONNECTION_EDIT: "/settings/connection/:id/edit",
   SIGN_IN: "/signin",
+  INVITATION: "/invitation",
+  FORGOT_PASSWORD: "/forgot-password",
+  RESET_PASSWORD: "/reset-password",
   PROFILE: "/profile",
   CONVERSATIONAL_ANALYTICS: "/conversational_analytics",
   CONVERSATIONAL_ANALYTICS_ROUTES: {

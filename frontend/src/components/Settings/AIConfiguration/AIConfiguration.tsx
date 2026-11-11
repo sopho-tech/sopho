@@ -3,8 +3,11 @@ import {
   Badge,
   BannerSlim,
   Button,
+  DropdownMenu,
   Flex,
   Heading,
+  IconButton,
+  Table,
   Text,
   type SelectOption,
 } from "src/components/design-system";
@@ -13,6 +16,8 @@ import {
   useFormCompoundContext,
 } from "src/components/design-system/Form";
 import {
+  AiConfiguration,
+  AiConfigurationStatus,
   Provider,
   useAiConfiguration,
   useDeleteAiConfiguration,
@@ -20,6 +25,7 @@ import {
   useUpdateAiConfiguration,
 } from "src/api/ai_configuration";
 import styles from "src/components/Settings/AIConfiguration/AIConfiguration.module.css";
+import { RemoveAiConfigurationDialog } from "src/components/Settings/AIConfiguration/RemoveAiConfigurationDialog";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 
 type ProviderOption = { value: Provider; label: string };
@@ -43,22 +49,79 @@ type AiConfigFormValues = {
   api_key: string;
 };
 
-type LivenessLabel = {
-  label: string;
-  variant: "green" | "yellow" | "subtle";
+const CONNECTION_STATUS_BADGES: Record<
+  Exclude<AiConfigurationStatus, "not_configured">,
+  { label: string; variant: "green" | "red" | "subtle" }
+> = {
+  live: { label: "Verified", variant: "green" },
+  failed: { label: "Failed", variant: "red" },
+  untested: { label: "Not tested", variant: "subtle" },
 };
 
-function connectionStatusBadge(status: string | undefined): LivenessLabel {
-  switch (status) {
-    case "live":
-      return { label: "live (connection verified)", variant: "green" };
-    case "failed":
-      return { label: "connection failed when tested", variant: "yellow" };
-    case "untested":
-      return { label: "not yet tested", variant: "subtle" };
-    default:
-      return { label: "Untested", variant: "subtle" };
+const PROVIDER_TABLE_COLUMNS = "minmax(0, 1fr) 6rem 11rem 2.5rem";
+
+function CurrentProviderTable({
+  configuration,
+  onRemove,
+}: {
+  configuration: AiConfiguration;
+  onRemove: () => void;
+}) {
+  if (configuration.status === "not_configured") {
+    return (
+      <BannerSlim
+        type="warning"
+        message="No provider is set up yet. Add one below to turn on AI features."
+      />
+    );
   }
+  if (!configuration.provider) {
+    throw new Error("A configured AI provider has no provider name");
+  }
+  const statusBadge = CONNECTION_STATUS_BADGES[configuration.status];
+  return (
+    <Table columns={PROVIDER_TABLE_COLUMNS} aria-label="Current provider">
+      <Table.Header>
+        <Table.HeaderCell>Provider</Table.HeaderCell>
+        <Table.HeaderCell>Status</Table.HeaderCell>
+        <Table.HeaderCell>Last checked</Table.HeaderCell>
+        <Table.HeaderCell />
+      </Table.Header>
+      <Table.Row aria-label={PROVIDER_LABELS[configuration.provider]}>
+        <Table.Cell>
+          <Text fontSize="sm">{PROVIDER_LABELS[configuration.provider]}</Text>
+        </Table.Cell>
+        <Table.Cell>
+          <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
+        </Table.Cell>
+        <Table.Cell>
+          <Text fontSize="sm" color="darkGrey">
+            {configuration.last_checked_at
+              ? formatTimestamp(configuration.last_checked_at)
+              : "Never"}
+          </Text>
+        </Table.Cell>
+        <Table.Cell align="end">
+          <DropdownMenu modal={false}>
+            <DropdownMenu.Trigger>
+              <IconButton
+                type="more_horiz"
+                backgroundColor="default"
+                iconColor="grey"
+                iconSize="md"
+                aria-label="Provider actions"
+              />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content>
+              <DropdownMenu.Item icon="delete" onClick={onRemove}>
+                Remove provider
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu>
+        </Table.Cell>
+      </Table.Row>
+    </Table>
+  );
 }
 
 function ClearApiKeyAfterSuccess({ tick }: { tick: number }) {
@@ -74,83 +137,56 @@ function ClearApiKeyAfterSuccess({ tick }: { tick: number }) {
 }
 
 function AiConfigurationActions({
-  isConfigured,
   testMutation,
   updateMutation,
-  deleteMutation,
-  onDeleteSuccess,
 }: {
-  isConfigured: boolean;
   testMutation: ReturnType<typeof useTestAiConfiguration>;
   updateMutation: ReturnType<typeof useUpdateAiConfiguration>;
-  deleteMutation: ReturnType<typeof useDeleteAiConfiguration>;
-  onDeleteSuccess: () => void;
 }) {
   const { form } = useFormCompoundContext();
 
-  const handleDelete = () => {
-    if (!isConfigured || deleteMutation.isPending) return;
-    deleteMutation.mutate(undefined, {
-      onSuccess: () => {
-        onDeleteSuccess();
-      },
-    });
-  };
-
   return (
-    <>
-      <Button
-        label="Delete"
-        backgroundColor="red"
-        shape="rectangle"
-        size="md"
-        onClick={handleDelete}
-        disabled={!isConfigured || deleteMutation.isPending}
-      />
-      <div className={styles.actionsTrailing}>
-        <form.Subscribe
-          selector={(s) => {
-            const values = s.values as AiConfigFormValues;
-            return {
-              provider: values.provider,
-              api_key: String(values.api_key ?? ""),
-              isSubmitting: s.isSubmitting,
-            };
-          }}
-        >
-          {({ provider, api_key, isSubmitting }) => {
-            const canAct = api_key.trim().length > 0;
-            const handleTest = () => {
-              if (!canAct || testMutation.isPending) return;
-              testMutation.mutate({ provider, api_key });
-            };
-            return (
-              <>
-                <Button
-                  label="Test"
-                  backgroundColor="lightgrey"
-                  shape="rectangle"
-                  size="md"
-                  onClick={handleTest}
-                  disabled={!canAct || testMutation.isPending}
-                />
-                <Button
-                  label="Save"
-                  backgroundColor="accent"
-                  shape="rectangle"
-                  size="md"
-                  type="submit"
-                  onClick={() => {
-                    void form.handleSubmit();
-                  }}
-                  disabled={!canAct || updateMutation.isPending || isSubmitting}
-                />
-              </>
-            );
-          }}
-        </form.Subscribe>
-      </div>
-    </>
+    <form.Subscribe
+      selector={(s) => {
+        const values = s.values as AiConfigFormValues;
+        return {
+          provider: values.provider,
+          api_key: String(values.api_key ?? ""),
+          isSubmitting: s.isSubmitting,
+        };
+      }}
+    >
+      {({ provider, api_key, isSubmitting }) => {
+        const canAct = api_key.trim().length > 0;
+        const handleTest = () => {
+          if (!canAct || testMutation.isPending) return;
+          testMutation.mutate({ provider, api_key });
+        };
+        return (
+          <>
+            <Button
+              label="Test connection"
+              backgroundColor="white"
+              shape="rectangle"
+              size="sm"
+              onClick={handleTest}
+              disabled={!canAct || testMutation.isPending}
+            />
+            <Button
+              label="Save"
+              backgroundColor="accent"
+              shape="rectangle"
+              size="sm"
+              type="submit"
+              onClick={() => {
+                void form.handleSubmit();
+              }}
+              disabled={!canAct || updateMutation.isPending || isSubmitting}
+            />
+          </>
+        );
+      }}
+    </form.Subscribe>
   );
 }
 
@@ -160,8 +196,8 @@ export function AIConfiguration() {
   const deleteMutation = useDeleteAiConfiguration();
   const testMutation = useTestAiConfiguration();
   const [credentialsTick, setCredentialsTick] = useState(0);
+  const [isRemoving, setIsRemoving] = useState(false);
   const isConfigured = configuration?.status !== "not_configured";
-  const statusBadge = connectionStatusBadge(configuration?.status);
   const testResult = testMutation.data;
   const apiKeyPlaceholder = isConfigured
     ? "Enter a new key to replace the stored one"
@@ -195,6 +231,20 @@ export function AIConfiguration() {
     [updateMutation],
   );
 
+  const handleOpenRemove = useCallback(() => {
+    deleteMutation.reset();
+    setIsRemoving(true);
+  }, [deleteMutation]);
+  const handleCloseRemove = useCallback(() => setIsRemoving(false), []);
+  const handleConfirmRemove = useCallback(() => {
+    deleteMutation.mutate(undefined, {
+      onSuccess: () => {
+        setIsRemoving(false);
+        setCredentialsTick((tick) => tick + 1);
+      },
+    });
+  }, [deleteMutation]);
+
   return (
     <Flex direction="column" gap="lg" width="100%" className={styles.page}>
       <Flex direction="column" gap="2xs">
@@ -206,24 +256,12 @@ export function AIConfiguration() {
         </Text>
       </Flex>
 
-      <Flex alignItems="center" gap="sm">
-        {isConfigured ? (
-          <>
-            <Badge variant={statusBadge.variant}>
-              {`${PROVIDER_LABELS[configuration?.provider ?? "anthropic"]} — ${statusBadge.label}`}
-            </Badge>
-            {configuration?.last_checked_at && (
-              <Text fontSize="xs" color="subtle">
-                {`Verified at ${formatTimestamp(configuration.last_checked_at) ?? ""}`}
-              </Text>
-            )}
-          </>
-        ) : (
-          <Text fontSize="sm" color="subtle">
-            No LLM providers are configured
-          </Text>
-        )}
-      </Flex>
+      {configuration && (
+        <CurrentProviderTable
+          configuration={configuration}
+          onRemove={handleOpenRemove}
+        />
+      )}
 
       <Form defaultValues={defaultFormValues} onSubmit={handleSubmit}>
         <ClearApiKeyAfterSuccess tick={credentialsTick} />
@@ -232,7 +270,6 @@ export function AIConfiguration() {
           <Form.Field name="provider" className={styles.field}>
             <Form.Label>Provider</Form.Label>
             <Form.Select
-              groupName="Provider"
               placeholder="Provider"
               options={PROVIDER_SELECT_OPTIONS}
             />
@@ -272,14 +309,20 @@ export function AIConfiguration() {
 
         <Form.Actions className={styles.actions}>
           <AiConfigurationActions
-            isConfigured={isConfigured}
             testMutation={testMutation}
             updateMutation={updateMutation}
-            deleteMutation={deleteMutation}
-            onDeleteSuccess={() => setCredentialsTick((t) => t + 1)}
           />
         </Form.Actions>
       </Form>
+      {isRemoving && configuration?.provider && (
+        <RemoveAiConfigurationDialog
+          providerLabel={PROVIDER_LABELS[configuration.provider]}
+          onConfirm={handleConfirmRemove}
+          onClose={handleCloseRemove}
+          isPending={deleteMutation.isPending}
+          error={deleteMutation.error}
+        />
+      )}
     </Flex>
   );
 }

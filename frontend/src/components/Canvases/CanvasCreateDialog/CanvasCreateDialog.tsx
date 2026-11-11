@@ -2,7 +2,8 @@ import { useCallback } from "react";
 import { useStore } from "src/store";
 import { CanvasesPageState } from "src/components/Canvases/dto";
 import { APP_ROUTES } from "src/constants/app_routes";
-import { CanvasDto } from "src/components/Canvases/dto";
+import { useTenantPath } from "src/utils/tenant";
+import { CanvasDto, NewCanvasDto } from "src/components/Canvases/dto";
 import { useNavigate } from "react-router";
 import { useCreateCanvas } from "src/api/canvas/queries";
 import { Form } from "src/components/design-system/Form/Form";
@@ -13,6 +14,7 @@ const DEFAULT_FORM_VALUES = { name: "", description: "" };
 
 export function CanvasCreateDialog() {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const canvasPageState = useStore((state) => state.canvas.canvasPageState);
   const setCanvasPageState = useStore(
     (state) => state.canvas.setCanvasPageState,
@@ -35,13 +37,13 @@ export function CanvasCreateDialog() {
     (data: CanvasDto) => {
       setCanvasPageState(CanvasesPageState.LIST);
       if (data.id) {
-        const canvasPath = `${APP_ROUTES.CANVASES}/${data.id}`;
+        const canvasPath = toTenantPath(`${APP_ROUTES.CANVASES}/${data.id}`);
         void navigate(canvasPath);
       } else {
         throw Error("unexpected state");
       }
     },
-    [setCanvasPageState, navigate],
+    [setCanvasPageState, navigate, toTenantPath],
   );
 
   const handleError = useCallback((error: Error) => {
@@ -55,7 +57,7 @@ export function CanvasCreateDialog() {
 
   const onSubmitCallback = useCallback(
     (values: Record<string, unknown>) => {
-      const canvas: Omit<CanvasDto, "id"> = {
+      const canvas: NewCanvasDto = {
         name: values.name as string,
         description: values.description as string,
         status: null,

@@ -1,4 +1,4 @@
-use crate::support::constants::{METADATA_DATABASE_PREFIX, TEST_DATABASE_VARIABLE};
+use crate::support::constants::{METADATA_DATABASE_PREFIX, TestEnvironmentVariable};
 use crate::support::postgres_server::PostgresDatabase;
 use std::str::FromStr;
 use strum::EnumString;
@@ -12,12 +12,11 @@ pub enum MetadataDatabaseKind {
 }
 
 pub fn metadata_database_kind() -> MetadataDatabaseKind {
-    let value = std::env::var(TEST_DATABASE_VARIABLE).unwrap_or_else(|error| {
-        panic!("{TEST_DATABASE_VARIABLE} must be set to sqlite or postgres: {error}")
-    });
-    MetadataDatabaseKind::from_str(&value).unwrap_or_else(|_| {
-        panic!("{TEST_DATABASE_VARIABLE} must be sqlite or postgres, got {value}")
-    })
+    let variable = TestEnvironmentVariable::TestDb;
+    let value = std::env::var(variable.as_ref())
+        .unwrap_or_else(|error| panic!("{variable} must be set to sqlite or postgres: {error}"));
+    MetadataDatabaseKind::from_str(&value)
+        .unwrap_or_else(|_| panic!("{variable} must be sqlite or postgres, got {value}"))
 }
 
 pub enum MetadataDatabase {

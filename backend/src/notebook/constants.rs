@@ -30,3 +30,6 @@ impl QueryFilters {
         self.cell_type.clone()
     }
 }
+
+pub const NOTEBOOK_NOT_FOUND_MESSAGE: &str = "Notebook not found";
+pub const CANVAS_NOT_FOUND_MESSAGE: &str = "Canvas not found";

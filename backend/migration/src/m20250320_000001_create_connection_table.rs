@@ -1,4 +1,4 @@
-use crate::db::add_created_at_and_updated_at_timestamps;
+use crate::db::{add_attribution_columns, add_created_at_and_updated_at_timestamps};
 use sea_orm_migration::{prelude::*, schema::*};
 
 #[derive(DeriveMigrationName)]
@@ -9,21 +9,26 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
             .create_table(add_created_at_and_updated_at_timestamps(
-                Table::create()
-                    .table(Connection::Table)
-                    .if_not_exists()
-                    .col(pk_uuid(Connection::Id))
-                    .col(string(Connection::Name))
-                    .col(string_null(Connection::Description))
-                    .col(string_null(Connection::Username))
-                    .col(string_null(Connection::Password))
-                    .col(string_null(Connection::Host))
-                    .col(string_null(Connection::Port))
-                    .col(string(Connection::Database))
-                    .col(string_null(Connection::Schema))
-                    .col(string(Connection::SourceType))
-                    .col(string(Connection::Status))
-                    .to_owned(),
+                add_attribution_columns(
+                    Table::create()
+                        .table(Connection::Table)
+                        .if_not_exists()
+                        .col(pk_uuid(Connection::Id))
+                        .col(uuid(Connection::TenantId))
+                        .col(uuid(Connection::OwnerUserId))
+                        .col(string(Connection::Visibility))
+                        .col(string(Connection::Name))
+                        .col(string_null(Connection::Description))
+                        .col(string_null(Connection::Username))
+                        .col(string_null(Connection::Password))
+                        .col(string_null(Connection::Host))
+                        .col(string_null(Connection::Port))
+                        .col(string(Connection::Database))
+                        .col(string_null(Connection::Schema))
+                        .col(string(Connection::SourceType))
+                        .col(string(Connection::Status))
+                        .to_owned(),
+                ),
             ))
             .await
     }
@@ -36,9 +41,12 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum Connection {
+pub enum Connection {
     Table,
     Id,
+    TenantId,
+    OwnerUserId,
+    Visibility,
     Name,
     Description,
     Username,

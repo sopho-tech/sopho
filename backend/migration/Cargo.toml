@@ -15,9 +15,12 @@ sea-orm-migration = {
     "runtime-tokio-native-tls",
     "sqlx-postgres",
     "sqlx-sqlite",
+    "with-uuid",
   ]
 }
+sopho-common = { path = "../common" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+uuid = { version = "1.4", features = ["v4"] }
 
 [lints]
 workspace = true

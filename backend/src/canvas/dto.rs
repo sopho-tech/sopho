@@ -1,8 +1,15 @@
+use crate::attribution::dto::AttributionDto;
+use crate::authorization::dto::{Actor, ResourceCapabilities, ResourceOwnership};
 use crate::canvas::constants::CanvasStatus;
 use crate::entity;
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+pub struct CanvasAuthorship {
+    pub ownership: ResourceOwnership,
+    pub actor: Actor,
+}
 
 #[derive(Debug)]
 pub struct CreateCanvasResult {
@@ -42,6 +49,10 @@ pub struct CanvasDto {
     pub sql_cell_count: i32,
     pub chart_cell_count: i32,
     pub dashboard_charts_count: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub capabilities: Option<ResourceCapabilities>,
+    pub created_by: Option<AttributionDto>,
+    pub modified_by: Option<AttributionDto>,
 }
 
 impl From<entity::canvas::Model> for CanvasDto {
@@ -56,6 +67,9 @@ impl From<entity::canvas::Model> for CanvasDto {
             sql_cell_count: 0,
             chart_cell_count: 0,
             dashboard_charts_count: 0,
+            capabilities: None,
+            created_by: None,
+            modified_by: None,
         }
     }
 }

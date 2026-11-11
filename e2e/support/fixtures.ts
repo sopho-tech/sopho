@@ -1,5 +1,5 @@
 import { test as base, type Page } from "@playwright/test";
-import { signIn } from "e2e/support/api";
+import { defaultTenantId, signIn } from "e2e/support/api";
 import {
   CONTAINER_LOGS_ATTACHMENT_NAME,
   METADATA_POSTGRES_URL,
@@ -23,6 +23,7 @@ type SophoServer = {
 
 type SophoTestFixtures = {
   signedInPage: Page;
+  tenantId: string;
   attachContainerLogsOnFailure: void;
 };
 
@@ -96,6 +97,9 @@ export const test = base.extend<SophoTestFixtures, SophoWorkerFixtures>({
   signedInPage: async ({ page }, use) => {
     await signIn(page.request);
     await use(page);
+  },
+  tenantId: async ({ signedInPage }, use) => {
+    await use(await defaultTenantId(signedInPage.request));
   },
 });
 

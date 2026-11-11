@@ -14,7 +14,7 @@ import { canvasNotebookUrl } from "e2e/support/navigation";
 test(
   "runs SQL against the demo data",
   { tag: "@smoke" },
-  async ({ signedInPage: page }) => {
+  async ({ signedInPage: page, tenantId }) => {
     const demoConnection = await findDemoConnection(page.request);
     const canvas = await createCanvas(page.request, "Notebook smoke test");
     await createSqlCell(
@@ -24,7 +24,7 @@ test(
       "Order count",
       ORDER_COUNT_SQL,
     );
-    await page.goto(canvasNotebookUrl(canvas.canvasId));
+    await page.goto(canvasNotebookUrl(tenantId, canvas.canvasId));
 
     await page.getByText(ORDER_COUNT_SQL).click();
     await page.keyboard.press("Meta+Enter");
@@ -35,7 +35,7 @@ test(
   },
 );
 
-test("runs only the selected SQL", async ({ signedInPage: page }) => {
+test("runs only the selected SQL", async ({ signedInPage: page, tenantId }) => {
   const demoConnection = await findDemoConnection(page.request);
   const canvas = await createCanvas(page.request, "Selected SQL");
   await createSqlCell(
@@ -45,7 +45,7 @@ test("runs only the selected SQL", async ({ signedInPage: page }) => {
     "Two statements",
     `${ORDER_STATUS_SQL};\n${ORDER_COUNT_SQL};`,
   );
-  await page.goto(canvasNotebookUrl(canvas.canvasId));
+  await page.goto(canvasNotebookUrl(tenantId, canvas.canvasId));
 
   await page.getByText(`${ORDER_COUNT_SQL};`).click();
   await page.keyboard.press("Home");

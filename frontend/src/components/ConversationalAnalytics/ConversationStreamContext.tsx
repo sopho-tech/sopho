@@ -12,6 +12,7 @@ import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { conversationKeys } from "src/api/conversational_analytics/queries";
 import { useSuggestConversationName } from "src/api/conversational_analytics";
 import { streamSse } from "src/utils/fetch_sse";
+import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 import {
   AgentEventName,
   type AgentEvent,
@@ -71,6 +72,7 @@ export function ConversationStreamProvider({
 }) {
   const storeRef = useRef<StreamStore>(createStreamStore());
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
   const suggestName = useSuggestConversationName();
   const suggestNameRef = useRef(suggestName);
   suggestNameRef.current = suggestName;
@@ -103,11 +105,13 @@ export function ConversationStreamProvider({
       store.streams.set(conversationId, { events: [], isStreaming: true });
       notify(store);
 
-      const endpoint =
+      const endpoint = tenantApiUrl(
+        tenantId,
         API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.COMPLETION.replace(
           ":conversation_id",
           conversationId,
-        );
+        ),
+      );
 
       const run = async () => {
         try {
@@ -128,7 +132,10 @@ export function ConversationStreamProvider({
                     notify(store);
                     controller.abort();
                     void queryClient.invalidateQueries({
-                      queryKey: conversationKeys.detail(conversationId),
+                      queryKey: conversationKeys.detail(
+                        tenantId,
+                        conversationId,
+                      ),
                     });
                     return;
                   }
@@ -158,7 +165,7 @@ export function ConversationStreamProvider({
 
       void run();
     },
-    [queryClient],
+    [queryClient, tenantId],
   );
 
   useEffect(() => {

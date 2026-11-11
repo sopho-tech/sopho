@@ -14,6 +14,7 @@ type PasswordFieldProps = {
   icon?: IconType;
   readonly?: boolean;
   containerClassName?: string;
+  fullWidth?: boolean;
 };
 
 export function PasswordField({
@@ -21,6 +22,7 @@ export function PasswordField({
   icon,
   readonly = false,
   containerClassName,
+  fullWidth = false,
 }: PasswordFieldProps) {
   const field = useFieldContext<string>();
   const formFieldId = useFormFieldId();
@@ -35,7 +37,7 @@ export function PasswordField({
 
   return (
     <div
-      className={`${styles.passwordContainer} ${containerClassName ?? ""}`.trim()}
+      className={`${styles.passwordContainer} ${fullWidth ? styles.fullWidth : ""} ${containerClassName ?? ""}`.trim()}
     >
       <div className={styles.passwordInputWrapper}>
         <Input

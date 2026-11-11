@@ -48,6 +48,10 @@
   }
 }
 
+.current {
+  color: currentcolor;
+}
+
 .accent {
   color: var(--color-primary-500);
 }

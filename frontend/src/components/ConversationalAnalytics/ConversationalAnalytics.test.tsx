@@ -10,6 +10,11 @@ import { APP_ROUTES } from "src/constants/app_routes";
 import { worker } from "src/test/msw/browser_worker";
 import { renderWithProviders } from "src/test/render_with_providers";
 import {
+  tenantRoutePattern,
+  testTenantApiUrl,
+  testTenantPath,
+} from "src/test/tenant_routes";
+import {
   CONVERSATION,
   CONVERSATION_ID,
   ORDER_STATUS_ANSWER_EVENTS,
@@ -21,15 +26,19 @@ import {
 
 const conversationRoutes = [
   {
-    path: APP_ROUTES.CONVERSATIONAL_ANALYTICS,
+    path: tenantRoutePattern(APP_ROUTES.CONVERSATIONAL_ANALYTICS),
     element: <ConversationalAnalytics />,
     children: [
       {
-        path: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX,
+        path: tenantRoutePattern(
+          APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX,
+        ),
         element: <NewConversationPanel />,
       },
       {
-        path: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION,
+        path: tenantRoutePattern(
+          APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION,
+        ),
         element: <ExistingConversationPanel />,
       },
     ],
@@ -51,62 +60,73 @@ describe("conversational analytics", () => {
     let isAnswered = false;
     let createdConversation: unknown = null;
     worker.use(
-      http.get(API_ENDPOINTS.AI_CONFIGURATION.GET, () =>
+      http.get(testTenantApiUrl(API_ENDPOINTS.AI_CONFIGURATION.GET), () =>
         HttpResponse.json({ status: "live", provider: "anthropic" }),
       ),
-      http.get(API_ENDPOINTS.CONNECTION.GET_ALL, () =>
+      http.get(testTenantApiUrl(API_ENDPOINTS.CONNECTION.GET_ALL), () =>
         HttpResponse.json([SQLITE_CONNECTION]),
       ),
-      http.get(API_ENDPOINTS.SUGGESTED_QUESTION.GET_BY_CONNECTION, () =>
-        HttpResponse.json([]),
+      http.get(
+        testTenantApiUrl(API_ENDPOINTS.SUGGESTED_QUESTION.GET_BY_CONNECTION),
+        () => HttpResponse.json([]),
       ),
-      http.get(API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.GET_ALL, () =>
-        HttpResponse.json({ items: [], total: 0, page: 1, page_size: 25 }),
+      http.get(
+        testTenantApiUrl(API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.GET_ALL),
+        () =>
+          HttpResponse.json({ items: [], total: 0, page: 1, page_size: 25 }),
       ),
       http.post(
-        API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.CREATE,
+        testTenantApiUrl(API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.CREATE),
         async ({ request }) => {
           createdConversation = await request.json();
           return HttpResponse.json(CONVERSATION, { status: 201 });
         },
       ),
-      http.get(API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.GET_BY_ID, () =>
-        HttpResponse.json(
-          conversationWithMessages(
-            isAnswered
-              ? [
-                  ...ORDER_STATUS_ANSWER_EVENTS,
-                  { event_name: AgentEventName.Completed },
-                ]
-              : null,
+      http.get(
+        testTenantApiUrl(API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.GET_BY_ID),
+        () =>
+          HttpResponse.json(
+            conversationWithMessages(
+              isAnswered
+                ? [
+                    ...ORDER_STATUS_ANSWER_EVENTS,
+                    { event_name: AgentEventName.Completed },
+                  ]
+                : null,
+            ),
           ),
-        ),
       ),
-      http.post(API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.SUGGEST_NAME, () =>
-        HttpResponse.json({ ...CONVERSATION, name: "Orders by status" }),
+      http.post(
+        testTenantApiUrl(API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.SUGGEST_NAME),
+        () => HttpResponse.json({ ...CONVERSATION, name: "Orders by status" }),
       ),
-      http.post(API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.COMPLETION, () => {
-        const body = new ReadableStream<Uint8Array>({
-          async start(controller) {
-            for (const event of ORDER_STATUS_ANSWER_EVENTS) {
-              controller.enqueue(serverSentEvent(event));
-            }
-            await completionReleased;
-            isAnswered = true;
-            controller.enqueue(
-              serverSentEvent({ event_name: AgentEventName.Completed }),
-            );
-            controller.close();
-          },
-        });
-        return new HttpResponse(body, {
-          headers: { "Content-Type": "text/event-stream" },
-        });
-      }),
+      http.post(
+        testTenantApiUrl(API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.COMPLETION),
+        () => {
+          const body = new ReadableStream<Uint8Array>({
+            async start(controller) {
+              for (const event of ORDER_STATUS_ANSWER_EVENTS) {
+                controller.enqueue(serverSentEvent(event));
+              }
+              await completionReleased;
+              isAnswered = true;
+              controller.enqueue(
+                serverSentEvent({ event_name: AgentEventName.Completed }),
+              );
+              controller.close();
+            },
+          });
+          return new HttpResponse(body, {
+            headers: { "Content-Type": "text/event-stream" },
+          });
+        },
+      ),
     );
     const { router } = await renderWithProviders({
       routes: conversationRoutes,
-      initialPath: APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX,
+      initialPath: testTenantPath(
+        APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX,
+      ),
     });
 
     await page
@@ -117,9 +137,11 @@ describe("conversational analytics", () => {
 
     await expect.element(page.getByText(ORDER_STATUS_NARRATION)).toBeVisible();
     expect(router.state.location.pathname).toBe(
-      APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION.replace(
-        ":id",
-        CONVERSATION_ID,
+      testTenantPath(
+        APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.CONVERSATION.replace(
+          ":id",
+          CONVERSATION_ID,
+        ),
       ),
     );
     expect(createdConversation).toEqual({

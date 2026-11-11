@@ -1,3 +1,4 @@
+use crate::attribution::error::AttributionError;
 use crate::common::errors::GetDatabaseConnectionError;
 use thiserror::Error;
 
@@ -85,6 +86,17 @@ impl From<ConversationError> for ExecuteCompletionError {
                 ExecuteCompletionError::Database(sea_orm::DbErr::Custom(s))
             }
             ConversationError::AiNotLive => ExecuteCompletionError::AiNotLive,
+        }
+    }
+}
+
+impl From<AttributionError> for ConversationError {
+    fn from(error: AttributionError) -> Self {
+        match error {
+            AttributionError::Database(database_error) => {
+                ConversationError::Database(database_error)
+            }
+            other => ConversationError::Conversion(other.to_string()),
         }
     }
 }

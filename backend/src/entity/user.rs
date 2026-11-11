@@ -8,9 +8,14 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub username: String,
-    pub password_hash: String,
+    pub password_hash: Option<String>,
     pub email: String,
     pub full_name: String,
+    pub platform_role: String,
+    pub email_verified_at: Option<DateTimeWithTimeZone>,
+    pub status: String,
+    pub failed_sign_in_count: i32,
+    pub sign_in_blocked_until: Option<DateTimeWithTimeZone>,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

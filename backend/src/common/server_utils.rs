@@ -1,4 +1,6 @@
+use crate::common::constants::CreatedByFilter;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Deserialize)]
 pub struct Pagination {
@@ -13,6 +15,20 @@ impl Pagination {
 
     pub fn page_size(&self) -> u64 {
         self.page_size.unwrap_or(10)
+    }
+}
+
+#[derive(Deserialize)]
+pub struct CreatedByQuery {
+    created_by: Option<String>,
+}
+
+impl CreatedByQuery {
+    pub fn filter(&self) -> Result<Option<CreatedByFilter>, strum::ParseError> {
+        self.created_by
+            .as_deref()
+            .map(CreatedByFilter::from_str)
+            .transpose()
     }
 }
 

@@ -21,10 +21,17 @@ pub struct SessionDto {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Serialize)]
+pub struct SignInPageOptionsDto {
+    pub providers: Vec<crate::authentication::oidc::dto::OidcProviderDto>,
+    pub password_reset_available: bool,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct UserDto {
     pub id: Uuid,
     pub username: String,
     pub email: String,
     pub full_name: String,
+    pub platform_permissions: Vec<String>,
 }

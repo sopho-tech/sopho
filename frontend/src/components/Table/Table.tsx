@@ -243,7 +243,7 @@ export function Table<T extends RowData>({
                 {row.getAllCells().map((cell) => (
                   <td
                     key={cell.id}
-                    className={`${styles.tableDataCell} ${isCompact ? styles.tableDataCellCompact : ""} ${isPlain ? styles.tableDataCellPlain : ""} ${tableDataCellStyle}`}
+                    className={`${styles.tableDataCell} ${columnConfigMap.get(cell.column.id)?.fill ? styles.tableDataCellFill : ""} ${isCompact ? styles.tableDataCellCompact : ""} ${isPlain ? styles.tableDataCellPlain : ""} ${tableDataCellStyle}`}
                     style={{
                       width: getColumnWidth(
                         cell.column.id,

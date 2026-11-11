@@ -59,6 +59,17 @@ impl From<SessionStatus> for String {
     }
 }
 
+pub use sopho_common::user_status::UserStatus;
+
 pub const ACCESS_TOKEN_EXPIRY_HOURS: i64 = 1;
+pub const SIGN_IN_FAILURE_LIMIT: i32 = 10;
+pub const SIGN_IN_BLOCK_MINUTES: i64 = 15;
+pub const TOO_MANY_SIGN_IN_ATTEMPTS_MESSAGE: &str =
+    "Too many attempts. Try again in 15 minutes or reset your password.";
+pub const ACCOUNT_DEACTIVATED_MESSAGE: &str = "This account has been deactivated";
 
 pub const REFRESH_TOKEN_EXPIRY_DAYS: i64 = 15;
+
+pub const USER_NOT_FOUND_MESSAGE: &str = "User not found";
+pub const SESSION_NOT_FOUND_MESSAGE: &str = "Session not found";
+pub const INVALID_CREDENTIALS_MESSAGE: &str = "Invalid credentials";

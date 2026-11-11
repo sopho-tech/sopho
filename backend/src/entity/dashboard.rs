@@ -7,12 +7,17 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
+    pub tenant_id: Uuid,
     pub canvas_id: Uuid,
     pub name: String,
     pub description: String,
     #[sea_orm(column_type = "JsonBinary", nullable)]
     pub layout: Option<Json>,
     pub status: String,
+    pub created_by_user_id: Option<Uuid>,
+    pub created_by_actor: String,
+    pub modified_by_user_id: Option<Uuid>,
+    pub modified_by_actor: String,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

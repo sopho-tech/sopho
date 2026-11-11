@@ -3,6 +3,7 @@ use super::error::AppendUserMessageError;
 use super::error::ConversationError;
 use super::error::ExecuteCompletionError;
 use super::service;
+use crate::authorization::dto::TenantContext;
 use crate::common::AppState;
 use crate::common::error_codes::codes;
 use axum::Router;
@@ -15,6 +16,11 @@ use axum::response::IntoResponse;
 use axum::routing::{delete, get, post, put};
 use serde_json::Value;
 use uuid::Uuid;
+
+#[derive(serde::Deserialize)]
+struct ConversationPath {
+    conversation_id: Uuid,
+}
 
 pub fn routes(app_state: AppState) -> Router {
     Router::new()
@@ -32,9 +38,10 @@ pub fn routes(app_state: AppState) -> Router {
 
 async fn list_conversations(
     State(app_state): State<AppState>,
+    tenant_context: TenantContext,
     Query(query): Query<dto::ListConversationsQuery>,
 ) -> impl IntoResponse {
-    match service::list_conversations(app_state, query).await {
+    match service::list_conversations(app_state, &tenant_context, query).await {
         Ok(page) => (StatusCode::OK, axum::Json(serde_json::json!(page))),
         Err(e) => conversation_error_http_response(e),
     }
@@ -42,9 +49,10 @@ async fn list_conversations(
 
 async fn bulk_delete_conversations(
     State(app_state): State<AppState>,
+    tenant_context: TenantContext,
     Json(payload): Json<dto::BulkDeleteConversationsDto>,
 ) -> impl IntoResponse {
-    match service::bulk_delete_conversations(app_state, payload).await {
+    match service::bulk_delete_conversations(app_state, &tenant_context, payload).await {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => conversation_error_http_response(e).into_response(),
     }
@@ -52,9 +60,10 @@ async fn bulk_delete_conversations(
 
 async fn get_conversation(
     State(app_state): State<AppState>,
-    Path(conversation_id): Path<Uuid>,
+    tenant_context: TenantContext,
+    Path(ConversationPath { conversation_id }): Path<ConversationPath>,
 ) -> impl IntoResponse {
-    match service::get_conversation(app_state, conversation_id).await {
+    match service::get_conversation(app_state, &tenant_context, conversation_id).await {
         Ok(response_dto) => (StatusCode::OK, axum::Json(serde_json::json!(response_dto))),
         Err(e) => conversation_error_http_response(e),
     }
@@ -62,9 +71,10 @@ async fn get_conversation(
 
 async fn create_conversation(
     State(app_state): State<AppState>,
+    tenant_context: TenantContext,
     Json(payload): Json<dto::CreateConversationDto>,
 ) -> impl IntoResponse {
-    match service::create_conversation(app_state, payload).await {
+    match service::create_conversation(app_state, &tenant_context, payload).await {
         Ok(response_dto) => (
             StatusCode::CREATED,
             axum::Json(serde_json::json!(response_dto)),
@@ -75,10 +85,11 @@ async fn create_conversation(
 
 async fn update_conversation(
     State(app_state): State<AppState>,
-    Path(conversation_id): Path<Uuid>,
+    tenant_context: TenantContext,
+    Path(ConversationPath { conversation_id }): Path<ConversationPath>,
     Json(payload): Json<dto::ConversationDto>,
 ) -> impl IntoResponse {
-    match service::update_conversation(app_state, conversation_id, payload).await {
+    match service::update_conversation(app_state, &tenant_context, conversation_id, payload).await {
         Ok(response_dto) => (StatusCode::OK, axum::Json(serde_json::json!(response_dto))),
         Err(e) => conversation_error_http_response(e),
     }
@@ -86,9 +97,10 @@ async fn update_conversation(
 
 async fn delete_conversation(
     State(app_state): State<AppState>,
-    Path(conversation_id): Path<Uuid>,
+    tenant_context: TenantContext,
+    Path(ConversationPath { conversation_id }): Path<ConversationPath>,
 ) -> impl IntoResponse {
-    match service::delete_conversation(app_state, conversation_id).await {
+    match service::delete_conversation(app_state, &tenant_context, conversation_id).await {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(e) => conversation_error_http_response(e).into_response(),
     }
@@ -96,9 +108,10 @@ async fn delete_conversation(
 
 async fn execute_completion(
     State(app_state): State<AppState>,
-    Path(conversation_id): Path<Uuid>,
+    tenant_context: TenantContext,
+    Path(ConversationPath { conversation_id }): Path<ConversationPath>,
 ) -> impl IntoResponse {
-    match service::execute_completion(app_state, conversation_id).await {
+    match service::execute_completion(app_state, &tenant_context, conversation_id).await {
         Ok(sse) => sse.into_response(),
         Err(e) => {
             let (status, error, code) = match &e {
@@ -135,9 +148,10 @@ async fn execute_completion(
 
 async fn suggest_name(
     State(app_state): State<AppState>,
-    Path(conversation_id): Path<Uuid>,
+    tenant_context: TenantContext,
+    Path(ConversationPath { conversation_id }): Path<ConversationPath>,
 ) -> impl IntoResponse {
-    match service::suggest_conversation_name(app_state, conversation_id).await {
+    match service::suggest_conversation_name(app_state, &tenant_context, conversation_id).await {
         Ok(response_dto) => (StatusCode::OK, axum::Json(serde_json::json!(response_dto))),
         Err(e) => conversation_error_http_response(e),
     }
@@ -145,10 +159,11 @@ async fn suggest_name(
 
 async fn append_user_message(
     State(app_state): State<AppState>,
-    Path(conversation_id): Path<Uuid>,
+    tenant_context: TenantContext,
+    Path(ConversationPath { conversation_id }): Path<ConversationPath>,
     Json(payload): Json<dto::AppendUserMessageDto>,
 ) -> impl IntoResponse {
-    match service::append_user_message(app_state, conversation_id, payload).await {
+    match service::append_user_message(app_state, &tenant_context, conversation_id, payload).await {
         Ok(response_dto) => {
             (StatusCode::OK, axum::Json(serde_json::json!(response_dto))).into_response()
         }

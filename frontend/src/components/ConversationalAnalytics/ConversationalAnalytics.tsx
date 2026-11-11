@@ -1,6 +1,7 @@
 import { Flex, IconButton, SearchBar } from "src/components/design-system";
 import { useNavigate } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 import { TopBar } from "src/components/TopBar";
 import { Sidebar } from "src/components/ConversationalAnalytics/Sidebar";
 import { ConversationSection } from "src/components/ConversationalAnalytics/ConversationSection";
@@ -8,9 +9,12 @@ import { ConversationStreamProvider } from "src/components/ConversationalAnalyti
 
 export function ConversationalAnalytics() {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
 
   const handleCreateConversation = () => {
-    void navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
+    void navigate(
+      toTenantPath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX),
+    );
   };
 
   return (

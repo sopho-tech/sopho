@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useId } from "react";
 import SegmentedControlStyles from "src/components/design-system/SegmentedControl/SegmentedControl.module.css";
 import { IconType } from "src/components/design-system/datatypes";
 import { Icon } from "src/components/design-system/Icon";
 import { ToolTip } from "src/components/design-system/ToolTip";
-import { layoutSpringTransition } from "src/components/design-system/animation";
-import { motion } from "motion/react";
+import {
+  indicatorSlideTransition,
+  instantTransition,
+} from "src/components/design-system/animation";
+import { motion, useReducedMotion } from "motion/react";
 
 export type SegmentedControlOption = {
   label?: string;
@@ -27,6 +30,8 @@ export function SegmentedControl({
   onValueChange,
   disabled = false,
 }: SegmentedControlProps) {
+  const indicatorLayoutId = `segmented-control-indicator-${useId()}`;
+  const prefersReducedMotion = useReducedMotion();
   return (
     <div className={SegmentedControlStyles.root} role="tablist">
       {options.map((option) => {
@@ -35,9 +40,13 @@ export function SegmentedControl({
           <div className={SegmentedControlStyles.segmentWrapper}>
             {isSelected && (
               <motion.div
-                layoutId="segmented-control-indicator"
+                layoutId={indicatorLayoutId}
                 className={SegmentedControlStyles.indicator}
-                transition={layoutSpringTransition}
+                transition={
+                  prefersReducedMotion
+                    ? instantTransition
+                    : indicatorSlideTransition
+                }
               />
             )}
             <button
@@ -52,14 +61,14 @@ export function SegmentedControl({
             >
               {option.leadingIcon && (
                 <span className={SegmentedControlStyles.iconContainer}>
-                  <Icon type={option.leadingIcon} color="grey" size="md"></Icon>
+                  <Icon
+                    type={option.leadingIcon}
+                    color="current"
+                    size="md"
+                  ></Icon>
                 </span>
               )}
-              {option.label && (
-                <span className={SegmentedControlStyles.label}>
-                  {option.label}
-                </span>
-              )}
+              {option.label && <span>{option.label}</span>}
             </button>
           </div>
         );

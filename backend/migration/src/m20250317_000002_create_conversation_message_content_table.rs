@@ -1,4 +1,4 @@
-use crate::db::add_created_at_and_updated_at_timestamps;
+use crate::db::{add_attribution_columns, add_created_at_and_updated_at_timestamps};
 use sea_orm_migration::{
     prelude::*,
     schema::{integer, pk_uuid, string, uuid},
@@ -11,15 +11,18 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
             .create_table(add_created_at_and_updated_at_timestamps(
-                Table::create()
-                    .table(ConversationMessageContent::Table)
-                    .col(pk_uuid(ConversationMessageContent::Id))
-                    .col(uuid(ConversationMessageContent::ConversationMessageId))
-                    .col(integer(ConversationMessageContent::SequenceNumber))
-                    .col(string(ConversationMessageContent::ContentType))
-                    .col(string(ConversationMessageContent::Content))
-                    .col(string(ConversationMessageContent::Status))
-                    .to_owned(),
+                add_attribution_columns(
+                    Table::create()
+                        .table(ConversationMessageContent::Table)
+                        .col(pk_uuid(ConversationMessageContent::Id))
+                        .col(uuid(ConversationMessageContent::TenantId))
+                        .col(uuid(ConversationMessageContent::ConversationMessageId))
+                        .col(integer(ConversationMessageContent::SequenceNumber))
+                        .col(string(ConversationMessageContent::ContentType))
+                        .col(string(ConversationMessageContent::Content))
+                        .col(string(ConversationMessageContent::Status))
+                        .to_owned(),
+                ),
             ))
             .await
     }
@@ -39,6 +42,7 @@ impl MigrationTrait for Migration {
 pub enum ConversationMessageContent {
     Table,
     Id,
+    TenantId,
     ConversationMessageId,
     SequenceNumber,
     ContentType,

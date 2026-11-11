@@ -30,7 +30,7 @@ FROM debian:trixie-slim
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends ca-certificates libssl3t64 \
     && rm -rf /var/lib/apt/lists/*
-ENV FRONTEND_DIR=/app/frontend/dist/
+ENV SOPHO_FRONTEND_DIR=/app/frontend/dist/
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 WORKDIR /app/backend
 COPY --from=backend-builder /app/target/release/sopho ./sopho

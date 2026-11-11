@@ -7,13 +7,15 @@ import {
 } from "src/components/design-system";
 import { IconType } from "src/components/design-system/datatypes";
 
+type EmptyStateAction =
+  | { buttonLabel: string; onButtonClick: () => void }
+  | { buttonLabel?: never; onButtonClick?: never };
+
 type EmptyStateProps = {
   icon: IconType;
   heading: string;
   description: string;
-  buttonLabel: string;
-  onButtonClick: () => void;
-};
+} & EmptyStateAction;
 
 export function EmptyState({
   icon,
@@ -48,13 +50,15 @@ export function EmptyState({
           {description}
         </Text>
       </Flex>
-      <Button
-        backgroundColor="accent"
-        label={buttonLabel}
-        onClick={onButtonClick}
-        shape="rectangle"
-        size="md"
-      />
+      {buttonLabel !== undefined && onButtonClick !== undefined && (
+        <Button
+          backgroundColor="accent"
+          label={buttonLabel}
+          onClick={onButtonClick}
+          shape="rectangle"
+          size="md"
+        />
+      )}
     </Flex>
   );
 }

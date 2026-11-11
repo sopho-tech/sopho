@@ -5,7 +5,7 @@ import {
 import { Select, SelectOption } from "src/components/design-system";
 
 type SelectFieldProps = {
-  groupName: string;
+  groupName?: string;
   placeholderText: string;
   options: SelectOption[];
   onChange?: (value: string) => void;
@@ -36,7 +36,7 @@ export function SelectField({
       <Select.Trigger id={formFieldId} placeholder={placeholderText} />
       <Select.Content>
         <Select.Group>
-          <Select.Label>{groupName}</Select.Label>
+          {groupName && <Select.Label>{groupName}</Select.Label>}
           {options.map((opt) => (
             <Select.Item
               key={opt.value}

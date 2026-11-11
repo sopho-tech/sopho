@@ -6,26 +6,37 @@ import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { worker } from "src/test/msw/browser_worker";
 import { renderWithProviders } from "src/test/render_with_providers";
+import {
+  tenantRoutePattern,
+  testTenantApiUrl,
+  testTenantPath,
+} from "src/test/tenant_routes";
 import { SQLITE_CONNECTION } from "src/test/test_data";
 
 describe("new connection form", () => {
   test("creates a SQLite connection and returns to the connection list", async () => {
     let createdConnection: unknown = null;
     worker.use(
-      http.post(API_ENDPOINTS.CONNECTION.CREATE, async ({ request }) => {
-        createdConnection = await request.json();
-        return HttpResponse.json(SQLITE_CONNECTION, { status: 201 });
-      }),
+      http.post(
+        testTenantApiUrl(API_ENDPOINTS.CONNECTION.CREATE),
+        async ({ request }) => {
+          createdConnection = await request.json();
+          return HttpResponse.json(SQLITE_CONNECTION, { status: 201 });
+        },
+      ),
     );
     const { router } = await renderWithProviders({
       routes: [
-        { path: APP_ROUTES.CONNECTION_NEW, element: <ConnectionNew /> },
         {
-          path: APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS,
+          path: tenantRoutePattern(APP_ROUTES.CONNECTION_NEW),
+          element: <ConnectionNew />,
+        },
+        {
+          path: tenantRoutePattern(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS),
           element: <p>Connection list</p>,
         },
       ],
-      initialPath: APP_ROUTES.CONNECTION_NEW,
+      initialPath: testTenantPath(APP_ROUTES.CONNECTION_NEW),
     });
 
     await page.getByPlaceholder("Connection name").fill(SQLITE_CONNECTION.name);
@@ -38,7 +49,7 @@ describe("new connection form", () => {
 
     await expect.element(page.getByText("Connection list")).toBeVisible();
     expect(router.state.location.pathname).toBe(
-      APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS,
+      testTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS),
     );
     await expect
       .poll(() => createdConnection)
@@ -55,8 +66,13 @@ describe("new connection form", () => {
 
   test("asks for the PostgreSQL connection details", async () => {
     await renderWithProviders({
-      routes: [{ path: APP_ROUTES.CONNECTION_NEW, element: <ConnectionNew /> }],
-      initialPath: APP_ROUTES.CONNECTION_NEW,
+      routes: [
+        {
+          path: tenantRoutePattern(APP_ROUTES.CONNECTION_NEW),
+          element: <ConnectionNew />,
+        },
+      ],
+      initialPath: testTenantPath(APP_ROUTES.CONNECTION_NEW),
     });
 
     await page.getByRole("combobox").click();

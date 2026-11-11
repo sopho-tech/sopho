@@ -1,6 +1,7 @@
 use crate::ai::dto::{
     ConversationHistory, ConversationHistoryTerminalStatus, ConversationHistoryTurn,
 };
+use crate::authorization::dto::TenantId;
 use crate::common::AppState;
 use crate::conversational_analytics::conversation::constants::{
     CONVERSATION_HISTORY_SCAN_MESSAGE_LIMIT, MAX_USER_MESSAGES_PER_CONVERSATION, MessageStatus,
@@ -23,11 +24,13 @@ struct TurnCandidate {
 
 pub async fn load(
     app_state: &AppState,
+    tenant_id: &TenantId,
     conversation_id: Uuid,
     current_assistant_message_id: Uuid,
 ) -> anyhow::Result<ConversationHistory> {
     let messages = message_service::list_messages_for_conversation(
         &app_state.database_connection,
+        tenant_id,
         conversation_id,
         Some(CONVERSATION_HISTORY_SCAN_MESSAGE_LIMIT as u64),
         true,
@@ -44,7 +47,7 @@ pub async fn load(
         MAX_USER_MESSAGES_PER_CONVERSATION,
         |candidate| candidate.terminal_status,
     );
-    let turns = hydrate(&app_state.database_connection, selected).await;
+    let turns = hydrate(&app_state.database_connection, tenant_id, selected).await;
 
     Ok(ConversationHistory::from_turns(
         turns,
@@ -99,6 +102,7 @@ fn terminal_status_of(status: &str) -> Option<ConversationHistoryTerminalStatus>
 
 async fn hydrate(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     candidates: Vec<TurnCandidate>,
 ) -> Vec<ConversationHistoryTurn> {
     let message_ids: Vec<Uuid> = candidates
@@ -106,14 +110,19 @@ async fn hydrate(
         .flat_map(|candidate| [candidate.human_message_id, candidate.assistant_message_id])
         .collect();
 
-    let contents =
-        match message_content_service::list_message_content_for_messages(db, &message_ids).await {
-            Ok(contents) => contents,
-            Err(e) => {
-                tracing::error!("conversation history: failed to list message content: {e}");
-                Vec::new()
-            }
-        };
+    let contents = match message_content_service::list_message_content_for_messages(
+        db,
+        tenant_id,
+        &message_ids,
+    )
+    .await
+    {
+        Ok(contents) => contents,
+        Err(e) => {
+            tracing::error!("conversation history: failed to list message content: {e}");
+            Vec::new()
+        }
+    };
 
     let mut by_message: HashMap<Uuid, Vec<ConversationMessageContentDto>> = HashMap::new();
     for content in contents {

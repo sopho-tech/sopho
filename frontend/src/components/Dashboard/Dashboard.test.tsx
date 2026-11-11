@@ -6,6 +6,7 @@ import { APP_ROUTES } from "src/constants/app_routes";
 import { canvasPageHandlers } from "src/test/msw/handlers";
 import { worker } from "src/test/msw/browser_worker";
 import { renderWithProviders } from "src/test/render_with_providers";
+import { tenantRoutePattern, testTenantPath } from "src/test/tenant_routes";
 import {
   CANVAS_ID,
   CHART_CELL,
@@ -31,7 +32,7 @@ describe("dashboard", () => {
     await renderWithProviders({
       routes: [
         {
-          path: APP_ROUTES.CANVAS,
+          path: tenantRoutePattern(APP_ROUTES.CANVAS),
           element: <Canvas />,
           children: [
             {
@@ -41,7 +42,9 @@ describe("dashboard", () => {
           ],
         },
       ],
-      initialPath: `${APP_ROUTES.CANVAS.replace(":id", CANVAS_ID)}/${APP_ROUTES.CANVAS_ROUTES.DASHBOARD}`,
+      initialPath: testTenantPath(
+        `${APP_ROUTES.CANVAS.replace(":id", CANVAS_ID)}/${APP_ROUTES.CANVAS_ROUTES.DASHBOARD}`,
+      ),
     });
 
     await expect

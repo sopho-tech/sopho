@@ -6,31 +6,41 @@ import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { worker } from "src/test/msw/browser_worker";
 import { renderWithProviders } from "src/test/render_with_providers";
+import {
+  tenantRoutePattern,
+  testTenantApiUrl,
+  testTenantPath,
+} from "src/test/tenant_routes";
 import { POSTGRES_CONNECTION } from "src/test/test_data";
 
 describe("edit connection form", () => {
   test("shows the saved connection and sends the edited fields", async () => {
     let updatedConnection: unknown = null;
     worker.use(
-      http.get(API_ENDPOINTS.CONNECTION.GET_BY_ID, () =>
+      http.get(testTenantApiUrl(API_ENDPOINTS.CONNECTION.GET_BY_ID), () =>
         HttpResponse.json(POSTGRES_CONNECTION),
       ),
-      http.put(API_ENDPOINTS.CONNECTION.UPDATE, async ({ request }) => {
-        updatedConnection = await request.json();
-        return HttpResponse.json(POSTGRES_CONNECTION);
-      }),
+      http.put(
+        testTenantApiUrl(API_ENDPOINTS.CONNECTION.UPDATE),
+        async ({ request }) => {
+          updatedConnection = await request.json();
+          return HttpResponse.json(POSTGRES_CONNECTION);
+        },
+      ),
     );
     const { router } = await renderWithProviders({
       routes: [
-        { path: APP_ROUTES.CONNECTION_EDIT, element: <ConnectionEdit /> },
         {
-          path: APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS,
+          path: tenantRoutePattern(APP_ROUTES.CONNECTION_EDIT),
+          element: <ConnectionEdit />,
+        },
+        {
+          path: tenantRoutePattern(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS),
           element: <p>Connection list</p>,
         },
       ],
-      initialPath: APP_ROUTES.CONNECTION_EDIT.replace(
-        ":id",
-        POSTGRES_CONNECTION.id,
+      initialPath: testTenantPath(
+        APP_ROUTES.CONNECTION_EDIT.replace(":id", POSTGRES_CONNECTION.id),
       ),
     });
 
@@ -47,7 +57,7 @@ describe("edit connection form", () => {
 
     await expect.element(page.getByText("Connection list")).toBeVisible();
     expect(router.state.location.pathname).toBe(
-      APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS,
+      testTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS),
     );
     await expect
       .poll(() => updatedConnection)

@@ -5,6 +5,7 @@ import { InlineEdit } from "src/components/design-system/InlineEdit";
 import { useConnections } from "src/api/connection";
 import { Select } from "src/components/design-system/Select";
 import { useUpdateCell, useCell, useClearCellOutput } from "src/api/cell";
+import { useCanvasCapabilities } from "src/api/canvas/queries";
 import { useCallback, useEffect, useState } from "react";
 import { useHandleRunCell } from "src/components/Notebook/Cell";
 import { getSelectedText } from "src/components/Notebook/CellEditor/editorRegistry";
@@ -15,15 +16,24 @@ import {
 } from "src/components/Notebook/Cell/useExecutionPhase";
 import { ElapsedTime } from "src/components/Notebook/ExecutionIndicator";
 import { Flex, Kbd, Spinner } from "src/components/design-system";
+import { LastEditedAvatar } from "src/components/Attribution";
 import {
   KEYBOARD_SHORTCUTS,
   getShortcutDisplayString,
 } from "src/utils/keyboard_shortcuts";
 
-function ExecuteTooltipContent({ cellId }: { cellId: string }) {
+function ExecuteTooltipContent({
+  cellId,
+  canEdit,
+}: {
+  cellId: string;
+  canEdit: boolean;
+}) {
   return (
     <Flex direction="row" alignItems="center" gap="md">
-      <span>{getSelectedText(cellId) ? "Run selection" : "Execute cell"}</span>
+      <span>
+        {canEdit && getSelectedText(cellId) ? "Run selection" : "Execute cell"}
+      </span>
       <Kbd>
         {getShortcutDisplayString(KEYBOARD_SHORTCUTS.EXECUTE_NOTEBOOK_CELL)}
       </Kbd>
@@ -33,7 +43,7 @@ function ExecuteTooltipContent({ cellId }: { cellId: string }) {
 
 export function CellToolbar({ cellId }: { cellId: string }) {
   const clearCellOutput = useClearCellOutput();
-  const query = useConnections();
+  const query = useConnections(null);
   const updateCellMutation = useUpdateCell();
   const getCellQuery = useCell(cellId);
   const [options, setOptions] = useState<
@@ -43,6 +53,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
     { label: string; value: string } | undefined
   >(undefined);
   const handleRunCell = useHandleRunCell();
+  const canEdit = useCanvasCapabilities().can_edit;
   const { isRunning, phase, startedAt } = useExecutionPhase(cellId);
   const showElapsed = isAtLeast(phase, ExecutionPhase.EXTENDED);
 
@@ -112,15 +123,24 @@ export function CellToolbar({ cellId }: { cellId: string }) {
 
   return (
     <Toolbar loop className={CellToolbarStyles.toolbar}>
-      <div className={CellToolbarStyles.cellNameContainer}>
-        <InlineEdit
-          value={getCellQuery.data?.name ?? ""}
-          onSave={handleSave}
-          placeholder="Cell Name"
-          defaultValue="Unnamed"
-          className={CellToolbarStyles.toolbarInlineEdit}
-        />
-      </div>
+      <Flex direction="row" alignItems="center" gap="xs">
+        <div className={CellToolbarStyles.cellNameContainer}>
+          <InlineEdit
+            value={getCellQuery.data?.name ?? ""}
+            onSave={handleSave}
+            placeholder="Cell Name"
+            defaultValue="Unnamed"
+            className={CellToolbarStyles.toolbarInlineEdit}
+            readOnly={!canEdit}
+          />
+        </div>
+        {getCellQuery.data && (
+          <LastEditedAvatar
+            modifiedBy={getCellQuery.data.modified_by}
+            updatedAt={getCellQuery.data.updated_at}
+          />
+        )}
+      </Flex>
       <Flex
         direction="row"
         alignItems="center"
@@ -131,6 +151,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
         <Select
           value={initialValue?.value ?? ""}
           onValueChange={handleSelectChange}
+          disabled={!canEdit}
         >
           <Toolbar.Button asChild>
             <Select.Trigger
@@ -181,7 +202,9 @@ export function CellToolbar({ cellId }: { cellId: string }) {
                 aria-label="Execute cell"
                 onClick={handleExecute}
                 tooltip={{
-                  content: <ExecuteTooltipContent cellId={cellId} />,
+                  content: (
+                    <ExecuteTooltipContent cellId={cellId} canEdit={canEdit} />
+                  ),
                 }}
               />
             )}

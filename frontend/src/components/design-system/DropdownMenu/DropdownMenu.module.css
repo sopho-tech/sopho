@@ -6,6 +6,11 @@
   z-index: var(--z-index-10);
 }
 
+.minWidthOfTrigger {
+  min-width: var(--radix-dropdown-menu-trigger-width);
+  box-sizing: border-box;
+}
+
 .item {
   all: unset;
   display: flex;
@@ -74,4 +79,15 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.indicator {
+  display: flex;
+  align-items: center;
+}
+
+.separator {
+  height: var(--border-width-medium);
+  margin: var(--space-2xs) 0;
+  background-color: var(--border-color-light);
 }

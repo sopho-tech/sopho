@@ -11,37 +11,47 @@ import {
 } from "src/components/Notebook/Cell/dto";
 import { notebookKeys } from "src/api/notebook/queries";
 import { dashboardKeys } from "src/api/dashboard/queries";
+import { canvasKeys } from "src/api/canvas/queries";
+import { tenantApiUrl, useTenantId } from "src/utils/tenant";
+
+type CellMovementType = "UP" | "DOWN" | "TOP" | "BOTTOM";
 
 export const cellKeys = {
-  all: ["cells"] as const,
-  lists: () => [...cellKeys.all, "list"] as const,
-  list: (filters: string) => [...cellKeys.lists(), { filters }] as const,
-  details: () => [...cellKeys.all, "detail"] as const,
-  detail: (id: string) => [...cellKeys.details(), id] as const,
-  execution: (cellId: string) =>
-    [...cellKeys.all, "execution", cellId] as const,
+  all: (tenantId: string) => [tenantId, "cells"] as const,
+  details: (tenantId: string) => [...cellKeys.all(tenantId), "detail"] as const,
+  detail: (tenantId: string, id: string) =>
+    [...cellKeys.details(tenantId), id] as const,
+  execution: (tenantId: string, cellId: string) =>
+    [...cellKeys.all(tenantId), "execution", cellId] as const,
 };
 
 const cellApi = {
-  getCell: async (cellId: string): Promise<CellDto> => {
+  getCell: async (tenantId: string, cellId: string): Promise<CellDto> => {
     const response = await ApiService.get({
-      url:
-        API_ENDPOINTS.CELL.GET_BY_ID?.replace(":id", cellId) ||
-        `/cells/${cellId}`,
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CELL.GET_BY_ID.replace(":id", cellId),
+      ),
       onlyBody: true,
     });
     return response as CellDto;
   },
 
-  updateCell: async ({
-    cellId,
-    payload,
-  }: {
-    cellId: string;
-    payload: CellDto;
-  }): Promise<CellDto> => {
+  updateCell: async (
+    tenantId: string,
+    {
+      cellId,
+      payload,
+    }: {
+      cellId: string;
+      payload: CellDto;
+    },
+  ): Promise<CellDto> => {
     const response = await ApiService.put({
-      url: API_ENDPOINTS.CELL.UPDATE.replace(":id", cellId),
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CELL.UPDATE.replace(":id", cellId),
+      ),
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -50,9 +60,12 @@ const cellApi = {
     return response as CellDto;
   },
 
-  createCell: async (payload: CreateCellDto): Promise<CellDto> => {
+  createCell: async (
+    tenantId: string,
+    payload: CreateCellDto,
+  ): Promise<CellDto> => {
     const response = await ApiService.post({
-      url: API_ENDPOINTS.CELL.CREATE,
+      url: tenantApiUrl(tenantId, API_ENDPOINTS.CELL.CREATE),
       data: payload,
       headers: {
         "Content-Type": "application/json",
@@ -61,38 +74,45 @@ const cellApi = {
     return response as CellDto;
   },
 
-  deleteCell: async (cellId: string): Promise<void> => {
-    const response = await fetch(
-      API_ENDPOINTS.CELL.DELETE?.replace(":id", cellId) || `/cells/${cellId}`,
-      {
-        method: "DELETE",
-        credentials: "include",
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to delete cell: ${response.statusText}`);
-    }
+  deleteCell: async (tenantId: string, cellId: string): Promise<void> => {
+    await ApiService.delete({
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CELL.DELETE.replace(":id", cellId),
+      ),
+    });
   },
 
-  executeCell: async (cellId: string): Promise<ExecuteCellResponseDto> => {
+  executeCell: async (
+    tenantId: string,
+    cellId: string,
+  ): Promise<ExecuteCellResponseDto> => {
     const response = await ApiService.post({
-      url: API_ENDPOINTS.CELL.EXECUTE.replace(":id", cellId),
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CELL.EXECUTE.replace(":id", cellId),
+      ),
     });
     return response as ExecuteCellResponseDto;
   },
 
-  executeCellPreview: async ({
-    cellId,
-    content,
-    cellType,
-  }: {
-    cellId: string;
-    content: string;
-    cellType: string;
-  }): Promise<ExecuteCellResponseDto> => {
+  executeCellPreview: async (
+    tenantId: string,
+    {
+      cellId,
+      content,
+      cellType,
+    }: {
+      cellId: string;
+      content: string;
+      cellType: string;
+    },
+  ): Promise<ExecuteCellResponseDto> => {
     const response = await ApiService.post({
-      url: API_ENDPOINTS.CELL.EXECUTE_PREVIEW.replace(":id", cellId),
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CELL.EXECUTE_PREVIEW.replace(":id", cellId),
+      ),
       data: { content, cell_type: cellType },
       headers: {
         "Content-Type": "application/json",
@@ -101,15 +121,21 @@ const cellApi = {
     return response as ExecuteCellResponseDto;
   },
 
-  reorderCell: async ({
-    cellId,
-    movementType,
-  }: {
-    cellId: string;
-    movementType: "UP" | "DOWN" | "TOP" | "BOTTOM";
-  }): Promise<CellDto> => {
+  reorderCell: async (
+    tenantId: string,
+    {
+      cellId,
+      movementType,
+    }: {
+      cellId: string;
+      movementType: CellMovementType;
+    },
+  ): Promise<CellDto> => {
     const response = await ApiService.patch({
-      url: API_ENDPOINTS.CELL.REORDER.replace(":id", cellId),
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CELL.REORDER.replace(":id", cellId),
+      ),
       data: { movement_type: movementType },
       headers: {
         "Content-Type": "application/json",
@@ -119,25 +145,32 @@ const cellApi = {
   },
 };
 
-export const getCell = (cellId: string) => cellApi.getCell(cellId);
+export const getCell = (tenantId: string, cellId: string) =>
+  cellApi.getCell(tenantId, cellId);
 
 export const useCell = (cellId: string) => {
+  const tenantId = useTenantId();
   return useQuery({
-    queryKey: cellKeys.detail(cellId),
-    queryFn: () => cellApi.getCell(cellId),
+    queryKey: cellKeys.detail(tenantId, cellId),
+    queryFn: () => cellApi.getCell(tenantId, cellId),
     enabled: !!cellId,
   });
 };
 
 export const useUpdateCell = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: cellApi.updateCell,
+    mutationFn: (variables: { cellId: string; payload: CellDto }) =>
+      cellApi.updateCell(tenantId, variables),
     onSuccess: (data, { cellId }) => {
-      queryClient.setQueryData(cellKeys.detail(cellId), data);
+      queryClient.setQueryData(cellKeys.detail(tenantId, cellId), data);
       void queryClient.invalidateQueries({
-        queryKey: cellKeys.detail(cellId),
+        queryKey: cellKeys.detail(tenantId, cellId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: canvasKeys.details(tenantId),
       });
     },
     onError: (error) => {
@@ -148,19 +181,24 @@ export const useUpdateCell = () => {
 
 export const useCreateCell = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: cellApi.createCell,
+    mutationFn: (payload: CreateCellDto) =>
+      cellApi.createCell(tenantId, payload),
     onSuccess: (data) => {
-      queryClient.setQueryData(cellKeys.detail(data.id!), data);
+      queryClient.setQueryData(cellKeys.detail(tenantId, data.id!), data);
       if (data.notebook_id) {
         void queryClient.invalidateQueries({
-          queryKey: notebookKeys.detail(data.notebook_id),
+          queryKey: notebookKeys.detail(tenantId, data.notebook_id),
         });
         void queryClient.invalidateQueries({
-          queryKey: [...notebookKeys.cells(), data.notebook_id],
+          queryKey: [...notebookKeys.cells(tenantId), data.notebook_id],
         });
       }
+      void queryClient.invalidateQueries({
+        queryKey: canvasKeys.details(tenantId),
+      });
     },
     onError: (error) => {
       console.error("Failed to create cell:", error);
@@ -170,34 +208,46 @@ export const useCreateCell = () => {
 
 export const useDeleteCell = (notebookId?: string, canvasId?: string) => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: cellApi.deleteCell,
+    mutationFn: (cellId: string) => cellApi.deleteCell(tenantId, cellId),
     onSuccess: (_, cellId) => {
       queryClient.removeQueries({
-        queryKey: cellKeys.detail(cellId),
+        queryKey: cellKeys.detail(tenantId, cellId),
       });
       queryClient.removeQueries({
-        queryKey: cellKeys.execution(cellId),
+        queryKey: cellKeys.execution(tenantId, cellId),
       });
 
       if (notebookId) {
         void queryClient.invalidateQueries({
-          queryKey: notebookKeys.detail(notebookId),
+          queryKey: notebookKeys.detail(tenantId, notebookId),
         });
         void queryClient.invalidateQueries({
-          queryKey: notebookKeys.cellsByNotebook(notebookId, CellType.CHART),
+          queryKey: notebookKeys.cellsByNotebook(
+            tenantId,
+            notebookId,
+            CellType.CHART,
+          ),
         });
         void queryClient.invalidateQueries({
-          queryKey: notebookKeys.cellsByNotebook(notebookId, CellType.SQL),
+          queryKey: notebookKeys.cellsByNotebook(
+            tenantId,
+            notebookId,
+            CellType.SQL,
+          ),
         });
       }
 
       if (canvasId) {
         void queryClient.invalidateQueries({
-          queryKey: dashboardKeys.byCanvas(canvasId),
+          queryKey: dashboardKeys.byCanvas(tenantId, canvasId),
         });
       }
+      void queryClient.invalidateQueries({
+        queryKey: canvasKeys.details(tenantId),
+      });
     },
     onError: (error) => {
       console.error("Failed to delete cell:", error);
@@ -207,17 +257,18 @@ export const useDeleteCell = (notebookId?: string, canvasId?: string) => {
 
 export const useExecuteCell = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: cellApi.executeCell,
+    mutationFn: (cellId: string) => cellApi.executeCell(tenantId, cellId),
     onSuccess: (data, cellId) => {
-      queryClient.setQueryData(cellKeys.execution(cellId), {
+      queryClient.setQueryData(cellKeys.execution(tenantId, cellId), {
         status: "success",
         data: data,
       } satisfies CellExecutionResultDto);
     },
     onError: (error, cellId) => {
-      queryClient.setQueryData(cellKeys.execution(cellId), {
+      queryClient.setQueryData(cellKeys.execution(tenantId, cellId), {
         status: "error",
         error: error,
       } satisfies CellExecutionResultDto);
@@ -227,17 +278,22 @@ export const useExecuteCell = () => {
 
 export const useExecuteCellPreview = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: cellApi.executeCellPreview,
+    mutationFn: (variables: {
+      cellId: string;
+      content: string;
+      cellType: string;
+    }) => cellApi.executeCellPreview(tenantId, variables),
     onSuccess: (data, { cellId }) => {
-      queryClient.setQueryData(cellKeys.execution(cellId), {
+      queryClient.setQueryData(cellKeys.execution(tenantId, cellId), {
         status: "success",
         data: data,
       } satisfies CellExecutionResultDto);
     },
     onError: (error, { cellId }) => {
-      queryClient.setQueryData(cellKeys.execution(cellId), {
+      queryClient.setQueryData(cellKeys.execution(tenantId, cellId), {
         status: "error",
         error: error,
       } satisfies CellExecutionResultDto);
@@ -246,8 +302,9 @@ export const useExecuteCellPreview = () => {
 };
 
 export const useCellExecutionResult = (cellId: string) => {
+  const tenantId = useTenantId();
   return useQuery<CellExecutionResultDto>({
-    queryKey: cellKeys.execution(cellId),
+    queryKey: cellKeys.execution(tenantId, cellId),
     queryFn: () =>
       Promise.reject(new Error("Execution results are cache-only")),
     enabled: false,
@@ -256,40 +313,42 @@ export const useCellExecutionResult = (cellId: string) => {
 
 export const useClearCellOutput = () => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
   return useCallback(
     (cellId: string) => {
-      queryClient.setQueryData(cellKeys.execution(cellId), null);
+      queryClient.setQueryData(cellKeys.execution(tenantId, cellId), null);
     },
-    [queryClient],
+    [queryClient, tenantId],
   );
 };
 
 export const useReorderCell = (canvasId?: string) => {
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
 
   return useMutation({
-    mutationFn: ({
-      cellId,
-      movementType,
-    }: {
+    mutationFn: (variables: {
       cellId: string;
-      movementType: "UP" | "DOWN" | "TOP" | "BOTTOM";
-    }) => cellApi.reorderCell({ cellId, movementType }),
+      movementType: CellMovementType;
+    }) => cellApi.reorderCell(tenantId, variables),
     onSuccess: (data) => {
-      queryClient.setQueryData(cellKeys.detail(data.id!), data);
+      queryClient.setQueryData(cellKeys.detail(tenantId, data.id!), data);
       if (data.notebook_id) {
         void queryClient.invalidateQueries({
-          queryKey: notebookKeys.detail(data.notebook_id),
+          queryKey: notebookKeys.detail(tenantId, data.notebook_id),
         });
         void queryClient.invalidateQueries({
-          queryKey: [...notebookKeys.cells(), data.notebook_id],
+          queryKey: [...notebookKeys.cells(tenantId), data.notebook_id],
         });
       }
       if (canvasId) {
         void queryClient.invalidateQueries({
-          queryKey: dashboardKeys.byCanvas(canvasId),
+          queryKey: dashboardKeys.byCanvas(tenantId, canvasId),
         });
       }
+      void queryClient.invalidateQueries({
+        queryKey: canvasKeys.details(tenantId),
+      });
     },
     onError: (error) => {
       console.error("Failed to reorder cell:", error);

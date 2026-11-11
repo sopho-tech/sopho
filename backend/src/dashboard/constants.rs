@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 pub const MAX_CHARTS_PER_DASHBOARD: usize = 30;
-pub const DASHBOARD_NOT_FOUND_MESSAGE: &str = "Dashboard not found";
 pub const GRID_COLUMN_COUNT: u16 = 12;
 pub const MIN_CHART_WIDTH: u16 = 4;
 pub const MIN_CHART_HEIGHT: u16 = 3;
@@ -35,3 +34,8 @@ impl fmt::Display for DashboardStatus {
         })
     }
 }
+
+pub const DASHBOARD_NOT_FOUND_MESSAGE: &str = "Dashboard not found";
+pub const CANVAS_NOT_FOUND_MESSAGE: &str = "Canvas not found";
+pub const LAYOUT_OUTSIDE_CANVAS_MESSAGE: &str =
+    "A dashboard can only show charts from its own canvas";

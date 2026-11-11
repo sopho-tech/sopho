@@ -13,6 +13,7 @@ use crate::ai::dto::{
     SchemaStatusColumn, SchemaStatusTable, SelectionSet, SqlGenerationAction,
     SqlGenerationActionType, TableFunction,
 };
+use crate::authorization::dto::TenantId;
 use crate::common::AppState;
 use crate::connection::constants::{SourceType, SqlDialect};
 use crate::data_catalog::dto::Database;
@@ -28,15 +29,23 @@ use tracing::info;
 
 pub async fn execute(
     app_state: &AppState,
+    tenant_id: &TenantId,
     connection: &entity::connection::Model,
     question: &str,
     channels: &EventChannels,
 ) -> Result<String> {
     let (master_plan, linked_schema) =
-        execute_schema_linking(app_state, connection, question, channels).await?;
+        execute_schema_linking(app_state, tenant_id, connection, question, channels).await?;
     channels.send(Event::GeneratingSql).await?;
-    let generated_sql =
-        sql_generation(app_state, connection, question, &master_plan, linked_schema).await?;
+    let generated_sql = sql_generation(
+        app_state,
+        tenant_id,
+        connection,
+        question,
+        &master_plan,
+        linked_schema,
+    )
+    .await?;
     info!("generated_sql: {}", generated_sql);
     channels
         .send(Event::GeneratedSql {
@@ -48,6 +57,7 @@ pub async fn execute(
 
 pub async fn execute_schema_linking(
     app_state: &AppState,
+    tenant_id: &TenantId,
     connection: &entity::connection::Model,
     question: &str,
     channels: &EventChannels,
@@ -60,10 +70,12 @@ pub async fn execute_schema_linking(
         },
         async {
             let candidate_hypothesis =
-                execute_hypothesis_generation(app_state, connection, question, channels).await?;
+                execute_hypothesis_generation(app_state, tenant_id, connection, question, channels)
+                    .await?;
             channels.send(Event::IntegratingCandidatePlans).await?;
             let master_plan = execute_integrate_candidate_plans(
                 app_state,
+                tenant_id,
                 connection,
                 question,
                 candidate_hypothesis,
@@ -83,6 +95,7 @@ pub async fn execute_schema_linking(
     channels.send(Event::ExecutingSearchSpaceReduction).await?;
     let pruned_data_catalog = execute_search_space_reduction(
         app_state,
+        tenant_id,
         connection,
         question,
         &master_plan,
@@ -101,6 +114,7 @@ pub async fn execute_schema_linking(
     let (emperical_observations, functional_role_analysis_result) =
         execute_hypothesis_verification(
             app_state,
+            tenant_id,
             connection,
             question,
             &master_plan,
@@ -122,6 +136,7 @@ pub async fn execute_schema_linking(
         .await?;
     let linked_schema = schema_linking_final_synthesis(
         app_state,
+        tenant_id,
         connection,
         question,
         functional_role_analysis_result,
@@ -143,12 +158,13 @@ pub async fn execute_schema_linking(
 
 async fn execute_hypothesis_generation(
     app_state: &AppState,
+    tenant_id: &TenantId,
     _connection: &entity::connection::Model,
     question: &str,
     channels: &EventChannels,
 ) -> Result<Vec<LogicalPlanningResponse>> {
     channels.send(Event::GeneratingCandidateHypothesis).await?;
-    let model_client = app_state.require_model_client().await?;
+    let model_client = app_state.require_model_client(tenant_id).await?;
 
     let generation_results: Vec<Result<LogicalPlanningResponse, _>> = futures_util::stream::iter(
         (0..LOGICAL_PLAN_HYPOTHESIS_GENERATION_ROUNDS).map(|_round| {
@@ -188,11 +204,12 @@ async fn execute_hypothesis_generation(
 
 async fn execute_integrate_candidate_plans(
     app_state: &AppState,
+    tenant_id: &TenantId,
     _connection: &entity::connection::Model,
     question: &str,
     candidate_hypothesis: Vec<LogicalPlanningResponse>,
 ) -> Result<String> {
-    let model_client = app_state.require_model_client().await?;
+    let model_client = app_state.require_model_client(tenant_id).await?;
     let integrate_candidate_plan_agent = model_client.build_agent(
         ModelRole::Default,
         AgentName::IntegrateCandidatePlanAgent,
@@ -212,6 +229,7 @@ async fn execute_integrate_candidate_plans(
 
 pub(crate) async fn execute_search_space_reduction(
     app_state: &AppState,
+    tenant_id: &TenantId,
     _connection: &entity::connection::Model,
     question: &str,
     master_plan: &str,
@@ -221,7 +239,7 @@ pub(crate) async fn execute_search_space_reduction(
     let pruning_results: Vec<Result<Database>> =
         futures_util::stream::iter(data_catalog_batches.into_iter().map(
             |mut data_catalog_batch| {
-                let model_client = app_state.require_model_client();
+                let model_client = app_state.require_model_client(tenant_id);
                 let question = question.to_string();
                 let master_plan = master_plan.to_string();
                 async move {
@@ -270,6 +288,7 @@ pub(crate) async fn execute_search_space_reduction(
 
 pub(crate) async fn execute_hypothesis_verification(
     app_state: &AppState,
+    tenant_id: &TenantId,
     connection: &entity::connection::Model,
     question: &str,
     master_plan: &str,
@@ -284,6 +303,7 @@ pub(crate) async fn execute_hypothesis_verification(
         .await?;
     let functional_role_analysis_result = execute_functional_role_analysis(
         app_state,
+        tenant_id,
         connection,
         question,
         master_plan,
@@ -298,6 +318,7 @@ pub(crate) async fn execute_hypothesis_verification(
     channels.send(Event::ExecutingDataProfiling).await?;
     let emperical_observations = execute_data_profiling(
         app_state,
+        tenant_id,
         connection,
         question,
         pruned_data_catalog,
@@ -318,12 +339,13 @@ pub(crate) async fn execute_hypothesis_verification(
 /// Functional role analysis does not return tables irrelevant for further analysis.
 async fn execute_functional_role_analysis(
     app_state: &AppState,
+    tenant_id: &TenantId,
     _connection: &entity::connection::Model,
     question: &str,
     master_plan: &str,
     pruned_data_catalog: &Database,
 ) -> Result<FunctionalRoleAnalysisResult> {
-    let model_client = app_state.require_model_client().await?;
+    let model_client = app_state.require_model_client(tenant_id).await?;
     let functional_role_analysis_agent = model_client.build_agent(
         ModelRole::Default,
         AgentName::FunctionalRoleAnalysisAgent,
@@ -348,6 +370,7 @@ async fn execute_functional_role_analysis(
 
 async fn execute_data_profiling(
     app_state: &AppState,
+    tenant_id: &TenantId,
     connection: &entity::connection::Model,
     question: &str,
     pruned_data_catalog: &Database,
@@ -377,7 +400,7 @@ async fn execute_data_profiling(
             |(table_function, table_columns)| async move {
                 let mut chat_history: Vec<Message> = Vec::new();
 
-                let model_client = app_state.require_model_client().await?;
+                let model_client = app_state.require_model_client(tenant_id).await?;
                 let data_profiling_agent = model_client.build_agent(
                     ModelRole::Default,
                     AgentName::DataProfilingBeforeAgent,
@@ -449,6 +472,7 @@ async fn execute_data_profiling(
 
 pub(crate) async fn schema_linking_final_synthesis(
     app_state: &AppState,
+    tenant_id: &TenantId,
     connection: &entity::connection::Model,
     question: &str,
     functional_role_analysis_result: FunctionalRoleAnalysisResult,
@@ -461,7 +485,7 @@ pub(crate) async fn schema_linking_final_synthesis(
         emperical_observations.len()
     );
 
-    let model_client = app_state.require_model_client().await?;
+    let model_client = app_state.require_model_client(tenant_id).await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
         AgentName::SchemaLinkingFinalSynthesisAgent,
@@ -563,13 +587,14 @@ pub(crate) async fn schema_linking_final_synthesis(
 
 pub(crate) async fn sql_generation(
     app_state: &AppState,
+    tenant_id: &TenantId,
     connection: &entity::connection::Model,
     question: &str,
     master_plan: &str,
     linked_schema: SchemaLinkingFinalSynthesisResponse,
 ) -> Result<String> {
     let mut generated_sql = String::new();
-    let model_client = app_state.require_model_client().await?;
+    let model_client = app_state.require_model_client(tenant_id).await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
         AgentName::SqlGenerationAgent,

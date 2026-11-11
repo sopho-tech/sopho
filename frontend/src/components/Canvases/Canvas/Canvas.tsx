@@ -1,22 +1,36 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate, useParams } from "react-router";
 import { useCanvas, useUpdateCanvas } from "src/api/canvas/queries";
 import { useDashboardByCanvasId } from "src/api/dashboard/queries";
 import { useNotebooksByCanvasId } from "src/api/notebook/queries";
-import { Flex, InlineEdit } from "src/components/design-system";
+import { Flex, IconButton, InlineEdit } from "src/components/design-system";
+import { ShareDialog } from "src/components/ShareDialog";
 import { useStore } from "src/store";
 import { AiSummaryRow } from "src/components/Dashboard/AiSummaryRow";
 import { CanvasButtons } from "src/components/Canvases/CanvasButtons";
+import { AttributionLine } from "src/components/Attribution";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
+
+const SHARE_CANVAS_TOOLTIP = {
+  text: "share",
+  direction: "bottom",
+} as const;
 
 export function Canvas() {
   const params = useParams();
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const { pathname } = useLocation();
   const query = useCanvas(params.id!);
   const dashboardQuery = useDashboardByCanvasId(params.id!);
   const notebooksQuery = useNotebooksByCanvasId(params.id!);
   const updateCanvas = useUpdateCanvas();
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const handleOpenShareDialog = useCallback(
+    () => setIsShareDialogOpen(true),
+    [],
+  );
   const setActiveNotebookId = useStore(
     (state) => state.canvas.setActiveNotebookId,
   );
@@ -55,14 +69,18 @@ export function Canvas() {
 
   const handleViewTypeChange = useCallback(
     (view: string) => {
-      void navigate(`${APP_ROUTES.CANVAS.replace(":id", params.id!)}/${view}`);
+      void navigate(
+        toTenantPath(`${APP_ROUTES.CANVAS.replace(":id", params.id!)}/${view}`),
+      );
     },
-    [navigate, params.id],
+    [navigate, params.id, toTenantPath],
   );
 
   if (!query.data) {
     return <span>No data available</span>;
   }
+
+  const capabilities = query.data.capabilities;
 
   return (
     <Flex
@@ -81,15 +99,29 @@ export function Canvas() {
             headingLevel={1}
             clearButtonSize="md"
             defaultValue="Default Canvas Title"
+            readOnly={!capabilities.can_edit}
           />
-          <CanvasButtons
-            viewType={
-              isDashboardView
-                ? APP_ROUTES.CANVAS_ROUTES.DASHBOARD
-                : APP_ROUTES.CANVAS_ROUTES.NOTEBOOK
-            }
-            onViewTypeChange={handleViewTypeChange}
-          />
+          <Flex direction="row" alignItems="center" gap="sm">
+            {capabilities.can_share && (
+              <IconButton
+                type="share"
+                onClick={handleOpenShareDialog}
+                backgroundColor="default"
+                iconColor="grey"
+                tooltip={SHARE_CANVAS_TOOLTIP}
+                aria-label="Share"
+              />
+            )}
+            <CanvasButtons
+              viewType={
+                isDashboardView
+                  ? APP_ROUTES.CANVAS_ROUTES.DASHBOARD
+                  : APP_ROUTES.CANVAS_ROUTES.NOTEBOOK
+              }
+              onViewTypeChange={handleViewTypeChange}
+              canEdit={capabilities.can_edit}
+            />
+          </Flex>
         </Flex>
         <InlineEdit
           value={query.data.description ?? ""}
@@ -97,6 +129,12 @@ export function Canvas() {
           placeholder="Add a description"
           defaultValue="Default description"
           textColor="subtle"
+          readOnly={!capabilities.can_edit}
+        />
+        <AttributionLine
+          createdBy={query.data.created_by}
+          modifiedBy={query.data.modified_by}
+          updatedAt={query.data.updated_at}
         />
         {isDashboardView &&
           dashboardQuery.data?.id &&
@@ -105,6 +143,15 @@ export function Canvas() {
           )}
       </Flex>
       <Outlet />
+      {isShareDialogOpen && (
+        <ShareDialog
+          resourceType="CANVAS"
+          resourceId={params.id!}
+          resourceName={query.data.name ?? ""}
+          isOpen={isShareDialogOpen}
+          onOpenChange={setIsShareDialogOpen}
+        />
+      )}
     </Flex>
   );
 }

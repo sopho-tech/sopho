@@ -1,6 +1,9 @@
+use strum::{Display, IntoStaticStr};
+
 /// Global error codes for the application
 /// These codes provide a consistent way to identify specific error types across the API
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Display, IntoStaticStr)]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum ErrorCode {
     InvalidRefreshToken,
     AccessTokenExpired,
@@ -11,28 +14,37 @@ pub enum ErrorCode {
     AiNotLive,
     ConversationBusy,
     UserMessageLimitReached,
+    InvitationLinkInvalid,
+    InvitationForAnotherAccount,
+    AccountExists,
+    FullNameRequired,
+    PasswordTooShort,
+    PasswordTooLong,
+    PasswordTooCommon,
+    PasswordContainsServiceName,
+    PasswordContainsEmail,
+    PasswordResetUnavailable,
+    TooManyResetEmails,
+    InvalidResetLink,
+    WrongCurrentPassword,
+    NoPassword,
+    TooManySignInAttempts,
+    AccountDeactivated,
+    SignInMethodNotConnected,
+    LastSignInMethod,
+    CannotDeactivateYourself,
+    CannotRemoveYourOwnAdministratorRole,
+    LastPlatformAdministrator,
+    AppointeeDeactivated,
+    EmailNotRetryable,
+    UserNotFound,
+    TenantNotFound,
+    EmailNotFound,
 }
 
 impl ErrorCode {
-    /// Returns the string representation of the error code
     pub fn as_str(&self) -> &'static str {
-        match self {
-            ErrorCode::InvalidRefreshToken => "INVALID_REFRESH_TOKEN",
-            ErrorCode::AccessTokenExpired => "ACCESS_TOKEN_EXPIRED",
-            ErrorCode::RefreshTokenExpired => "REFRESH_TOKEN_EXPIRED",
-            ErrorCode::InvalidAccessToken => "INVALID_ACCESS_TOKEN",
-            ErrorCode::MissingPrerequisites => "MISSING_PREREQUISITES",
-            ErrorCode::SyntaxError => "SYNTAX_ERROR",
-            ErrorCode::AiNotLive => "AI_NOT_LIVE",
-            ErrorCode::ConversationBusy => "CONVERSATION_BUSY",
-            ErrorCode::UserMessageLimitReached => "USER_MESSAGE_LIMIT_REACHED",
-        }
-    }
-}
-
-impl std::fmt::Display for ErrorCode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_str())
+        self.into()
     }
 }
 

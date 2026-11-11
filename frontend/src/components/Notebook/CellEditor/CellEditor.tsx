@@ -39,6 +39,8 @@ import {
   unregisterEditorView,
 } from "src/components/Notebook/CellEditor/editorRegistry";
 import { theme } from "src/components/Notebook/CellEditor/theme";
+import { useTenantId } from "src/utils/tenant";
+import { useCanvasCapabilities } from "src/api/canvas/queries";
 
 /**
  * Component for editing a SQL cell.
@@ -54,9 +56,11 @@ import { theme } from "src/components/Notebook/CellEditor/theme";
 export function CellEditor({ cellId }: { cellId: string }) {
   const query = useCell(cellId);
   const queryClient = useQueryClient();
+  const tenantId = useTenantId();
   const viewRef = useRef<EditorView | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const updateCellMutation = useUpdateCell();
+  const canEdit = useCanvasCapabilities().can_edit;
 
   useEffect(() => {
     let debouncedUpdate: ReturnType<typeof debounce> | undefined;
@@ -92,7 +96,9 @@ export function CellEditor({ cellId }: { cellId: string }) {
       );
 
       debouncedUpdate = debounce((content: string) => {
-        const cell = queryClient.getQueryData<CellDto>(cellKeys.detail(cellId));
+        const cell = queryClient.getQueryData<CellDto>(
+          cellKeys.detail(tenantId, cellId),
+        );
         if (cell) {
           updateCellMutation.mutate({
             cellId: cellId,
@@ -132,6 +138,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
             ...lintKeymap,
           ]),
           EditorState.tabSize.of(2),
+          EditorState.readOnly.of(!canEdit),
           EditorState.allowMultipleSelections.of(false),
           EditorView.updateListener.of((update) => {
             if (!update.docChanged) return;
@@ -156,7 +163,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
       }
       debouncedUpdate?.cancel();
     };
-  }, [cellId, query.isPending]);
+  }, [cellId, query.isPending, canEdit]);
 
   return <div ref={editorRef} className={CellEditorStyles.container} />;
 }

@@ -3,6 +3,7 @@ mod user_prompt;
 
 use crate::ai::agent_utils::{AgentName, ModelRole};
 use crate::ai::dto::ChartSummaryInput;
+use crate::authorization::dto::TenantId;
 use crate::common::AppState;
 use anyhow::Result;
 
@@ -16,10 +17,11 @@ struct ChartSummaryResponse {
 
 pub async fn summarize_chart(
     app_state: &AppState,
+    tenant_id: &TenantId,
     chart: &ChartSummaryInput,
     user_prompt: &Option<String>,
 ) -> Result<String> {
-    let model_client = app_state.require_model_client().await?;
+    let model_client = app_state.require_model_client(tenant_id).await?;
     let agent = model_client.build_agent(
         ModelRole::Default,
         AgentName::ChartSummaryAgent,

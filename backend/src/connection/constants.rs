@@ -128,3 +128,5 @@ impl fmt::Display for ConnectionStatus {
         })
     }
 }
+
+pub const CONNECTION_NOT_FOUND_MESSAGE: &str = "Connection not found";

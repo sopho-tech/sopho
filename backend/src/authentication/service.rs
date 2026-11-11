@@ -1,11 +1,23 @@
+pub use crate::authentication::constants::UserStatus;
 use crate::authentication::constants::{
-    ACCESS_TOKEN_EXPIRY_HOURS, CookieName, REFRESH_TOKEN_EXPIRY_DAYS, SessionStatus,
+    ACCESS_TOKEN_EXPIRY_HOURS, ACCOUNT_DEACTIVATED_MESSAGE, CookieName, REFRESH_TOKEN_EXPIRY_DAYS,
+    SIGN_IN_BLOCK_MINUTES, SIGN_IN_FAILURE_LIMIT, SessionStatus, TOO_MANY_SIGN_IN_ATTEMPTS_MESSAGE,
+};
+use crate::authentication::constants::{
+    INVALID_CREDENTIALS_MESSAGE, SESSION_NOT_FOUND_MESSAGE, USER_NOT_FOUND_MESSAGE,
 };
 use crate::authentication::dto;
+use crate::authentication::error::{AccountCreationError, CredentialsError};
+pub use crate::authentication::password::error::{PasswordFlowError, PasswordRuleError};
+pub use crate::authentication::password::service::send_password_reset_email;
+pub use crate::authentication::password::service::{normalized_password, validate_new_password};
 use crate::authentication::repository;
+pub use crate::authentication::repository::UserPage;
 use crate::authentication::repository::{get_user, get_user_by_email};
+use crate::authorization::constants::PlatformRole;
+use crate::authorization::dto::{AuthenticatedUser, UserId};
 use crate::common::AppState;
-use crate::common::error_codes::codes;
+use crate::common::error_codes::{ErrorCode, codes};
 use crate::common::time_utils;
 use crate::common::token_utils;
 use crate::entity;
@@ -17,7 +29,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use getrandom;
 use sea_orm::DbErr;
 use time::OffsetDateTime;
@@ -26,9 +38,9 @@ use tower_cookies::cookie::Cookie;
 use tower_cookies::cookie::SameSite;
 use uuid::Uuid;
 
-/// Result type for access token validation
 #[derive(Debug)]
 pub enum AccessTokenValidationError {
+    Missing,
     Invalid,
     Expired,
 }
@@ -46,65 +58,59 @@ fn is_refresh_token_expired(session: &entity::session::Model) -> bool {
     false
 }
 
-/// Validates an access token and returns the session if valid
-pub async fn validate_access_token(
-    access_token: &str,
+async fn find_session_by_access_token_cookie(
+    cookies: &Cookies,
     app_state: &AppState,
 ) -> Result<entity::session::Model, AccessTokenValidationError> {
-    let session = repository::get_active_session_by_access_token(
+    let access_token = match cookies.get(&CookieName::AccessToken.to_string()) {
+        Some(cookie) => cookie.value().to_string(),
+        None => {
+            tracing::error!("No access token found");
+            return Err(AccessTokenValidationError::Missing);
+        }
+    };
+
+    repository::get_active_session_by_access_token(
         &app_state.database_connection,
-        token_utils::hash_token(access_token),
+        token_utils::hash_token(&access_token),
     )
     .await
-    .map_err(|_| AccessTokenValidationError::Invalid)?;
+    .map_err(|error| {
+        tracing::error!("Failed to get session: {:?}", error);
+        AccessTokenValidationError::Invalid
+    })?
+    .ok_or(AccessTokenValidationError::Invalid)
+}
 
-    // Check if access token has expired
+pub async fn authenticate_from_cookies(
+    cookies: &Cookies,
+    app_state: &AppState,
+) -> Result<AuthenticatedUser, AccessTokenValidationError> {
+    let session = find_session_by_access_token_cookie(cookies, app_state).await?;
+
     let access_token_expires_at = session.access_token_expires_at.with_timezone(&Utc);
     if time_utils::is_expired(&access_token_expires_at) {
         return Err(AccessTokenValidationError::Expired);
     }
 
-    Ok(session)
+    Ok(AuthenticatedUser::from_validated_session(session.user_id))
 }
 
-/// Extracts and validates access token from cookies
-/// Returns the session if valid, or an error response tuple
 async fn extract_and_validate_session(
     cookies: &Cookies,
     app_state: &AppState,
 ) -> Result<entity::session::Model, (StatusCode, Json<serde_json::Value>)> {
-    let access_token = match cookies.get(&CookieName::AccessToken.to_string()) {
-        Some(token) => token.value().to_string(),
-        None => {
-            tracing::error!("No access token found");
-            return Err((
+    let session = find_session_by_access_token_cookie(cookies, app_state)
+        .await
+        .map_err(|_| {
+            (
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({
                     "message": "Unauthorized"
                 })),
-            ));
-        }
-    };
+            )
+        })?;
 
-    let session = match repository::get_active_session_by_access_token(
-        &app_state.database_connection,
-        token_utils::hash_token(&access_token),
-    )
-    .await
-    {
-        Ok(sess) => sess,
-        Err(e) => {
-            tracing::error!("Failed to get session: {:?}", e);
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({
-                    "message": "Unauthorized"
-                })),
-            ));
-        }
-    };
-
-    // Check if refresh token has expired
     if is_refresh_token_expired(&session) {
         return Err((
             StatusCode::UNAUTHORIZED,
@@ -158,27 +164,295 @@ pub async fn get_current_user(cookies: Cookies, app_state: AppState) -> impl Int
         Err(err_response) => return err_response,
     };
 
-    let user = match get_user(&app_state.database_connection, session.user_id).await {
-        Ok(u) => u,
-        Err(e) => {
-            tracing::error!("Failed to get user: {:?}", e);
-            return (
+    match current_user_profile(
+        &app_state,
+        AuthenticatedUser::from_validated_session(session.user_id).user_id(),
+    )
+    .await
+    {
+        Ok(user_dto) => (StatusCode::OK, Json(serde_json::json!(user_dto))),
+        Err(error) => {
+            tracing::error!("Failed to get user: {:?}", error);
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({
                     "message": "Failed to retrieve user"
                 })),
-            );
+            )
         }
-    };
+    }
+}
 
-    let user_dto = dto::UserDto {
+pub async fn find_optional_user_by_email(
+    app_state: &AppState,
+    email: &str,
+) -> Result<Option<entity::user::Model>, DbErr> {
+    get_user_by_email(&app_state.database_connection, normalize_email(email)).await
+}
+
+pub async fn find_users_by_ids(
+    app_state: &AppState,
+    user_ids: Vec<Uuid>,
+) -> Result<Vec<entity::user::Model>, DbErr> {
+    repository::get_users_by_ids(&app_state.database_connection, user_ids).await
+}
+
+pub async fn find_user_by_id(
+    app_state: &AppState,
+    user_id: UserId,
+) -> Result<entity::user::Model, DbErr> {
+    get_user(&app_state.database_connection, user_id.get_uuid())
+        .await?
+        .ok_or_else(|| DbErr::RecordNotFound(USER_NOT_FOUND_MESSAGE.into()))
+}
+
+pub fn platform_role_of(user: &entity::user::Model) -> anyhow::Result<PlatformRole> {
+    PlatformRole::from_str(&user.platform_role).map_err(anyhow::Error::msg)
+}
+
+pub async fn find_platform_role(
+    app_state: &AppState,
+    user_id: UserId,
+) -> anyhow::Result<PlatformRole> {
+    platform_role_of(&find_user_by_id(app_state, user_id).await?)
+}
+
+pub async fn current_user_profile(
+    app_state: &AppState,
+    user_id: UserId,
+) -> anyhow::Result<dto::UserDto> {
+    let user = find_user_by_id(app_state, user_id).await?;
+    let platform_permissions = platform_role_of(&user)?
+        .permissions()
+        .into_iter()
+        .map(|permission| permission.as_str().to_string())
+        .collect();
+    Ok(dto::UserDto {
         id: user.id,
         username: user.username,
         email: user.email,
         full_name: user.full_name,
-    };
+        platform_permissions,
+    })
+}
 
-    (StatusCode::OK, Json(serde_json::json!(user_dto)))
+pub async fn start_session_for_user(
+    app_state: &AppState,
+    cookies: &Cookies,
+    user_id: Uuid,
+) -> Result<(), DbErr> {
+    let session_dto = create_new_session(app_state, user_id).await?;
+    set_session_cookies(cookies, &session_dto, app_state);
+    Ok(())
+}
+
+pub async fn create_sso_user_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    email: &str,
+    full_name: &str,
+) -> Result<entity::user::Model, DbErr> {
+    let email = normalize_email(email);
+    repository::save_user(
+        txn,
+        entity::user::Model {
+            id: Uuid::new_v4(),
+            username: email.clone(),
+            password_hash: None,
+            email,
+            full_name: full_name.to_string(),
+            platform_role: PlatformRole::Member.as_str().to_string(),
+            email_verified_at: Some(time_utils::now_utc_into()),
+            status: UserStatus::Active.as_str().to_string(),
+            failed_sign_in_count: 0,
+            sign_in_blocked_until: None,
+            created_at: time_utils::now_utc_into(),
+            updated_at: time_utils::now_utc_into(),
+        },
+    )
+    .await
+}
+
+pub async fn create_password_user_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    email: &str,
+    full_name: &str,
+    normalized_new_password: &str,
+) -> Result<entity::user::Model, AccountCreationError> {
+    let email = normalize_email(email);
+    let password_hash = hash_password(normalized_new_password)
+        .map_err(|error| AccountCreationError::PasswordHashing(error.to_string()))?;
+    Ok(repository::save_user(
+        txn,
+        entity::user::Model {
+            id: Uuid::new_v4(),
+            username: email.clone(),
+            password_hash: Some(password_hash),
+            email,
+            full_name: full_name.to_string(),
+            platform_role: PlatformRole::Member.as_str().to_string(),
+            email_verified_at: Some(time_utils::now_utc_into()),
+            status: UserStatus::Active.as_str().to_string(),
+            failed_sign_in_count: 0,
+            sign_in_blocked_until: None,
+            created_at: time_utils::now_utc_into(),
+            updated_at: time_utils::now_utc_into(),
+        },
+    )
+    .await?)
+}
+
+pub async fn mark_email_verified_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    user_id: Uuid,
+) -> Result<(), DbErr> {
+    repository::set_email_verified_if_missing(txn, user_id, time_utils::now_utc_into()).await?;
+    Ok(())
+}
+
+pub fn normalize_email(email: &str) -> String {
+    email.trim().to_lowercase()
+}
+
+pub async fn verify_credentials(
+    app_state: &AppState,
+    email: &str,
+    password: &str,
+) -> Result<entity::user::Model, CredentialsError> {
+    let Some(user) =
+        get_user_by_email(&app_state.database_connection, normalize_email(email)).await?
+    else {
+        tracing::info!("Sign-in refused: no account uses the given email");
+        return Err(CredentialsError::InvalidCredentials);
+    };
+    let now = Utc::now();
+    if user
+        .sign_in_blocked_until
+        .is_some_and(|blocked_until| blocked_until > now)
+    {
+        tracing::info!(
+            "Sign-in refused for user {}: blocked after too many failed attempts",
+            user.id
+        );
+        return Err(CredentialsError::TooManyAttempts);
+    }
+    let Some(password_hash) = user.password_hash.as_deref() else {
+        tracing::info!(
+            "Sign-in refused for user {}: the account has no password",
+            user.id
+        );
+        return Err(CredentialsError::InvalidCredentials);
+    };
+    if verify_password(&normalized_password(password), password_hash).is_err() {
+        tracing::info!("Sign-in refused for user {}: wrong password", user.id);
+        repository::increment_failed_sign_in_count(
+            &app_state.database_connection,
+            user.id,
+            now.into(),
+        )
+        .await?;
+        repository::block_sign_in_after_failures(
+            &app_state.database_connection,
+            user.id,
+            SIGN_IN_FAILURE_LIMIT,
+            (now + Duration::minutes(SIGN_IN_BLOCK_MINUTES)).into(),
+        )
+        .await?;
+        return Err(CredentialsError::InvalidCredentials);
+    }
+    if user.status == UserStatus::Deactivated.as_str() {
+        tracing::info!(
+            "Sign-in refused for user {}: the account is deactivated",
+            user.id
+        );
+        return Err(CredentialsError::AccountDeactivated);
+    }
+    if user.failed_sign_in_count > 0 || user.sign_in_blocked_until.is_some() {
+        repository::clear_failed_sign_ins(&app_state.database_connection, user.id, now.into())
+            .await?;
+    }
+    Ok(user)
+}
+
+pub fn sign_in_page_options(app_state: &AppState) -> dto::SignInPageOptionsDto {
+    dto::SignInPageOptionsDto {
+        providers: crate::authentication::oidc::service::list_providers(app_state),
+        password_reset_available: crate::email_delivery::service::is_email_enabled(app_state),
+    }
+}
+
+pub async fn find_optional_user(
+    app_state: &AppState,
+    user_id: Uuid,
+) -> Result<Option<entity::user::Model>, DbErr> {
+    get_user(&app_state.database_connection, user_id).await
+}
+
+pub async fn list_users_page(
+    app_state: &AppState,
+    search: Option<String>,
+    page_index: u64,
+    page_size: u64,
+) -> Result<UserPage, DbErr> {
+    repository::find_users_page(
+        &app_state.database_connection,
+        search,
+        page_index,
+        page_size,
+    )
+    .await
+}
+
+pub async fn count_active_platform_administrators(app_state: &AppState) -> Result<u64, DbErr> {
+    repository::count_active_users_with_platform_role(
+        &app_state.database_connection,
+        PlatformRole::Administrator.as_str(),
+    )
+    .await
+}
+
+pub async fn deactivate_user_transaction(
+    txn: &sea_orm::DatabaseTransaction,
+    user_id: Uuid,
+) -> Result<(), DbErr> {
+    let now = time_utils::now_utc_into();
+    repository::set_user_status(txn, user_id, UserStatus::Deactivated, now).await?;
+    repository::deactivate_sessions_for_user(txn, user_id, None, now).await?;
+    Ok(())
+}
+
+pub async fn set_platform_role(
+    app_state: &AppState,
+    user_id: Uuid,
+    platform_role: PlatformRole,
+) -> Result<(), DbErr> {
+    repository::set_user_platform_role(
+        &app_state.database_connection,
+        user_id,
+        platform_role.as_str(),
+        time_utils::now_utc_into(),
+    )
+    .await?;
+    Ok(())
+}
+
+pub async fn reactivate_user(app_state: &AppState, user_id: Uuid) -> Result<(), DbErr> {
+    repository::set_user_status(
+        &app_state.database_connection,
+        user_id,
+        UserStatus::Active,
+        time_utils::now_utc_into(),
+    )
+    .await?;
+    Ok(())
+}
+
+pub async fn current_session_id(
+    cookies: &Cookies,
+    app_state: &AppState,
+) -> Result<Uuid, AccessTokenValidationError> {
+    Ok(find_session_by_access_token_cookie(cookies, app_state)
+        .await?
+        .id)
 }
 
 pub async fn create_session(
@@ -186,29 +460,45 @@ pub async fn create_session(
     payload: dto::CreateSessionDto,
     cookies: Cookies,
 ) -> impl IntoResponse {
-    let user = match get_user_by_email(&app_state.database_connection, payload.email.clone()).await
-    {
-        Ok(u) => u,
-        Err(e) => {
-            tracing::error!("Failed to get user by email: {:?}", e);
+    let user = match verify_credentials(&app_state, &payload.email, &payload.password).await {
+        Ok(user) => user,
+        Err(CredentialsError::InvalidCredentials) => {
+            tracing::warn!("Rejected sign-in for {}", payload.email);
             return (
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({
-                    "message": "Invalid credentials"
+                    "message": INVALID_CREDENTIALS_MESSAGE
+                })),
+            );
+        }
+        Err(CredentialsError::TooManyAttempts) => {
+            return (
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(serde_json::json!({
+                    "message": TOO_MANY_SIGN_IN_ATTEMPTS_MESSAGE,
+                    "error_code": ErrorCode::TooManySignInAttempts.as_str()
+                })),
+            );
+        }
+        Err(CredentialsError::AccountDeactivated) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(serde_json::json!({
+                    "message": ACCOUNT_DEACTIVATED_MESSAGE,
+                    "error_code": ErrorCode::AccountDeactivated.as_str()
+                })),
+            );
+        }
+        Err(CredentialsError::Database(error)) => {
+            tracing::error!("Failed to look up user for sign-in: {:?}", error);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({
+                    "message": "Failed to sign in"
                 })),
             );
         }
     };
-
-    if verify_password(&payload.password, &user.password_hash).is_err() {
-        tracing::error!("Invalid password for user: {}", payload.email);
-        return (
-            StatusCode::UNAUTHORIZED,
-            Json(serde_json::json!({
-                "message": "Invalid credentials"
-            })),
-        );
-    }
 
     let session_dto = match create_new_session(&app_state, user.id).await {
         Ok(session) => session,
@@ -318,7 +608,15 @@ async fn create_new_session(app_state: &AppState, user_id: Uuid) -> Result<dto::
     )
     .await?;
 
-    Ok(dto::SessionDto {
+    Ok(build_session_dto(session, access_token, refresh_token))
+}
+
+fn build_session_dto(
+    session: entity::session::Model,
+    access_token: String,
+    refresh_token: String,
+) -> dto::SessionDto {
+    dto::SessionDto {
         id: session.id,
         user_id: session.user_id,
         refresh_token,
@@ -328,7 +626,7 @@ async fn create_new_session(app_state: &AppState, user_id: Uuid) -> Result<dto::
         status: session.status,
         created_at: session.created_at.with_timezone(&Utc),
         updated_at: session.updated_at.with_timezone(&Utc),
-    })
+    }
 }
 
 fn generate_refresh_token() -> String {
@@ -382,6 +680,8 @@ pub async fn signout(cookies: Cookies, app_state: AppState) -> impl IntoResponse
         token_utils::hash_token(&access_token),
     )
     .await
+    .map(|session| session.ok_or(DbErr::RecordNotFound(SESSION_NOT_FOUND_MESSAGE.into())))
+    .and_then(|session| session)
     {
         Ok(sess) => sess,
         Err(e) => {
@@ -399,8 +699,11 @@ pub async fn signout(cookies: Cookies, app_state: AppState) -> impl IntoResponse
 
     // Mark session as inactive
     match repository::deactivate_session(&app_state.database_connection, session.id).await {
-        Ok(_) => {
+        Ok(Some(_)) => {
             tracing::info!("Session {} deactivated successfully", session.id);
+        }
+        Ok(None) => {
+            tracing::warn!("Session {} was already gone when signing out", session.id);
         }
         Err(e) => {
             tracing::error!("Failed to deactivate session: {:?}", e);
@@ -438,17 +741,13 @@ pub async fn refresh_token(cookies: Cookies, app_state: AppState) -> impl IntoRe
         token_utils::hash_token(&refresh_token),
     )
     .await
+    .map(|session| session.ok_or(DbErr::RecordNotFound(SESSION_NOT_FOUND_MESSAGE.into())))
+    .and_then(|session| session)
     {
         Ok(sess) => sess,
         Err(e) => {
             tracing::error!("Failed to get session by refresh token: {:?}", e);
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({
-                    "message": "Unauthorized",
-                    "error_code": codes::INVALID_REFRESH_TOKEN.as_str()
-                })),
-            );
+            return invalid_refresh_token_response();
         }
     };
 
@@ -463,11 +762,14 @@ pub async fn refresh_token(cookies: Cookies, app_state: AppState) -> impl IntoRe
         );
     }
 
-    // Create new session
-    let session_dto = match create_new_session(&app_state, old_session.user_id).await {
-        Ok(session) => session,
+    let session_dto = match rotate_session_tokens(&app_state, old_session).await {
+        Ok(Some(session_dto)) => session_dto,
+        Ok(None) => {
+            tracing::warn!("Refresh token was already used to rotate its session");
+            return invalid_refresh_token_response();
+        }
         Err(e) => {
-            tracing::error!("Failed to create new session: {:?}", e);
+            tracing::error!("Failed to rotate session tokens: {:?}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({
@@ -477,10 +779,42 @@ pub async fn refresh_token(cookies: Cookies, app_state: AppState) -> impl IntoRe
         }
     };
 
-    // Set cookies with new tokens (both access and refresh tokens)
     set_session_cookies(&cookies, &session_dto, &app_state);
 
     (StatusCode::OK, Json(serde_json::json!(session_dto)))
+}
+
+fn invalid_refresh_token_response() -> (StatusCode, Json<serde_json::Value>) {
+    (
+        StatusCode::UNAUTHORIZED,
+        Json(serde_json::json!({
+            "message": "Unauthorized",
+            "error_code": codes::INVALID_REFRESH_TOKEN.as_str()
+        })),
+    )
+}
+
+async fn rotate_session_tokens(
+    app_state: &AppState,
+    session: entity::session::Model,
+) -> Result<Option<dto::SessionDto>, DbErr> {
+    let refresh_token = generate_refresh_token();
+    let access_token = generate_access_token();
+    let presented_refresh_token_hash = session.refresh_token_hash.clone();
+    let rotated_session = repository::rotate_session_tokens(
+        &app_state.database_connection,
+        entity::session::Model {
+            refresh_token_hash: token_utils::hash_token(&refresh_token),
+            access_token_hash: token_utils::hash_token(&access_token),
+            refresh_token_expires_at: time_utils::now_plus_days_into(REFRESH_TOKEN_EXPIRY_DAYS),
+            access_token_expires_at: time_utils::now_plus_hours_into(ACCESS_TOKEN_EXPIRY_HOURS),
+            updated_at: time_utils::now_utc_into(),
+            ..session
+        },
+        presented_refresh_token_hash,
+    )
+    .await?;
+    Ok(rotated_session.map(|session| build_session_dto(session, access_token, refresh_token)))
 }
 
 fn invalidate_session_cookie(cookies: &Cookies, name: CookieName, app_state: &AppState) {
@@ -499,51 +833,57 @@ fn invalidate_session_cookies(cookies: &Cookies, app_state: &AppState) {
     invalidate_session_cookie(cookies, CookieName::RefreshToken, app_state);
 }
 
-pub async fn seed_admin_user(app_state: &AppState) {
+pub async fn seed_admin_user(app_state: &AppState) -> anyhow::Result<()> {
     if crate::configuration::service::is_admin_user_setup_done(app_state).await {
-        return;
+        return Ok(());
     }
 
     let username = app_state.config.admin_username.as_ref();
     let password = app_state.config.admin_password.as_ref();
-    let email = app_state.config.admin_email.as_ref();
+    let email = normalize_email(app_state.config.admin_email.as_ref());
     let full_name = app_state.config.admin_full_name.as_ref();
 
-    if get_user_by_email(&app_state.database_connection, email.to_string())
-        .await
-        .is_ok()
+    if get_user_by_email(&app_state.database_connection, email.clone())
+        .await?
+        .is_some()
     {
         tracing::info!(
             "Admin user with email {} already exists, skipping seed",
             email
         );
         crate::configuration::service::mark_admin_user_setup_done(app_state).await;
-        return;
+        return Ok(());
     }
 
-    let password_hash = match hash_password(password) {
-        Ok(h) => h,
-        Err(e) => {
-            tracing::error!("Admin seeding failed: could not hash password: {:?}", e);
-            return;
-        }
-    };
+    let password_hash = hash_password(&normalized_password(password))
+        .map_err(|error| anyhow::anyhow!("could not hash the admin password: {error:?}"))?;
 
     let user = entity::user::Model {
         id: Uuid::new_v4(),
         username: username.to_string(),
-        password_hash,
-        email: email.to_string(),
+        password_hash: Some(password_hash),
+        email,
         full_name: full_name.to_string(),
+        platform_role: PlatformRole::Administrator.as_str().to_string(),
+        email_verified_at: None,
+        status: UserStatus::Active.as_str().to_string(),
+        failed_sign_in_count: 0,
+        sign_in_blocked_until: None,
         created_at: time_utils::now_utc_into(),
         updated_at: time_utils::now_utc_into(),
     };
 
-    match repository::save_user(&app_state.database_connection, user).await {
-        Ok(_) => {
-            tracing::info!("Admin user {} created successfully", username);
-            crate::configuration::service::mark_admin_user_setup_done(app_state).await;
-        }
-        Err(e) => tracing::error!("Admin seeding failed: could not save user: {:?}", e),
-    }
+    repository::save_user(&app_state.database_connection, user).await?;
+    tracing::info!("Admin user {} created successfully", username);
+    crate::configuration::service::mark_admin_user_setup_done(app_state).await;
+    Ok(())
+}
+
+pub async fn find_user_by_email(
+    app_state: &AppState,
+    email: &str,
+) -> Result<entity::user::Model, DbErr> {
+    get_user_by_email(&app_state.database_connection, normalize_email(email))
+        .await?
+        .ok_or_else(|| DbErr::RecordNotFound(USER_NOT_FOUND_MESSAGE.into()))
 }

@@ -1,7 +1,7 @@
-use crate::db::add_created_at_and_updated_at_timestamps;
+use crate::db::{add_attribution_columns, add_created_at_and_updated_at_timestamps};
 use sea_orm_migration::{
     prelude::*,
-    schema::{pk_uuid, string, string_null},
+    schema::{pk_uuid, string, string_null, uuid},
 };
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -11,13 +11,18 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
             .create_table(add_created_at_and_updated_at_timestamps(
-                Table::create()
-                    .table(Canvas::Table)
-                    .col(pk_uuid(Canvas::Id))
-                    .col(string(Canvas::Name))
-                    .col(string_null(Canvas::Description))
-                    .col(string(Canvas::Status))
-                    .to_owned(),
+                add_attribution_columns(
+                    Table::create()
+                        .table(Canvas::Table)
+                        .col(pk_uuid(Canvas::Id))
+                        .col(uuid(Canvas::TenantId))
+                        .col(uuid(Canvas::OwnerUserId))
+                        .col(string(Canvas::Visibility))
+                        .col(string(Canvas::Name))
+                        .col(string_null(Canvas::Description))
+                        .col(string(Canvas::Status))
+                        .to_owned(),
+                ),
             ))
             .await
     }
@@ -33,6 +38,9 @@ impl MigrationTrait for Migration {
 pub enum Canvas {
     Table,
     Id,
+    TenantId,
+    OwnerUserId,
+    Visibility,
     Name,
     Description,
     Status,

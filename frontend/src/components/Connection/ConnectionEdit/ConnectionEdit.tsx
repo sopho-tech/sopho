@@ -17,11 +17,13 @@ import {
 } from "src/api/connection/queries";
 import { useStore } from "src/store";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 
 export function ConnectionEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const updateMutation = useUpdateConnection();
   const setConnectionDetailsPageState = useStore(
     (state) => state.connection.setConnectionDetailsPageState,
@@ -46,12 +48,12 @@ export function ConnectionEdit() {
     };
     updateMutation.mutate({ connectionId: connection.id, payload });
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    void navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    void navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
   };
 
   const handleBack = () => {
     setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    void navigate(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS);
+    void navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
   };
 
   if (isLoading) return <div>Loading connection details...</div>;

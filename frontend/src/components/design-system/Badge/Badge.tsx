@@ -2,7 +2,8 @@ import classNames from "classnames";
 import styles from "src/components/design-system/Badge/Badge.module.css";
 
 export type BadgeProps = React.HTMLAttributes<HTMLElement> & {
-  variant?: "default" | "subtle" | "blue" | "green" | "yellow" | "command";
+  variant?:
+    "default" | "subtle" | "blue" | "green" | "yellow" | "red" | "command";
   shape?: "pill" | "rounded";
   size?: "sm" | "md";
   children: string | number;

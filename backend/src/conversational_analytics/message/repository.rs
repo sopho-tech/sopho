@@ -1,3 +1,5 @@
+use crate::authorization::dto::Actor;
+use crate::authorization::dto::TenantId;
 use crate::entity::conversation_message;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
@@ -13,39 +15,34 @@ struct ConversationMessageCountRow {
 
 pub async fn save_message_transaction(
     txn: &DatabaseTransaction,
+    tenant_id: &TenantId,
     message: conversation_message::Model,
 ) -> Result<conversation_message::Model, DbErr> {
-    let active: conversation_message::ActiveModel = message.into();
+    let mut active: conversation_message::ActiveModel = message.into();
+    active.tenant_id = Set(tenant_id.get_uuid());
     let inserted = active.insert(txn).await?;
-    Ok(inserted)
-}
-
-pub async fn save_message_connection(
-    db: &DatabaseConnection,
-    message: conversation_message::Model,
-) -> Result<conversation_message::Model, DbErr> {
-    let active: conversation_message::ActiveModel = message.into();
-    let inserted = active.insert(db).await?;
     Ok(inserted)
 }
 
 pub async fn get_message(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     id: Uuid,
-) -> Result<conversation_message::Model, DbErr> {
-    match conversation_message::Entity::find_by_id(id).one(db).await? {
-        Some(m) => Ok(m),
-        None => Err(DbErr::RecordNotFound(
-            "Conversation message not found".into(),
-        )),
-    }
+) -> Result<Option<conversation_message::Model>, DbErr> {
+    conversation_message::Entity::find()
+        .filter(conversation_message::Column::Id.eq(id))
+        .filter(conversation_message::Column::TenantId.eq(tenant_id.get_uuid()))
+        .one(db)
+        .await
 }
 
 pub async fn get_last_message_by_conversation_id(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     conversation_id: Uuid,
 ) -> Result<Option<conversation_message::Model>, DbErr> {
     conversation_message::Entity::find()
+        .filter(conversation_message::Column::TenantId.eq(tenant_id.get_uuid()))
         .filter(conversation_message::Column::ConversationId.eq(conversation_id))
         .order_by_desc(conversation_message::Column::SequenceNumber)
         .one(db)
@@ -54,9 +51,11 @@ pub async fn get_last_message_by_conversation_id(
 
 pub async fn get_first_message_by_conversation_id(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     conversation_id: Uuid,
 ) -> Result<Option<conversation_message::Model>, DbErr> {
     conversation_message::Entity::find()
+        .filter(conversation_message::Column::TenantId.eq(tenant_id.get_uuid()))
         .filter(conversation_message::Column::ConversationId.eq(conversation_id))
         .order_by_asc(conversation_message::Column::SequenceNumber)
         .one(db)
@@ -65,11 +64,13 @@ pub async fn get_first_message_by_conversation_id(
 
 pub async fn list_messages_by_conversation_id(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     conversation_id: Uuid,
     limit: Option<u64>,
     descending: bool,
 ) -> Result<Vec<conversation_message::Model>, DbErr> {
     let mut query = conversation_message::Entity::find()
+        .filter(conversation_message::Column::TenantId.eq(tenant_id.get_uuid()))
         .filter(conversation_message::Column::ConversationId.eq(conversation_id));
     query = if descending {
         query.order_by_desc(conversation_message::Column::SequenceNumber)
@@ -84,22 +85,30 @@ pub async fn list_messages_by_conversation_id(
 
 pub async fn update_message_status(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     message_id: Uuid,
     status: String,
-) -> Result<conversation_message::Model, DbErr> {
-    let message = get_message(db, message_id).await?;
+    actor: &Actor,
+) -> Result<Option<conversation_message::Model>, DbErr> {
+    let Some(message) = get_message(db, tenant_id, message_id).await? else {
+        return Ok(None);
+    };
     let mut active: conversation_message::ActiveModel = message.into();
     active.status = Set(status);
     active.updated_at = Set(crate::common::time_utils::now_utc_into());
-    active.update(db).await
+    active.modified_by_user_id = Set(actor.user_id());
+    active.modified_by_actor = Set(actor.kind_name());
+    active.update(db).await.map(Some)
 }
 
 pub async fn count_messages_by_sender_for_conversations(
     db: &DatabaseConnection,
+    tenant_id: &TenantId,
     conversation_ids: &[Uuid],
     sender: &str,
 ) -> Result<Vec<(Uuid, i64)>, DbErr> {
     let rows = conversation_message::Entity::find()
+        .filter(conversation_message::Column::TenantId.eq(tenant_id.get_uuid()))
         .select_only()
         .column(conversation_message::Column::ConversationId)
         .column_as(conversation_message::Column::Id.count(), "message_count")
@@ -117,9 +126,11 @@ pub async fn count_messages_by_sender_for_conversations(
 
 pub async fn delete_messages_for_conversation_transaction(
     txn: &DatabaseTransaction,
+    tenant_id: &TenantId,
     conversation_id: Uuid,
 ) -> Result<(), DbErr> {
     conversation_message::Entity::delete_many()
+        .filter(conversation_message::Column::TenantId.eq(tenant_id.get_uuid()))
         .filter(conversation_message::Column::ConversationId.eq(conversation_id))
         .exec(txn)
         .await?;
@@ -128,9 +139,11 @@ pub async fn delete_messages_for_conversation_transaction(
 
 pub async fn delete_messages_for_conversations_transaction(
     txn: &DatabaseTransaction,
+    tenant_id: &TenantId,
     conversation_ids: &[Uuid],
 ) -> Result<(), DbErr> {
     conversation_message::Entity::delete_many()
+        .filter(conversation_message::Column::TenantId.eq(tenant_id.get_uuid()))
         .filter(conversation_message::Column::ConversationId.is_in(conversation_ids.to_vec()))
         .exec(txn)
         .await?;

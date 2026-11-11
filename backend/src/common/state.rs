@@ -1,17 +1,170 @@
 use crate::ai::agent_utils::ModelClient;
 use crate::ai_configuration;
-use crate::common::cryptography_utils::{
-    generate_and_store_encryption_key, get_encryption_key_from_path,
+use crate::authorization::dto::TenantId;
+use crate::common::constants::{
+    EnvironmentVariable, OidcProviderVariable, SMTP_TIMEOUT_SECONDS, SmtpTls,
 };
+use crate::common::cryptography_utils::{
+    SECRET_KEY_PATH, generate_and_store_encryption_key, get_encryption_key_from_path,
+};
+use crate::common::errors::ConfigurationError;
+use crate::common::url_utils::validated_base_url;
 use crate::database::pool::{DatabasePoolRegistry, new_database_pool_registry};
 use crate::db;
-use anyhow::bail;
+use crate::email_delivery;
+use crate::email_delivery::service::EmailTransport;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use std::borrow::Cow;
+use std::collections::HashMap;
+use std::env::VarError;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::warn;
+use uuid::Uuid;
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct OidcProviderConfiguration {
+    pub name: String,
+    pub display_name: String,
+    pub issuer_url: String,
+    pub client_id: String,
+    pub client_secret: String,
+    pub redirect_uri: String,
+}
+
+pub fn oidc_providers_from_variables(
+    read_variable: impl Fn(&str) -> Result<Option<String>, ConfigurationError>,
+) -> Result<Vec<OidcProviderConfiguration>, ConfigurationError> {
+    let Some(provider_list) = read_variable(EnvironmentVariable::SophoOidcProviders.as_ref())?
+    else {
+        return Ok(Vec::new());
+    };
+
+    let mut providers: Vec<OidcProviderConfiguration> = Vec::new();
+    for raw_name in provider_list.split(',') {
+        let name = raw_name.trim().to_lowercase();
+        if name.is_empty() {
+            continue;
+        }
+        let is_url_safe = name
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || character == '-');
+        if !is_url_safe {
+            return Err(ConfigurationError::InvalidOidcProviderName { name });
+        }
+        if providers.iter().any(|provider| provider.name == name) {
+            return Err(ConfigurationError::DuplicateOidcProvider { name });
+        }
+
+        let required = |variable: OidcProviderVariable| -> Result<String, ConfigurationError> {
+            let variable_name = variable.name_for_provider(&name);
+            read_variable(&variable_name)?
+                .map(|value| value.trim().to_string())
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| ConfigurationError::MissingOidcProviderVariable {
+                    provider_name: name.clone(),
+                    variable_name,
+                })
+        };
+        providers.push(OidcProviderConfiguration {
+            display_name: required(OidcProviderVariable::DisplayName)?,
+            issuer_url: required(OidcProviderVariable::IssuerUrl)?,
+            client_id: required(OidcProviderVariable::ClientId)?,
+            client_secret: required(OidcProviderVariable::ClientSecret)?,
+            redirect_uri: required(OidcProviderVariable::RedirectUri)?,
+            name,
+        });
+    }
+    Ok(providers)
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct SmtpCredentials {
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct EmailConfiguration {
+    pub smtp_host: String,
+    pub smtp_port: u16,
+    pub smtp_tls: SmtpTls,
+    pub smtp_credentials: Option<SmtpCredentials>,
+    pub smtp_timeout_seconds: u64,
+    pub from_address: String,
+    pub public_url: String,
+}
+
+pub fn email_configuration_from_variables(
+    read_variable: impl Fn(EnvironmentVariable) -> Result<Option<String>, ConfigurationError>,
+) -> Result<Option<EmailConfiguration>, ConfigurationError> {
+    let present_value =
+        |variable: EnvironmentVariable| -> Result<Option<String>, ConfigurationError> {
+            Ok(read_variable(variable)?.filter(|value| !value.trim().is_empty()))
+        };
+    let Some(smtp_host) = present_value(EnvironmentVariable::SophoSmtpHost)? else {
+        return Ok(None);
+    };
+    let required_value = |variable: EnvironmentVariable| -> Result<String, ConfigurationError> {
+        present_value(variable)?
+            .map(|value| value.trim().to_string())
+            .ok_or(ConfigurationError::MissingEmailVariable { variable })
+    };
+
+    let smtp_port_value = required_value(EnvironmentVariable::SophoSmtpPort)?;
+    let smtp_port =
+        smtp_port_value
+            .parse()
+            .map_err(|source| ConfigurationError::InvalidSmtpPort {
+                value: smtp_port_value.clone(),
+                source,
+            })?;
+    let smtp_tls_value = required_value(EnvironmentVariable::SophoSmtpTls)?;
+    let smtp_tls =
+        smtp_tls_value
+            .parse::<SmtpTls>()
+            .map_err(|_| ConfigurationError::InvalidSmtpTls {
+                value: smtp_tls_value.clone(),
+            })?;
+    let smtp_credentials = match (
+        present_value(EnvironmentVariable::SophoSmtpUsername)?,
+        present_value(EnvironmentVariable::SophoSmtpPassword)?,
+    ) {
+        (Some(username), Some(password)) => Some(SmtpCredentials {
+            username: username.trim().to_string(),
+            password,
+        }),
+        (None, None) => None,
+        _ => return Err(ConfigurationError::IncompleteSmtpCredentials),
+    };
+    let from_address = required_value(EnvironmentVariable::SophoEmailFrom)?;
+    from_address
+        .parse::<lettre::message::Mailbox>()
+        .map_err(|source| ConfigurationError::InvalidEmailFrom {
+            value: from_address.clone(),
+            source,
+        })?;
+    let public_url = validated_base_url(
+        EnvironmentVariable::SophoPublicUrl.as_ref(),
+        Some(required_value(EnvironmentVariable::SophoPublicUrl)?.into()),
+    )?
+    .ok_or(ConfigurationError::MissingEmailVariable {
+        variable: EnvironmentVariable::SophoPublicUrl,
+    })?
+    .trim_end_matches('/')
+    .to_string();
+
+    Ok(Some(EmailConfiguration {
+        smtp_host: smtp_host.trim().to_string(),
+        smtp_port,
+        smtp_tls,
+        smtp_credentials,
+        smtp_timeout_seconds: SMTP_TIMEOUT_SECONDS,
+        from_address,
+        public_url,
+    }))
+}
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Configurations {
@@ -27,6 +180,8 @@ pub struct Configurations {
     pub admin_full_name: Cow<'static, str>,
     pub anthropic_base_url: Option<Cow<'static, str>>,
     pub openai_base_url: Option<Cow<'static, str>>,
+    pub oidc_providers: Vec<OidcProviderConfiguration>,
+    pub email: Option<EmailConfiguration>,
 }
 
 pub struct ConfigurationsBuilder {
@@ -42,6 +197,8 @@ pub struct ConfigurationsBuilder {
     admin_full_name: Option<Cow<'static, str>>,
     anthropic_base_url: Option<Cow<'static, str>>,
     openai_base_url: Option<Cow<'static, str>>,
+    oidc_providers: Vec<OidcProviderConfiguration>,
+    email: Option<EmailConfiguration>,
 }
 
 impl ConfigurationsBuilder {
@@ -59,6 +216,8 @@ impl ConfigurationsBuilder {
             admin_full_name: None,
             anthropic_base_url: None,
             openai_base_url: None,
+            oidc_providers: Vec::new(),
+            email: None,
         }
     }
 
@@ -122,34 +281,55 @@ impl ConfigurationsBuilder {
         self
     }
 
-    pub fn build(self) -> anyhow::Result<Configurations> {
+    pub fn oidc_providers(mut self, providers: Vec<OidcProviderConfiguration>) -> Self {
+        self.oidc_providers = providers;
+        self
+    }
+
+    pub fn email(mut self, email: EmailConfiguration) -> Self {
+        self.email = Some(email);
+        self
+    }
+
+    pub fn build(self) -> Result<Configurations, ConfigurationError> {
         Ok(Configurations {
             database_url: self
                 .database_url
                 .unwrap_or_else(|| db::get_sqlite_database_file_path().into()),
             port: self.port.unwrap_or(8000),
-            frontend_dir: self
-                .frontend_dir
-                .ok_or_else(|| anyhow::anyhow!("frontend_dir is required"))?,
+            frontend_dir: required_setting(
+                self.frontend_dir,
+                EnvironmentVariable::SophoFrontendDir,
+            )?,
             environment: self.environment.unwrap_or(Cow::Borrowed("production")),
             cookie_secure: self.cookie_secure.unwrap_or(false),
-            encryption_key: self
-                .encryption_key
-                .ok_or_else(|| anyhow::anyhow!("encryption_key is required"))?,
-            admin_username: self
-                .admin_username
-                .ok_or_else(|| anyhow::anyhow!("admin_username is required"))?,
-            admin_password: self
-                .admin_password
-                .ok_or_else(|| anyhow::anyhow!("admin_password is required"))?,
-            admin_email: self
-                .admin_email
-                .ok_or_else(|| anyhow::anyhow!("admin_email is required"))?,
-            admin_full_name: self
-                .admin_full_name
-                .ok_or_else(|| anyhow::anyhow!("admin_full_name is required"))?,
-            anthropic_base_url: validated_base_url("anthropic_base_url", self.anthropic_base_url)?,
-            openai_base_url: validated_base_url("openai_base_url", self.openai_base_url)?,
+            encryption_key: required_setting(
+                self.encryption_key,
+                EnvironmentVariable::SophoEncryptionKey,
+            )?,
+            admin_username: required_setting(
+                self.admin_username,
+                EnvironmentVariable::SophoAdminUsername,
+            )?,
+            admin_password: required_setting(
+                self.admin_password,
+                EnvironmentVariable::SophoAdminPassword,
+            )?,
+            admin_email: required_setting(self.admin_email, EnvironmentVariable::SophoAdminEmail)?,
+            admin_full_name: required_setting(
+                self.admin_full_name,
+                EnvironmentVariable::SophoAdminFullName,
+            )?,
+            anthropic_base_url: validated_base_url(
+                EnvironmentVariable::SophoAnthropicBaseUrl.as_ref(),
+                self.anthropic_base_url,
+            )?,
+            openai_base_url: validated_base_url(
+                EnvironmentVariable::SophoOpenaiBaseUrl.as_ref(),
+                self.openai_base_url,
+            )?,
+            oidc_providers: self.oidc_providers,
+            email: self.email,
         })
     }
 }
@@ -165,131 +345,185 @@ impl Configurations {
         ConfigurationsBuilder::new()
     }
 
-    pub fn from_env() -> anyhow::Result<Self> {
+    pub fn from_env() -> Result<Self, ConfigurationError> {
         dotenvy::dotenv().ok();
 
         Ok(Self {
-            database_url: match dotenvy::var("DATABASE_URL") {
-                Ok(url) => url.into(),
-                Err(_) => {
-                    let database_url = Cow::Owned(db::get_sqlite_database_file_path());
+            database_url: match optional_environment_variable(EnvironmentVariable::DatabaseUrl)? {
+                Some(database_url) => database_url,
+                None => {
                     warn!(
                         "Using SQLite as the database. This is not recommended for production use."
                     );
-                    database_url
+                    Cow::Owned(db::get_sqlite_database_file_path())
                 }
             },
-            port: match dotenvy::var("PORT") {
-                Ok(port) => port.parse()?,
-                _ => 8000,
+            port: match optional_environment_variable(EnvironmentVariable::Port)? {
+                Some(port) => port
+                    .parse()
+                    .map_err(|source| ConfigurationError::InvalidPort {
+                        value: port.to_string(),
+                        source,
+                    })?,
+                None => 8000,
             },
-            frontend_dir: match dotenvy::var("FRONTEND_DIR") {
-                Ok(v) => v.into(),
-                Err(err) => bail!("missing FRONTEND_DIR: {err}"),
-            },
-            environment: match dotenvy::var("ENVIRONMENT") {
-                Ok(environment) => environment.into(),
-                Err(_err) => Cow::Borrowed("production"),
-            },
-            cookie_secure: match dotenvy::var("COOKIE_SECURE") {
-                Ok(cookie_secure) => cookie_secure.parse()?,
-                Err(_err) => false,
-            },
-            encryption_key: match dotenvy::var("ENCRYPTION_KEY") {
-                Ok(v) => v.into(),
-                Err(_) => {
-                    if let Some(key) = get_encryption_key_from_path()? {
-                        key.into()
-                    } else {
-                        let (encryption_key, full_path) = generate_and_store_encryption_key()?;
-                        warn!(
-                            "Since ENCRYPTION_KEY is not provided, one is generated and stored at {}. This is not recommended for production use.",
-                            full_path
-                        );
-                        encryption_key.into()
+            frontend_dir: required_environment_variable(EnvironmentVariable::SophoFrontendDir)?,
+            environment: optional_environment_variable(EnvironmentVariable::SophoEnvironment)?
+                .unwrap_or(Cow::Borrowed("production")),
+            cookie_secure: match optional_environment_variable(
+                EnvironmentVariable::SophoCookieSecure,
+            )? {
+                Some(cookie_secure) => cookie_secure.parse().map_err(|source| {
+                    ConfigurationError::InvalidCookieSecure {
+                        value: cookie_secure.to_string(),
+                        source,
                     }
-                }
+                })?,
+                None => false,
             },
-            admin_username: match dotenvy::var("ADMIN_USERNAME") {
-                Ok(v) => v.into(),
-                Err(err) => bail!("missing ADMIN_USERNAME: {err}"),
+            encryption_key: match optional_environment_variable(
+                EnvironmentVariable::SophoEncryptionKey,
+            )? {
+                Some(encryption_key) => encryption_key,
+                None => stored_or_generated_encryption_key()?,
             },
-            admin_password: match dotenvy::var("ADMIN_PASSWORD") {
-                Ok(v) => v.into(),
-                Err(err) => bail!("missing ADMIN_PASSWORD: {err}"),
-            },
-            admin_email: match dotenvy::var("ADMIN_EMAIL") {
-                Ok(v) => v.into(),
-                Err(err) => bail!("missing ADMIN_EMAIL: {err}"),
-            },
-            admin_full_name: match dotenvy::var("ADMIN_FULL_NAME") {
-                Ok(v) => v.into(),
-                Err(err) => bail!("missing ADMIN_FULL_NAME: {err}"),
-            },
+            admin_username: required_environment_variable(EnvironmentVariable::SophoAdminUsername)?,
+            admin_password: required_environment_variable(EnvironmentVariable::SophoAdminPassword)?,
+            admin_email: required_environment_variable(EnvironmentVariable::SophoAdminEmail)?,
+            admin_full_name: required_environment_variable(
+                EnvironmentVariable::SophoAdminFullName,
+            )?,
             anthropic_base_url: validated_base_url(
-                "ANTHROPIC_BASE_URL",
-                optional_environment_variable("ANTHROPIC_BASE_URL")?,
+                EnvironmentVariable::SophoAnthropicBaseUrl.as_ref(),
+                optional_environment_variable(EnvironmentVariable::SophoAnthropicBaseUrl)?,
             )?,
             openai_base_url: validated_base_url(
-                "OPENAI_BASE_URL",
-                optional_environment_variable("OPENAI_BASE_URL")?,
+                EnvironmentVariable::SophoOpenaiBaseUrl.as_ref(),
+                optional_environment_variable(EnvironmentVariable::SophoOpenaiBaseUrl)?,
             )?,
+            oidc_providers: oidc_providers_from_variables(oidc_environment_variable)?,
+            email: email_configuration_from_variables(|variable| {
+                Ok(optional_environment_variable(variable)?.map(Cow::into_owned))
+            })?,
         })
     }
 }
 
-fn validated_base_url(
-    setting_name: &str,
-    base_url: Option<Cow<'static, str>>,
-) -> anyhow::Result<Option<Cow<'static, str>>> {
-    let Some(base_url) = base_url else {
-        return Ok(None);
-    };
-    let parsed_base_url: http::Uri = base_url
-        .parse()
-        .map_err(|error| anyhow::anyhow!("invalid {setting_name} {base_url}: {error}"))?;
-    let uses_http_scheme = matches!(parsed_base_url.scheme_str(), Some("http" | "https"));
-    if !uses_http_scheme || parsed_base_url.authority().is_none() {
-        bail!("invalid {setting_name} {base_url}: expected an http or https URL");
-    }
-    Ok(Some(base_url))
+fn required_setting(
+    value: Option<Cow<'static, str>>,
+    setting: EnvironmentVariable,
+) -> Result<Cow<'static, str>, ConfigurationError> {
+    value.ok_or(ConfigurationError::MissingSetting { setting })
 }
 
-fn optional_environment_variable(name: &str) -> anyhow::Result<Option<Cow<'static, str>>> {
-    match dotenvy::var(name) {
-        Ok(value) => Ok(Some(value.into())),
-        Err(dotenvy::Error::EnvVar(std::env::VarError::NotPresent)) => Ok(None),
-        Err(err) => bail!("invalid {name}: {err}"),
+fn stored_or_generated_encryption_key() -> Result<Cow<'static, str>, ConfigurationError> {
+    let stored_key = get_encryption_key_from_path().map_err(|source| {
+        ConfigurationError::UnreadableEncryptionKeyFile {
+            path: SECRET_KEY_PATH,
+            source,
+        }
+    })?;
+    if let Some(stored_key) = stored_key {
+        return Ok(stored_key.into());
     }
+    let (encryption_key, full_path) = generate_and_store_encryption_key().map_err(|source| {
+        ConfigurationError::UnwritableEncryptionKeyFile {
+            path: SECRET_KEY_PATH,
+            source,
+        }
+    })?;
+    warn!(
+        "Since {} is not provided, one is generated and stored at {}. This is not recommended for production use.",
+        EnvironmentVariable::SophoEncryptionKey,
+        full_path
+    );
+    Ok(encryption_key.into())
+}
+
+fn oidc_environment_variable(variable_name: &str) -> Result<Option<String>, ConfigurationError> {
+    match std::env::var(variable_name) {
+        Ok(value) => Ok(Some(value)),
+        Err(VarError::NotPresent) => Ok(None),
+        Err(source) => Err(ConfigurationError::InvalidOidcVariable {
+            variable_name: variable_name.to_string(),
+            source,
+        }),
+    }
+}
+
+fn environment_variable(variable: EnvironmentVariable) -> Result<String, VarError> {
+    std::env::var(variable.as_ref())
+}
+
+fn optional_environment_variable(
+    variable: EnvironmentVariable,
+) -> Result<Option<Cow<'static, str>>, ConfigurationError> {
+    match environment_variable(variable) {
+        Ok(value) => Ok(Some(value.into())),
+        Err(VarError::NotPresent) => Ok(None),
+        Err(source) => Err(ConfigurationError::InvalidEnvironmentVariable { variable, source }),
+    }
+}
+
+fn required_environment_variable(
+    variable: EnvironmentVariable,
+) -> Result<Cow<'static, str>, ConfigurationError> {
+    optional_environment_variable(variable)?
+        .ok_or(ConfigurationError::MissingEnvironmentVariable { variable })
 }
 
 #[derive(Clone)]
 pub struct AppState {
     pub database_connection: DatabaseConnection,
     pub config: Configurations,
-    pub model_client: Arc<RwLock<Option<ModelClient>>>,
+    pub model_client: Arc<RwLock<HashMap<Uuid, ModelClient>>>,
     pub database_pools: DatabasePoolRegistry,
+    pub email_transport: Option<EmailTransport>,
 }
 
 impl AppState {
     pub async fn from_configurations(config: Configurations) -> anyhow::Result<Self> {
         let database_connection = db::get_db(&config.database_url).await?;
+        let email_transport = config
+            .email
+            .as_ref()
+            .map(email_delivery::service::build_email_transport)
+            .transpose()?;
         Ok(Self {
             database_connection,
             config,
-            model_client: Arc::new(RwLock::new(None)),
+            model_client: Arc::new(RwLock::new(HashMap::new())),
             database_pools: new_database_pool_registry(),
+            email_transport,
         })
     }
 
-    pub async fn current_model_client(&self) -> Option<ModelClient> {
-        self.model_client.read().await.clone()
+    pub async fn current_model_client(&self, tenant_id: &TenantId) -> Option<ModelClient> {
+        self.model_client
+            .read()
+            .await
+            .get(&tenant_id.get_uuid())
+            .cloned()
     }
 
-    pub async fn require_model_client(&self) -> anyhow::Result<ModelClient> {
-        self.current_model_client()
+    pub async fn set_model_client(&self, tenant_id: &TenantId, model_client: ModelClient) {
+        self.model_client
+            .write()
             .await
-            .ok_or_else(|| anyhow::anyhow!("AI is not configured"))
+            .insert(tenant_id.get_uuid(), model_client);
+    }
+
+    pub async fn clear_model_client(&self, tenant_id: &TenantId) {
+        self.model_client
+            .write()
+            .await
+            .remove(&tenant_id.get_uuid());
+    }
+
+    pub async fn require_model_client(&self, tenant_id: &TenantId) -> anyhow::Result<ModelClient> {
+        self.current_model_client(tenant_id)
+            .await
+            .ok_or_else(|| anyhow::anyhow!("AI is not configured for this tenant"))
     }
 
     pub async fn from_env() -> anyhow::Result<Self> {
@@ -300,5 +534,168 @@ impl AppState {
         if let Err(e) = ai_configuration::service::load_at_startup(self).await {
             warn!("failed to load ai_configuration at startup: {e}");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{email_configuration_from_variables, oidc_providers_from_variables};
+    use crate::common::constants::{EnvironmentVariable, SmtpTls};
+    use crate::common::errors::ConfigurationError;
+    use std::collections::HashMap;
+
+    fn variable_reader(
+        variables: HashMap<&'static str, &'static str>,
+    ) -> impl Fn(&str) -> Result<Option<String>, ConfigurationError> {
+        move |variable: &str| Ok(variables.get(variable).map(|value| value.to_string()))
+    }
+
+    fn email_variable_reader(
+        variables: HashMap<&'static str, &'static str>,
+    ) -> impl Fn(EnvironmentVariable) -> Result<Option<String>, ConfigurationError> {
+        move |variable: EnvironmentVariable| {
+            Ok(variables
+                .get(variable.as_ref())
+                .map(|value| value.to_string()))
+        }
+    }
+
+    fn complete_email_variables() -> HashMap<&'static str, &'static str> {
+        [
+            ("SOPHO_SMTP_HOST", " smtp.example.com "),
+            ("SOPHO_SMTP_PORT", "587"),
+            ("SOPHO_SMTP_TLS", "starttls"),
+            ("SOPHO_SMTP_USERNAME", "mailer"),
+            ("SOPHO_SMTP_PASSWORD", " secret with spaces "),
+            ("SOPHO_EMAIL_FROM", "Sopho <no-reply@example.com>"),
+            ("SOPHO_PUBLIC_URL", "https://sopho.example.com/"),
+        ]
+        .into_iter()
+        .collect()
+    }
+
+    #[test]
+    fn email_is_off_without_a_host() {
+        assert!(
+            email_configuration_from_variables(|_| Ok(None))
+                .unwrap()
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn a_host_without_a_port_names_the_missing_variable() {
+        let mut variables = complete_email_variables();
+        variables.remove("SOPHO_SMTP_PORT");
+        let error =
+            email_configuration_from_variables(email_variable_reader(variables)).unwrap_err();
+        assert!(matches!(
+            error,
+            ConfigurationError::MissingEmailVariable {
+                variable: EnvironmentVariable::SophoSmtpPort
+            }
+        ));
+        assert_eq!(
+            error.to_string(),
+            "missing SOPHO_SMTP_PORT, required when SOPHO_SMTP_HOST is set"
+        );
+    }
+
+    #[test]
+    fn credentials_must_come_in_pairs() {
+        let mut variables = complete_email_variables();
+        variables.remove("SOPHO_SMTP_PASSWORD");
+        assert!(matches!(
+            email_configuration_from_variables(email_variable_reader(variables)).unwrap_err(),
+            ConfigurationError::IncompleteSmtpCredentials
+        ));
+    }
+
+    #[test]
+    fn an_unknown_tls_mode_is_refused() {
+        let mut variables = complete_email_variables();
+        variables.insert("SOPHO_SMTP_TLS", "ssl");
+        assert!(matches!(
+            email_configuration_from_variables(email_variable_reader(variables)).unwrap_err(),
+            ConfigurationError::InvalidSmtpTls { value } if value == "ssl"
+        ));
+    }
+
+    #[test]
+    fn an_invalid_sender_or_public_url_is_refused() {
+        let mut bad_sender = complete_email_variables();
+        bad_sender.insert("SOPHO_EMAIL_FROM", "not an address");
+        assert!(matches!(
+            email_configuration_from_variables(email_variable_reader(bad_sender)).unwrap_err(),
+            ConfigurationError::InvalidEmailFrom { .. }
+        ));
+
+        let mut bad_public_url = complete_email_variables();
+        bad_public_url.insert("SOPHO_PUBLIC_URL", "sopho.example.com");
+        assert!(matches!(
+            email_configuration_from_variables(email_variable_reader(bad_public_url)).unwrap_err(),
+            ConfigurationError::InvalidBaseUrl { .. }
+        ));
+    }
+
+    #[test]
+    fn a_complete_set_builds_the_configuration() {
+        let email =
+            email_configuration_from_variables(email_variable_reader(complete_email_variables()))
+                .unwrap()
+                .expect("email is configured");
+        assert_eq!(email.smtp_host, "smtp.example.com");
+        assert_eq!(email.smtp_port, 587);
+        assert_eq!(email.smtp_tls, SmtpTls::Starttls);
+        let credentials = email.smtp_credentials.expect("credentials are set");
+        assert_eq!(credentials.username, "mailer");
+        assert_eq!(credentials.password, " secret with spaces ");
+        assert_eq!(email.from_address, "Sopho <no-reply@example.com>");
+        assert_eq!(email.public_url, "https://sopho.example.com");
+    }
+
+    #[test]
+    fn configured_providers_require_every_variable() {
+        let complete: HashMap<&str, &str> = [
+            ("SOPHO_OIDC_PROVIDERS", " Google "),
+            ("SOPHO_OIDC_GOOGLE_DISPLAY_NAME", "Google"),
+            (
+                "SOPHO_OIDC_GOOGLE_ISSUER_URL",
+                "https://accounts.google.com",
+            ),
+            ("SOPHO_OIDC_GOOGLE_CLIENT_ID", "client-id"),
+            ("SOPHO_OIDC_GOOGLE_CLIENT_SECRET", "client-secret"),
+            (
+                "SOPHO_OIDC_GOOGLE_REDIRECT_URI",
+                "https://app.example/api/v1/auth/oidc/google/callback",
+            ),
+        ]
+        .into_iter()
+        .collect();
+
+        let providers = oidc_providers_from_variables(variable_reader(complete.clone())).unwrap();
+        assert_eq!(providers.len(), 1);
+        assert_eq!(providers[0].name, "google");
+        assert_eq!(providers[0].client_secret, "client-secret");
+
+        let mut missing_secret = complete.clone();
+        missing_secret.remove("SOPHO_OIDC_GOOGLE_CLIENT_SECRET");
+        let error = oidc_providers_from_variables(variable_reader(missing_secret)).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("SOPHO_OIDC_GOOGLE_CLIENT_SECRET")
+        );
+
+        let mut unsafe_name = complete.clone();
+        unsafe_name.insert("SOPHO_OIDC_PROVIDERS", "goo gle");
+        assert!(oidc_providers_from_variables(variable_reader(unsafe_name)).is_err());
+
+        assert!(
+            oidc_providers_from_variables(|_| Ok(None))
+                .unwrap()
+                .is_empty(),
+            "without SOPHO_OIDC_PROVIDERS only password sign-in is offered"
+        );
     }
 }

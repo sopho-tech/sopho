@@ -1,4 +1,4 @@
-use crate::db::add_created_at_and_updated_at_timestamps;
+use crate::db::{add_attribution_columns, add_created_at_and_updated_at_timestamps};
 use sea_orm_migration::{
     prelude::*,
     schema::{pk_uuid, string, timestamp_with_time_zone, uuid},
@@ -12,13 +12,16 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
             .create_table(add_created_at_and_updated_at_timestamps(
-                Table::create()
-                    .table(SuggestedQuestion::Table)
-                    .col(pk_uuid(SuggestedQuestion::Id))
-                    .col(uuid(SuggestedQuestion::ConnectionId))
-                    .col(string(SuggestedQuestion::QuestionText))
-                    .col(timestamp_with_time_zone(SuggestedQuestion::GeneratedAt))
-                    .to_owned(),
+                add_attribution_columns(
+                    Table::create()
+                        .table(SuggestedQuestion::Table)
+                        .col(pk_uuid(SuggestedQuestion::Id))
+                        .col(uuid(SuggestedQuestion::TenantId))
+                        .col(uuid(SuggestedQuestion::ConnectionId))
+                        .col(string(SuggestedQuestion::QuestionText))
+                        .col(timestamp_with_time_zone(SuggestedQuestion::GeneratedAt))
+                        .to_owned(),
+                ),
             ))
             .await
     }
@@ -34,6 +37,7 @@ impl MigrationTrait for Migration {
 pub enum SuggestedQuestion {
     Table,
     Id,
+    TenantId,
     ConnectionId,
     QuestionText,
     GeneratedAt,

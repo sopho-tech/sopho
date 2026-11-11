@@ -1,4 +1,9 @@
-import type { UserDto } from "src/api/auth_api";
+import type { UserDto } from "src/api/auth/queries";
+import {
+  ActorKind,
+  type AttributionDto,
+  type ResourceCapabilities,
+} from "src/api/dto";
 import type { CanvasDto } from "src/components/Canvases/dto";
 import { StatusType, type ConnectionDto } from "src/components/Connection/dto";
 import type { DashboardDto } from "src/components/Dashboard/dto";
@@ -20,11 +25,25 @@ import {
 } from "src/components/ConversationalAnalytics/dto";
 import { ColumnDataType } from "src/constants/database_types";
 
+export const TEST_TENANT_ID = "00000000-0000-4000-8000-000000000901";
+
 export const TEST_USER: UserDto = {
   id: "00000000-0000-4000-8000-000000000001",
   username: "admin",
   email: "admin@sopho.test",
   full_name: "Test Admin",
+  platform_permissions: [],
+};
+
+const TEST_USER_ATTRIBUTION: AttributionDto = {
+  actor: ActorKind.HUMAN,
+  user: { user_id: TEST_USER.id, full_name: TEST_USER.full_name },
+};
+
+const FULL_CAPABILITIES: ResourceCapabilities = {
+  can_edit: true,
+  can_delete: true,
+  can_share: true,
 };
 
 export const SQLITE_CONNECTION: ConnectionDto = {
@@ -40,6 +59,9 @@ export const SQLITE_CONNECTION: ConnectionDto = {
   status: StatusType.Active,
   created_at: "2026-10-01T09:00:00Z",
   updated_at: "2026-10-01T09:00:00Z",
+  capabilities: FULL_CAPABILITIES,
+  created_by: TEST_USER_ATTRIBUTION,
+  modified_by: TEST_USER_ATTRIBUTION,
 };
 
 export const POSTGRES_CONNECTION: ConnectionDto = {
@@ -55,6 +77,9 @@ export const POSTGRES_CONNECTION: ConnectionDto = {
   status: StatusType.Active,
   created_at: "2026-10-01T09:00:00Z",
   updated_at: "2026-10-01T09:00:00Z",
+  capabilities: FULL_CAPABILITIES,
+  created_by: TEST_USER_ATTRIBUTION,
+  modified_by: TEST_USER_ATTRIBUTION,
 };
 
 export const SSE_TEST_STREAM_URL =
@@ -74,6 +99,9 @@ export const CANVAS: CanvasDto = {
   sql_cell_count: 1,
   chart_cell_count: 1,
   dashboard_charts_count: 1,
+  capabilities: FULL_CAPABILITIES,
+  created_by: TEST_USER_ATTRIBUTION,
+  modified_by: TEST_USER_ATTRIBUTION,
 };
 
 export const ORDER_STATUS_SQL =
@@ -89,6 +117,9 @@ export const SQL_CELL: CellDto = {
   content: `${ORDER_STATUS_SQL};\n${ORDER_COUNT_SQL};`,
   cell_type: CellType.SQL,
   status: "ACTIVE",
+  updated_at: "2026-10-01T09:00:00Z",
+  created_by: TEST_USER_ATTRIBUTION,
+  modified_by: TEST_USER_ATTRIBUTION,
 };
 
 export const CHART_CELL: CellDto = {
@@ -123,6 +154,9 @@ export const CHART_CELL: CellDto = {
   }),
   cell_type: CellType.CHART,
   status: "ACTIVE",
+  updated_at: "2026-10-01T09:00:00Z",
+  created_by: TEST_USER_ATTRIBUTION,
+  modified_by: TEST_USER_ATTRIBUTION,
 };
 
 export const ORDER_STATUS_RESULT: ExecuteCellResponseDto = {
@@ -196,6 +230,8 @@ export const CONVERSATION: ConversationDto = {
   status: "ACTIVE",
   created_at: "2026-10-15T10:00:00Z",
   updated_at: "2026-10-15T10:00:00Z",
+  created_by: TEST_USER_ATTRIBUTION,
+  modified_by: TEST_USER_ATTRIBUTION,
 };
 
 export const ORDER_STATUS_ANSWER_EVENTS: AgentEvent[] = [

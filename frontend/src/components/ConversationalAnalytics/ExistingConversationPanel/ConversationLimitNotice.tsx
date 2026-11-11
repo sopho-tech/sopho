@@ -2,13 +2,17 @@ import { useCallback } from "react";
 import { useNavigate } from "react-router";
 import { Button, Flex, Text } from "src/components/design-system";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useTenantPath } from "src/utils/tenant";
 
 export const ConversationLimitNotice = () => {
   const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
 
   const handleStartNewConversation = useCallback(() => {
-    void navigate(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX);
-  }, [navigate]);
+    void navigate(
+      toTenantPath(APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX),
+    );
+  }, [navigate, toTenantPath]);
 
   return (
     <Flex

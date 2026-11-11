@@ -17,8 +17,16 @@ export type PaginatedData<T> = {
 export type ApiErrorBody = {
   status?: number;
   code?: string;
+  error_code?: string;
   message?: string;
+  error?: string;
   details?: string;
+};
+
+export type ResourceCapabilities = {
+  can_edit: boolean;
+  can_delete: boolean;
+  can_share: boolean;
 };
 
 export class ApiError extends Error {
@@ -28,10 +36,7 @@ export class ApiError extends Error {
     message?: string,
   ) {
     super(
-      message ??
-        body.message ??
-        body.message ??
-        `Request failed with ${status}`,
+      message ?? body.message ?? body.error ?? `Request failed with ${status}`,
     );
     this.name = "ApiError";
   }
@@ -40,7 +45,34 @@ export class ApiError extends Error {
     return this.body.code;
   }
 
-  get message(): string {
-    return this.body.message ?? this.body.message ?? "";
+  get errorCode(): string | undefined {
+    return this.body.error_code;
   }
+
+  get message(): string {
+    return this.body.message ?? this.body.error ?? "";
+  }
+}
+
+export const isUnauthorizedError = (error: unknown): boolean =>
+  error instanceof ApiError && error.status === 401;
+
+export enum ActorKind {
+  HUMAN = "HUMAN",
+  AI = "AI",
+  SYSTEM = "SYSTEM",
+}
+
+export type AttributedUserDto = {
+  user_id: string;
+  full_name: string;
+};
+
+export type AttributionDto = {
+  actor: ActorKind;
+  user: AttributedUserDto | null;
+};
+
+export enum CreatedByFilter {
+  ME = "me",
 }

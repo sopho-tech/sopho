@@ -38,6 +38,46 @@ export const FAKE_LLM_FIXTURES_DIRECTORY = path.join(
 export const FAKE_LLM_READY_MESSAGE = /fake LLM listening/;
 export const FAKE_LLM_API_KEY = "fake-llm-api-key";
 
+export const MAILPIT_IMAGE = "axllent/mailpit:v1.31.4";
+export const MAILPIT_CONTAINER_NAME = "sopho-e2e-mailpit";
+export const MAILPIT_SMTP_PORT = 18082;
+export const MAILPIT_HTTP_PORT = 18083;
+export const MAILPIT_BASE_URL = `http://127.0.0.1:${MAILPIT_HTTP_PORT}`;
+export const MAILPIT_READY_PATH = "/livez";
+export const EMAIL_SENDER = "Sopho <no-reply@sopho.test>";
+export const EMAIL_ARRIVAL_TIMEOUT_MILLISECONDS = 30_000;
+
+export const MOCK_IDENTITY_IMAGE = "ghcr.io/navikt/mock-oauth2-server:2.1.10";
+export const MOCK_IDENTITY_CONTAINER_NAME = "sopho-e2e-oidc";
+export const MOCK_IDENTITY_PORT = 18084;
+export const MOCK_IDENTITY_ISSUER_URL = `http://127.0.0.1:${MOCK_IDENTITY_PORT}/default`;
+export const MOCK_IDENTITY_DISCOVERY_PATH = "/.well-known/openid-configuration";
+export const MOCK_IDENTITY_CONFIGURATION = '{"interactiveLogin":true}';
+export const SINGLE_SIGN_ON_PROVIDER = "e2e";
+export const SINGLE_SIGN_ON_PROVIDER_DISPLAY_NAME = "E2E SSO";
+export const SINGLE_SIGN_ON_CLIENT_ID = "sopho-e2e";
+export const SINGLE_SIGN_ON_CLIENT_SECRET = "sopho-e2e-secret";
+export const SINGLE_SIGN_ON_REDIRECT_URI = `${SOPHO_BASE_URL}/api/v1/auth/oidc/${SINGLE_SIGN_ON_PROVIDER}/callback`;
+export const DOCKER_SHUTDOWN_TIMEOUT_MILLISECONDS = 10_000;
+
+export const INVITED_ROLE = "MEMBER";
+export const INVITED_ROLE_DISPLAY_NAME = "Member";
+export const REDUCED_MOTION_CONTEXT_OPTIONS = {
+  reducedMotion: "reduce",
+} as const;
+export const INVITEE_EMAIL_DOMAIN = "example.test";
+export const INVITEE_PASSWORD = "violet harbour lantern seventeen";
+export const RESET_PASSWORD = "copper meadow whistle eleven";
+export const INVITATION_LINK_PATH = "/invitation#token=";
+export const RESET_LINK_PATH = "/reset-password#token=";
+export const INVITATION_SUBJECT = "invited you to";
+export const PASSWORD_RESET_SUBJECT = "Reset your Sopho password";
+export const RESET_REQUESTED_MESSAGE =
+  "If an account uses this email, we've sent a link";
+export const MOCK_IDENTITY_SUBJECT_FIELD = "username";
+export const MOCK_IDENTITY_CLAIMS_FIELD = "claims";
+export const MOCK_IDENTITY_SUBMIT_LABEL = "Sign-in";
+
 export const ADMIN_USERNAME = "admin";
 export const ADMIN_PASSWORD = "e2e-admin-password";
 export const ADMIN_EMAIL = "admin@sopho.test";
@@ -48,15 +88,19 @@ export const HEALTH_PATH = "/api/v1/monitor/health";
 
 export const API_ROUTES = {
   SESSION: "/api/v1/auth/session",
-  CONNECTIONS: "/api/v1/connection",
-  CANVASES: "/api/v1/canvas",
-  NOTEBOOKS_BY_CANVAS: "/api/v1/notebook/canvas/:canvasId",
-  DASHBOARD_BY_CANVAS: "/api/v1/dashboard/canvas/:canvasId",
-  DASHBOARD: "/api/v1/dashboard/:dashboardId",
-  CELLS: "/api/v1/cell",
-  AI_CONFIGURATION: "/api/v1/ai_configuration",
-  CANVAS: "/api/v1/canvas/:canvasId",
-  EXECUTE_CELL: "/api/v1/cell/:cellId/execute",
+  INVITATION_SIGN_UP: "/api/v1/invitation_link/sign_up",
+  INVITATIONS: "/invitation",
+  TENANTS: "/api/v1/tenant",
+  TENANT_SCOPE: "/api/v1/tenant/:tenantId",
+  CONNECTIONS: "/connection",
+  CANVASES: "/canvas",
+  NOTEBOOKS_BY_CANVAS: "/notebook/canvas/:canvasId",
+  DASHBOARD_BY_CANVAS: "/dashboard/canvas/:canvasId",
+  DASHBOARD: "/dashboard/:dashboardId",
+  CELLS: "/cell",
+  AI_CONFIGURATION: "/ai_configuration",
+  CANVAS: "/canvas/:canvasId",
+  EXECUTE_CELL: "/cell/:cellId/execute",
 } as const;
 
 export const DEMO_CONNECTION_NAME = "Ecommerce Sales Demo";

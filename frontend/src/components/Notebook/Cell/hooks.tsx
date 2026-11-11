@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useExecuteCell, useExecuteCellPreview } from "src/api/cell";
+import { useCanvasCapabilities } from "src/api/canvas/queries";
 import { CellType, ExecutionState } from "src/components/Notebook/Cell/dto";
 import { getSelectedText } from "src/components/Notebook/CellEditor/editorRegistry";
 import { useStore } from "src/store";
@@ -74,6 +75,7 @@ export function useHandleExecuteCellPreview() {
 export function useHandleRunCell() {
   const handleExecuteCell = useHandleExecuteCell();
   const handleExecuteCellPreview = useHandleExecuteCellPreview();
+  const canEdit = useCanvasCapabilities().can_edit;
 
   return useCallback(
     (
@@ -81,7 +83,7 @@ export function useHandleRunCell() {
       onSuccessCallback: ExecutionCallback = null,
       onErrorCallback: ExecutionCallback = null,
     ) => {
-      const selectedText = getSelectedText(cellId);
+      const selectedText = canEdit ? getSelectedText(cellId) : "";
       if (!selectedText) {
         handleExecuteCell(cellId, onSuccessCallback, onErrorCallback);
         return;
@@ -95,6 +97,6 @@ export function useHandleRunCell() {
         onErrorCallback,
       );
     },
-    [handleExecuteCell, handleExecuteCellPreview],
+    [canEdit, handleExecuteCell, handleExecuteCellPreview],
   );
 }

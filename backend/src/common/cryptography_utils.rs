@@ -10,7 +10,7 @@ use std::path::Path;
 
 pub const SECRET_KEY_PATH: &str = "./data/secret.key";
 
-pub fn get_encryption_key_from_path() -> Result<Option<String>> {
+pub fn get_encryption_key_from_path() -> std::io::Result<Option<String>> {
     let path = Path::new(SECRET_KEY_PATH);
     if path.exists() {
         let key = fs::read_to_string(path)?.trim().to_string();
@@ -20,7 +20,7 @@ pub fn get_encryption_key_from_path() -> Result<Option<String>> {
     }
 }
 
-pub fn generate_and_store_encryption_key() -> Result<(String, String)> {
+pub fn generate_and_store_encryption_key() -> std::io::Result<(String, String)> {
     let encryption_key = generate_encryption_key();
     let path = Path::new(SECRET_KEY_PATH);
     if let Some(parent) = path.parent() {

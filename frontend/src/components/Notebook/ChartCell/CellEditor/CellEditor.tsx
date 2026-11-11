@@ -1,4 +1,5 @@
 import { useUpdateCell, useCell } from "src/api/cell/queries";
+import { useCanvasCapabilities } from "src/api/canvas/queries";
 import {
   CellDto,
   getChartContent,
@@ -48,6 +49,7 @@ export function CellEditor({ cellId }: { cellId: string }) {
   useChartCellAutoLoad(cellId, initialChartContent);
   const { isRunning: isSourceRunning } = useExecutionPhase(sourceCellId ?? "");
   const updateCellMutation = useUpdateCell();
+  const canEdit = useCanvasCapabilities().can_edit;
   const chartTypeFromContent = getChartType(initialChartContent);
   const [chartTypeOverride, setChartTypeOverride] = useState<ChartType | null>(
     null,
@@ -98,7 +100,9 @@ export function CellEditor({ cellId }: { cellId: string }) {
       defaultValues={defaultValues}
       onSubmit={handleSubmit}
       onChange={handleChange}
-      readonly={isSourceRunning || formOptions.isAwaitingSourceColumns}
+      readonly={
+        !canEdit || isSourceRunning || formOptions.isAwaitingSourceColumns
+      }
       className={CellEditorStyle.chartControlContainer}
     >
       <Form.ErrorBanner />
@@ -152,10 +156,12 @@ export function CellEditor({ cellId }: { cellId: string }) {
         )}
         {chartType === ChartType.METRIC && <MetricChartFields />}
       </Form.Fields>
-      <Form.Actions className={CellEditorStyle.actionsButtonContainer}>
-        <Form.Submit label="Save" />
-        <ChartRunButton cellId={cellId} chartType={chartType} />
-      </Form.Actions>
+      {canEdit && (
+        <Form.Actions className={CellEditorStyle.actionsButtonContainer}>
+          <Form.Submit label="Save" />
+          <ChartRunButton cellId={cellId} chartType={chartType} />
+        </Form.Actions>
+      )}
     </Form>
   );
 }

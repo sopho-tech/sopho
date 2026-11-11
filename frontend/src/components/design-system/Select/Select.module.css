@@ -15,7 +15,7 @@
   font-size: var(--font-size-sm);
   background-color: var(--color-grey-100);
   color: var(--color-text);
-  border: var(--border-width-thin) solid var(--color-grey-500);
+  border: var(--border-dark-medium);
   overflow: hidden;
 }
 
@@ -33,12 +33,14 @@
   background-color: var(--color-grey-200);
 }
 
-.selectTrigger:focus {
-  box-shadow: var(--shadow-2xs);
+.selectTrigger:focus-visible,
+.selectTrigger[data-state="open"] {
+  border: var(--border-focus-medium);
+  box-shadow: var(--focus-ring);
 }
 
 .selectTrigger[data-placeholder] {
-  color: var(--inactive-color-normal);
+  color: var(--color-grey-400);
 }
 
 .selectIcon {
@@ -47,25 +49,30 @@
 
 .selectContent {
   overflow: hidden;
+  box-sizing: border-box;
+  min-width: var(--radix-select-trigger-width);
+  max-height: var(--radix-select-content-available-height);
   background-color: var(--color-background);
+  border: var(--border-card);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-md);
+  z-index: var(--z-index-10);
 }
 
 .selectViewport {
-  padding: 5px;
+  padding: var(--space-2xs);
 }
 
 .selectItem {
   font-size: var(--font-size-sm);
   line-height: 1;
   color: var(--color-text);
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--border-radius-md);
   display: flex;
   align-items: center;
-  height: 25px;
-  padding: var(--space-md) var(--space-lg) var(--space-md) var(--space-lg);
+  padding: var(--space-xs) var(--space-sm) var(--space-xs) var(--space-xl);
   position: relative;
+  cursor: pointer;
   user-select: none;
 }
 
@@ -95,6 +102,10 @@
 .selectItemIndicator {
   position: absolute;
   left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--space-xl);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }
@@ -103,8 +114,31 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 25px;
+  padding: var(--space-2xs) 0;
   background-color: var(--color-background);
-  color: var(--color-text);
   cursor: default;
+}
+
+.selectTriggerGhost {
+  border-color: transparent;
+  background-color: transparent;
+}
+
+.selectTriggerFullWidth {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.selectItem:has(.selectItemDescription) {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2xs);
+  padding-top: var(--space-xs);
+  padding-bottom: var(--space-xs);
+  line-height: var(--line-height-comfortable);
+}
+
+.selectItemDescription {
+  font-size: var(--font-size-xs);
+  color: var(--color-grey-600);
 }

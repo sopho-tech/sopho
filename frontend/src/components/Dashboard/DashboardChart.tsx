@@ -36,6 +36,7 @@ import {
 import { validateMetricChartData } from "src/components/Chart/MetricChart/utils";
 import { useStore, DashboardMode } from "src/store";
 import { useAiConfiguration } from "src/api/ai_configuration";
+import { useCanvasCapabilities } from "src/api/canvas/queries";
 import {
   useChartSummary,
   useGenerateChartSummary,
@@ -167,6 +168,7 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
   const { mutate: savePrompt, isPending: isSavingPrompt } =
     useUpdateChartPrompt(dashboardId, cellId);
   const isAiConfigured = aiConfiguration?.status === "live";
+  const canEdit = useCanvasCapabilities().can_edit;
   const isSummarizing = summary?.status === "GENERATING" || isPending;
 
   const handleSummarize = useCallback(() => {
@@ -236,7 +238,7 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
           alignItems="center"
           revealOnHover={revealChrome}
         >
-          {isAiConfigured && (
+          {isAiConfigured && canEdit && (
             <SummaryPromptControl
               iconType="sparkles"
               actionLabel="Summarise chart"

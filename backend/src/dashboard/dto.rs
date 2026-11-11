@@ -43,6 +43,10 @@ impl Layout {
         self.cell_id
     }
 
+    pub fn notebook_id(&self) -> Uuid {
+        self.notebook_id
+    }
+
     pub fn bottom(&self) -> u16 {
         self.y_position.saturating_add(self.y_size)
     }

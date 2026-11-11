@@ -60,10 +60,10 @@ The preferred way for installing and using Sopho is through Docker.
    ```bash
    docker run -d -p 8000:8000 \
      --name sopho \
-     -e ADMIN_USERNAME="admin" \
-     -e ADMIN_PASSWORD="password" \
-     -e ADMIN_EMAIL="admin@admin.com" \
-     -e ADMIN_FULL_NAME="admin admin" \
+     -e SOPHO_ADMIN_USERNAME="admin" \
+     -e SOPHO_ADMIN_PASSWORD="password" \
+     -e SOPHO_ADMIN_EMAIL="admin@admin.com" \
+     -e SOPHO_ADMIN_FULL_NAME="admin admin" \
      ghcr.io/sopho-tech/sopho/sopho:latest
    ```
 

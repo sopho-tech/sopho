@@ -138,3 +138,6 @@ impl FromStr for ContentType {
 }
 
 impl ContentType {}
+
+pub const CONVERSATION_NOT_FOUND_MESSAGE: &str = "Conversation not found";
+pub const CONNECTION_NOT_FOUND_MESSAGE: &str = "Connection not found";

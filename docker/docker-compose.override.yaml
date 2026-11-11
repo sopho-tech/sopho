@@ -7,15 +7,27 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://admin:password@db:5432/sopho
-      - FRONTEND_DIR=/app/frontend/dist/
-      - ENVIRONMENT=production
-      - COOKIE_SECURE=false
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=password
-      - ADMIN_EMAIL=admin@admin.com
-      - ADMIN_FULL_NAME=admin admin
+      - SOPHO_FRONTEND_DIR=/app/frontend/dist/
+      - SOPHO_ENVIRONMENT=production
+      - SOPHO_COOKIE_SECURE=false
+      - SOPHO_ADMIN_USERNAME=admin
+      - SOPHO_ADMIN_PASSWORD=password
+      - SOPHO_ADMIN_EMAIL=admin@admin.com
+      - SOPHO_ADMIN_FULL_NAME=admin admin
+      - SOPHO_SMTP_HOST=mail
+      - SOPHO_SMTP_PORT=1025
+      - SOPHO_SMTP_TLS=none
+      - SOPHO_EMAIL_FROM=Sopho <no-reply@sopho.local>
+      - SOPHO_PUBLIC_URL=http://localhost:8000
     depends_on:
       - db
+      - mail
+    networks:
+      - app-network
+  mail:
+    image: axllent/mailpit:v1.31.4
+    ports:
+      - "8025:8025"
     networks:
       - app-network
 

@@ -1,3 +1,4 @@
+use crate::authorization::dto::TenantContext;
 use crate::common::AppState;
 use crate::search::dto::SearchRequestDto;
 use crate::search::service;
@@ -12,7 +13,8 @@ pub fn routes(app_state: AppState) -> Router {
 
 async fn search(
     State(app_state): State<AppState>,
+    tenant_context: TenantContext,
     Query(request): Query<SearchRequestDto>,
 ) -> impl IntoResponse {
-    service::search(app_state, request).await
+    service::search(app_state, &tenant_context, request).await
 }

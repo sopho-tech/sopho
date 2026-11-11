@@ -1,0 +1,22 @@
+.navList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.navItem {
+  width: 100%;
+  cursor: pointer;
+  border-radius: var(--border-radius-lg);
+  transition: var(--transition-bg-color);
+}
+
+.navItemActive {
+  background-color: var(--color-grey-100);
+}
+
+.aside {
+  flex-shrink: 0;
+  min-width: var(--section-sidebar-min-width);
+  background-color: var(--color-primary-100);
+}

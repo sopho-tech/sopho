@@ -6,11 +6,15 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "ai_configuration")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: String,
+    pub tenant_id: Uuid,
     pub provider: String,
     pub api_key_encrypted: String,
     pub liveness_status: String,
     pub last_checked_at: Option<DateTimeWithTimeZone>,
+    pub created_by_user_id: Option<Uuid>,
+    pub created_by_actor: String,
+    pub modified_by_user_id: Option<Uuid>,
+    pub modified_by_actor: String,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

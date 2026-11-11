@@ -1,5 +1,6 @@
 use crate::ai_summary::dto;
 use crate::ai_summary::service::{self, GenerateOutcome, SummaryError};
+use crate::authorization::dto::TenantContext;
 use crate::common::AppState;
 use axum::Router;
 use axum::extract::State;
@@ -7,6 +8,16 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post, put};
 use uuid::Uuid;
+
+#[derive(serde::Deserialize)]
+struct AiSummaryDashboardPath {
+    dashboard_id: Uuid,
+}
+
+#[derive(serde::Deserialize)]
+struct AiSummaryChartPath {
+    cell_id: Uuid,
+}
 
 pub fn routes(app_state: AppState) -> Router {
     Router::new()
@@ -30,10 +41,20 @@ pub fn routes(app_state: AppState) -> Router {
 
 async fn set_dashboard_prompt(
     State(app_state): State<AppState>,
-    axum::extract::Path(dashboard_id): axum::extract::Path<Uuid>,
+    tenant_context: TenantContext,
+    axum::extract::Path(AiSummaryDashboardPath { dashboard_id }): axum::extract::Path<
+        AiSummaryDashboardPath,
+    >,
     axum::extract::Json(payload): axum::extract::Json<dto::UpdateUserPromptDto>,
 ) -> impl IntoResponse {
-    match service::set_dashboard_prompt(&app_state, dashboard_id, payload.user_prompt).await {
+    match service::set_dashboard_prompt(
+        &app_state,
+        &tenant_context,
+        dashboard_id,
+        payload.user_prompt,
+    )
+    .await
+    {
         Ok(summary) => (StatusCode::OK, axum::Json(serde_json::json!(summary))),
         Err(e) => summary_error_response(e),
     }
@@ -41,10 +62,12 @@ async fn set_dashboard_prompt(
 
 async fn set_chart_prompt(
     State(app_state): State<AppState>,
-    axum::extract::Path(cell_id): axum::extract::Path<Uuid>,
+    tenant_context: TenantContext,
+    axum::extract::Path(AiSummaryChartPath { cell_id }): axum::extract::Path<AiSummaryChartPath>,
     axum::extract::Json(payload): axum::extract::Json<dto::UpdateUserPromptDto>,
 ) -> impl IntoResponse {
-    match service::set_chart_prompt(&app_state, cell_id, payload.user_prompt).await {
+    match service::set_chart_prompt(&app_state, &tenant_context, cell_id, payload.user_prompt).await
+    {
         Ok(summary) => (StatusCode::OK, axum::Json(serde_json::json!(summary))),
         Err(e) => summary_error_response(e),
     }
@@ -52,9 +75,12 @@ async fn set_chart_prompt(
 
 async fn generate_all_chart_summaries(
     State(app_state): State<AppState>,
-    axum::extract::Path(dashboard_id): axum::extract::Path<Uuid>,
+    tenant_context: TenantContext,
+    axum::extract::Path(AiSummaryDashboardPath { dashboard_id }): axum::extract::Path<
+        AiSummaryDashboardPath,
+    >,
 ) -> impl IntoResponse {
-    match service::generate_all_chart_summaries(&app_state, dashboard_id).await {
+    match service::generate_all_chart_summaries(&app_state, &tenant_context, dashboard_id).await {
         Ok(summaries) => (
             StatusCode::ACCEPTED,
             axum::Json(serde_json::json!(summaries)),
@@ -65,9 +91,12 @@ async fn generate_all_chart_summaries(
 
 async fn get_dashboard_summaries(
     State(app_state): State<AppState>,
-    axum::extract::Path(dashboard_id): axum::extract::Path<Uuid>,
+    tenant_context: TenantContext,
+    axum::extract::Path(AiSummaryDashboardPath { dashboard_id }): axum::extract::Path<
+        AiSummaryDashboardPath,
+    >,
 ) -> impl IntoResponse {
-    match service::get_dashboard_summaries(&app_state, dashboard_id).await {
+    match service::get_dashboard_summaries(&app_state, &tenant_context, dashboard_id).await {
         Ok(summaries) => (StatusCode::OK, axum::Json(serde_json::json!(summaries))),
         Err(e) => summary_error_response(e),
     }
@@ -75,9 +104,12 @@ async fn get_dashboard_summaries(
 
 async fn generate_dashboard_summary(
     State(app_state): State<AppState>,
-    axum::extract::Path(dashboard_id): axum::extract::Path<Uuid>,
+    tenant_context: TenantContext,
+    axum::extract::Path(AiSummaryDashboardPath { dashboard_id }): axum::extract::Path<
+        AiSummaryDashboardPath,
+    >,
 ) -> impl IntoResponse {
-    match service::generate_dashboard_summary(&app_state, dashboard_id).await {
+    match service::generate_dashboard_summary(&app_state, &tenant_context, dashboard_id).await {
         Ok(outcome) => generate_outcome_response(outcome),
         Err(e) => summary_error_response(e),
     }
@@ -85,9 +117,10 @@ async fn generate_dashboard_summary(
 
 async fn generate_chart_summary(
     State(app_state): State<AppState>,
-    axum::extract::Path(cell_id): axum::extract::Path<Uuid>,
+    tenant_context: TenantContext,
+    axum::extract::Path(AiSummaryChartPath { cell_id }): axum::extract::Path<AiSummaryChartPath>,
 ) -> impl IntoResponse {
-    match service::generate_chart_summary(&app_state, cell_id).await {
+    match service::generate_chart_summary(&app_state, &tenant_context, cell_id).await {
         Ok(outcome) => generate_outcome_response(outcome),
         Err(e) => summary_error_response(e),
     }
@@ -108,6 +141,9 @@ fn generate_outcome_response(
 
 fn summary_error_response(err: SummaryError) -> (StatusCode, axum::Json<serde_json::Value>) {
     match err {
+        SummaryError::Unauthorized(error) => {
+            crate::authorization::service::authorization_error_response(error, "Not found")
+        }
         SummaryError::NotFound => (
             StatusCode::NOT_FOUND,
             axum::Json(serde_json::json!({ "error": "Not found" })),

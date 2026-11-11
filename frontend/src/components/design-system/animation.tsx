@@ -18,6 +18,8 @@ export enum Scale {
   TAP = 0.9,
 }
 
+export const HOVER_INTENT_DELAY_MILLISECONDS = 150;
+
 export const EASE = [0.4, 0, 0.2, 1] as const;
 
 export const hoverHighlightTransition: Transition = {
@@ -63,10 +65,14 @@ export const defaultEnterTransition: Transition = {
   ease: EASE,
 };
 
-export const layoutSpringTransition: Transition = {
+export const indicatorSlideTransition: Transition = {
   type: "spring",
-  stiffness: 500,
-  damping: 35,
+  duration: 0.3,
+  bounce: 0,
+};
+
+export const instantTransition: Transition = {
+  duration: 0,
 };
 
 export const rotateToggleTransition: Transition = {

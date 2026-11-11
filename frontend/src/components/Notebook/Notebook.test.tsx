@@ -9,6 +9,11 @@ import { canvasPageHandlers } from "src/test/msw/handlers";
 import { worker } from "src/test/msw/browser_worker";
 import { renderWithProviders } from "src/test/render_with_providers";
 import {
+  tenantRoutePattern,
+  testTenantApiUrl,
+  testTenantPath,
+} from "src/test/tenant_routes";
+import {
   CANVAS_ID,
   CHART_CELL,
   ORDER_COUNT_RESULT,
@@ -21,7 +26,7 @@ import {
 
 const notebookRoutes = [
   {
-    path: APP_ROUTES.CANVAS,
+    path: tenantRoutePattern(APP_ROUTES.CANVAS),
     element: <Canvas />,
     children: [
       { path: APP_ROUTES.CANVAS_ROUTES.NOTEBOOK, element: <Notebook /> },
@@ -29,7 +34,9 @@ const notebookRoutes = [
   },
 ];
 
-const notebookPath = `${APP_ROUTES.CANVAS.replace(":id", CANVAS_ID)}/${APP_ROUTES.CANVAS_ROUTES.NOTEBOOK}`;
+const notebookPath = testTenantPath(
+  `${APP_ROUTES.CANVAS.replace(":id", CANVAS_ID)}/${APP_ROUTES.CANVAS_ROUTES.NOTEBOOK}`,
+);
 
 async function runActiveCell() {
   await userEvent.keyboard("{Meta>}{Enter}{/Meta}");
@@ -74,10 +81,13 @@ describe("notebook", () => {
         dashboard: dashboardWithCharts([]),
         executionResults: {},
       }),
-      http.post(API_ENDPOINTS.CELL.EXECUTE_PREVIEW, async ({ request }) => {
-        previewRequest = await request.json();
-        return HttpResponse.json(ORDER_COUNT_RESULT);
-      }),
+      http.post(
+        testTenantApiUrl(API_ENDPOINTS.CELL.EXECUTE_PREVIEW),
+        async ({ request }) => {
+          previewRequest = await request.json();
+          return HttpResponse.json(ORDER_COUNT_RESULT);
+        },
+      ),
     );
     await renderWithProviders({
       routes: notebookRoutes,
