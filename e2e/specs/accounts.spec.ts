@@ -144,7 +144,7 @@ test("a new person joins from the emailed link", async ({
   await expect(visitor.page).toHaveURL(tenantHomeUrl(tenantId));
   await visitor.context.close();
 
-  await signedInPage.reload();
+  await signedInPage.goto(tenantUrl(tenantId, APP_URLS.MEMBERS));
   await expect(
     signedInPage.getByRole("row", { name: newcomer.email }),
   ).toContainText(INVITED_ROLE_DISPLAY_NAME);
