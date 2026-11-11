@@ -1,7 +1,9 @@
+import * as RadixAvatar from "@radix-ui/react-avatar";
 import styles from "src/components/design-system/Avatar/Avatar.module.css";
 
 export type AvatarProps = {
   name: string;
+  size?: "sm" | "md";
 };
 
 function initialsOf(name: string): string {
@@ -11,10 +13,15 @@ function initialsOf(name: string): string {
   return `${firstWord.charAt(0)}${lastWord.charAt(0)}`.toUpperCase();
 }
 
-export function Avatar({ name }: AvatarProps) {
+export function Avatar({ name, size = "md" }: AvatarProps) {
   return (
-    <span className={styles.avatar} aria-hidden="true">
-      {initialsOf(name)}
-    </span>
+    <RadixAvatar.Root
+      className={`${styles.avatar} ${styles[size]}`}
+      aria-hidden="true"
+    >
+      <RadixAvatar.Fallback className={styles.fallback}>
+        {initialsOf(name)}
+      </RadixAvatar.Fallback>
+    </RadixAvatar.Root>
   );
 }

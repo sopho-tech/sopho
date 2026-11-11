@@ -31,6 +31,7 @@ export type IconType =
   | "panel_left_open"
   | "panel_left_close"
   | "share"
+  | "clock"
   | "home"
   | "book"
   | "settings"

@@ -180,6 +180,7 @@ ul ul li {
     var(--font-family-secondary);
 
   /* Typography Scale */
+  --font-size-2xs: 0.625rem; /* 10px */
   --font-size-xs: 0.75rem; /* 12px */
   --font-size-sm: 0.875rem; /* 14px */
   --font-size-base: 1rem; /* 16px */
@@ -384,6 +385,7 @@ ul ul li {
     var(--transition-easing-standard-decelerate);
   --opacity-disabled: 0.4;
   --avatar-size: 2rem;
+  --avatar-size-sm: 1.25rem;
   --table-row-min-height: 3.5rem;
   --transition-bg-color:
     background-color var(--transition-duration-short)

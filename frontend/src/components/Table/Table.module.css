@@ -12,7 +12,7 @@
   display: flex;
   flex-direction: column;
   border-radius: var(--border-radius-lg);
-  border: var(--border-default-medium);
+  border: var(--border-card);
 }
 
 .table {
@@ -28,17 +28,26 @@
 }
 
 .tableHeaderCell {
-  padding: var(--space-sm);
+  padding: var(--space-xs) var(--space-md);
   border-bottom: var(--border-table-cell);
-  color: var(--font-color);
+  background-color: var(--color-grey-200);
+  color: var(--color-grey-700);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
+  white-space: nowrap;
   position: sticky;
   top: 0;
 }
 
 .tableDataCell {
-  padding: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
   border-bottom: var(--border-table-cell);
+  font-size: var(--font-size-sm);
+  vertical-align: middle;
+}
+
+.tableDataCellFill {
+  max-width: 0;
 }
 
 .tableHeaderCellCompact {
@@ -79,6 +88,10 @@
   box-shadow: none;
   border-collapse: separate;
   border-spacing: 0;
+}
+
+.tablePlain .tableHeaderCell {
+  background-color: transparent;
 }
 
 .tablePlain .tableBodyRow:hover,

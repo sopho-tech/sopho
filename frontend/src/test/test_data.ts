@@ -117,6 +117,7 @@ export const SQL_CELL: CellDto = {
   content: `${ORDER_STATUS_SQL};\n${ORDER_COUNT_SQL};`,
   cell_type: CellType.SQL,
   status: "ACTIVE",
+  updated_at: "2026-10-01T09:00:00Z",
   created_by: TEST_USER_ATTRIBUTION,
   modified_by: TEST_USER_ATTRIBUTION,
 };
@@ -153,6 +154,7 @@ export const CHART_CELL: CellDto = {
   }),
   cell_type: CellType.CHART,
   status: "ACTIVE",
+  updated_at: "2026-10-01T09:00:00Z",
   created_by: TEST_USER_ATTRIBUTION,
   modified_by: TEST_USER_ATTRIBUTION,
 };

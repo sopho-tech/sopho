@@ -16,7 +16,7 @@ import {
 } from "src/components/Notebook/Cell/useExecutionPhase";
 import { ElapsedTime } from "src/components/Notebook/ExecutionIndicator";
 import { Flex, Kbd, Spinner } from "src/components/design-system";
-import { AiEditedBadge } from "src/components/Attribution";
+import { LastEditedAvatar } from "src/components/Attribution";
 import {
   KEYBOARD_SHORTCUTS,
   getShortcutDisplayString,
@@ -135,7 +135,10 @@ export function CellToolbar({ cellId }: { cellId: string }) {
           />
         </div>
         {getCellQuery.data && (
-          <AiEditedBadge modifiedBy={getCellQuery.data.modified_by} />
+          <LastEditedAvatar
+            modifiedBy={getCellQuery.data.modified_by}
+            updatedAt={getCellQuery.data.updated_at}
+          />
         )}
       </Flex>
       <Flex

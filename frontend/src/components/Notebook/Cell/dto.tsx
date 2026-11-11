@@ -88,6 +88,7 @@ export type CellDto = {
   content: string | null;
   cell_type: CellType | null;
   status: string | null;
+  updated_at: string;
   created_by: AttributionDto;
   modified_by: AttributionDto;
 };

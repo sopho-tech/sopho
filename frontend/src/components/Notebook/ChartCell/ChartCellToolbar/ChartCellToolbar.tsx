@@ -11,7 +11,7 @@ import {
 } from "src/components/Notebook/Cell/useExecutionPhase";
 import { ElapsedTime } from "src/components/Notebook/ExecutionIndicator";
 import { Flex } from "src/components/design-system";
-import { AiEditedBadge } from "src/components/Attribution";
+import { LastEditedAvatar } from "src/components/Attribution";
 import styles from "src/components/Notebook/ChartCell/ChartCellToolbar/ChartCellToolbar.module.css";
 
 export function ChartCellToolbar({ cellId }: { cellId: string }) {
@@ -48,7 +48,10 @@ export function ChartCellToolbar({ cellId }: { cellId: string }) {
           />
         </div>
         {getCellQuery.data && (
-          <AiEditedBadge modifiedBy={getCellQuery.data.modified_by} />
+          <LastEditedAvatar
+            modifiedBy={getCellQuery.data.modified_by}
+            updatedAt={getCellQuery.data.updated_at}
+          />
         )}
       </Flex>
       {showElapsed && startedAt && <ElapsedTime startedAt={startedAt} />}
