@@ -2,4 +2,5 @@ export { SectionLayout } from "src/components/design-system/SectionLayout/Sectio
 export type {
   SectionLayoutProps,
   SectionNavigationItem,
+  SectionNavigationSubItem,
 } from "src/components/design-system/SectionLayout/SectionLayout";

@@ -36,7 +36,19 @@ export function usePlatformNavigationItems(): SectionNavigationItem[] {
       items.push({
         id: "emails",
         label: "Emails",
-        to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.EMAILS),
+        to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.SENT_EMAILS),
+        subItems: [
+          {
+            id: "sent-emails",
+            label: "Sent",
+            to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.SENT_EMAILS),
+          },
+          {
+            id: "email-templates",
+            label: "Templates",
+            to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.EMAIL_TEMPLATES),
+          },
+        ],
       });
     }
     return items;

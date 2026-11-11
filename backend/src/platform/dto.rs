@@ -1,5 +1,6 @@
 use crate::authentication::service::UserStatus;
 use crate::email_delivery::constants::EmailStatus;
+use crate::email_template::constants::EmailKind;
 use crate::tenant::dto::UserTenantMembershipDto;
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
@@ -69,4 +70,14 @@ pub struct PlatformTenantDto {
     pub name: String,
     pub active_owner_count: u64,
     pub created_at: DateTime<FixedOffset>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct EmailTemplatePreviewDto {
+    pub kind: EmailKind,
+    pub kind_display_name: String,
+    pub sent_when: String,
+    pub subject: String,
+    pub html_body: String,
+    pub text_body: String,
 }

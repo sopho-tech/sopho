@@ -387,6 +387,7 @@ ul ul li {
   --avatar-size: 2rem;
   --avatar-size-sm: 1.25rem;
   --table-row-min-height: 3.5rem;
+  --preview-height: 36rem;
   --transition-bg-color:
     background-color var(--transition-duration-short)
       var(--transition-easing-default),

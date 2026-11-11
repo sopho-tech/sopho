@@ -63,3 +63,13 @@ export const TENANT_ROLE_GRID_STYLE = {
   columnGap: "var(--space-sm)",
   rowGap: "var(--space-2xs)",
 };
+
+export const HTML_EMAIL_FORMAT = "HTML";
+export const TEXT_EMAIL_FORMAT = "TEXT";
+export const EMAIL_FORMATS = [
+  { value: HTML_EMAIL_FORMAT, label: "HTML" },
+  { value: TEXT_EMAIL_FORMAT, label: "Plain text" },
+];
+
+export const EMAIL_TEMPLATE_LIST_STYLE = { width: "16rem", flexShrink: 0 };
+export const EMAIL_TEMPLATE_PREVIEW_STYLE = { flex: 1, minWidth: 0 };

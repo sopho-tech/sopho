@@ -2,6 +2,7 @@ use crate::authentication::service::PasswordFlowError;
 use crate::authorization::errors::AuthorizationError;
 use crate::common::error_codes::ErrorCode;
 use crate::email_delivery::error::EmailDeliveryError;
+use crate::email_template::error::EmailTemplateError;
 use crate::platform::constants::{
     APPOINTEE_DEACTIVATED_MESSAGE, CANNOT_DEACTIVATE_YOURSELF_MESSAGE,
     CANNOT_REMOVE_YOUR_OWN_ADMINISTRATOR_ROLE_MESSAGE, INVALID_PAGE_MESSAGE,
@@ -37,6 +38,8 @@ pub enum PlatformError {
     #[error("{0}")]
     EmailDelivery(EmailDeliveryError),
     #[error("{0}")]
+    EmailTemplate(#[from] EmailTemplateError),
+    #[error("{0}")]
     Membership(MembershipError),
     #[error("{0}")]
     Tenant(TenantError),
@@ -68,6 +71,7 @@ impl PlatformError {
             PlatformError::Unauthorized(_)
             | PlatformError::InvalidPage
             | PlatformError::EmailDelivery(_)
+            | PlatformError::EmailTemplate(_)
             | PlatformError::Membership(_)
             | PlatformError::Tenant(_)
             | PlatformError::Database(_)

@@ -1,0 +1,21 @@
+.surface {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: var(--preview-height);
+  margin: 0;
+  border: var(--border-card);
+  border-radius: var(--border-radius-lg);
+  background-color: var(--color-grey-100);
+}
+
+.text {
+  padding: var(--space-md);
+  overflow: auto;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

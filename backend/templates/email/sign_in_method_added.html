@@ -1,8 +1,12 @@
 {% extends "email/layout.html" %}
+{% import "email/components.html" as components %}
 {% block title %}{{ email.provider_display_name }} sign-in was added to your Sopho account{% endblock %}
+{% block preheader %}{{ email.provider_display_name }} sign-in was added to your Sopho account on {{ email.changed_at }}.{% endblock %}
+{% block eyebrow %}Security{% endblock %}
+{% block heading %}{{ email.provider_display_name }} sign-in was added{% endblock %}
 {% block content %}
-<p style="margin: 0 0 16px">Hi {{ email.full_name }},</p>
-<p style="margin: 0 0 16px">{{ email.provider_display_name }} sign-in was added to your Sopho account on {{ email.changed_at }}. You can now sign in with {{ email.provider_display_name }}.</p>
-<p style="margin: 0">If it wasn't you, tell your Sopho administrator.</p>
+<p style="margin: 0 0 28px; font-size: 16px; line-height: 24px; color: #63616b">Hi {{ email.full_name }}, you can now sign in to your Sopho account with {{ email.provider_display_name }}.</p>
+{% call components::detail_pair("Sign-in method", email.provider_display_name, "Added on", email.changed_at) %}{% endcall %}
+<p style="margin: 0; padding: 24px 0 0; border-top: 1px solid #ebeaee; font-size: 13px; line-height: 20px; color: #8a8792">If it wasn't you, tell your Sopho administrator.</p>
 {% endblock %}
 {% block reason %}You received this email because the ways you sign in to Sopho changed.{% endblock %}

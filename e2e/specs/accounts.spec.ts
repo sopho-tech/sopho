@@ -112,7 +112,9 @@ test("a new person joins from the emailed link", async ({
 }) => {
   const newcomer = newPerson("newcomer");
   await signedInPage.goto(tenantUrl(tenantId, APP_URLS.MEMBERS));
-  await signedInPage.getByRole("button", { name: "Invite people" }).click();
+  await signedInPage
+    .getByRole("button", { name: "Invite", exact: true })
+    .click();
   await signedInPage
     .getByRole("textbox", { name: "Email" })
     .fill(newcomer.email);

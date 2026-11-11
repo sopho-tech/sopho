@@ -120,7 +120,7 @@ function EmailRow({ email, onRetry, isRetrying }: EmailRowProps) {
   );
 }
 
-export function Emails() {
+export function SentEmails() {
   const [statusFilter, setStatusFilter] = useState(ALL_EMAIL_STATUSES_FILTER);
   const [searchText, setSearchText] = useState("");
   const [page, setPage] = useState(FIRST_PAGE);
@@ -163,7 +163,7 @@ export function Emails() {
     <Flex direction="column" gap="lg">
       <Flex direction="column" gap="2xs">
         <Heading accessibilityLevel={2} size="2xl" textColor="black">
-          Emails
+          Sent emails
         </Heading>
         <Text fontSize="sm" color="subtle">
           Track the emails Sopho sends and retry the ones that failed.

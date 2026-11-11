@@ -11,6 +11,11 @@
   transition: var(--transition-bg-color);
 }
 
+.navSubItem {
+  margin-left: var(--space-md);
+  width: calc(100% - var(--space-md));
+}
+
 .navItemActive {
   background-color: var(--color-grey-100);
 }

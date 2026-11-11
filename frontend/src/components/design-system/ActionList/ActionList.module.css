@@ -34,6 +34,10 @@
   background-color: var(--color-grey-200);
 }
 
+.rowButton[aria-current="true"] {
+  background-color: var(--color-primary-200);
+}
+
 .rowButton:focus-visible {
   box-shadow: inset var(--focus-ring);
 }

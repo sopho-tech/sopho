@@ -1,10 +1,14 @@
 use crate::email_template::constants::{
-    EMAIL_DATE_FORMAT, EMAIL_TIME_FORMAT, EmailKind, NO_PASSWORD_SUBJECT, PASSWORD_CHANGED_SUBJECT,
-    PASSWORD_RESET_SUBJECT,
+    EMAIL_DATE_FORMAT, EMAIL_LOGO_CONTENT_ID, EMAIL_LOGO_CONTENT_TYPE, EMAIL_LOGO_DATA_URI_PREFIX,
+    EMAIL_LOGO_PNG, EMAIL_LOGO_SOURCE, EMAIL_TIME_FORMAT, EmailKind, NO_PASSWORD_SUBJECT,
+    PASSWORD_CHANGED_SUBJECT, PASSWORD_RESET_SUBJECT, SAMPLE_FORGOT_PASSWORD_LINK,
+    SAMPLE_INVITATION_EXPIRY_DAYS, SAMPLE_INVITATION_LINK, SAMPLE_INVITER_NAME,
+    SAMPLE_PROVIDER_DISPLAY_NAME, SAMPLE_PROVIDER_NAMES, SAMPLE_RECIPIENT_NAME, SAMPLE_RESET_LINK,
+    SAMPLE_ROLE_NAME, SAMPLE_SIGN_IN_LINK, SAMPLE_TENANT_NAME,
 };
 use crate::email_template::dto::{
-    InvitationEmail, NoPasswordEmail, PasswordChangedEmail, PasswordResetEmail, RenderedEmail,
-    SignInMethodAddedEmail, SignInMethodRemovedEmail,
+    EmailInlineImage, InvitationEmail, NoPasswordEmail, PasswordChangedEmail, PasswordResetEmail,
+    RenderedEmail, SignInMethodAddedEmail, SignInMethodRemovedEmail,
 };
 use crate::email_template::error::EmailTemplateError;
 use crate::email_template::templates::{
@@ -13,7 +17,8 @@ use crate::email_template::templates::{
     SignInMethodAddedText, SignInMethodRemovedHtml, SignInMethodRemovedText,
 };
 use askama::Template;
-use chrono::{DateTime, Utc};
+use base64::prelude::{BASE64_STANDARD, Engine};
+use chrono::{DateTime, Duration, Utc};
 use std::str::FromStr;
 
 pub trait EmailTemplate {
@@ -116,6 +121,84 @@ fn rendered_email(
         text_body: text_template.render().map_err(render_error)?,
         html_body: html_template.render().map_err(render_error)?,
     })
+}
+
+pub fn inline_images_of(html_body: &str) -> Vec<EmailInlineImage> {
+    if !html_body.contains(EMAIL_LOGO_SOURCE) {
+        return Vec::new();
+    }
+    vec![EmailInlineImage {
+        content_id: EMAIL_LOGO_CONTENT_ID,
+        content_type: EMAIL_LOGO_CONTENT_TYPE,
+        bytes: EMAIL_LOGO_PNG,
+    }]
+}
+
+fn with_inline_images_embedded(rendered_email: RenderedEmail) -> RenderedEmail {
+    let logo_data_uri = format!(
+        "{EMAIL_LOGO_DATA_URI_PREFIX}{}",
+        BASE64_STANDARD.encode(EMAIL_LOGO_PNG)
+    );
+    RenderedEmail {
+        html_body: rendered_email
+            .html_body
+            .replace(EMAIL_LOGO_SOURCE, &logo_data_uri),
+        ..rendered_email
+    }
+}
+
+pub fn render_sample_emails() -> Result<Vec<RenderedEmail>, EmailTemplateError> {
+    Ok(render_sample_emails_as_sent()?
+        .into_iter()
+        .map(with_inline_images_embedded)
+        .collect())
+}
+
+fn render_sample_emails_as_sent() -> Result<Vec<RenderedEmail>, EmailTemplateError> {
+    let now = Utc::now();
+    let changed_at = format_email_time(now);
+    Ok(vec![
+        InvitationEmail {
+            inviter_name: SAMPLE_INVITER_NAME.to_string(),
+            tenant_name: SAMPLE_TENANT_NAME.to_string(),
+            role_name: SAMPLE_ROLE_NAME.to_string(),
+            invitation_link: SAMPLE_INVITATION_LINK.to_string(),
+            expires_on: format_email_date(now + Duration::days(SAMPLE_INVITATION_EXPIRY_DAYS)),
+        }
+        .render()?,
+        PasswordResetEmail {
+            full_name: SAMPLE_RECIPIENT_NAME.to_string(),
+            reset_link: SAMPLE_RESET_LINK.to_string(),
+        }
+        .render()?,
+        NoPasswordEmail {
+            full_name: SAMPLE_RECIPIENT_NAME.to_string(),
+            provider_names: SAMPLE_PROVIDER_NAMES
+                .iter()
+                .map(|provider_name| provider_name.to_string())
+                .collect(),
+            sign_in_link: SAMPLE_SIGN_IN_LINK.to_string(),
+        }
+        .render()?,
+        PasswordChangedEmail {
+            full_name: SAMPLE_RECIPIENT_NAME.to_string(),
+            changed_at: changed_at.clone(),
+            forgot_password_link: SAMPLE_FORGOT_PASSWORD_LINK.to_string(),
+        }
+        .render()?,
+        SignInMethodAddedEmail {
+            full_name: SAMPLE_RECIPIENT_NAME.to_string(),
+            provider_display_name: SAMPLE_PROVIDER_DISPLAY_NAME.to_string(),
+            changed_at: changed_at.clone(),
+        }
+        .render()?,
+        SignInMethodRemovedEmail {
+            full_name: SAMPLE_RECIPIENT_NAME.to_string(),
+            provider_display_name: SAMPLE_PROVIDER_DISPLAY_NAME.to_string(),
+            changed_at,
+        }
+        .render()?,
+    ])
 }
 
 pub fn email_kind_display_name(kind: &str) -> Option<&'static str> {

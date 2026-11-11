@@ -1,0 +1,40 @@
+{% macro detail(label, value) %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 28px; background-color: #f0effd; border-radius: 12px">
+  <tr>
+    <td align="center" style="padding: 16px 12px; font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+      <p style="margin: 0 0 4px; font-size: 11px; line-height: 16px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #8a8792">{{ label }}</p>
+      <p style="margin: 0; font-size: 15px; line-height: 22px; font-weight: 600; color: #383350">{{ value }}</p>
+    </td>
+  </tr>
+</table>
+{% endmacro %}
+
+{% macro detail_pair(first_label, first_value, second_label, second_value) %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 28px; background-color: #f0effd; border-radius: 12px">
+  <tr>
+    <td width="50%" align="center" style="padding: 16px 12px; border-right: 1px solid #dcd8fa; font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+      <p style="margin: 0 0 4px; font-size: 11px; line-height: 16px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #8a8792">{{ first_label }}</p>
+      <p style="margin: 0; font-size: 15px; line-height: 22px; font-weight: 600; color: #383350">{{ first_value }}</p>
+    </td>
+    <td width="50%" align="center" style="padding: 16px 12px; font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+      <p style="margin: 0 0 4px; font-size: 11px; line-height: 16px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #8a8792">{{ second_label }}</p>
+      <p style="margin: 0; font-size: 15px; line-height: 22px; font-weight: 600; color: #383350">{{ second_value }}</p>
+    </td>
+  </tr>
+</table>
+{% endmacro %}
+
+{% macro button(link, label) %}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 28px">
+  <tr>
+    <td align="center" bgcolor="#b5a9f4" style="background-color: #b5a9f4; border-radius: 10px">
+      <a href="{{ link }}" style="display: inline-block; padding: 14px 32px; font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 20px; font-weight: 600; color: #383350; text-decoration: none; border-radius: 10px">{{ label }}</a>
+    </td>
+  </tr>
+</table>
+{% endmacro %}
+
+{% macro fallback_link(link) %}
+<p style="margin: 0 0 6px; padding: 24px 0 0; border-top: 1px solid #ebeaee; font-size: 13px; line-height: 20px; color: #8a8792">If the button doesn't work, open this link:</p>
+<p style="margin: 0; font-size: 13px; line-height: 20px; word-break: break-all"><a href="{{ link }}" style="color: #5c50b4">{{ link }}</a></p>
+{% endmacro %}

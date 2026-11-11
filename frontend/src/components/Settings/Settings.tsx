@@ -5,12 +5,15 @@ import {
   SectionNavigationItem,
 } from "src/components/design-system";
 import { usePlatformNavigationItems } from "src/components/Platform/hooks";
+import { useTenantPermission } from "src/api/tenant/queries";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { PERMISSIONS } from "src/constants/permissions";
 import { useTenantPath } from "src/utils/tenant";
 
 export function Settings() {
   const toTenantPath = useTenantPath();
   const platformNavigationItems = usePlatformNavigationItems();
+  const canInvite = useTenantPermission(PERMISSIONS.MEMBER_INVITE);
   const items = useMemo<SectionNavigationItem[]>(
     () => [
       {
@@ -25,13 +28,27 @@ export function Settings() {
         to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.AI_CONFIGURATIONS),
       },
       {
-        id: "members",
+        id: "tenant-management",
         label: "Tenant Management",
         to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.MEMBERS),
+        subItems: canInvite
+          ? [
+              {
+                id: "members",
+                label: "Members",
+                to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.MEMBERS),
+              },
+              {
+                id: "invitations",
+                label: "Invitations",
+                to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.INVITATIONS),
+              },
+            ]
+          : undefined,
       },
       ...platformNavigationItems,
     ],
-    [toTenantPath, platformNavigationItems],
+    [toTenantPath, platformNavigationItems, canInvite],
   );
 
   return (

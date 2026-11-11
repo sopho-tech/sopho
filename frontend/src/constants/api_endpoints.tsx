@@ -26,6 +26,7 @@ export const API_ENDPOINTS = {
     APPOINT_OWNER: "/api/v1/platform/tenant/:tenant_id/owner/:user_id",
     EMAILS: "/api/v1/platform/email",
     RETRY_EMAIL: "/api/v1/platform/email/:email_id/retry",
+    EMAIL_TEMPLATES: "/api/v1/platform/email_template",
   },
   INVITATION_LINK: {
     LOOKUP: "/api/v1/invitation_link/lookup",

@@ -47,6 +47,7 @@ pub fn routes(app_state: AppState) -> Router {
         .route("/tenant", get(list_tenants))
         .route("/tenant/{tenant_id}/owner/{user_id}", put(appoint_owner))
         .route("/email", get(list_email_log))
+        .route("/email_template", get(list_email_template_previews))
         .route("/email/{email_id}/retry", post(retry_email))
         .with_state(app_state)
 }
@@ -150,6 +151,16 @@ async fn list_email_log(
     }
 }
 
+async fn list_email_template_previews(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+) -> Response {
+    match service::list_email_template_previews(&app_state, authenticated_user.user_id()).await {
+        Ok(email_templates) => Json(email_templates).into_response(),
+        Err(error) => platform_error_response(error).into_response(),
+    }
+}
+
 async fn retry_email(
     State(app_state): State<AppState>,
     authenticated_user: AuthenticatedUser,
@@ -181,6 +192,7 @@ fn platform_error_response(error: PlatformError) -> (StatusCode, Json<Value>) {
         }
         PlatformError::PasswordReset(_)
         | PlatformError::EmailDelivery(_)
+        | PlatformError::EmailTemplate(_)
         | PlatformError::Membership(_)
         | PlatformError::Tenant(_)
         | PlatformError::Database(_)

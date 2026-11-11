@@ -86,6 +86,15 @@ export type EmailLogPageDto = {
   total_pages: number;
 };
 
+export type EmailTemplatePreviewDto = {
+  kind: string;
+  kind_display_name: string;
+  sent_when: string;
+  subject: string;
+  html_body: string;
+  text_body: string;
+};
+
 export type PlatformUserQuery = {
   search: string;
   page: number;
@@ -109,6 +118,7 @@ export const platformKeys = {
   tenants: () => [...platformKeys.all, "tenants"] as const,
   emails: (query: EmailLogQuery) =>
     [...platformKeys.all, "emails", query] as const,
+  emailTemplates: () => [...platformKeys.all, "emailTemplates"] as const,
 };
 
 function queryString(parameters: Record<string, string | number | null>) {
@@ -200,6 +210,14 @@ const platformApi = {
     return response as EmailLogPageDto;
   },
 
+  listEmailTemplates: async (): Promise<EmailTemplatePreviewDto[]> => {
+    const response = await ApiService.get({
+      url: API_ENDPOINTS.PLATFORM.EMAIL_TEMPLATES,
+      onlyBody: true,
+    });
+    return response as EmailTemplatePreviewDto[];
+  },
+
   retryEmail: async (emailId: string) => {
     await ApiService.post({
       url: API_ENDPOINTS.PLATFORM.RETRY_EMAIL.replace(":email_id", emailId),
@@ -277,6 +295,13 @@ export const useEmailLog = (query: EmailLogQuery) => {
     queryKey: platformKeys.emails(query),
     queryFn: () => platformApi.listEmails(query),
     placeholderData: keepPreviousData,
+  });
+};
+
+export const useEmailTemplates = () => {
+  return useQuery({
+    queryKey: platformKeys.emailTemplates(),
+    queryFn: platformApi.listEmailTemplates,
   });
 };
 
