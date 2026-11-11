@@ -1,5 +1,5 @@
 name: Install Chromium
-description: Installs the Playwright Chromium browser and its system packages for one package
+description: Installs the Playwright Chromium browser for one package
 inputs:
   directory:
     description: Directory whose installed Playwright version decides which Chromium to install
@@ -7,16 +7,9 @@ inputs:
 runs:
   using: composite
   steps:
-    # The runner's Azure apt mirror has outages that fail the install, so apt
-    # uses the remaining Ubuntu mirrors when the list has any.
-    - name: Skip the Azure apt mirror
-      shell: bash
-      run: |
-        apt_mirror_list=/etc/apt/apt-mirrors.txt
-        if [ -f "$apt_mirror_list" ] && grep -qv 'azure\.archive\.ubuntu\.com' "$apt_mirror_list"; then
-          sudo sed -i '/azure\.archive\.ubuntu\.com/d' "$apt_mirror_list"
-        fi
+    # No --with-deps: the runner image already has Chromium's libraries, and the
+    # apt install of extra fonts fails whenever the Ubuntu mirrors are down.
     - name: Install Chromium
       shell: bash
       working-directory: ${{ inputs.directory }}
-      run: npx --no-install playwright install --with-deps chromium
+      run: npx --no-install playwright install chromium
