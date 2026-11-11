@@ -32,7 +32,7 @@ pub fn build_email_transport(
 }
 
 pub fn notice_send_before() -> chrono::DateTime<Utc> {
-    Utc::now() + Duration::hours(NOTICE_SEND_WINDOW_HOURS)
+    time_utils::now_plus_hours_into(NOTICE_SEND_WINDOW_HOURS)
 }
 
 pub fn public_link(app_state: &AppState, path: &str) -> Result<String, EmailDeliveryError> {
