@@ -81,7 +81,7 @@ export function Members() {
             Members
           </Heading>
           <Text fontSize="sm" color="subtle">
-            Manage who has access to this tenant and what they can do.
+            Manage the members of this tenant.
           </Text>
         </Flex>
         <InvitePeopleButton onInvited={handleInvited} />

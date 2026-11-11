@@ -42,26 +42,17 @@ function SectionNavigationLink({
   isActive,
   variant,
 }: SectionNavigationLinkProps) {
-  const isHighlighted = isActive && variant !== "group";
   return (
-    <NavigationMenu.Item>
-      <NavigationMenu.Link asChild active={isHighlighted}>
-        <NavLink to={to}>
-          <Box
-            paddingX="sm"
-            paddingY={variant === "subItem" ? "2xs" : "xs"}
-            className={`${styles.navItem} ${variant === "subItem" ? styles.navSubItem : ""} ${isHighlighted ? styles.navItemActive : ""}`}
-          >
-            <Text
-              fontSize={variant === "subItem" ? "xs" : "sm"}
-              color={isActive ? "default" : "darkGrey"}
-            >
-              {label}
-            </Text>
-          </Box>
-        </NavLink>
-      </NavigationMenu.Link>
-    </NavigationMenu.Item>
+    <NavigationMenu.Link asChild active={isActive && variant !== "group"}>
+      <NavLink
+        to={to}
+        className={styles.navLink}
+        data-variant={variant}
+        data-active={isActive}
+      >
+        <span className={styles.navLabel}>{label}</span>
+      </NavLink>
+    </NavigationMenu.Link>
   );
 }
 
@@ -77,18 +68,20 @@ function SectionNavigationEntry({
   if (!item.subItems) {
     const prefixes = [item.to, ...(item.matchPrefixes ?? [])];
     return (
-      <SectionNavigationLink
-        label={item.label}
-        to={item.to}
-        isActive={prefixes.some((prefix) =>
-          isPathUnderPrefix(pathname, prefix),
-        )}
-        variant="item"
-      />
+      <NavigationMenu.Item>
+        <SectionNavigationLink
+          label={item.label}
+          to={item.to}
+          isActive={prefixes.some((prefix) =>
+            isPathUnderPrefix(pathname, prefix),
+          )}
+          variant="item"
+        />
+      </NavigationMenu.Item>
     );
   }
   return (
-    <>
+    <NavigationMenu.Item>
       <SectionNavigationLink
         label={item.label}
         to={item.to}
@@ -97,16 +90,19 @@ function SectionNavigationEntry({
         )}
         variant="group"
       />
-      {item.subItems.map((subItem) => (
-        <SectionNavigationLink
-          key={subItem.id}
-          label={subItem.label}
-          to={subItem.to}
-          isActive={isPathUnderPrefix(pathname, subItem.to)}
-          variant="subItem"
-        />
-      ))}
-    </>
+      <ul className={styles.navSubList} aria-label={item.label}>
+        {item.subItems.map((subItem) => (
+          <li key={subItem.id}>
+            <SectionNavigationLink
+              label={subItem.label}
+              to={subItem.to}
+              isActive={isPathUnderPrefix(pathname, subItem.to)}
+              variant="subItem"
+            />
+          </li>
+        ))}
+      </ul>
+    </NavigationMenu.Item>
   );
 }
 
@@ -121,12 +117,13 @@ export function SectionLayout({ title, items, children }: SectionLayoutProps) {
         paddingY="lg"
         paddingX="sm"
         gap="xs"
+        overflow="scrollY"
         borderRight="divider"
         width="15%"
         className={styles.aside}
       >
         <Box paddingX="sm" paddingBottom="xs">
-          <Text fontSize="xs" color="darkGrey">
+          <Text fontSize="base" color="darkGrey">
             {title}
           </Text>
         </Box>

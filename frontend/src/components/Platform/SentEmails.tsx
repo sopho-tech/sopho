@@ -166,7 +166,7 @@ export function SentEmails() {
           Sent emails
         </Heading>
         <Text fontSize="sm" color="subtle">
-          Track the emails Sopho sends and retry the ones that failed.
+          Track sent emails and retry failed ones.
         </Text>
       </Flex>
       <Flex direction="row" alignItems="center" gap="sm">

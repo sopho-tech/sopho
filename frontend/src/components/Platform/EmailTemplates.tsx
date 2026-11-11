@@ -120,8 +120,7 @@ export function EmailTemplates() {
           Email templates
         </Heading>
         <Text fontSize="sm" color="subtle">
-          Preview every email Sopho sends, filled with sample data. No real user
-          data is shown and nothing is sent.
+          Preview all email templates.
         </Text>
       </Flex>
       <Flex direction="row" alignItems="flex-start" gap="lg">

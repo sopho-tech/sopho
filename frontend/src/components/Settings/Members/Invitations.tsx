@@ -48,8 +48,7 @@ export function Invitations() {
             Invitations
           </Heading>
           <Text fontSize="sm" color="subtle">
-            Invite people to this tenant and follow up on the invitations that
-            are still open.
+            Invite members to the tenant.
           </Text>
         </Flex>
         <InvitePeopleButton onInvited={setNotice} />
