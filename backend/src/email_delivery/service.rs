@@ -290,12 +290,14 @@ async fn deliver_claimed_email(
         );
         return Ok(());
     };
+    let inline_images = email_template_service::inline_images_of(&html_body);
     let message = match transport::build_message(
         &email_configuration.from_address,
         &email.recipient,
         &email.subject,
         text_body,
         html_body,
+        inline_images,
     ) {
         Ok(message) => message,
         Err(reason) => {

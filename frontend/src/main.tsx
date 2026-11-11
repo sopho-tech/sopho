@@ -12,8 +12,14 @@ import { Profile, ProfileRedirect } from "src/components/Profile";
 import { ProtectedRoute } from "src/components/ProtectedRoute";
 import { TenantIndexRedirect, TenantRoute } from "src/components/TenantRoute";
 import { Onboarding } from "src/components/Onboarding";
-import { Members } from "src/components/Settings/Members";
-import { Emails, PlatformRoute, Tenants, Users } from "src/components/Platform";
+import { Invitations, Members } from "src/components/Settings/Members";
+import {
+  EmailTemplates,
+  PlatformRoute,
+  SentEmails,
+  Tenants,
+  Users,
+} from "src/components/Platform";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { ReactQueryClientProvider } from "src/utils/react_query_provider";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -92,6 +98,10 @@ const router = createBrowserRouter([
                 element: <Members />,
               },
               {
+                path: "invitations",
+                element: <Invitations />,
+              },
+              {
                 path: "connection/new",
                 element: <ConnectionNew />,
               },
@@ -112,7 +122,20 @@ const router = createBrowserRouter([
                   },
                   {
                     path: "emails",
-                    element: <Emails />,
+                    children: [
+                      {
+                        index: true,
+                        element: <Navigate to="sent" replace />,
+                      },
+                      {
+                        path: "sent",
+                        element: <SentEmails />,
+                      },
+                      {
+                        path: "templates",
+                        element: <EmailTemplates />,
+                      },
+                    ],
                   },
                 ],
               },

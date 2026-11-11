@@ -345,7 +345,7 @@ export function Users() {
           Global Users
         </Heading>
         <Text fontSize="sm" color="subtle">
-          Manage every account on this Sopho installation.
+          Manage users across all tenants.
         </Text>
       </Flex>
       <Box sx={SEARCH_INPUT_STYLE}>

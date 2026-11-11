@@ -343,6 +343,9 @@ ul ul li {
   );
   --sidebar-width-expanded: 15rem;
   --section-sidebar-min-width: 12rem;
+  --section-nav-item-height: 2rem;
+  --section-nav-sub-item-height: 1.75rem;
+  --section-nav-item-hover-background: hsl(250deg 5% 99% / 55%);
 
   /* Shadow System */
   --shadow-2xs: 0 1px 2px hsl(0deg 0% 0% / 8%), 0 1px 1px hsl(0deg 0% 0% / 12%);
@@ -387,6 +390,7 @@ ul ul li {
   --avatar-size: 2rem;
   --avatar-size-sm: 1.25rem;
   --table-row-min-height: 3.5rem;
+  --preview-height: 36rem;
   --transition-bg-color:
     background-color var(--transition-duration-short)
       var(--transition-easing-default),

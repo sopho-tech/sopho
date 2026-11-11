@@ -100,3 +100,4 @@ export { Avatar } from "src/components/design-system/Avatar";
 export type { AvatarProps } from "src/components/design-system/Avatar";
 export { Table } from "src/components/design-system/Table";
 export { ActionList } from "src/components/design-system/ActionList";
+export { HtmlPreview, TextPreview } from "src/components/design-system/Preview";

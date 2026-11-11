@@ -7,11 +7,13 @@ use crate::authorization::service as authorization_service;
 use crate::common::AppState;
 use crate::email_delivery::dto::EmailLogPageDto;
 use crate::email_delivery::service as email_delivery_service;
+use crate::email_template::service as email_template_service;
 use crate::entity::user;
 use crate::platform::constants::{FIRST_PAGE, PLATFORM_PAGE_SIZE};
 use crate::platform::dto::{
-    DeactivatedUserDto, EmailLogQuery, PlatformTenantDto, PlatformUserCapabilities,
-    PlatformUserDto, PlatformUserPageDto, TenantSummaryDto, UserListQuery,
+    DeactivatedUserDto, EmailLogQuery, EmailTemplatePreviewDto, PlatformTenantDto,
+    PlatformUserCapabilities, PlatformUserDto, PlatformUserPageDto, TenantSummaryDto,
+    UserListQuery,
 };
 use crate::platform::error::PlatformError;
 use crate::tenant::invitation::service as invitation_service;
@@ -203,6 +205,24 @@ pub async fn remove_administrator(
     }
     authentication_service::set_platform_role(app_state, account.id, PlatformRole::Member).await?;
     Ok(())
+}
+
+pub async fn list_email_template_previews(
+    app_state: &AppState,
+    actor: UserId,
+) -> Result<Vec<EmailTemplatePreviewDto>, PlatformError> {
+    require_platform_permission(app_state, actor, PlatformPermission::EmailManage).await?;
+    Ok(email_template_service::render_sample_emails()?
+        .into_iter()
+        .map(|rendered_email| EmailTemplatePreviewDto {
+            kind: rendered_email.kind,
+            kind_display_name: rendered_email.kind.display_name().to_string(),
+            sent_when: rendered_email.kind.sent_when().to_string(),
+            subject: rendered_email.subject,
+            html_body: rendered_email.html_body,
+            text_body: rendered_email.text_body,
+        })
+        .collect())
 }
 
 pub async fn list_tenants(

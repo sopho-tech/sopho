@@ -1,12 +1,6 @@
 import { useCallback, useState } from "react";
-import {
-  BannerSlim,
-  Button,
-  Flex,
-  Heading,
-  SegmentedControl,
-  Text,
-} from "src/components/design-system";
+import { useNavigate } from "react-router";
+import { BannerSlim, Flex, Heading, Text } from "src/components/design-system";
 import {
   MemberDto,
   useRemoveMember,
@@ -14,76 +8,41 @@ import {
   useTenantMembers,
   useUpdateMemberRole,
 } from "src/api/member/queries";
-import { useTenantPermission } from "src/api/tenant/queries";
-import {
-  InvitationDeliveryMethod,
-  InvitationDto,
-  useInvitationDelivery,
-  useTenantInvitations,
-} from "src/api/invitation/queries";
-import { PERMISSIONS } from "src/constants/permissions";
-import { InviteMemberDialog } from "src/components/Settings/Members/InviteMemberDialog";
-import { InvitationsTable } from "src/components/Settings/Members/InvitationsTable";
+import { APP_ROUTES } from "src/constants/app_routes";
+import { InvitationsLocationState } from "src/components/Settings/Members/Invitations";
+import { InvitePeopleButton } from "src/components/Settings/Members/InvitePeopleButton";
 import { MembersTable } from "src/components/Settings/Members/MembersTable";
 import { RemoveMemberDialog } from "src/components/Settings/Members/RemoveMemberDialog";
-import {
-  INVITATIONS_TAB,
-  MEMBERS_TAB,
-} from "src/components/Settings/Members/constants";
-
-function invitedMessage(
-  deliveryMethod: InvitationDeliveryMethod,
-  email: string,
-): string {
-  switch (deliveryMethod) {
-    case "EMAIL":
-      return `Invited ${email}. Sopho is emailing them a link to join.`;
-    case "SINGLE_SIGN_ON":
-      return `Invited ${email}. Ask them to sign in at ${window.location.origin} with that email address to accept.`;
-    case "UNAVAILABLE":
-      throw new Error("Invitations are unavailable, so nobody was invited");
-  }
-}
+import { useTenantPath } from "src/utils/tenant";
 
 export function Members() {
+  const navigate = useNavigate();
+  const toTenantPath = useTenantPath();
   const members = useTenantMembers();
   const roles = useRoles();
-  const canInvite = useTenantPermission(PERMISSIONS.MEMBER_INVITE);
-  const invitationDelivery = useInvitationDelivery(canInvite);
-  const invitations = useTenantInvitations(canInvite);
   const updateMemberRole = useUpdateMemberRole();
   const removeMember = useRemoveMember();
-  const [selectedTab, setSelectedTab] = useState(MEMBERS_TAB);
-  const [isInviting, setIsInviting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [memberPendingRemoval, setMemberPendingRemoval] =
     useState<MemberDto | null>(null);
 
   const { mutate: updateRole } = updateMemberRole;
   const { mutate: remove } = removeMember;
-  const deliveryMethod = invitationDelivery.data?.method;
-  const canSendInvitations =
-    deliveryMethod !== undefined && deliveryMethod !== "UNAVAILABLE";
 
   const handleChangeRole = useCallback(
     (userId: string, roleName: string) => updateRole({ userId, roleName }),
     [updateRole],
   );
-  const handleOpenInvite = useCallback(() => {
-    setNotice(null);
-    setIsInviting(true);
-  }, []);
-  const handleCloseInvite = useCallback(() => setIsInviting(false), []);
   const handleInvited = useCallback(
-    (invitation: InvitationDto) => {
-      if (!deliveryMethod) {
-        throw new Error("Invitation delivery is not loaded");
-      }
-      setIsInviting(false);
-      setNotice(invitedMessage(deliveryMethod, invitation.email));
-      setSelectedTab(INVITATIONS_TAB);
+    (invitedNotice: string) => {
+      const invitationsLocationState: InvitationsLocationState = {
+        notice: invitedNotice,
+      };
+      void navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.INVITATIONS), {
+        state: invitationsLocationState,
+      });
     },
-    [deliveryMethod],
+    [navigate, toTenantPath],
   );
   const handleCloseRemoval = useCallback(
     () => setMemberPendingRemoval(null),
@@ -106,8 +65,6 @@ export function Members() {
   const failure =
     members.error ??
     roles.error ??
-    invitationDelivery.error ??
-    invitations.error ??
     updateMemberRole.error ??
     removeMember.error;
 
@@ -121,69 +78,22 @@ export function Members() {
       >
         <Flex direction="column" gap="2xs">
           <Heading accessibilityLevel={2} size="2xl" textColor="black">
-            Tenant Management
+            Members
           </Heading>
           <Text fontSize="sm" color="subtle">
-            Manage who has access to this tenant and what they can do.
+            Manage the members of this tenant.
           </Text>
         </Flex>
-        {canSendInvitations && roles.data && (
-          <Button
-            label="Invite people"
-            leadingIconName="add"
-            shape="rectangle"
-            size="sm"
-            backgroundColor="accent"
-            onClick={handleOpenInvite}
-          />
-        )}
+        <InvitePeopleButton onInvited={handleInvited} />
       </Flex>
       {failure && <BannerSlim type="error" message={failure.message} />}
-      {invitationDelivery.data?.unavailable_reason && (
-        <BannerSlim
-          type="info"
-          message={invitationDelivery.data.unavailable_reason}
-        />
-      )}
       {notice && <BannerSlim type="success" message={notice} />}
-      {canInvite && members.data && invitations.data && (
-        <Flex direction="row">
-          <SegmentedControl
-            size="sm"
-            value={selectedTab}
-            onValueChange={setSelectedTab}
-            options={[
-              {
-                value: MEMBERS_TAB,
-                label: `Members (${members.data.length})`,
-              },
-              {
-                value: INVITATIONS_TAB,
-                label: `Invitations (${invitations.data.length})`,
-              },
-            ]}
-          />
-        </Flex>
-      )}
-      {selectedTab === MEMBERS_TAB && members.data && roles.data && (
+      {members.data && roles.data && (
         <MembersTable
           members={members.data}
           roles={roles.data}
           onChangeRole={handleChangeRole}
           onRemove={setMemberPendingRemoval}
-        />
-      )}
-      {selectedTab === INVITATIONS_TAB && invitations.data && (
-        <InvitationsTable
-          invitations={invitations.data}
-          canResend={deliveryMethod === "EMAIL"}
-        />
-      )}
-      {isInviting && roles.data && (
-        <InviteMemberDialog
-          roles={roles.data}
-          onInvited={handleInvited}
-          onClose={handleCloseInvite}
         />
       )}
       {memberPendingRemoval && (

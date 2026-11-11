@@ -21,6 +21,7 @@ type ActionListItemProps = {
   title: string;
   description?: string;
   trailing?: React.ReactNode;
+  isSelected?: boolean;
   onClick?: () => void;
 };
 
@@ -29,6 +30,7 @@ function ActionListItem({
   title,
   description,
   trailing,
+  isSelected = false,
   onClick,
 }: ActionListItemProps) {
   const content = (
@@ -49,6 +51,7 @@ function ActionListItem({
         <button
           type="button"
           className={`${styles.row} ${styles.rowButton}`}
+          aria-current={isSelected ? "true" : undefined}
           onClick={onClick}
         >
           {content}

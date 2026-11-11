@@ -1,7 +1,9 @@
 use crate::common::EmailConfiguration;
 use crate::common::constants::SmtpTls;
 use crate::email_delivery::constants::SMTP_TIMED_OUT_MESSAGE;
-use lettre::message::{Mailbox, MultiPart};
+use crate::email_template::dto::EmailInlineImage;
+use lettre::message::header::ContentType;
+use lettre::message::{Attachment, Mailbox, MultiPart, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 use std::time::Duration;
@@ -41,6 +43,7 @@ pub fn build_message(
     subject: &str,
     text_body: String,
     html_body: String,
+    inline_images: Vec<EmailInlineImage>,
 ) -> Result<Message, String> {
     let sender: Mailbox = from_address
         .parse()
@@ -48,11 +51,28 @@ pub fn build_message(
     let receiver: Mailbox = recipient
         .parse()
         .map_err(|error| format!("Invalid recipient {recipient:?}: {error}"))?;
+    let mut html_part = MultiPart::related().singlepart(SinglePart::html(html_body));
+    for inline_image in inline_images {
+        let content_type = ContentType::parse(inline_image.content_type).map_err(|error| {
+            format!(
+                "Invalid content type {:?} of the inline image {:?}: {error}",
+                inline_image.content_type, inline_image.content_id
+            )
+        })?;
+        html_part = html_part.singlepart(
+            Attachment::new_inline(inline_image.content_id.to_string())
+                .body(inline_image.bytes.to_vec(), content_type),
+        );
+    }
     Message::builder()
         .from(sender)
         .to(receiver)
         .subject(subject)
-        .multipart(MultiPart::alternative_plain_html(text_body, html_body))
+        .multipart(
+            MultiPart::alternative()
+                .singlepart(SinglePart::plain(text_body))
+                .multipart(html_part),
+        )
         .map_err(|error| format!("Could not build the email: {error}"))
 }
 

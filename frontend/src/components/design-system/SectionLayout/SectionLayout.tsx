@@ -5,11 +5,18 @@ import { Flex } from "src/components/design-system/Flex";
 import { Text } from "src/components/design-system/Text";
 import styles from "src/components/design-system/SectionLayout/SectionLayout.module.css";
 
+export type SectionNavigationSubItem = {
+  id: string;
+  label: string;
+  to: string;
+};
+
 export type SectionNavigationItem = {
   id: string;
   label: string;
   to: string;
   matchPrefixes?: string[];
+  subItems?: SectionNavigationSubItem[];
 };
 
 export type SectionLayoutProps = {
@@ -20,6 +27,83 @@ export type SectionLayoutProps = {
 
 function isPathUnderPrefix(pathname: string, prefix: string) {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+type SectionNavigationLinkProps = {
+  label: string;
+  to: string;
+  isActive: boolean;
+  variant: "item" | "group" | "subItem";
+};
+
+function SectionNavigationLink({
+  label,
+  to,
+  isActive,
+  variant,
+}: SectionNavigationLinkProps) {
+  return (
+    <NavigationMenu.Link asChild active={isActive && variant !== "group"}>
+      <NavLink
+        to={to}
+        className={styles.navLink}
+        data-variant={variant}
+        data-active={isActive}
+      >
+        <span className={styles.navLabel}>{label}</span>
+      </NavLink>
+    </NavigationMenu.Link>
+  );
+}
+
+type SectionNavigationEntryProps = {
+  item: SectionNavigationItem;
+  pathname: string;
+};
+
+function SectionNavigationEntry({
+  item,
+  pathname,
+}: SectionNavigationEntryProps) {
+  if (!item.subItems) {
+    const prefixes = [item.to, ...(item.matchPrefixes ?? [])];
+    return (
+      <NavigationMenu.Item>
+        <SectionNavigationLink
+          label={item.label}
+          to={item.to}
+          isActive={prefixes.some((prefix) =>
+            isPathUnderPrefix(pathname, prefix),
+          )}
+          variant="item"
+        />
+      </NavigationMenu.Item>
+    );
+  }
+  return (
+    <NavigationMenu.Item>
+      <SectionNavigationLink
+        label={item.label}
+        to={item.to}
+        isActive={item.subItems.some((subItem) =>
+          isPathUnderPrefix(pathname, subItem.to),
+        )}
+        variant="group"
+      />
+      <ul className={styles.navSubList} aria-label={item.label}>
+        {item.subItems.map((subItem) => (
+          <li key={subItem.id}>
+            <SectionNavigationLink
+              label={subItem.label}
+              to={subItem.to}
+              isActive={isPathUnderPrefix(pathname, subItem.to)}
+              variant="subItem"
+            />
+          </li>
+        ))}
+      </ul>
+    </NavigationMenu.Item>
+  );
 }
 
 export function SectionLayout({ title, items, children }: SectionLayoutProps) {
@@ -33,47 +117,24 @@ export function SectionLayout({ title, items, children }: SectionLayoutProps) {
         paddingY="lg"
         paddingX="sm"
         gap="xs"
+        overflow="scrollY"
         borderRight="divider"
         width="15%"
         className={styles.aside}
       >
         <Box paddingX="sm" paddingBottom="xs">
-          <Text fontSize="xs" color="darkGrey">
+          <Text fontSize="base" color="darkGrey">
             {title}
           </Text>
         </Box>
         <NavigationMenu.Root orientation="vertical">
           <NavigationMenu.List className={styles.navList}>
             {items.map((item) => (
-              <NavigationMenu.Item key={item.id}>
-                <NavigationMenu.Link asChild>
-                  <NavLink to={item.to}>
-                    {({ isActive }) => {
-                      const active =
-                        isActive ||
-                        (item.matchPrefixes?.some((prefix) =>
-                          isPathUnderPrefix(pathname, prefix),
-                        ) ??
-                          false);
-                      return (
-                        <Box
-                          paddingX="sm"
-                          paddingY="xs"
-                          width="100%"
-                          className={`${styles.navItem} ${active ? styles.navItemActive : ""}`}
-                        >
-                          <Text
-                            fontSize="sm"
-                            color={active ? "default" : "darkGrey"}
-                          >
-                            {item.label}
-                          </Text>
-                        </Box>
-                      );
-                    }}
-                  </NavLink>
-                </NavigationMenu.Link>
-              </NavigationMenu.Item>
+              <SectionNavigationEntry
+                key={item.id}
+                item={item}
+                pathname={pathname}
+              />
             ))}
           </NavigationMenu.List>
         </NavigationMenu.Root>

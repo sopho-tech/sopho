@@ -7,6 +7,12 @@ pub struct RenderedEmail {
     pub html_body: String,
 }
 
+pub struct EmailInlineImage {
+    pub content_id: &'static str,
+    pub content_type: &'static str,
+    pub bytes: &'static [u8],
+}
+
 pub struct InvitationEmail {
     pub inviter_name: String,
     pub tenant_name: String,

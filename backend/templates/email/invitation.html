@@ -1,11 +1,13 @@
 {% extends "email/layout.html" %}
+{% import "email/components.html" as components %}
 {% block title %}You're invited to {{ email.tenant_name }}{% endblock %}
+{% block preheader %}{{ email.inviter_name }} invited you to join {{ email.tenant_name }} on Sopho. The invitation expires on {{ email.expires_on }}.{% endblock %}
+{% block eyebrow %}Invitation{% endblock %}
+{% block heading %}Join {{ email.tenant_name }} on Sopho{% endblock %}
 {% block content %}
-<p style="margin: 0 0 16px">{{ email.inviter_name }} invited you to join <strong>{{ email.tenant_name }}</strong> on Sopho as {{ email.role_name }}.</p>
-<p style="margin: 0 0 24px">
-  <a href="{{ email.invitation_link }}" style="display: inline-block; padding: 12px 20px; background-color: #5b4de0; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600">Accept the invitation</a>
-</p>
-<p style="margin: 0 0 8px">The invitation expires on {{ email.expires_on }}. If the button doesn't work, open this link:</p>
-<p style="margin: 0; word-break: break-all"><a href="{{ email.invitation_link }}" style="color: #5b4de0">{{ email.invitation_link }}</a></p>
+<p style="margin: 0 0 28px; font-size: 16px; line-height: 24px; color: #63616b">{{ email.inviter_name }} invited you to work together in <strong style="color: #29272b; font-weight: 600">{{ email.tenant_name }}</strong>.</p>
+{% call components::detail_pair("Your role", email.role_name, "Expires on", email.expires_on) %}{% endcall %}
+{% call components::button(email.invitation_link, "Accept") %}{% endcall %}
+{% call components::fallback_link(email.invitation_link) %}{% endcall %}
 {% endblock %}
 {% block reason %}You received this email because {{ email.inviter_name }} invited this address to Sopho. If you weren't expecting it, you can ignore it.{% endblock %}

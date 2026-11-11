@@ -614,7 +614,7 @@ async fn render_invitation_email(
     Ok(InvitationEmail {
         inviter_name: details.inviter.full_name.clone(),
         tenant_name: lookup(&tenant_names, tenant_uuid, "tenant")?,
-        role_name: details.role_name.to_string(),
+        role_name: authorization_service::role_display_name(details.role_name),
         invitation_link: email_delivery_service::public_link(
             app_state,
             &format!("{INVITATION_LINK_PATH}{}", details.link_token),
