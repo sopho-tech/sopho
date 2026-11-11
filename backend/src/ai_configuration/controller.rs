@@ -64,7 +64,7 @@ async fn test_handler(
     tenant_context: TenantContext,
     Json(payload): Json<TestAiConfigurationRequest>,
 ) -> impl IntoResponse {
-    match service::test(
+    match service::verify_provider_api_key(
         &app_state,
         &tenant_context,
         payload.provider,

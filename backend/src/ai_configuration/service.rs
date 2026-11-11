@@ -83,7 +83,7 @@ pub async fn delete(
     Ok(())
 }
 
-pub async fn test(
+pub async fn verify_provider_api_key(
     app_state: &AppState,
     tenant_context: &TenantContext,
     provider: Provider,
