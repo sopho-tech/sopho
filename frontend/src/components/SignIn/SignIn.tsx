@@ -27,7 +27,7 @@ import {
 import {
   invitationPath,
   pendingInvitationToken,
-} from "src/utils/pending_invitation";
+} from "src/components/InvitationLink/pending_invitation";
 
 function pathAfterSignIn(): string {
   const pendingToken = pendingInvitationToken();

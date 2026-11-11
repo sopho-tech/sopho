@@ -1,2 +1,6 @@
-export const PENDING_INVITATION_TOKEN_KEY = "pending_invitation_token";
-export const LINK_TOKEN_PARAMETER = "token";
+export const SESSION_STORAGE_KEYS = {
+  PENDING_INVITATION_TOKEN: "pending_invitation_token",
+} as const;
+
+export type SessionStorageKey =
+  (typeof SESSION_STORAGE_KEYS)[keyof typeof SESSION_STORAGE_KEYS];

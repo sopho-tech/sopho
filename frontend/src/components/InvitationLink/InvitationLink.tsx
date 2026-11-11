@@ -26,9 +26,9 @@ import {
 import { APP_ROUTES } from "src/constants/app_routes";
 import {
   forgetPendingInvitation,
-  linkTokenFromHash,
   rememberPendingInvitation,
-} from "src/utils/pending_invitation";
+} from "src/components/InvitationLink/pending_invitation";
+import { linkTokenFromHash } from "src/utils/link_token";
 import { tenantPath } from "src/utils/tenant";
 
 type InvitationStepProps = {

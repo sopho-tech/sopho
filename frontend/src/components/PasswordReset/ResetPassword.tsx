@@ -18,7 +18,7 @@ import {
 import { useResetPassword } from "src/api/auth/queries";
 import { ApiError } from "src/api/dto";
 import { APP_ROUTES } from "src/constants/app_routes";
-import { linkTokenFromHash } from "src/utils/pending_invitation";
+import { linkTokenFromHash } from "src/utils/link_token";
 
 function ResetPasswordForm({ token }: { token: string }) {
   const navigate = useNavigate();

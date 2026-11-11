@@ -12,7 +12,7 @@ import { TEST_TENANT_ID } from "src/test/test_data";
 import {
   invitationPath,
   rememberPendingInvitation,
-} from "src/utils/pending_invitation";
+} from "src/components/InvitationLink/pending_invitation";
 
 const DEAD_INVITATION_TOKEN = "dead-invitation-token";
 const DEAD_INVITATION_MESSAGE =

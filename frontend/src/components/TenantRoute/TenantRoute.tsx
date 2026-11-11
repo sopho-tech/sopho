@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import {
   invitationPath,
   pendingInvitationToken,
-} from "src/utils/pending_invitation";
+} from "src/components/InvitationLink/pending_invitation";
 import { Navigate, Outlet } from "react-router";
 import { isUnauthorizedError } from "src/api/dto";
 import { useReceivedInvitations } from "src/api/invitation/queries";
