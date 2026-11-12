@@ -63,6 +63,7 @@ export const API_ENDPOINTS = {
     UPDATE: "/connection/:id",
     DELETE: "/connection/:id",
     EXECUTE_QUERY: "/connection/:id/execute-query",
+    OFFERED_SOURCE_TYPES: "/connection/source_type",
   },
   NOTEBOOK: {
     CREATE: "/notebook",

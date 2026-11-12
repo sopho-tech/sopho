@@ -6,10 +6,12 @@ export function SubscribeButton({
   label,
   size,
   fullWidth = false,
+  isPending = false,
 }: {
   label: string;
   size: ButtonSize;
   fullWidth?: boolean;
+  isPending?: boolean;
 }) {
   const form = useFormContext();
   return (
@@ -24,7 +26,7 @@ export function SubscribeButton({
           size={size}
           shape="rectangle"
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isPending}
           fullWidth={fullWidth}
           contentAlignment="center"
         />

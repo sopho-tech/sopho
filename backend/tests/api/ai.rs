@@ -1,4 +1,3 @@
-use crate::support::TestApp;
 use crate::support::canvas_builder::{
     column_names, create_canvas, create_chart_cell, create_sql_cell, order_status_chart_content,
     place_chart_on_dashboard, string_field,
@@ -8,6 +7,7 @@ use crate::support::conversation::{
     answer_order_status_question, append_canvas_command, event_data, event_names, last_message,
     run_completion, start_conversation, wait_for_persisted_event,
 };
+use crate::support::{DeploymentFlags, TestApp};
 use fake_llm::{FailureKind, Provider};
 use reqwest::StatusCode;
 use sea_orm::ConnectionTrait;
@@ -365,6 +365,39 @@ async fn anthropic_writes_chart_and_dashboard_summaries() {
 #[tokio::test]
 async fn openai_writes_chart_and_dashboard_summaries() {
     assert_chart_and_dashboard_summaries("openai").await;
+}
+
+#[tokio::test]
+async fn the_startup_refresh_generates_suggested_questions_by_default() {
+    let mut app = TestApp::spawn().await;
+    app.login_as_admin().await;
+    app.configure_live_ai_provider("anthropic").await;
+    app.create_sqlite_demo_connection().await;
+
+    sopho::run_startup_suggested_question_refresh(&app.app_state).await;
+
+    assert_eq!(requests_answered_by(&app, "suggested_questions_agent"), 2);
+}
+
+#[tokio::test]
+async fn the_startup_refresh_calls_no_llm_when_the_background_refresh_is_off() {
+    let mut app = TestApp::spawn_with_deployment_flags(DeploymentFlags {
+        is_background_suggested_question_refresh_off: true,
+        ..DeploymentFlags::default()
+    })
+    .await;
+    app.login_as_admin().await;
+    app.configure_live_ai_provider("anthropic").await;
+    app.create_sqlite_demo_connection().await;
+    let llm_requests_before_startup_refresh = app.fake_llm.received_requests().len();
+
+    sopho::run_startup_suggested_question_refresh(&app.app_state).await;
+
+    assert_eq!(
+        app.fake_llm.received_requests().len(),
+        llm_requests_before_startup_refresh
+    );
+    assert_eq!(requests_answered_by(&app, "suggested_questions_agent"), 0);
 }
 
 #[tokio::test]

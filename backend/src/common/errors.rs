@@ -1,5 +1,42 @@
 use crate::common::constants::EnvironmentVariable;
+use crate::common::error_codes::ErrorCode;
+use crate::connection::constants::SourceType;
 use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum ConnectionGuardError {
+    #[error("{} connections are turned off on this deployment", .source_type.display_name())]
+    TypeDisabled { source_type: SourceType },
+    #[error("This host is not reachable from this deployment")]
+    HostNotAllowed,
+}
+
+impl ConnectionGuardError {
+    pub fn error_code(&self) -> ErrorCode {
+        match self {
+            ConnectionGuardError::TypeDisabled { .. } => ErrorCode::ConnectionTypeDisabled,
+            ConnectionGuardError::HostNotAllowed => ErrorCode::ConnectionHostNotAllowed,
+        }
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum ConnectionSettingsError {
+    #[error("The connection has no host")]
+    MissingHost,
+    #[error("The connection has no port")]
+    MissingPort,
+    #[error("The connection port {port:?} is not a number between 1 and 65535")]
+    InvalidPort { port: String },
+}
+
+#[derive(Debug, Error)]
+pub enum ProbeConnectionError {
+    #[error("{0}")]
+    Refused(#[from] ConnectionGuardError),
+    #[error("{0}")]
+    Validation(#[from] ValidationError),
+}
 
 #[derive(Error, Debug)]
 #[error("{message}")]
@@ -17,6 +54,8 @@ pub enum ExecuteQueryError {
 
 #[derive(Debug, thiserror::Error)]
 pub enum CreateConnectionError {
+    #[error("{0}")]
+    Refused(ConnectionGuardError),
     #[error("Failed to get connection status: {0}")]
     ConnectionStatus(#[from] ValidationError),
     #[error("Failed to encrypt connection")]
@@ -31,6 +70,8 @@ pub enum CreateConnectionError {
 pub enum UpdateConnectionError {
     #[error("{0}")]
     GetConnection(#[from] GetDatabaseConnectionError),
+    #[error("{0}")]
+    Refused(ConnectionGuardError),
     #[error("Failed to get connection status: {0}")]
     ConnectionStatus(#[from] ValidationError),
     #[error("Failed to encrypt connection")]
@@ -39,6 +80,32 @@ pub enum UpdateConnectionError {
     Decryption(anyhow::Error),
     #[error("Failed to save connection: {0}")]
     Repository(#[from] sea_orm::DbErr),
+}
+
+impl From<ProbeConnectionError> for CreateConnectionError {
+    fn from(error: ProbeConnectionError) -> Self {
+        match error {
+            ProbeConnectionError::Refused(guard_error) => {
+                CreateConnectionError::Refused(guard_error)
+            }
+            ProbeConnectionError::Validation(validation_error) => {
+                CreateConnectionError::ConnectionStatus(validation_error)
+            }
+        }
+    }
+}
+
+impl From<ProbeConnectionError> for UpdateConnectionError {
+    fn from(error: ProbeConnectionError) -> Self {
+        match error {
+            ProbeConnectionError::Refused(guard_error) => {
+                UpdateConnectionError::Refused(guard_error)
+            }
+            ProbeConnectionError::Validation(validation_error) => {
+                UpdateConnectionError::ConnectionStatus(validation_error)
+            }
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -65,10 +132,12 @@ pub enum GetDatabaseConnectionError {
     DatabaseConnection(#[from] sqlx::Error),
     #[error("Failed to parse source type: {0}")]
     SourceTypeParse(String),
-    #[error("Unsupported source type: {0}")]
-    UnsupportedSourceType(String),
     #[error("Database pool unavailable: {0}")]
     PoolUnavailable(String),
+    #[error("{0}")]
+    Refused(#[from] ConnectionGuardError),
+    #[error("{0}")]
+    InvalidConnectionSettings(#[from] ConnectionSettingsError),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -175,6 +244,16 @@ pub enum ConfigurationError {
         variable = EnvironmentVariable::SophoPlatformAdministratorEmails
     )]
     DuplicatePlatformAdministratorEmail { value: String },
+    #[error(
+        "invalid {variable} entry {value:?}, expected a connection type name such as SQLITE",
+        variable = EnvironmentVariable::SophoDisabledConnectionTypes
+    )]
+    InvalidDisabledConnectionType { value: String },
+    #[error(
+        "{variable} lists {value:?} more than once",
+        variable = EnvironmentVariable::SophoDisabledConnectionTypes
+    )]
+    DuplicateDisabledConnectionType { value: String },
     #[error("{first_setting} and {second_setting} contradict each other: {reason}")]
     ContradictorySettings {
         first_setting: String,

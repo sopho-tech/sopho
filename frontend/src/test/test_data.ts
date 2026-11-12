@@ -5,7 +5,11 @@ import {
   type ResourceCapabilities,
 } from "src/api/dto";
 import type { CanvasDto } from "src/components/Canvases/dto";
-import { StatusType, type ConnectionDto } from "src/components/Connection/dto";
+import {
+  StatusType,
+  type ConnectionDto,
+  type OfferedSourceTypeDto,
+} from "src/components/Connection/dto";
 import type { DashboardDto } from "src/components/Dashboard/dto";
 import {
   CellType,
@@ -46,10 +50,18 @@ const FULL_CAPABILITIES: ResourceCapabilities = {
   can_share: true,
 };
 
+export const OFFERED_SOURCE_TYPES: OfferedSourceTypeDto[] = [
+  { source_type: "POSTGRESQL", display_name: "PostgreSQL" },
+  { source_type: "SUPABASE", display_name: "Supabase" },
+  { source_type: "SQLITE", display_name: "SQLite" },
+];
+
 export const SQLITE_CONNECTION: ConnectionDto = {
   id: "00000000-0000-4000-8000-000000000101",
   name: "Ecommerce",
   source_type: "SQLITE",
+  source_type_display_name: "SQLite",
+  is_source_type_available: true,
   host: "",
   port: null,
   database: "/data/ecommerce.db",
@@ -68,6 +80,8 @@ export const POSTGRES_CONNECTION: ConnectionDto = {
   id: "00000000-0000-4000-8000-000000000102",
   name: "Warehouse",
   source_type: "POSTGRESQL",
+  source_type_display_name: "PostgreSQL",
+  is_source_type_available: true,
   host: "db.internal",
   port: 5432,
   database: "warehouse",

@@ -2,13 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiService } from "src/utils/api_client";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { CreatedByFilter } from "src/api/dto";
-import { ConnectionDto } from "src/components/Connection/dto";
+import {
+  ConnectionDto,
+  OfferedSourceTypeDto,
+} from "src/components/Connection/dto";
 import { type ExecuteCellResponseDto } from "src/components/Notebook/Cell/dto";
 import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
 export type CreateConnectionDto = Omit<
   ConnectionDto,
   | "id"
+  | "source_type_display_name"
+  | "is_source_type_available"
   | "created_at"
   | "updated_at"
   | "capabilities"
@@ -31,6 +36,8 @@ export const connectionKeys = {
     [...connectionKeys.all(tenantId), "list"] as const,
   list: (tenantId: string, createdBy: CreatedByFilter | null) =>
     [...connectionKeys.lists(tenantId), { createdBy }] as const,
+  offeredSourceTypes: (tenantId: string) =>
+    [...connectionKeys.all(tenantId), "offered-source-types"] as const,
   details: (tenantId: string) =>
     [...connectionKeys.all(tenantId), "detail"] as const,
   detail: (tenantId: string, id: string) =>
@@ -57,6 +64,19 @@ const connectionApi = {
       onlyBody: true,
     });
     return response as ConnectionDto;
+  },
+
+  getOfferedSourceTypes: async (
+    tenantId: string,
+  ): Promise<OfferedSourceTypeDto[]> => {
+    const response = await ApiService.get({
+      url: tenantApiUrl(
+        tenantId,
+        API_ENDPOINTS.CONNECTION.OFFERED_SOURCE_TYPES,
+      ),
+      onlyBody: true,
+    });
+    return response as OfferedSourceTypeDto[];
   },
 
   getAllConnections: async (
@@ -162,6 +182,14 @@ export const useConnections = (createdBy: CreatedByFilter | null) => {
   return useQuery({
     queryKey: connectionKeys.list(tenantId, createdBy),
     queryFn: () => connectionApi.getAllConnections(tenantId, createdBy),
+  });
+};
+
+export const useOfferedSourceTypes = () => {
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: connectionKeys.offeredSourceTypes(tenantId),
+    queryFn: () => connectionApi.getOfferedSourceTypes(tenantId),
   });
 };
 

@@ -12,6 +12,8 @@ pub enum FeatureFlag {
     PasswordSignIn,
     SeedPasswordAdministrator,
     DefaultTenant,
+    InternalAddressConnections,
+    BackgroundSuggestedQuestionRefresh,
 }
 
 impl FeatureFlag {
@@ -24,7 +26,9 @@ impl FeatureFlag {
             FeatureFlag::SelfServeTenantCreation => false,
             FeatureFlag::PasswordSignIn
             | FeatureFlag::SeedPasswordAdministrator
-            | FeatureFlag::DefaultTenant => true,
+            | FeatureFlag::DefaultTenant
+            | FeatureFlag::InternalAddressConnections
+            | FeatureFlag::BackgroundSuggestedQuestionRefresh => true,
         }
     }
 }

@@ -54,6 +54,7 @@ use std::path::PathBuf;
 use tower_cookies::CookieManagerLayer;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
+use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
 
 pub async fn initialize(app_state: &AppState) -> anyhow::Result<()> {
@@ -67,6 +68,10 @@ pub async fn initialize(app_state: &AppState) -> anyhow::Result<()> {
 
 pub async fn refresh_stale_suggested_questions(app_state: &AppState) {
     scheduler::refresh_all_stale_for_every_tenant(app_state).await;
+}
+
+pub async fn run_startup_suggested_question_refresh(app_state: &AppState) {
+    scheduler::run_startup_suggested_question_refresh(app_state).await;
 }
 
 pub async fn deliver_due_emails(app_state: &AppState) -> anyhow::Result<()> {
@@ -164,7 +169,23 @@ pub fn build_app(app_state: AppState) -> Router {
             }
         }))
         .layer(TraceLayer::new_for_http())
-        .layer(CookieManagerLayer::new());
+        .layer(CookieManagerLayer::new())
+        .layer(SetResponseHeaderLayer::overriding(
+            header::X_CONTENT_TYPE_OPTIONS,
+            HeaderValue::from_static(common::constants::CONTENT_TYPE_OPTIONS_HEADER_VALUE),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            header::REFERRER_POLICY,
+            HeaderValue::from_static(common::constants::REFERRER_POLICY_HEADER_VALUE),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            header::CONTENT_SECURITY_POLICY,
+            HeaderValue::from_static(common::constants::CONTENT_SECURITY_POLICY_HEADER_VALUE),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            header::X_FRAME_OPTIONS,
+            HeaderValue::from_static(common::constants::FRAME_OPTIONS_HEADER_VALUE),
+        ));
 
     let cors = if app_state.config.environment == "development" {
         CorsLayer::new()

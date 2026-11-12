@@ -735,8 +735,5 @@ fn generate_schema_status(
 }
 
 fn sql_dialect_from_source_type(source_type: &str) -> SqlDialect {
-    SourceType::from_str(source_type)
-        .ok()
-        .and_then(|st| st.to_sql_dialect())
-        .unwrap()
+    SourceType::from_str(source_type).unwrap().to_sql_dialect()
 }

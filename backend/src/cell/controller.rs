@@ -182,6 +182,9 @@ fn get_database_connection_error_response(
             StatusCode::NOT_FOUND,
             axum::Json(serde_json::json!({ "error": CONNECTION_NOT_FOUND_MESSAGE })),
         ),
+        GetDatabaseConnectionError::Refused(guard_error) => {
+            crate::database::service::connection_guard_error_response(&guard_error)
+        }
         GetDatabaseConnectionError::Connection(_)
         | GetDatabaseConnectionError::Decryption(_)
         | GetDatabaseConnectionError::SourceTypeParse(_) => (
@@ -189,7 +192,7 @@ fn get_database_connection_error_response(
             axum::Json(serde_json::json!({ "error": error.to_string() })),
         ),
         GetDatabaseConnectionError::DatabaseConnection(_)
-        | GetDatabaseConnectionError::UnsupportedSourceType(_)
+        | GetDatabaseConnectionError::InvalidConnectionSettings(_)
         | GetDatabaseConnectionError::PoolUnavailable(_) => (
             StatusCode::BAD_REQUEST,
             axum::Json(serde_json::json!({ "error": error.to_string() })),

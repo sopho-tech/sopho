@@ -6,6 +6,7 @@ use super::service;
 use crate::authorization::dto::TenantContext;
 use crate::common::AppState;
 use crate::common::error_codes::codes;
+use crate::common::errors::GetDatabaseConnectionError;
 use axum::Router;
 use axum::extract::Json;
 use axum::extract::Path;
@@ -115,6 +116,13 @@ async fn execute_completion(
         Ok(sse) => sse.into_response(),
         Err(e) => {
             let (status, error, code) = match &e {
+                ExecuteCompletionError::GetConnection(GetDatabaseConnectionError::Refused(
+                    guard_error,
+                )) => (
+                    StatusCode::FORBIDDEN,
+                    e.to_string(),
+                    Some(guard_error.error_code().as_str()),
+                ),
                 ExecuteCompletionError::Database(_) | ExecuteCompletionError::GetConnection(_) => {
                     (StatusCode::INTERNAL_SERVER_ERROR, e.to_string(), None)
                 }
