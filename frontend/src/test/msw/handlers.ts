@@ -31,7 +31,12 @@ export const currentUserHandler = http.get(
 
 export const emaillessSignInPageOptionsHandler = http.get(
   API_ENDPOINTS.AUTH.SIGN_IN_PAGE_OPTIONS,
-  () => HttpResponse.json({ providers: [], password_reset_available: false }),
+  () =>
+    HttpResponse.json({
+      providers: [],
+      password_sign_in_available: true,
+      password_reset_available: false,
+    }),
 );
 
 type CanvasPageHandlersOptions = {

@@ -9,6 +9,9 @@ pub const FEATURE_FLAG_DISABLED_VALUE: &str = "false";
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum FeatureFlag {
     SelfServeTenantCreation,
+    PasswordSignIn,
+    SeedPasswordAdministrator,
+    DefaultTenant,
 }
 
 impl FeatureFlag {
@@ -19,6 +22,9 @@ impl FeatureFlag {
     pub fn is_enabled_by_default(self) -> bool {
         match self {
             FeatureFlag::SelfServeTenantCreation => false,
+            FeatureFlag::PasswordSignIn
+            | FeatureFlag::SeedPasswordAdministrator
+            | FeatureFlag::DefaultTenant => true,
         }
     }
 }

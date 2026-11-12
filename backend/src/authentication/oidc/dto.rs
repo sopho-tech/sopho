@@ -49,6 +49,7 @@ pub struct SignInProviderDto {
 #[derive(Debug, Serialize)]
 pub struct MySignInMethodsDto {
     pub has_password: bool,
+    pub password_available: bool,
     pub providers: Vec<SignInProviderDto>,
 }
 

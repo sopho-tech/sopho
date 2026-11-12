@@ -87,51 +87,62 @@ function InvitationSignUp({ token, invitation }: InvitationStepProps) {
   return (
     <Flex direction="column" gap="sm">
       <InvitationSummary invitation={invitation} />
-      <Heading accessibilityLevel={2} size="sm" textColor="subtle">
-        Create your account
-      </Heading>
-      <Form
-        defaultValues={INVITATION_SIGN_UP_FORM_DEFAULT_VALUES}
-        onSubmit={handleSubmit}
-        className={authPageStyles.formRootContainer}
-        submitOnEnter={true}
-      >
-        <Form.Fields className={authPageStyles.fieldsContainer}>
-          <Form.Field
-            name="full_name"
-            required
-            errorMessage="Full name is required"
-            className={authPageStyles.fieldContainer}
+      {invitation.password_sign_up_available && (
+        <>
+          <Heading accessibilityLevel={2} size="sm" textColor="subtle">
+            Create your account
+          </Heading>
+          <Form
+            defaultValues={INVITATION_SIGN_UP_FORM_DEFAULT_VALUES}
+            onSubmit={handleSubmit}
+            className={authPageStyles.formRootContainer}
+            submitOnEnter={true}
           >
-            <Form.Input placeholder="Full name" icon="user" />
-          </Form.Field>
-          <Form.Field
-            name="password"
-            required
-            errorMessage="Password is required"
-            className={authPageStyles.fieldContainer}
-          >
-            <Form.Password placeholder="Choose a password" icon="lock" />
-          </Form.Field>
-        </Form.Fields>
-        {signUp.error && (
-          <BannerSlim type="error" message={signUp.error.message} />
-        )}
-        <Form.Actions className={authPageStyles.formButtonRowContainer}>
-          <Form.Submit label="Create account" />
-        </Form.Actions>
-      </Form>
+            <Form.Fields className={authPageStyles.fieldsContainer}>
+              <Form.Field
+                name="full_name"
+                required
+                errorMessage="Full name is required"
+                className={authPageStyles.fieldContainer}
+              >
+                <Form.Input placeholder="Full name" icon="user" />
+              </Form.Field>
+              <Form.Field
+                name="password"
+                required
+                errorMessage="Password is required"
+                className={authPageStyles.fieldContainer}
+              >
+                <Form.Password placeholder="Choose a password" icon="lock" />
+              </Form.Field>
+            </Form.Fields>
+            {signUp.error && (
+              <BannerSlim type="error" message={signUp.error.message} />
+            )}
+            <Form.Actions className={authPageStyles.formButtonRowContainer}>
+              <Form.Submit label="Create account" />
+            </Form.Actions>
+          </Form>
+        </>
+      )}
       {providers.length > 0 && (
         <Flex direction="column" gap="sm">
-          <Flex justifyContent="center">
-            <Text fontSize="xs" color="subtle">
-              or
-            </Text>
-          </Flex>
+          {invitation.password_sign_up_available && (
+            <Flex justifyContent="center">
+              <Text fontSize="xs" color="subtle">
+                or
+              </Text>
+            </Flex>
+          )}
           {providers.map((provider) => (
             <SingleSignOnButton
               key={provider.name}
               provider={provider}
+              label={
+                invitation.password_sign_up_available
+                  ? provider.display_name
+                  : `Continue with ${provider.display_name}`
+              }
               onBeforeRedirect={rememberInvitation}
             />
           ))}

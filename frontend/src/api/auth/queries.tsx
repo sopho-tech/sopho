@@ -28,6 +28,7 @@ export type OidcProviderDto = {
 
 export type SignInPageOptionsDto = {
   providers: OidcProviderDto[];
+  password_sign_in_available: boolean;
   password_reset_available: boolean;
 };
 
@@ -46,6 +47,7 @@ export type SignInProviderDto = {
 
 export type MySignInMethodsDto = {
   has_password: boolean;
+  password_available: boolean;
   providers: SignInProviderDto[];
 };
 
@@ -243,6 +245,9 @@ export const useDisconnectProvider = () => {
       queryClient.invalidateQueries({ queryKey: authKeys.mySignInMethods() }),
   });
 };
+
+export const fetchSignInPageOptions = (): Promise<SignInPageOptionsDto> =>
+  authApi.getSignInPageOptions();
 
 export const useSignInPageOptions = () => {
   return useQuery({

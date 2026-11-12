@@ -2,8 +2,11 @@ use crate::ai::agent_utils::ModelClient;
 use crate::ai_configuration;
 use crate::authorization::dto::TenantId;
 use crate::common::constants::{
-    DEFAULT_SELF_SERVE_TENANT_LIMIT, EnvironmentVariable, MINIMUM_SELF_SERVE_TENANT_LIMIT,
-    OidcProviderVariable, SMTP_TIMEOUT_SECONDS, SmtpTls,
+    ADMINISTRATOR_EMAILS_NEED_PROVIDER_REASON, DEFAULT_SELF_SERVE_TENANT_LIMIT,
+    DEFAULT_TENANT_NEEDS_ADMINISTRATOR_REASON, EnvironmentVariable,
+    MINIMUM_SELF_SERVE_TENANT_LIMIT, NO_PLATFORM_ADMINISTRATOR_REASON, NOBODY_CAN_SIGN_IN_REASON,
+    OidcProviderVariable, PLATFORM_ADMINISTRATOR_EMAIL_SEPARATOR,
+    SEEDED_ADMINISTRATOR_CANNOT_SIGN_IN_REASON, SMTP_TIMEOUT_SECONDS, SmtpTls,
 };
 use crate::common::cryptography_utils::{
     SECRET_KEY_PATH, generate_and_store_encryption_key, get_encryption_key_from_path,
@@ -182,6 +185,96 @@ pub fn self_serve_tenant_limit_from_variable(
     }
 }
 
+pub fn platform_administrator_emails_from_variable(
+    value: Option<String>,
+) -> Result<Vec<String>, ConfigurationError> {
+    let Some(value) = value.filter(|value| !value.trim().is_empty()) else {
+        return Ok(Vec::new());
+    };
+    let mut platform_administrator_emails: Vec<String> = Vec::new();
+    for entry in value.split(PLATFORM_ADMINISTRATOR_EMAIL_SEPARATOR) {
+        let email = crate::authentication::service::normalize_email(entry);
+        if email.parse::<lettre::Address>().is_err() {
+            return Err(ConfigurationError::InvalidPlatformAdministratorEmail {
+                value: entry.trim().to_string(),
+            });
+        }
+        if platform_administrator_emails.contains(&email) {
+            return Err(ConfigurationError::DuplicatePlatformAdministratorEmail { value: email });
+        }
+        platform_administrator_emails.push(email);
+    }
+    Ok(platform_administrator_emails)
+}
+
+pub fn validate_setting_combinations(
+    configurations: &Configurations,
+) -> Result<(), ConfigurationError> {
+    let is_password_sign_in_on = configurations
+        .feature_flags
+        .is_enabled(FeatureFlag::PasswordSignIn);
+    let is_administrator_seeded = configurations
+        .feature_flags
+        .is_enabled(FeatureFlag::SeedPasswordAdministrator);
+    let is_default_tenant_on = configurations
+        .feature_flags
+        .is_enabled(FeatureFlag::DefaultTenant);
+    let has_oidc_provider = !configurations.oidc_providers.is_empty();
+    let has_administrator_emails = !configurations.platform_administrator_emails.is_empty();
+    let contradiction = |first_setting: String, second_setting: String, reason: &'static str| {
+        Err(ConfigurationError::ContradictorySettings {
+            first_setting,
+            second_setting,
+            reason,
+        })
+    };
+
+    if !is_password_sign_in_on && !has_oidc_provider {
+        return contradiction(
+            FeatureFlag::PasswordSignIn.environment_variable_name(),
+            EnvironmentVariable::SophoOidcProviders.to_string(),
+            NOBODY_CAN_SIGN_IN_REASON,
+        );
+    }
+    if !is_password_sign_in_on && is_administrator_seeded {
+        return contradiction(
+            FeatureFlag::PasswordSignIn.environment_variable_name(),
+            FeatureFlag::SeedPasswordAdministrator.environment_variable_name(),
+            SEEDED_ADMINISTRATOR_CANNOT_SIGN_IN_REASON,
+        );
+    }
+    if is_default_tenant_on && !is_administrator_seeded {
+        return contradiction(
+            FeatureFlag::DefaultTenant.environment_variable_name(),
+            FeatureFlag::SeedPasswordAdministrator.environment_variable_name(),
+            DEFAULT_TENANT_NEEDS_ADMINISTRATOR_REASON,
+        );
+    }
+    if !is_administrator_seeded && !has_administrator_emails {
+        return contradiction(
+            FeatureFlag::SeedPasswordAdministrator.environment_variable_name(),
+            EnvironmentVariable::SophoPlatformAdministratorEmails.to_string(),
+            NO_PLATFORM_ADMINISTRATOR_REASON,
+        );
+    }
+    if has_administrator_emails && !has_oidc_provider {
+        return contradiction(
+            EnvironmentVariable::SophoPlatformAdministratorEmails.to_string(),
+            EnvironmentVariable::SophoOidcProviders.to_string(),
+            ADMINISTRATOR_EMAILS_NEED_PROVIDER_REASON,
+        );
+    }
+    Ok(())
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct PasswordAdministratorConfiguration {
+    pub username: String,
+    pub password: String,
+    pub email: String,
+    pub full_name: String,
+}
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct Configurations {
     pub database_url: Cow<'static, str>,
@@ -190,16 +283,14 @@ pub struct Configurations {
     pub environment: Cow<'static, str>,
     pub cookie_secure: bool,
     pub encryption_key: Cow<'static, str>,
-    pub admin_username: Cow<'static, str>,
-    pub admin_password: Cow<'static, str>,
-    pub admin_email: Cow<'static, str>,
-    pub admin_full_name: Cow<'static, str>,
+    pub password_administrator: Option<PasswordAdministratorConfiguration>,
     pub anthropic_base_url: Option<Cow<'static, str>>,
     pub openai_base_url: Option<Cow<'static, str>>,
     pub oidc_providers: Vec<OidcProviderConfiguration>,
     pub email: Option<EmailConfiguration>,
     pub feature_flags: FeatureFlags,
     pub self_serve_tenant_limit: u64,
+    pub platform_administrator_emails: Vec<String>,
 }
 
 pub struct ConfigurationsBuilder {
@@ -219,6 +310,7 @@ pub struct ConfigurationsBuilder {
     email: Option<EmailConfiguration>,
     feature_flags: FeatureFlags,
     self_serve_tenant_limit: Option<u64>,
+    platform_administrator_emails: Option<String>,
 }
 
 impl ConfigurationsBuilder {
@@ -240,6 +332,7 @@ impl ConfigurationsBuilder {
             email: None,
             feature_flags: FeatureFlags::from_defaults(),
             self_serve_tenant_limit: None,
+            platform_administrator_emails: None,
         }
     }
 
@@ -323,8 +416,41 @@ impl ConfigurationsBuilder {
         self
     }
 
+    pub fn platform_administrator_emails(
+        mut self,
+        platform_administrator_emails: impl Into<String>,
+    ) -> Self {
+        self.platform_administrator_emails = Some(platform_administrator_emails.into());
+        self
+    }
+
     pub fn build(self) -> Result<Configurations, ConfigurationError> {
-        Ok(Configurations {
+        let password_administrator = match self
+            .feature_flags
+            .is_enabled(FeatureFlag::SeedPasswordAdministrator)
+        {
+            true => Some(PasswordAdministratorConfiguration {
+                username: required_setting(
+                    self.admin_username,
+                    EnvironmentVariable::SophoAdminUsername,
+                )?
+                .into_owned(),
+                password: required_setting(
+                    self.admin_password,
+                    EnvironmentVariable::SophoAdminPassword,
+                )?
+                .into_owned(),
+                email: required_setting(self.admin_email, EnvironmentVariable::SophoAdminEmail)?
+                    .into_owned(),
+                full_name: required_setting(
+                    self.admin_full_name,
+                    EnvironmentVariable::SophoAdminFullName,
+                )?
+                .into_owned(),
+            }),
+            false => None,
+        };
+        let configurations = Configurations {
             database_url: self
                 .database_url
                 .unwrap_or_else(|| db::get_sqlite_database_file_path().into()),
@@ -339,19 +465,7 @@ impl ConfigurationsBuilder {
                 self.encryption_key,
                 EnvironmentVariable::SophoEncryptionKey,
             )?,
-            admin_username: required_setting(
-                self.admin_username,
-                EnvironmentVariable::SophoAdminUsername,
-            )?,
-            admin_password: required_setting(
-                self.admin_password,
-                EnvironmentVariable::SophoAdminPassword,
-            )?,
-            admin_email: required_setting(self.admin_email, EnvironmentVariable::SophoAdminEmail)?,
-            admin_full_name: required_setting(
-                self.admin_full_name,
-                EnvironmentVariable::SophoAdminFullName,
-            )?,
+            password_administrator,
             anthropic_base_url: validated_base_url(
                 EnvironmentVariable::SophoAnthropicBaseUrl.as_ref(),
                 self.anthropic_base_url,
@@ -367,7 +481,12 @@ impl ConfigurationsBuilder {
                 self.self_serve_tenant_limit
                     .map(|self_serve_tenant_limit| self_serve_tenant_limit.to_string()),
             )?,
-        })
+            platform_administrator_emails: platform_administrator_emails_from_variable(
+                self.platform_administrator_emails,
+            )?,
+        };
+        validate_setting_combinations(&configurations)?;
+        Ok(configurations)
     }
 }
 
@@ -385,7 +504,23 @@ impl Configurations {
     pub fn from_env() -> Result<Self, ConfigurationError> {
         dotenvy::dotenv().ok();
 
-        Ok(Self {
+        let feature_flags = feature_flags_from_variables(feature_flag_environment_variable)?;
+        let password_administrator = match feature_flags
+            .is_enabled(FeatureFlag::SeedPasswordAdministrator)
+        {
+            true => Some(PasswordAdministratorConfiguration {
+                username: required_environment_variable(EnvironmentVariable::SophoAdminUsername)?
+                    .into_owned(),
+                password: required_environment_variable(EnvironmentVariable::SophoAdminPassword)?
+                    .into_owned(),
+                email: required_environment_variable(EnvironmentVariable::SophoAdminEmail)?
+                    .into_owned(),
+                full_name: required_environment_variable(EnvironmentVariable::SophoAdminFullName)?
+                    .into_owned(),
+            }),
+            false => None,
+        };
+        let configurations = Self {
             database_url: match optional_environment_variable(EnvironmentVariable::DatabaseUrl)? {
                 Some(database_url) => database_url,
                 None => {
@@ -424,12 +559,7 @@ impl Configurations {
                 Some(encryption_key) => encryption_key,
                 None => stored_or_generated_encryption_key()?,
             },
-            admin_username: required_environment_variable(EnvironmentVariable::SophoAdminUsername)?,
-            admin_password: required_environment_variable(EnvironmentVariable::SophoAdminPassword)?,
-            admin_email: required_environment_variable(EnvironmentVariable::SophoAdminEmail)?,
-            admin_full_name: required_environment_variable(
-                EnvironmentVariable::SophoAdminFullName,
-            )?,
+            password_administrator,
             anthropic_base_url: validated_base_url(
                 EnvironmentVariable::SophoAnthropicBaseUrl.as_ref(),
                 optional_environment_variable(EnvironmentVariable::SophoAnthropicBaseUrl)?,
@@ -442,12 +572,20 @@ impl Configurations {
             email: email_configuration_from_variables(|variable| {
                 Ok(optional_environment_variable(variable)?.map(Cow::into_owned))
             })?,
-            feature_flags: feature_flags_from_variables(feature_flag_environment_variable)?,
+            feature_flags,
             self_serve_tenant_limit: self_serve_tenant_limit_from_variable(
                 optional_environment_variable(EnvironmentVariable::SophoSelfServeTenantLimit)?
                     .map(Cow::into_owned),
             )?,
-        })
+            platform_administrator_emails: platform_administrator_emails_from_variable(
+                optional_environment_variable(
+                    EnvironmentVariable::SophoPlatformAdministratorEmails,
+                )?
+                .map(Cow::into_owned),
+            )?,
+        };
+        validate_setting_combinations(&configurations)?;
+        Ok(configurations)
     }
 }
 
@@ -595,11 +733,13 @@ impl AppState {
 #[cfg(test)]
 mod tests {
     use super::{
+        Configurations, ConfigurationsBuilder, OidcProviderConfiguration,
         email_configuration_from_variables, oidc_providers_from_variables,
-        self_serve_tenant_limit_from_variable,
+        platform_administrator_emails_from_variable, self_serve_tenant_limit_from_variable,
     };
     use crate::common::constants::{EnvironmentVariable, SmtpTls};
     use crate::common::errors::ConfigurationError;
+    use crate::feature_flag::constants::FeatureFlag;
     use std::collections::HashMap;
 
     fn variable_reader(
@@ -656,6 +796,215 @@ mod tests {
             );
             assert!(error.to_string().contains("SOPHO_SELF_SERVE_TENANT_LIMIT"));
         }
+    }
+
+    fn configurations_builder() -> ConfigurationsBuilder {
+        Configurations::builder()
+            .frontend_dir("frontend")
+            .encryption_key("encryption-key")
+    }
+
+    fn with_password_administrator(builder: ConfigurationsBuilder) -> ConfigurationsBuilder {
+        builder
+            .admin_username("admin")
+            .admin_password("password")
+            .admin_email("admin@example.test")
+            .admin_full_name("The Administrator")
+    }
+
+    fn with_oidc_provider(builder: ConfigurationsBuilder) -> ConfigurationsBuilder {
+        builder.oidc_providers(vec![OidcProviderConfiguration {
+            name: "google".to_string(),
+            display_name: "Google".to_string(),
+            issuer_url: "https://accounts.google.com".to_string(),
+            client_id: "client-id".to_string(),
+            client_secret: "client-secret".to_string(),
+            redirect_uri: "https://app.example/api/v1/auth/oidc/google/callback".to_string(),
+        }])
+    }
+
+    fn passwordless(builder: ConfigurationsBuilder) -> ConfigurationsBuilder {
+        builder
+            .feature_flag(FeatureFlag::PasswordSignIn, false)
+            .feature_flag(FeatureFlag::SeedPasswordAdministrator, false)
+            .feature_flag(FeatureFlag::DefaultTenant, false)
+    }
+
+    fn assert_contradiction(
+        builder: ConfigurationsBuilder,
+        first_expected_setting: &str,
+        second_expected_setting: &str,
+    ) {
+        let error = builder.build().unwrap_err();
+        assert!(
+            matches!(
+                &error,
+                ConfigurationError::ContradictorySettings { first_setting, second_setting, .. }
+                    if first_setting == first_expected_setting
+                        && second_setting == second_expected_setting
+            ),
+            "unexpected error: {error}"
+        );
+        let message = error.to_string();
+        assert!(
+            message.contains(first_expected_setting) && message.contains(second_expected_setting),
+            "{message}"
+        );
+    }
+
+    #[test]
+    fn every_setting_unset_is_accepted() {
+        let configurations = with_password_administrator(configurations_builder())
+            .build()
+            .unwrap();
+        assert!(configurations.platform_administrator_emails.is_empty());
+        assert!(configurations.password_administrator.is_some());
+    }
+
+    #[test]
+    fn the_passwordless_combination_is_accepted_without_administrator_settings() {
+        let configurations = passwordless(with_oidc_provider(configurations_builder()))
+            .platform_administrator_emails("founder@example.test")
+            .build()
+            .unwrap();
+        assert!(configurations.password_administrator.is_none());
+        assert_eq!(
+            configurations.platform_administrator_emails,
+            vec!["founder@example.test".to_string()]
+        );
+    }
+
+    #[test]
+    fn seeding_the_administrator_requires_its_four_settings() {
+        let error = configurations_builder().build().unwrap_err();
+        assert!(matches!(
+            error,
+            ConfigurationError::MissingSetting {
+                setting: EnvironmentVariable::SophoAdminUsername
+            }
+        ));
+    }
+
+    #[test]
+    fn password_sign_in_off_needs_an_oidc_provider() {
+        assert_contradiction(
+            passwordless(configurations_builder())
+                .platform_administrator_emails("founder@example.test"),
+            "SOPHO_FEATURE_PASSWORD_SIGN_IN",
+            "SOPHO_OIDC_PROVIDERS",
+        );
+    }
+
+    #[test]
+    fn password_sign_in_off_refuses_a_seeded_password_administrator() {
+        assert_contradiction(
+            with_password_administrator(with_oidc_provider(configurations_builder()))
+                .feature_flag(FeatureFlag::PasswordSignIn, false),
+            "SOPHO_FEATURE_PASSWORD_SIGN_IN",
+            "SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR",
+        );
+    }
+
+    #[test]
+    fn the_default_tenant_needs_the_seeded_administrator() {
+        assert_contradiction(
+            with_oidc_provider(configurations_builder())
+                .feature_flag(FeatureFlag::SeedPasswordAdministrator, false)
+                .platform_administrator_emails("founder@example.test"),
+            "SOPHO_FEATURE_DEFAULT_TENANT",
+            "SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR",
+        );
+    }
+
+    #[test]
+    fn no_seeded_administrator_needs_a_platform_administrator_email() {
+        assert_contradiction(
+            passwordless(with_oidc_provider(configurations_builder())),
+            "SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR",
+            "SOPHO_PLATFORM_ADMINISTRATOR_EMAILS",
+        );
+    }
+
+    #[test]
+    fn platform_administrator_emails_need_an_oidc_provider() {
+        assert_contradiction(
+            with_password_administrator(configurations_builder())
+                .platform_administrator_emails("founder@example.test"),
+            "SOPHO_PLATFORM_ADMINISTRATOR_EMAILS",
+            "SOPHO_OIDC_PROVIDERS",
+        );
+    }
+
+    #[test]
+    fn platform_administrator_emails_are_trimmed_and_normalised() {
+        assert!(
+            platform_administrator_emails_from_variable(None)
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            platform_administrator_emails_from_variable(Some("  ".to_string()))
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(
+            platform_administrator_emails_from_variable(Some(
+                " Founder@Example.test , second@example.test".to_string()
+            ))
+            .unwrap(),
+            vec![
+                "founder@example.test".to_string(),
+                "second@example.test".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn an_invalid_or_repeated_platform_administrator_email_is_refused() {
+        let invalid =
+            platform_administrator_emails_from_variable(Some("founder@example.test,nobody".into()))
+                .unwrap_err();
+        assert!(
+            matches!(
+                &invalid,
+                ConfigurationError::InvalidPlatformAdministratorEmail { value } if value == "nobody"
+            ),
+            "{invalid}"
+        );
+        assert!(
+            invalid
+                .to_string()
+                .contains("SOPHO_PLATFORM_ADMINISTRATOR_EMAILS")
+        );
+
+        for blank_entry_list in [
+            "founder@example.test,",
+            " , ",
+            "founder@example.test,,x@y.test",
+        ] {
+            assert!(
+                matches!(
+                    platform_administrator_emails_from_variable(Some(blank_entry_list.into()))
+                        .unwrap_err(),
+                    ConfigurationError::InvalidPlatformAdministratorEmail { value }
+                        if value.is_empty()
+                ),
+                "{blank_entry_list:?} was not refused"
+            );
+        }
+
+        let repeated = platform_administrator_emails_from_variable(Some(
+            "founder@example.test, FOUNDER@example.test".into(),
+        ))
+        .unwrap_err();
+        assert!(
+            matches!(
+                &repeated,
+                ConfigurationError::DuplicatePlatformAdministratorEmail { value }
+                    if value == "founder@example.test"
+            ),
+            "{repeated}"
+        );
     }
 
     #[test]

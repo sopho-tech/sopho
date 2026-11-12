@@ -44,12 +44,12 @@ export function AuthPageLayout({ children }: AuthPageLayoutProps) {
         shadow="sm"
         borderRadius="lg"
         paddingX="xl"
-        paddingY="xl"
+        paddingY="2xl"
         gap="sm"
         className={styles.formContainer}
         backgroundColor="white"
       >
-        <Flex justifyContent="center" alignItems="center" marginBottom="md">
+        <Flex justifyContent="center" alignItems="center" marginBottom="lg">
           <img src={logo} alt="Logo" className={styles.logo} />
         </Flex>
         {children}

@@ -31,7 +31,6 @@ type ButtonProps = Omit<
       | "ghost"
       | "white";
     fullWidth?: boolean;
-    outlined?: boolean;
     contentAlignment?: "start" | "center";
     size: ButtonSize;
     type?: ButtonType;
@@ -70,7 +69,6 @@ export const Button = ({
   backgroundColor,
   disabled = false,
   fullWidth = false,
-  outlined = false,
   contentAlignment = "start",
   size,
   type = "button",
@@ -82,7 +80,6 @@ export const Button = ({
   const sizeClassName =
     styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`];
   const fullWidthClassName = fullWidth ? styles.fullWidth : "";
-  const outlinedClassName = outlined ? styles.outlined : "";
   const contentAlignmentClassName =
     contentAlignment === "center" ? styles.contentCenter : "";
   const textColor = getTextColor(backgroundColor);
@@ -99,7 +96,7 @@ export const Button = ({
       disabled={disabled}
       data-shape={shape}
       data-emphasis={emphasis}
-      className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${fullWidthClassName} ${outlinedClassName} ${contentAlignmentClassName}`}
+      className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${fullWidthClassName} ${contentAlignmentClassName}`}
       onClick={onClick}
       whileHover={disabled ? undefined : { scale: Scale.HOVER }}
       whileTap={disabled ? undefined : { scale: Scale.TAP }}

@@ -3,6 +3,8 @@ use sea_orm_migration::{
     prelude::*,
     schema::{integer, pk_uuid, string, string_null, uuid, uuid_null},
 };
+const TENANT_ID_INDEX: &str = "idx_cell_tenant_id";
+
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
@@ -26,6 +28,16 @@ impl MigrationTrait for Migration {
                         .to_owned(),
                 ),
             ))
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .name(TENANT_ID_INDEX)
+                    .table(Cell::Table)
+                    .col(Cell::TenantId)
+                    .to_owned(),
+            )
             .await
     }
 

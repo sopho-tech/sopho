@@ -71,7 +71,8 @@ fn password_error_response(error: PasswordFlowError) -> (StatusCode, axum::Json<
         PasswordFlowError::InvalidResetLink
         | PasswordFlowError::WrongCurrentPassword
         | PasswordFlowError::Rule(_) => StatusCode::BAD_REQUEST,
-        PasswordFlowError::Credentials(CredentialsError::AccountDeactivated) => {
+        PasswordFlowError::PasswordSignInOff
+        | PasswordFlowError::Credentials(CredentialsError::AccountDeactivated) => {
             StatusCode::FORBIDDEN
         }
         PasswordFlowError::Credentials(CredentialsError::InvalidCredentials) => {

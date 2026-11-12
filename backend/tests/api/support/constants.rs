@@ -271,3 +271,14 @@ pub const TWO_TENANT_LIMIT_MESSAGE: &str = "You have created the maximum of 2 te
 pub const ONE_TENANT_LIMIT_MESSAGE: &str = "You have created the maximum of 1 tenants";
 pub const TENANT_NAME_TOO_LONG_MESSAGE: &str = "Use at most 100 characters for the tenant name";
 pub const MAXIMUM_TENANT_NAME_CHARACTERS: usize = 100;
+
+pub const NO_DEFAULT_TENANT_ID: uuid::Uuid = uuid::Uuid::nil();
+pub const PASSWORD_SIGN_IN_OFF_CODE: &str = "PASSWORD_SIGN_IN_OFF";
+pub const PASSWORD_SIGN_IN_OFF_MESSAGE: &str =
+    "Password sign-in is turned off. Sign in with single sign-on";
+pub const CONTACT_ADMINISTRATOR: &str = "contact_administrator";
+pub const PLATFORM_ADMINISTRATOR: &str = "ADMINISTRATOR";
+pub const LISTED_ADMINISTRATOR_EMAIL: &str = "founder@example.test";
+pub const RETIRED_SINGLE_SIGN_ON_PROVIDER: &str = "retired";
+pub const DEFAULT_TENANT_CONFIGURATION_KEY: &str = "default_tenant_id";
+pub const DEFAULT_TENANT_NAME: &str = "Default";

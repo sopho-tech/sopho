@@ -1,4 +1,6 @@
 use crate::support::TestApp;
+use crate::support::constants::DEFAULT_TENANT_CONFIGURATION_KEY;
+use crate::support::database::count_rows;
 use migration::{Migrator, MigratorTrait};
 
 async fn applied_migration_count(app: &TestApp) -> usize {
@@ -36,5 +38,25 @@ async fn fresh_rebuilds_the_schema() {
     assert_eq!(
         applied_migration_count(&app).await,
         Migrator::migrations().len()
+    );
+}
+
+#[tokio::test]
+async fn migrations_seed_no_tenant() {
+    let app = TestApp::spawn().await;
+
+    Migrator::fresh(&app.app_state.database_connection)
+        .await
+        .expect("drop and reapply every migration");
+
+    assert_eq!(count_rows(&app, "tenant", &[]).await, 0);
+    assert_eq!(
+        count_rows(
+            &app,
+            "configuration",
+            &[("key", DEFAULT_TENANT_CONFIGURATION_KEY.into())]
+        )
+        .await,
+        0
     );
 }

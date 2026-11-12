@@ -160,14 +160,11 @@ export function CellToolbar({ cellId }: { cellId: string }) {
             />
           </Toolbar.Button>
           <Select.Content>
-            <Select.Group>
-              <Select.Label>Connections</Select.Label>
-              {(options ?? []).map((opt) => (
-                <Select.Item key={opt.value} value={opt.value}>
-                  {opt.label}
-                </Select.Item>
-              ))}
-            </Select.Group>
+            {(options ?? []).map((opt) => (
+              <Select.Item key={opt.value} value={opt.value}>
+                {opt.label}
+              </Select.Item>
+            ))}
           </Select.Content>
         </Select>
         <Toolbar.Button asChild>

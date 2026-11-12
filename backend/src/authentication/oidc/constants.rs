@@ -33,6 +33,7 @@ pub enum SignInErrorCode {
     EmailNotVerified,
     SsoExpired,
     PasswordAccount,
+    ContactAdministrator,
     AccountDeactivated,
 }
 

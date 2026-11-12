@@ -17,6 +17,8 @@ export const SIGN_IN_ERROR_MESSAGES: Record<string, string> = {
   sso_expired: "That sign-in expired or started in another browser. Try again.",
   password_account:
     "This email belongs to an account that signs in with a password. Sign in with your password, then connect single sign-on from your profile.",
+  contact_administrator:
+    "This email belongs to an account that cannot sign in with single sign-on yet. Ask your Sopho administrator for help.",
   account_deactivated:
     "This account has been deactivated. Ask your Sopho administrator for help.",
 };

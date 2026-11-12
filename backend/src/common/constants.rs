@@ -7,6 +7,17 @@ pub const SMTP_TIMEOUT_SECONDS: u64 = 30;
 pub const OIDC_PROVIDER_VARIABLE_PREFIX: &str = "SOPHO_OIDC_";
 pub const DEFAULT_SELF_SERVE_TENANT_LIMIT: u64 = 2;
 pub const MINIMUM_SELF_SERVE_TENANT_LIMIT: u64 = 1;
+pub const PLATFORM_ADMINISTRATOR_EMAIL_SEPARATOR: char = ',';
+pub const NOBODY_CAN_SIGN_IN_REASON: &str =
+    "with password sign-in off, people need an OIDC provider to sign in";
+pub const SEEDED_ADMINISTRATOR_CANNOT_SIGN_IN_REASON: &str =
+    "the seeded administrator has only a password, so it could never sign in";
+pub const NO_PLATFORM_ADMINISTRATOR_REASON: &str =
+    "without a seeded administrator, name at least one platform administrator email";
+pub const ADMINISTRATOR_EMAILS_NEED_PROVIDER_REASON: &str =
+    "a listed person becomes an administrator by signing in through an OIDC provider";
+pub const DEFAULT_TENANT_NEEDS_ADMINISTRATOR_REASON: &str =
+    "the default tenant and its demo are owned by the seeded administrator";
 pub const UNKNOWN_CREATED_BY_FILTER_MESSAGE: &str = "created_by only accepts \"me\"";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString)]
@@ -40,6 +51,7 @@ pub enum EnvironmentVariable {
     SophoEmailFrom,
     SophoPublicUrl,
     SophoSelfServeTenantLimit,
+    SophoPlatformAdministratorEmails,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumString, Deserialize)]

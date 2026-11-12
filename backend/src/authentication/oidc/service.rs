@@ -13,6 +13,7 @@ use crate::authentication::oidc::error::{CallbackFailure, OidcLoginError, SignIn
 use crate::authentication::oidc::repository;
 use crate::authentication::repository as authentication_repository;
 use crate::authentication::service as authentication_service;
+use crate::authorization::constants::PlatformRole;
 use crate::common::time_utils;
 use crate::common::{AppState, OidcProviderConfiguration};
 use crate::email_delivery::dto::EmailMessage;
@@ -235,17 +236,34 @@ async fn complete_login(
         .await
         .map_err(failure)?;
 
+    let provider_verified_email = verified_email(&claims).ok();
     match attempt.linking_user_id {
         Some(linking_user_id) => {
             connect_federated_identity(app_state, linking_user_id, claims)
                 .await
                 .map_err(failure)?;
+            promote_listed_platform_administrator(
+                app_state,
+                linking_user_id,
+                provider_name,
+                provider_verified_email.as_deref(),
+            )
+            .await
+            .map_err(failure)?;
             Ok(CallbackOutcome::Connected {
                 provider_name: provider_name.to_string(),
             })
         }
         None => {
             let user_id = resolve_user(app_state, claims).await.map_err(failure)?;
+            promote_listed_platform_administrator(
+                app_state,
+                user_id,
+                provider_name,
+                provider_verified_email.as_deref(),
+            )
+            .await
+            .map_err(failure)?;
             authentication_service::start_session_for_user(app_state, cookies, user_id)
                 .await
                 .map_err(|error| failure(error.into()))?;
@@ -342,7 +360,12 @@ pub async fn resolve_user(
     {
         require_active(&existing_user)?;
         if existing_user.email_verified_at.is_none() {
-            return Err(OidcLoginError::AccountRequiresPasswordSignIn);
+            return Err(
+                match authentication_service::is_password_sign_in_available(app_state) {
+                    true => OidcLoginError::AccountRequiresPasswordSignIn,
+                    false => OidcLoginError::AccountCannotSignIn,
+                },
+            );
         }
         let has_federated_identity_at_provider = repository::find_federated_identities_for_user(
             &app_state.database_connection,
@@ -380,6 +403,58 @@ pub async fn resolve_user(
         user.id
     );
     Ok(user.id)
+}
+
+async fn promote_listed_platform_administrator(
+    app_state: &AppState,
+    user_id: Uuid,
+    provider_name: &str,
+    provider_verified_email: Option<&str>,
+) -> Result<(), OidcLoginError> {
+    let Some(provider_verified_email) = provider_verified_email else {
+        return Ok(());
+    };
+    let is_listed = app_state
+        .config
+        .platform_administrator_emails
+        .iter()
+        .any(|listed_email| listed_email == provider_verified_email);
+    if !is_listed {
+        return Ok(());
+    }
+    let account = authentication_repository::get_user(&app_state.database_connection, user_id)
+        .await?
+        .ok_or(OidcLoginError::AttemptNotFound)?;
+    require_active(&account)?;
+    if account.platform_role == PlatformRole::Administrator.as_str() {
+        return Ok(());
+    }
+    authentication_service::set_platform_role(app_state, account.id, PlatformRole::Administrator)
+        .await?;
+    tracing::info!(
+        "User {} became a platform administrator by signing in with {provider_name}: their verified email is in the platform administrator list",
+        account.id
+    );
+    Ok(())
+}
+
+fn has_another_way_to_sign_in(
+    app_state: &AppState,
+    account: &user::Model,
+    federated_identities: &[federated_identity::Model],
+    federated_identity_id: Uuid,
+) -> bool {
+    if authentication_service::is_password_sign_in_available(app_state) {
+        return account.password_hash.is_some() || federated_identities.len() > 1;
+    }
+    federated_identities.iter().any(|other_federated_identity| {
+        other_federated_identity.id != federated_identity_id
+            && app_state
+                .config
+                .oidc_providers
+                .iter()
+                .any(|provider| provider.name == other_federated_identity.provider_name)
+    })
 }
 
 pub async fn connect_federated_identity(
@@ -434,9 +509,16 @@ pub async fn list_my_sign_in_methods(
         repository::find_federated_identities_for_user(&app_state.database_connection, user_id)
             .await?;
     let has_password = account.password_hash.is_some();
-    let can_disconnect = has_password || federated_identities.len() > 1;
+    let can_disconnect_federated_identity = |federated_identity: &federated_identity::Model| {
+        has_another_way_to_sign_in(
+            app_state,
+            &account,
+            &federated_identities,
+            federated_identity.id,
+        )
+    };
     let disconnect_blocked_reason =
-        (!can_disconnect).then(|| ONLY_SIGN_IN_METHOD_REASON.to_string());
+        |can_disconnect: bool| (!can_disconnect).then(|| ONLY_SIGN_IN_METHOD_REASON.to_string());
 
     let mut providers: Vec<SignInProviderDto> = app_state
         .config
@@ -446,15 +528,17 @@ pub async fn list_my_sign_in_methods(
             let connected_federated_identity = federated_identities
                 .iter()
                 .find(|federated_identity| federated_identity.provider_name == provider.name);
+            let can_disconnect =
+                connected_federated_identity.is_some_and(can_disconnect_federated_identity);
             SignInProviderDto {
                 name: provider.name.clone(),
                 display_name: provider.display_name.clone(),
                 connected: connected_federated_identity.is_some(),
                 email: connected_federated_identity
                     .map(|federated_identity| federated_identity.email.clone()),
-                can_disconnect: connected_federated_identity.is_some() && can_disconnect,
+                can_disconnect,
                 disconnect_blocked_reason: connected_federated_identity
-                    .and(disconnect_blocked_reason.clone()),
+                    .and_then(|_| disconnect_blocked_reason(can_disconnect)),
             }
         })
         .collect();
@@ -468,17 +552,21 @@ pub async fn list_my_sign_in_methods(
                     .iter()
                     .any(|provider| provider.name == federated_identity.provider_name)
             })
-            .map(|federated_identity| SignInProviderDto {
-                name: federated_identity.provider_name.clone(),
-                display_name: federated_identity.provider_name.clone(),
-                connected: true,
-                email: Some(federated_identity.email.clone()),
-                can_disconnect,
-                disconnect_blocked_reason: disconnect_blocked_reason.clone(),
+            .map(|federated_identity| {
+                let can_disconnect = can_disconnect_federated_identity(federated_identity);
+                SignInProviderDto {
+                    name: federated_identity.provider_name.clone(),
+                    display_name: federated_identity.provider_name.clone(),
+                    connected: true,
+                    email: Some(federated_identity.email.clone()),
+                    can_disconnect,
+                    disconnect_blocked_reason: disconnect_blocked_reason(can_disconnect),
+                }
             }),
     );
     Ok(MySignInMethodsDto {
         has_password,
+        password_available: authentication_service::is_password_sign_in_available(app_state),
         providers,
     })
 }
@@ -498,7 +586,12 @@ pub async fn disconnect_provider(
         .iter()
         .find(|federated_identity| federated_identity.provider_name == provider_name)
         .ok_or(SignInMethodError::NotConnected)?;
-    if account.password_hash.is_none() && federated_identities.len() <= 1 {
+    if !has_another_way_to_sign_in(
+        app_state,
+        &account,
+        &federated_identities,
+        federated_identity.id,
+    ) {
         return Err(SignInMethodError::LastSignInMethod);
     }
     let txn = app_state.database_connection.begin().await?;

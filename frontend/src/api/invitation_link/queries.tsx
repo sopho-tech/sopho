@@ -18,6 +18,7 @@ export type InvitationLinkDto = {
   email: string;
   expires_at: string;
   next_step: InvitationLinkNextStep;
+  password_sign_up_available: boolean;
 };
 
 export type InvitationSignUpDto = {
