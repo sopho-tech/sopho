@@ -44,6 +44,7 @@ export const API_ENDPOINTS = {
   TENANT: {
     LIST: "/api/v1/tenant",
     CREATE: "/api/v1/tenant",
+    CREATION_CAPABILITY: "/api/v1/tenant/creation_capability",
     SCOPED_BASE: "/api/v1/tenant/:tenant_id",
     MEMBERS: "/member",
     MEMBER: "/member/:user_id",

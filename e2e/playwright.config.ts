@@ -36,6 +36,7 @@ import {
   SOPHO_BINARY_PATH,
   SOPHO_PORT,
   REDUCED_MOTION_CONTEXT_OPTIONS,
+  SELF_SERVE_TENANT_CREATION_FLAG,
 } from "e2e/support/constants";
 
 const DOCKER_GRACEFUL_SHUTDOWN = {
@@ -132,6 +133,7 @@ export default defineConfig({
         SOPHO_SMTP_TLS: "none",
         SOPHO_EMAIL_FROM: EMAIL_SENDER,
         SOPHO_PUBLIC_URL: SOPHO_BASE_URL,
+        [SELF_SERVE_TENANT_CREATION_FLAG]: "true",
         SOPHO_OIDC_PROVIDERS: SINGLE_SIGN_ON_PROVIDER,
         [`${singleSignOnVariablePrefix}_DISPLAY_NAME`]:
           SINGLE_SIGN_ON_PROVIDER_DISPLAY_NAME,

@@ -155,6 +155,16 @@ pub enum ConfigurationError {
         #[source]
         source: std::str::ParseBoolError,
     },
+    #[error("invalid {variable_name} {value:?}, expected true or false")]
+    InvalidFeatureFlag {
+        variable_name: String,
+        value: String,
+    },
+    #[error(
+        "invalid {variable} {value:?}, expected a whole number of at least 1",
+        variable = EnvironmentVariable::SophoSelfServeTenantLimit
+    )]
+    InvalidSelfServeTenantLimit { value: String },
     #[error("could not read the encryption key from {path}")]
     UnreadableEncryptionKeyFile {
         path: &'static str,

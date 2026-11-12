@@ -5,6 +5,8 @@ pub const API_PATH_PREFIX: &str = "/api/";
 pub const LINK_TOKEN_BYTES: usize = 32;
 pub const SMTP_TIMEOUT_SECONDS: u64 = 30;
 pub const OIDC_PROVIDER_VARIABLE_PREFIX: &str = "SOPHO_OIDC_";
+pub const DEFAULT_SELF_SERVE_TENANT_LIMIT: u64 = 2;
+pub const MINIMUM_SELF_SERVE_TENANT_LIMIT: u64 = 1;
 pub const UNKNOWN_CREATED_BY_FILTER_MESSAGE: &str = "created_by only accepts \"me\"";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString)]
@@ -37,6 +39,7 @@ pub enum EnvironmentVariable {
     SophoSmtpPassword,
     SophoEmailFrom,
     SophoPublicUrl,
+    SophoSelfServeTenantLimit,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumString, Deserialize)]

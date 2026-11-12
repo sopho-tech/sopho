@@ -2,7 +2,8 @@ use crate::ai::agent_utils::ModelClient;
 use crate::ai_configuration;
 use crate::authorization::dto::TenantId;
 use crate::common::constants::{
-    EnvironmentVariable, OidcProviderVariable, SMTP_TIMEOUT_SECONDS, SmtpTls,
+    DEFAULT_SELF_SERVE_TENANT_LIMIT, EnvironmentVariable, MINIMUM_SELF_SERVE_TENANT_LIMIT,
+    OidcProviderVariable, SMTP_TIMEOUT_SECONDS, SmtpTls,
 };
 use crate::common::cryptography_utils::{
     SECRET_KEY_PATH, generate_and_store_encryption_key, get_encryption_key_from_path,
@@ -13,6 +14,9 @@ use crate::database::pool::{DatabasePoolRegistry, new_database_pool_registry};
 use crate::db;
 use crate::email_delivery;
 use crate::email_delivery::service::EmailTransport;
+use crate::feature_flag::constants::FeatureFlag;
+use crate::feature_flag::dto::FeatureFlags;
+use crate::feature_flag::service::feature_flags_from_variables;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use std::borrow::Cow;
@@ -166,6 +170,18 @@ pub fn email_configuration_from_variables(
     }))
 }
 
+pub fn self_serve_tenant_limit_from_variable(
+    value: Option<String>,
+) -> Result<u64, ConfigurationError> {
+    let Some(value) = value else {
+        return Ok(DEFAULT_SELF_SERVE_TENANT_LIMIT);
+    };
+    match value.parse::<u64>() {
+        Ok(limit) if limit >= MINIMUM_SELF_SERVE_TENANT_LIMIT => Ok(limit),
+        _ => Err(ConfigurationError::InvalidSelfServeTenantLimit { value }),
+    }
+}
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct Configurations {
     pub database_url: Cow<'static, str>,
@@ -182,6 +198,8 @@ pub struct Configurations {
     pub openai_base_url: Option<Cow<'static, str>>,
     pub oidc_providers: Vec<OidcProviderConfiguration>,
     pub email: Option<EmailConfiguration>,
+    pub feature_flags: FeatureFlags,
+    pub self_serve_tenant_limit: u64,
 }
 
 pub struct ConfigurationsBuilder {
@@ -199,6 +217,8 @@ pub struct ConfigurationsBuilder {
     openai_base_url: Option<Cow<'static, str>>,
     oidc_providers: Vec<OidcProviderConfiguration>,
     email: Option<EmailConfiguration>,
+    feature_flags: FeatureFlags,
+    self_serve_tenant_limit: Option<u64>,
 }
 
 impl ConfigurationsBuilder {
@@ -218,6 +238,8 @@ impl ConfigurationsBuilder {
             openai_base_url: None,
             oidc_providers: Vec::new(),
             email: None,
+            feature_flags: FeatureFlags::from_defaults(),
+            self_serve_tenant_limit: None,
         }
     }
 
@@ -291,6 +313,16 @@ impl ConfigurationsBuilder {
         self
     }
 
+    pub fn feature_flag(mut self, feature_flag: FeatureFlag, is_enabled: bool) -> Self {
+        self.feature_flags.set_enabled(feature_flag, is_enabled);
+        self
+    }
+
+    pub fn self_serve_tenant_limit(mut self, self_serve_tenant_limit: u64) -> Self {
+        self.self_serve_tenant_limit = Some(self_serve_tenant_limit);
+        self
+    }
+
     pub fn build(self) -> Result<Configurations, ConfigurationError> {
         Ok(Configurations {
             database_url: self
@@ -330,6 +362,11 @@ impl ConfigurationsBuilder {
             )?,
             oidc_providers: self.oidc_providers,
             email: self.email,
+            feature_flags: self.feature_flags,
+            self_serve_tenant_limit: self_serve_tenant_limit_from_variable(
+                self.self_serve_tenant_limit
+                    .map(|self_serve_tenant_limit| self_serve_tenant_limit.to_string()),
+            )?,
         })
     }
 }
@@ -405,6 +442,11 @@ impl Configurations {
             email: email_configuration_from_variables(|variable| {
                 Ok(optional_environment_variable(variable)?.map(Cow::into_owned))
             })?,
+            feature_flags: feature_flags_from_variables(feature_flag_environment_variable)?,
+            self_serve_tenant_limit: self_serve_tenant_limit_from_variable(
+                optional_environment_variable(EnvironmentVariable::SophoSelfServeTenantLimit)?
+                    .map(Cow::into_owned),
+            )?,
         })
     }
 }
@@ -447,6 +489,19 @@ fn oidc_environment_variable(variable_name: &str) -> Result<Option<String>, Conf
         Err(source) => Err(ConfigurationError::InvalidOidcVariable {
             variable_name: variable_name.to_string(),
             source,
+        }),
+    }
+}
+
+fn feature_flag_environment_variable(
+    variable_name: &str,
+) -> Result<Option<String>, ConfigurationError> {
+    match std::env::var(variable_name) {
+        Ok(value) => Ok(Some(value)),
+        Err(VarError::NotPresent) => Ok(None),
+        Err(VarError::NotUnicode(value)) => Err(ConfigurationError::InvalidFeatureFlag {
+            variable_name: variable_name.to_string(),
+            value: value.to_string_lossy().into_owned(),
         }),
     }
 }
@@ -539,7 +594,10 @@ impl AppState {
 
 #[cfg(test)]
 mod tests {
-    use super::{email_configuration_from_variables, oidc_providers_from_variables};
+    use super::{
+        email_configuration_from_variables, oidc_providers_from_variables,
+        self_serve_tenant_limit_from_variable,
+    };
     use crate::common::constants::{EnvironmentVariable, SmtpTls};
     use crate::common::errors::ConfigurationError;
     use std::collections::HashMap;
@@ -572,6 +630,32 @@ mod tests {
         ]
         .into_iter()
         .collect()
+    }
+
+    #[test]
+    fn the_self_serve_tenant_limit_defaults_to_two_and_can_be_overridden() {
+        assert_eq!(self_serve_tenant_limit_from_variable(None).unwrap(), 2);
+        assert_eq!(
+            self_serve_tenant_limit_from_variable(Some("5".to_string())).unwrap(),
+            5
+        );
+    }
+
+    #[test]
+    fn a_self_serve_tenant_limit_below_one_or_not_a_number_is_refused() {
+        for refused_value in ["0", "-1", "two", "", "1.5"] {
+            let error =
+                self_serve_tenant_limit_from_variable(Some(refused_value.to_string())).unwrap_err();
+            assert!(
+                matches!(
+                    &error,
+                    ConfigurationError::InvalidSelfServeTenantLimit { value }
+                        if value == refused_value
+                ),
+                "{refused_value:?} was not refused"
+            );
+            assert!(error.to_string().contains("SOPHO_SELF_SERVE_TENANT_LIMIT"));
+        }
     }
 
     #[test]

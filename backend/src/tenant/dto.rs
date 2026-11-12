@@ -1,4 +1,5 @@
 use crate::authentication::service::UserStatus;
+use crate::authorization::errors::AuthorizationError;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -27,6 +28,23 @@ pub struct UserTenantMembershipDto {
     pub tenant_name: String,
     pub role_name: String,
     pub role_display_name: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TenantCreationCapabilityDto {
+    pub can_create_tenant: bool,
+    pub limit_reached_message: Option<String>,
+}
+
+pub enum TenantCreationDecision {
+    AllowedByPlatformPermission,
+    AllowedBySelfServe,
+    RefusedWithoutPermission {
+        authorization_error: AuthorizationError,
+    },
+    RefusedAtLimit {
+        limit: u64,
+    },
 }
 
 #[derive(Debug, Deserialize)]

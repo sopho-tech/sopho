@@ -14,7 +14,7 @@ import {
   usePlatformTenants,
 } from "src/api/platform/queries";
 import { CreatedTenantDto } from "src/api/tenant/queries";
-import { CreateTenantDialog } from "src/components/Platform/CreateTenantDialog";
+import { CreateTenantDialog } from "src/components/CreateTenantDialog";
 import { TENANTS_TABLE_COLUMNS } from "src/components/Platform/constants";
 import { PLATFORM_PERMISSIONS } from "src/constants/platform_permissions";
 import { formatDate } from "src/utils/timestamp_utils";

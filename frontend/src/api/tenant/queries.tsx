@@ -29,8 +29,14 @@ export type CreatedTenantDto = {
   name: string;
 };
 
+export type TenantCreationCapabilityDto = {
+  can_create_tenant: boolean;
+  limit_reached_message: string | null;
+};
+
 export const tenantKeys = {
   memberships: ["memberships"] as const,
+  creationCapability: ["tenant-creation-capability"] as const,
 };
 
 const tenantApi = {
@@ -40,6 +46,14 @@ const tenantApi = {
       onlyBody: true,
     });
     return response as TenantMembershipDto[];
+  },
+
+  getCreationCapability: async (): Promise<TenantCreationCapabilityDto> => {
+    const response = await ApiService.get({
+      url: API_ENDPOINTS.TENANT.CREATION_CAPABILITY,
+      onlyBody: true,
+    });
+    return response as TenantCreationCapabilityDto;
   },
 
   createTenant: async (name: string): Promise<CreatedTenantDto> => {
@@ -56,6 +70,13 @@ export const useMemberships = () => {
   return useQuery({
     queryKey: tenantKeys.memberships,
     queryFn: tenantApi.listMemberships,
+  });
+};
+
+export const useTenantCreationCapability = () => {
+  return useQuery({
+    queryKey: tenantKeys.creationCapability,
+    queryFn: tenantApi.getCreationCapability,
   });
 };
 
@@ -83,6 +104,9 @@ export const useCreateTenant = (callbacks?: {
     onSuccess: async (tenant) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: tenantKeys.memberships }),
+        queryClient.invalidateQueries({
+          queryKey: tenantKeys.creationCapability,
+        }),
         queryClient.invalidateQueries({ queryKey: platformKeys.all }),
       ]);
       callbacks?.onSuccess?.(tenant);

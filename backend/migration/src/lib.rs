@@ -22,6 +22,7 @@ mod m20260824_000001_add_unique_constraints;
 mod m20260824_000002_add_ownership_and_grants;
 mod m20261014_000001_create_identity_tables;
 mod m20261026_000001_create_password_reset_and_email_tables;
+mod m20261112_000001_create_self_serve_tenant_creation_table;
 
 pub struct Migrator;
 
@@ -50,6 +51,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260824_000002_add_ownership_and_grants::Migration),
             Box::new(m20261014_000001_create_identity_tables::Migration),
             Box::new(m20261026_000001_create_password_reset_and_email_tables::Migration),
+            Box::new(m20261112_000001_create_self_serve_tenant_creation_table::Migration),
         ]
     }
 }

@@ -1,5 +1,6 @@
 use crate::authorization::dto::AuthenticatedUser;
 use crate::common::AppState;
+use crate::common::error_codes::ErrorCode;
 use crate::tenant::constants::TENANT_NOT_FOUND_MESSAGE;
 use crate::tenant::dto::CreateTenantDto;
 use crate::tenant::error::TenantError;
@@ -14,6 +15,7 @@ pub fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(list_tenants))
         .route("/", post(create_tenant))
+        .route("/creation_capability", get(get_tenant_creation_capability))
         .with_state(app_state)
 }
 
@@ -45,17 +47,40 @@ async fn create_tenant(
                 "name": created_tenant.name,
             })),
         ),
-        Err(TenantError::Unauthorized(authorization_error)) => {
+        Err(error) => tenant_error_response(error),
+    }
+}
+
+async fn get_tenant_creation_capability(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+) -> impl IntoResponse {
+    match service::tenant_creation_capability(&app_state, authenticated_user.user_id()).await {
+        Ok(capability) => (StatusCode::OK, axum::Json(serde_json::json!(capability))),
+        Err(error) => tenant_error_response(error),
+    }
+}
+
+fn tenant_error_response(error: TenantError) -> (StatusCode, axum::Json<serde_json::Value>) {
+    match error {
+        TenantError::Unauthorized(authorization_error) => {
             crate::authorization::service::authorization_error_response(
                 authorization_error,
                 TENANT_NOT_FOUND_MESSAGE,
             )
         }
-        Err(error @ TenantError::NameRequired) => (
+        error @ TenantError::SelfServeLimitReached { .. } => (
+            StatusCode::FORBIDDEN,
+            axum::Json(serde_json::json!({
+                "error": error.to_string(),
+                "error_code": ErrorCode::TenantCreationLimitReached.as_str(),
+            })),
+        ),
+        error @ (TenantError::NameRequired | TenantError::NameTooLong) => (
             StatusCode::BAD_REQUEST,
             axum::Json(serde_json::json!({ "error": error.to_string() })),
         ),
-        Err(TenantError::Internal(error)) => (
+        TenantError::Internal(error) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": error.to_string() })),
         ),

@@ -21,7 +21,7 @@ use reqwest::{Client, Method, StatusCode};
 use sea_orm::ConnectionTrait;
 use sea_orm::sea_query::{Alias, Query};
 use serde_json::{Value, json};
-use sopho::{AppState, Configurations, EmailConfiguration, OidcProviderConfiguration};
+use sopho::{AppState, Configurations, EmailConfiguration, FeatureFlag, OidcProviderConfiguration};
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
@@ -173,6 +173,12 @@ enum SingleSignOn {
     MockProviders,
 }
 
+enum SelfServeTenants {
+    FlagUnset,
+    Enabled,
+    EnabledWithLimit { limit: u64 },
+}
+
 enum EmailDelivery<'a> {
     Disabled,
     MailServer,
@@ -235,7 +241,33 @@ impl TestApp {
         .await
     }
 
+    pub async fn spawn_with_self_serve_tenants() -> Self {
+        Self::spawn_with_settings(
+            SingleSignOn::Disabled,
+            EmailDelivery::Disabled,
+            SelfServeTenants::Enabled,
+        )
+        .await
+    }
+
+    pub async fn spawn_with_self_serve_tenant_limit(limit: u64) -> Self {
+        Self::spawn_with_settings(
+            SingleSignOn::Disabled,
+            EmailDelivery::Disabled,
+            SelfServeTenants::EnabledWithLimit { limit },
+        )
+        .await
+    }
+
     async fn spawn_with(single_sign_on: SingleSignOn, email_delivery: EmailDelivery<'_>) -> Self {
+        Self::spawn_with_settings(single_sign_on, email_delivery, SelfServeTenants::FlagUnset).await
+    }
+
+    async fn spawn_with_settings(
+        single_sign_on: SingleSignOn,
+        email_delivery: EmailDelivery<'_>,
+        self_serve_tenants: SelfServeTenants,
+    ) -> Self {
         let metadata_database = MetadataDatabase::create().await;
         let fake_llm = FakeLlmServer::start(&manifest_path(FAKE_LLM_FIXTURES_RELATIVE_PATH))
             .await
@@ -273,6 +305,7 @@ impl TestApp {
             &fake_llm,
             oidc_providers,
             email_configuration,
+            self_serve_tenants,
         ))
         .await
         .expect("connect to the metadata database");
@@ -429,6 +462,7 @@ fn test_configurations(
     fake_llm: &FakeLlmServer,
     oidc_providers: Vec<OidcProviderConfiguration>,
     email_configuration: Option<EmailConfiguration>,
+    self_serve_tenants: SelfServeTenants,
 ) -> Configurations {
     let configurations_builder = Configurations::builder()
         .database_url(metadata_database.url())
@@ -444,6 +478,15 @@ fn test_configurations(
         .anthropic_base_url(fake_llm.anthropic_base_url())
         .openai_base_url(fake_llm.openai_base_url())
         .oidc_providers(oidc_providers);
+    let configurations_builder = match self_serve_tenants {
+        SelfServeTenants::FlagUnset => configurations_builder,
+        SelfServeTenants::Enabled => {
+            configurations_builder.feature_flag(FeatureFlag::SelfServeTenantCreation, true)
+        }
+        SelfServeTenants::EnabledWithLimit { limit } => configurations_builder
+            .feature_flag(FeatureFlag::SelfServeTenantCreation, true)
+            .self_serve_tenant_limit(limit),
+    };
     match email_configuration {
         Some(email_configuration) => configurations_builder.email(email_configuration),
         None => configurations_builder,

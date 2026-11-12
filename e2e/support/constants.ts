@@ -146,3 +146,8 @@ export const METADATA_POSTGRES_USERNAME = "sopho";
 export const METADATA_POSTGRES_PASSWORD = "sopho-metadata-password";
 export const METADATA_POSTGRES_URL = `postgresql://${METADATA_POSTGRES_USERNAME}:${METADATA_POSTGRES_PASSWORD}@${METADATA_POSTGRES_ALIAS}:5432/${METADATA_POSTGRES_DATABASE}`;
 export const CONTAINER_LOGS_ATTACHMENT_NAME = "sopho container logs";
+
+export const SELF_SERVE_TENANT_CREATION_FLAG =
+  "SOPHO_FEATURE_SELF_SERVE_TENANT_CREATION";
+export const SELF_SERVE_TENANT_LIMIT_MESSAGE =
+  "You have created the maximum of 2 tenants";

@@ -1,10 +1,10 @@
 use crate::authorization::constants::{MembershipStatus, TenantStatus};
 use crate::authorization::dto::Actor;
 use crate::common::time_utils;
-use crate::entity::{role, tenant, tenant_membership};
+use crate::entity::{role, self_serve_tenant_creation, tenant, tenant_membership};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, QueryOrder,
-    Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait,
+    QueryFilter, QueryOrder, Set,
 };
 use uuid::Uuid;
 
@@ -120,4 +120,29 @@ pub async fn list_all_tenant_ids(
         .into_iter()
         .map(|found| found.id)
         .collect())
+}
+
+pub async fn insert_self_serve_tenant_creation(
+    database_connection: &DatabaseConnection,
+    creator_user_id: Uuid,
+    created_tenant_id: Uuid,
+) -> Result<self_serve_tenant_creation::Model, DbErr> {
+    self_serve_tenant_creation::ActiveModel {
+        id: Set(Uuid::new_v4()),
+        creator_user_id: Set(creator_user_id),
+        created_tenant_id: Set(created_tenant_id),
+        created_at: Set(time_utils::now_utc_into()),
+    }
+    .insert(database_connection)
+    .await
+}
+
+pub async fn count_self_serve_tenant_creations(
+    database_connection: &DatabaseConnection,
+    creator_user_id: Uuid,
+) -> Result<u64, DbErr> {
+    self_serve_tenant_creation::Entity::find()
+        .filter(self_serve_tenant_creation::Column::CreatorUserId.eq(creator_user_id))
+        .count(database_connection)
+        .await
 }
