@@ -4,6 +4,8 @@ use sea_orm_migration::{
     schema::{pk_uuid, string, timestamp_with_time_zone, uuid},
 };
 
+const TENANT_ID_INDEX: &str = "idx_suggested_question_tenant_id";
+
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
@@ -23,6 +25,16 @@ impl MigrationTrait for Migration {
                         .to_owned(),
                 ),
             ))
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .name(TENANT_ID_INDEX)
+                    .table(SuggestedQuestion::Table)
+                    .col(SuggestedQuestion::TenantId)
+                    .to_owned(),
+            )
             .await
     }
 

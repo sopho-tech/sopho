@@ -71,5 +71,9 @@ pub const ACCOUNT_DEACTIVATED_MESSAGE: &str = "This account has been deactivated
 pub const REFRESH_TOKEN_EXPIRY_DAYS: i64 = 15;
 
 pub const USER_NOT_FOUND_MESSAGE: &str = "User not found";
+pub const PASSWORD_ADMINISTRATOR_NOT_CONFIGURED_MESSAGE: &str =
+    "the password administrator settings are not loaded because seeding it is turned off";
+pub const PASSWORD_SIGN_IN_OFF_MESSAGE: &str =
+    "Password sign-in is turned off. Sign in with single sign-on";
 pub const SESSION_NOT_FOUND_MESSAGE: &str = "Session not found";
 pub const INVALID_CREDENTIALS_MESSAGE: &str = "Invalid credentials";

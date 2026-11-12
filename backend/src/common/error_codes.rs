@@ -41,6 +41,7 @@ pub enum ErrorCode {
     TenantNotFound,
     EmailNotFound,
     TenantCreationLimitReached,
+    PasswordSignInOff,
 }
 
 impl ErrorCode {

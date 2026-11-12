@@ -165,6 +165,22 @@ pub enum ConfigurationError {
         variable = EnvironmentVariable::SophoSelfServeTenantLimit
     )]
     InvalidSelfServeTenantLimit { value: String },
+    #[error(
+        "invalid {variable} entry {value:?}, expected an email address",
+        variable = EnvironmentVariable::SophoPlatformAdministratorEmails
+    )]
+    InvalidPlatformAdministratorEmail { value: String },
+    #[error(
+        "{variable} lists {value:?} more than once",
+        variable = EnvironmentVariable::SophoPlatformAdministratorEmails
+    )]
+    DuplicatePlatformAdministratorEmail { value: String },
+    #[error("{first_setting} and {second_setting} contradict each other: {reason}")]
+    ContradictorySettings {
+        first_setting: String,
+        second_setting: String,
+        reason: &'static str,
+    },
     #[error("could not read the encryption key from {path}")]
     UnreadableEncryptionKeyFile {
         path: &'static str,

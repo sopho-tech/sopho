@@ -13,4 +13,4 @@ pub mod tenants;
 pub mod test_app;
 
 pub use server_sent_events::{ServerSentEvent, read_server_sent_events};
-pub use test_app::{TestApp, UserSession};
+pub use test_app::{DeploymentFlags, TestApp, UserSession};

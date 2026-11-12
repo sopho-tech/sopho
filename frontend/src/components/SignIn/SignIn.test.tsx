@@ -86,7 +86,11 @@ describe("sign in", () => {
     worker.use(
       signedOutSessionHandler,
       http.get(API_ENDPOINTS.AUTH.SIGN_IN_PAGE_OPTIONS, () =>
-        HttpResponse.json({ providers: [], password_reset_available: true }),
+        HttpResponse.json({
+          providers: [],
+          password_sign_in_available: true,
+          password_reset_available: true,
+        }),
       ),
     );
     const { router } = await renderWithProviders({
@@ -98,5 +102,72 @@ describe("sign in", () => {
 
     await expect.element(page.getByText("Forgot password page")).toBeVisible();
     expect(router.state.location.pathname).toBe(APP_ROUTES.FORGOT_PASSWORD);
+  });
+
+  test("shows only the provider buttons when passwords are unavailable", async () => {
+    worker.use(
+      signedOutSessionHandler,
+      http.get(API_ENDPOINTS.AUTH.SIGN_IN_PAGE_OPTIONS, () =>
+        HttpResponse.json({
+          providers: [
+            { name: "google", display_name: "Google", icon: "GOOGLE" },
+          ],
+          password_sign_in_available: false,
+          password_reset_available: false,
+        }),
+      ),
+    );
+    await renderWithProviders({
+      routes: signInRoutes,
+      initialPath: APP_ROUTES.SIGN_IN,
+    });
+
+    await expect
+      .element(
+        page.getByRole("button", { name: "Continue with Google", exact: true }),
+      )
+      .toBeVisible();
+    await expect
+      .element(page.getByRole("heading", { name: "Welcome to Sopho" }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole("button", { name: "Sign in", exact: true }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(page.getByLabelText("Password", { exact: true }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(page.getByRole("button", { name: "Forgot password?" }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(page.getByText("Or continue with"))
+      .not.toBeInTheDocument();
+  });
+
+  test("shows the password form above the provider buttons when passwords are available", async () => {
+    worker.use(
+      signedOutSessionHandler,
+      http.get(API_ENDPOINTS.AUTH.SIGN_IN_PAGE_OPTIONS, () =>
+        HttpResponse.json({
+          providers: [
+            { name: "google", display_name: "Google", icon: "GOOGLE" },
+          ],
+          password_sign_in_available: true,
+          password_reset_available: false,
+        }),
+      ),
+    );
+    await renderWithProviders({
+      routes: signInRoutes,
+      initialPath: APP_ROUTES.SIGN_IN,
+    });
+
+    await expect
+      .element(page.getByRole("button", { name: "Sign in", exact: true }))
+      .toBeVisible();
+    await expect.element(page.getByText("Or continue with")).toBeVisible();
+    await expect
+      .element(page.getByRole("button", { name: "Google", exact: true }))
+      .toBeVisible();
   });
 });

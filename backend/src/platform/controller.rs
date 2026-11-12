@@ -174,7 +174,10 @@ async fn retry_email(
 
 fn platform_error_response(error: PlatformError) -> (StatusCode, Json<Value>) {
     let status = match &error {
-        PlatformError::Unauthorized(_) => StatusCode::FORBIDDEN,
+        PlatformError::Unauthorized(_)
+        | PlatformError::PasswordReset(PasswordFlowError::PasswordSignInOff) => {
+            StatusCode::FORBIDDEN
+        }
         PlatformError::UserNotFound
         | PlatformError::TenantNotFound
         | PlatformError::EmailDelivery(EmailDeliveryError::NotFound) => StatusCode::NOT_FOUND,

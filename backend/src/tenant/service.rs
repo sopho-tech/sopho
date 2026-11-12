@@ -219,22 +219,28 @@ pub async fn list_tenants_for_user(
     Ok(response_dto_list)
 }
 
-pub async fn seed_default_tenant(app_state: &AppState) -> anyhow::Result<Uuid> {
-    if let Some(existing_tenant_id) = crate::configuration::service::get_configuration_value(
+async fn seed_default_tenant(app_state: &AppState) -> anyhow::Result<Uuid> {
+    if let Some(recorded_tenant_id) = crate::configuration::service::get_configuration_value(
         app_state,
         ConfigurationKey::DefaultTenantId,
     )
     .await?
     {
-        return Ok(Uuid::parse_str(&existing_tenant_id)?);
+        let default_tenant_id = Uuid::parse_str(&recorded_tenant_id)?;
+        if repository::find_tenant_by_id(&app_state.database_connection, default_tenant_id)
+            .await?
+            .is_none()
+        {
+            anyhow::bail!(
+                "configuration {} points at tenant {default_tenant_id}, which does not exist",
+                ConfigurationKey::DefaultTenantId
+            );
+        }
+        return Ok(default_tenant_id);
     }
 
-    let created_tenant = repository::insert_tenant(
-        &app_state.database_connection,
-        DEFAULT_TENANT_NAME.to_string(),
-        &Actor::system(),
-    )
-    .await?;
+    let created_tenant =
+        create_tenant(app_state, DEFAULT_TENANT_NAME.to_string(), &Actor::system()).await?;
 
     crate::configuration::service::set_configuration_value(
         app_state,
@@ -246,18 +252,17 @@ pub async fn seed_default_tenant(app_state: &AppState) -> anyhow::Result<Uuid> {
     Ok(created_tenant.id)
 }
 
-pub async fn ensure_default_tenant_membership(app_state: &AppState) -> anyhow::Result<()> {
+pub async fn seed_default_tenant_with_owner(
+    app_state: &AppState,
+    owner_user_id: Uuid,
+) -> anyhow::Result<Uuid> {
     let default_tenant_id = seed_default_tenant(app_state).await?;
 
-    let admin_email = app_state.config.admin_email.as_ref();
-    let admin_user =
-        crate::authentication::service::find_user_by_email(app_state, admin_email).await?;
-
     let existing_membership =
-        authorization_service::find_membership(app_state, default_tenant_id, admin_user.id).await?;
+        authorization_service::find_membership(app_state, default_tenant_id, owner_user_id).await?;
 
     if existing_membership.is_some() {
-        return Ok(());
+        return Ok(default_tenant_id);
     }
 
     let owner_role = authorization_service::find_role_by_name(
@@ -270,7 +275,7 @@ pub async fn ensure_default_tenant_membership(app_state: &AppState) -> anyhow::R
     membership_service::add_member(
         app_state,
         &TenantId::from_system_unchecked(default_tenant_id),
-        UserId::from_system_unchecked(admin_user.id),
+        UserId::from_system_unchecked(owner_user_id),
         owner_role.id,
         &Actor::system(),
     )
@@ -280,7 +285,7 @@ pub async fn ensure_default_tenant_membership(app_state: &AppState) -> anyhow::R
         "Seeded OWNER membership for admin user in tenant {}",
         default_tenant_id
     );
-    Ok(())
+    Ok(default_tenant_id)
 }
 
 pub async fn list_all_tenant_ids(app_state: &AppState) -> anyhow::Result<Vec<Uuid>> {

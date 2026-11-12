@@ -26,6 +26,7 @@ mod notebook;
 mod platform;
 mod scheduler;
 mod search;
+mod startup_seeding;
 mod suggested_question;
 mod tenant;
 
@@ -60,9 +61,7 @@ pub async fn initialize(app_state: &AppState) -> anyhow::Result<()> {
     db::run_migrations(&app_state.database_connection).await?;
     tenant::service::reconcile_system_roles_for_all_tenants(app_state).await?;
     app_state.load_ai_configuration().await;
-    authentication::service::seed_admin_user(app_state).await?;
-    tenant::service::ensure_default_tenant_membership(app_state).await?;
-    demo::service::seed_demo_data(app_state).await;
+    startup_seeding::service::run_startup_seeding(app_state).await?;
     Ok(())
 }
 

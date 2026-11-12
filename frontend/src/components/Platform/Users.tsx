@@ -115,17 +115,20 @@ function UserRow({
       </Table.Cell>
       <Table.Cell>
         <Flex direction="row" gap="2xs" flexWrap="wrap">
-          {user.has_password && <Badge variant="subtle">Password</Badge>}
+          {user.can_sign_in_with_password && (
+            <Badge variant="subtle">Password</Badge>
+          )}
           {user.provider_names.map((providerName) => (
             <Badge key={providerName} variant="subtle">
               {providerName}
             </Badge>
           ))}
-          {!user.has_password && user.provider_names.length === 0 && (
-            <Text fontSize="sm" color="subtle">
-              None
-            </Text>
-          )}
+          {!user.can_sign_in_with_password &&
+            user.provider_names.length === 0 && (
+              <Text fontSize="sm" color="subtle">
+                None
+              </Text>
+            )}
         </Flex>
       </Table.Cell>
       <Table.Cell>

@@ -35,6 +35,8 @@ pub async fn list_users(
         PlatformPermission::TenantAppointOwner,
     );
     let is_email_enabled = email_delivery_service::is_email_enabled(app_state);
+    let password_sign_in_available =
+        authentication_service::is_password_sign_in_available(app_state);
     let active_administrator_count =
         authentication_service::count_active_platform_administrators(app_state).await?;
     let page = page_number(query.page)?;
@@ -70,7 +72,10 @@ pub async fn list_users(
                         && account.id != actor.get_uuid()
                         && !is_last_active_administrator,
                     can_reactivate: !is_active,
-                    can_send_password_reset: is_active && has_password && is_email_enabled,
+                    can_send_password_reset: is_active
+                        && has_password
+                        && is_email_enabled
+                        && password_sign_in_available,
                     can_appoint_owner: is_active && may_appoint_owners,
                     can_make_administrator: is_active && !is_platform_administrator,
                     can_remove_administrator: is_platform_administrator
@@ -81,6 +86,7 @@ pub async fn list_users(
                 is_platform_administrator,
                 status,
                 has_password,
+                can_sign_in_with_password: has_password && password_sign_in_available,
                 provider_names: provider_names.remove(&account.id).unwrap_or_default(),
                 tenants: memberships.remove(&account.id).unwrap_or_default(),
                 id: account.id,
@@ -161,6 +167,11 @@ pub async fn send_password_reset(
     user_id: Uuid,
 ) -> Result<(), PlatformError> {
     require_platform_permission(app_state, actor, PlatformPermission::UserManage).await?;
+    if !authentication_service::is_password_sign_in_available(app_state) {
+        return Err(PlatformError::PasswordReset(
+            PasswordFlowError::PasswordSignInOff,
+        ));
+    }
     let account = find_account(app_state, user_id).await?;
     if account.status != UserStatus::Active.as_str() {
         return Err(PlatformError::AccountDeactivated);

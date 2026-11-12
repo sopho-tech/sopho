@@ -4,7 +4,8 @@ use crate::authentication::constants::{
     SIGN_IN_BLOCK_MINUTES, SIGN_IN_FAILURE_LIMIT, SessionStatus, TOO_MANY_SIGN_IN_ATTEMPTS_MESSAGE,
 };
 use crate::authentication::constants::{
-    INVALID_CREDENTIALS_MESSAGE, SESSION_NOT_FOUND_MESSAGE, USER_NOT_FOUND_MESSAGE,
+    INVALID_CREDENTIALS_MESSAGE, PASSWORD_ADMINISTRATOR_NOT_CONFIGURED_MESSAGE,
+    PASSWORD_SIGN_IN_OFF_MESSAGE, SESSION_NOT_FOUND_MESSAGE, USER_NOT_FOUND_MESSAGE,
 };
 use crate::authentication::dto;
 use crate::authentication::error::{AccountCreationError, CredentialsError};
@@ -17,10 +18,13 @@ use crate::authentication::repository::{get_user, get_user_by_email};
 use crate::authorization::constants::PlatformRole;
 use crate::authorization::dto::{AuthenticatedUser, UserId};
 use crate::common::AppState;
+use crate::common::PasswordAdministratorConfiguration;
 use crate::common::error_codes::{ErrorCode, codes};
 use crate::common::time_utils;
 use crate::common::token_utils;
 use crate::entity;
+use crate::feature_flag::constants::FeatureFlag;
+use crate::feature_flag::service::is_feature_enabled;
 use argon2::{
     Algorithm, Argon2, ParamsBuilder, Version,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
@@ -373,10 +377,17 @@ pub async fn verify_credentials(
     Ok(user)
 }
 
+pub fn is_password_sign_in_available(app_state: &AppState) -> bool {
+    is_feature_enabled(app_state, FeatureFlag::PasswordSignIn)
+}
+
 pub fn sign_in_page_options(app_state: &AppState) -> dto::SignInPageOptionsDto {
+    let password_sign_in_available = is_password_sign_in_available(app_state);
     dto::SignInPageOptionsDto {
         providers: crate::authentication::oidc::service::list_providers(app_state),
-        password_reset_available: crate::email_delivery::service::is_email_enabled(app_state),
+        password_sign_in_available,
+        password_reset_available: password_sign_in_available
+            && crate::email_delivery::service::is_email_enabled(app_state),
     }
 }
 
@@ -460,6 +471,15 @@ pub async fn create_session(
     payload: dto::CreateSessionDto,
     cookies: Cookies,
 ) -> impl IntoResponse {
+    if !is_password_sign_in_available(&app_state) {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({
+                "message": PASSWORD_SIGN_IN_OFF_MESSAGE,
+                "error_code": ErrorCode::PasswordSignInOff.as_str()
+            })),
+        );
+    }
     let user = match verify_credentials(&app_state, &payload.email, &payload.password).await {
         Ok(user) => user,
         Err(CredentialsError::InvalidCredentials) => {
@@ -838,10 +858,11 @@ pub async fn seed_admin_user(app_state: &AppState) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let username = app_state.config.admin_username.as_ref();
-    let password = app_state.config.admin_password.as_ref();
-    let email = normalize_email(app_state.config.admin_email.as_ref());
-    let full_name = app_state.config.admin_full_name.as_ref();
+    let password_administrator = password_administrator_configuration(app_state)?;
+    let username = password_administrator.username.as_str();
+    let password = password_administrator.password.as_str();
+    let email = normalize_email(&password_administrator.email);
+    let full_name = password_administrator.full_name.as_str();
 
     if get_user_by_email(&app_state.database_connection, email.clone())
         .await?
@@ -877,6 +898,23 @@ pub async fn seed_admin_user(app_state: &AppState) -> anyhow::Result<()> {
     tracing::info!("Admin user {} created successfully", username);
     crate::configuration::service::mark_admin_user_setup_done(app_state).await;
     Ok(())
+}
+
+fn password_administrator_configuration(
+    app_state: &AppState,
+) -> anyhow::Result<&PasswordAdministratorConfiguration> {
+    app_state
+        .config
+        .password_administrator
+        .as_ref()
+        .ok_or_else(|| anyhow::anyhow!(PASSWORD_ADMINISTRATOR_NOT_CONFIGURED_MESSAGE))
+}
+
+pub async fn find_seeded_password_administrator(
+    app_state: &AppState,
+) -> anyhow::Result<entity::user::Model> {
+    let password_administrator = password_administrator_configuration(app_state)?;
+    Ok(find_user_by_email(app_state, &password_administrator.email).await?)
 }
 
 pub async fn find_user_by_email(

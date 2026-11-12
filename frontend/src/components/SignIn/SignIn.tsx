@@ -78,75 +78,98 @@ export default function SignIn() {
   );
 
   const providers = signInPageOptions.data?.providers ?? [];
+  const isPasswordSignInAvailable =
+    signInPageOptions.data?.password_sign_in_available === true;
 
   return (
     <AuthPageLayout>
-      <Flex direction="column" alignItems="center" gap="2xs">
-        <Heading accessibilityLevel={1} size="xl" textAlign="center">
-          Welcome back
+      <Flex direction="column" alignItems="center" gap="xs">
+        <Heading accessibilityLevel={1} size="2xl" textAlign="center">
+          {isPasswordSignInAvailable ? "Welcome back" : "Welcome to Sopho"}
         </Heading>
         <Text fontSize="sm" color="subtle">
-          Sign in to your account
+          {isPasswordSignInAvailable
+            ? "Sign in to your account"
+            : "Sign in to continue"}
         </Text>
       </Flex>
       {errorMessage && <BannerSlim type="error" message={errorMessage} />}
       {signInPageOptions.error && (
         <BannerSlim type="error" message={signInPageOptions.error.message} />
       )}
-      <Form
-        defaultValues={SIGN_IN_FORM_DEFAULT_VALUES}
-        onSubmit={handleSubmit}
-        className={authPageStyles.formRootContainer}
-        submitOnEnter={true}
-      >
-        <Form.Fields className={authPageStyles.fieldsContainer}>
-          <Form.Field
-            name="email"
-            required
-            errorMessage="Email is required"
-            className={authPageStyles.fieldContainer}
-          >
-            <Form.Label className={authPageStyles.fieldLabel}>Email</Form.Label>
-            <Form.Input placeholder="name@company.com" fullWidth />
-          </Form.Field>
-          <Form.Field
-            name="password"
-            required
-            errorMessage="Password is required"
-            className={authPageStyles.passwordFieldContainer}
-          >
-            <Form.Label className={authPageStyles.fieldLabel}>
-              Password
-            </Form.Label>
-            <Form.Password placeholder="••••••••" fullWidth />
-            {signInPageOptions.data?.password_reset_available && (
-              <Button
-                label="Forgot password?"
-                shape="rectangle"
-                size="sm"
-                backgroundColor="ghost"
-                onClick={handleForgotPassword}
+      {isPasswordSignInAvailable && (
+        <Form
+          defaultValues={SIGN_IN_FORM_DEFAULT_VALUES}
+          onSubmit={handleSubmit}
+          className={authPageStyles.formRootContainer}
+          submitOnEnter={true}
+        >
+          <Form.Fields className={authPageStyles.fieldsContainer}>
+            <Form.Field
+              name="email"
+              required
+              errorMessage="Email is required"
+              className={authPageStyles.fieldContainer}
+            >
+              <Form.Label className={authPageStyles.fieldLabel}>
+                Email
+              </Form.Label>
+              <Form.Input placeholder="name@company.com" fullWidth />
+            </Form.Field>
+            <Form.Field
+              name="password"
+              required
+              errorMessage="Password is required"
+              className={authPageStyles.passwordFieldContainer}
+            >
+              <Form.Label className={authPageStyles.fieldLabel}>
+                Password
+              </Form.Label>
+              <Form.Password placeholder="••••••••" fullWidth />
+              {signInPageOptions.data?.password_reset_available && (
+                <Button
+                  label="Forgot password?"
+                  shape="rectangle"
+                  size="sm"
+                  backgroundColor="ghost"
+                  onClick={handleForgotPassword}
+                />
+              )}
+            </Form.Field>
+          </Form.Fields>
+          {createSessionMutation.error && (
+            <Box role="alert">
+              <BannerSlim
+                type="error"
+                message={createSessionMutation.error.message}
               />
-            )}
-          </Form.Field>
-        </Form.Fields>
-        {createSessionMutation.error && (
-          <Box role="alert">
-            <BannerSlim
-              type="error"
-              message={createSessionMutation.error.message}
-            />
-          </Box>
-        )}
-        <Form.Actions className={authPageStyles.formButtonRowContainer}>
-          <Form.Submit label="Sign in" size="md" fullWidth />
-        </Form.Actions>
-      </Form>
-      {providers.length > 0 && (
-        <Flex direction="column" gap="sm">
+            </Box>
+          )}
+          <Form.Actions className={authPageStyles.formButtonRowContainer}>
+            <Form.Submit label="Sign in" size="md" fullWidth />
+          </Form.Actions>
+        </Form>
+      )}
+      {isPasswordSignInAvailable && providers.length > 0 && (
+        <Flex direction="column" gap="md" paddingTop="sm">
           <Separator label="Or continue with" />
           {providers.map((provider) => (
-            <SingleSignOnButton key={provider.name} provider={provider} />
+            <SingleSignOnButton
+              key={provider.name}
+              provider={provider}
+              label={provider.display_name}
+            />
+          ))}
+        </Flex>
+      )}
+      {!isPasswordSignInAvailable && providers.length > 0 && (
+        <Flex direction="column" gap="sm" paddingTop="lg">
+          {providers.map((provider) => (
+            <SingleSignOnButton
+              key={provider.name}
+              provider={provider}
+              label={`Continue with ${provider.display_name}`}
+            />
           ))}
         </Flex>
       )}

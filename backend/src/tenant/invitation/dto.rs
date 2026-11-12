@@ -62,6 +62,7 @@ pub struct InvitationLinkDto {
     pub email: String,
     pub expires_at: DateTime<FixedOffset>,
     pub next_step: InvitationLinkNextStep,
+    pub password_sign_up_available: bool,
 }
 
 #[derive(Debug, Serialize)]

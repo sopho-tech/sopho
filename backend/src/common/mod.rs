@@ -12,5 +12,5 @@ pub mod url_utils;
 pub use server_utils::{CreatedByQuery, PaginatedResponse, Pagination};
 pub use state::{
     AppState, Configurations, ConfigurationsBuilder, EmailConfiguration, OidcProviderConfiguration,
-    SmtpCredentials,
+    PasswordAdministratorConfiguration, SmtpCredentials,
 };

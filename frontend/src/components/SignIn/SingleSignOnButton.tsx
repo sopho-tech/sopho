@@ -6,11 +6,13 @@ import { API_ENDPOINTS } from "src/constants/api_endpoints";
 
 type SingleSignOnButtonProps = {
   provider: OidcProviderDto;
+  label: string;
   onBeforeRedirect?: () => void;
 };
 
 export function SingleSignOnButton({
   provider,
+  label,
   onBeforeRedirect,
 }: SingleSignOnButtonProps) {
   const handleClick = useCallback(() => {
@@ -27,12 +29,11 @@ export function SingleSignOnButton({
 
   return (
     <Button
-      label={provider.display_name}
+      label={label}
       shape="rectangle"
       size="md"
       backgroundColor="white"
       fullWidth
-      outlined
       contentAlignment="center"
       leadingImage={leadingImage}
       leadingIconName={logo ? undefined : "key"}

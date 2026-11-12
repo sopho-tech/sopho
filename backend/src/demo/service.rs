@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use tracing::{error, info};
+use tracing::info;
 use uuid::Uuid;
 
 use crate::authorization::dto::{Actor, TenantId};
@@ -15,37 +15,18 @@ use crate::connection::service::execute_create_connection;
 use crate::dashboard::service::{execute_update_dashboard, get_dashboard_by_canvas_id_entity};
 use crate::dashboard::{DashboardDto, Layout};
 
-pub async fn seed_demo_data(app_state: &AppState) {
+pub async fn seed_demo_data(
+    app_state: &AppState,
+    default_tenant_id: Uuid,
+    owner_user_id: Uuid,
+) -> anyhow::Result<()> {
     if crate::configuration::service::is_demo_data_setup_done(app_state).await {
-        return;
+        return Ok(());
     }
 
-    let default_tenant_id = match crate::tenant::service::seed_default_tenant(app_state).await {
-        Ok(tenant_id) => tenant_id,
-        Err(e) => {
-            error!(
-                "Failed to resolve default tenant when seeding demo data: {}",
-                e
-            );
-            return;
-        }
-    };
     let tenant_id = TenantId::from_system_unchecked(default_tenant_id);
     let tenant_id = &tenant_id;
     let system_actor = Actor::system();
-
-    let admin_email = app_state.config.admin_email.as_ref();
-    let owner_user_id =
-        match crate::authentication::service::find_user_by_email(app_state, admin_email).await {
-            Ok(admin_user) => admin_user.id,
-            Err(e) => {
-                error!(
-                    "Failed to resolve the admin user when seeding demo data: {}",
-                    e
-                );
-                return;
-            }
-        };
 
     let connection = match execute_create_connection(
         app_state,
@@ -68,11 +49,10 @@ pub async fn seed_demo_data(app_state: &AppState) {
     {
         Ok(c) => c,
         Err(err) => {
-            error!(
+            return Err(anyhow::anyhow!(
                 "Failed to create connection when seeding demo data: {}",
                 err
-            );
-            return;
+            ));
         }
     };
 
@@ -93,8 +73,10 @@ pub async fn seed_demo_data(app_state: &AppState) {
     {
         Ok(r) => r,
         Err(err) => {
-            error!("Failed to create canvas when seeding demo data: {}", err);
-            return;
+            return Err(anyhow::anyhow!(
+                "Failed to create canvas when seeding demo data: {}",
+                err
+            ));
         }
     };
 
@@ -183,8 +165,10 @@ pub async fn seed_demo_data(app_state: &AppState) {
                 sql_id_map.insert(idx as u8, cell.id);
             }
             Err(e) => {
-                error!("Failed to create SQL cell when seeding demo data: {}", e);
-                return;
+                return Err(anyhow::anyhow!(
+                    "Failed to create SQL cell when seeding demo data: {}",
+                    e
+                ));
             }
         }
     }
@@ -286,8 +270,10 @@ pub async fn seed_demo_data(app_state: &AppState) {
                 chart_id_map.insert(chart_idx as u8, cell.id);
             }
             Err(e) => {
-                error!("Failed to create chart cell when seeding demo data: {}", e);
-                return;
+                return Err(anyhow::anyhow!(
+                    "Failed to create chart cell when seeding demo data: {}",
+                    e
+                ));
             }
         }
     }
@@ -296,8 +282,10 @@ pub async fn seed_demo_data(app_state: &AppState) {
     let dashboard = match get_dashboard_by_canvas_id_entity(app_state, tenant_id, canvas_id).await {
         Ok(d) => d,
         Err(e) => {
-            error!("Failed to get dashboard when seeding demo data: {}", e);
-            return;
+            return Err(anyhow::anyhow!(
+                "Failed to get dashboard when seeding demo data: {}",
+                e
+            ));
         }
     };
     let mut payload = DashboardDto::from(dashboard.clone());
@@ -317,11 +305,10 @@ pub async fn seed_demo_data(app_state: &AppState) {
     if let Err(e) =
         execute_update_dashboard(app_state, tenant_id, dashboard.id, payload, &system_actor).await
     {
-        error!(
+        return Err(anyhow::anyhow!(
             "Failed to update dashboard layout when seeding demo data: {}",
             e
-        );
-        return;
+        ));
     }
 
     crate::configuration::service::mark_demo_data_setup_done(app_state).await;
@@ -330,4 +317,5 @@ pub async fn seed_demo_data(app_state: &AppState) {
         "Demo data seeded: canvas {}, notebook {}, {} cells",
         canvas_result.canvas.id, notebook_id, 23
     );
+    Ok(())
 }

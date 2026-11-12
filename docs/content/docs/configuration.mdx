@@ -72,9 +72,24 @@ Controls how much Sopho logs, using the [tracing filter syntax](https://docs.rs/
 
 A feature flag turns one behaviour of Sopho on or off for the whole deployment. Each flag is an environment variable named `SOPHO_FEATURE_<NAME>` that accepts `true` or `false`. Leave it unset to keep the default. Sopho fails to start if a flag has any other value, and logs every flag at startup.
 
-| Variable                                   | Default | Purpose                                                                                                              |
-| ------------------------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------- |
-| `SOPHO_FEATURE_SELF_SERVE_TENANT_CREATION` | `false` | Lets anyone who signs in create their own tenants and become their owner, up to `SOPHO_SELF_SERVE_TENANT_LIMIT` each |
+| Variable                                    | Default | Purpose                                                                                                                                                                      |
+| ------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SOPHO_FEATURE_SELF_SERVE_TENANT_CREATION`  | `false` | Lets anyone who signs in create their own tenants and become their owner, up to `SOPHO_SELF_SERVE_TENANT_LIMIT` each                                                         |
+| `SOPHO_FEATURE_PASSWORD_SIGN_IN`            | `true`  | Lets people sign in with an email and password. When `false`, every password request is refused and people sign in only through a [Single Sign-On](#single-sign-on) provider |
+| `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` | `true`  | Creates the administrator account from the [Admin Credentials](#admin-credentials) the first time Sopho runs                                                                 |
+| `SOPHO_FEATURE_DEFAULT_TENANT`              | `true`  | Creates the `Default` tenant with its demo data the first time Sopho runs, owned by the seeded administrator                                                                 |
+
+### Combinations Sopho refuses
+
+Some settings cannot work together. Sopho fails to start and names both settings when:
+
+| If                                                     | Then you also need                                            | Why                                                                       |
+| ------------------------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `SOPHO_FEATURE_PASSWORD_SIGN_IN` is `false`            | at least one provider in `SOPHO_OIDC_PROVIDERS`               | otherwise nobody can sign in                                              |
+| `SOPHO_FEATURE_PASSWORD_SIGN_IN` is `false`            | `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` set to `false`    | the seeded administrator has only a password, so it could never sign in   |
+| `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` is `false` | at least one address in `SOPHO_PLATFORM_ADMINISTRATOR_EMAILS` | otherwise a new deployment can never have an administrator                |
+| `SOPHO_PLATFORM_ADMINISTRATOR_EMAILS` is set           | at least one provider in `SOPHO_OIDC_PROVIDERS`               | a listed person becomes an administrator by signing in through a provider |
+| `SOPHO_FEATURE_DEFAULT_TENANT` is `true`               | `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` set to `true`     | the default tenant and its demo are owned by the seeded administrator     |
 
 ## SOPHO_SELF_SERVE_TENANT_LIMIT
 
@@ -82,9 +97,15 @@ How many tenants one person may create when `SOPHO_FEATURE_SELF_SERVE_TENANT_CRE
 
 Every tenant a person has created counts. Tenants they joined by invitation, and tenants created by a platform administrator, do not count. Platform administrators create tenants without a limit.
 
+## SOPHO_PLATFORM_ADMINISTRATOR_EMAILS
+
+A comma-separated list of email addresses, for example `ada@example.com,grace@example.com`. A listed person becomes a platform administrator when they sign in through a [Single Sign-On](#single-sign-on) provider that confirms that email address. Leave it unset or empty for an empty list. Sopho fails to start if an entry is blank, is not an email address, or appears twice.
+
+The list only promotes. Signing in with a password never promotes, and nothing happens at startup or when the list changes. A listed person who is demoted in the UI becomes an administrator again at their next sign-in, so remove them from the list as well.
+
 ## Admin Credentials
 
-The first time Sopho runs, the following four environment variables are used to seed the initial admin user so you can log in after bootup. The application fails to start if any of these are not set.
+The first time Sopho runs, the following four environment variables are used to seed the initial admin user so you can log in after bootup. The application fails to start if any of these are not set. When `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` is `false`, they are not read and no account is seeded; an administrator seeded on an earlier start is left as it is.
 
 | Variable                | Purpose                                                 |
 | ----------------------- | ------------------------------------------------------- |
@@ -110,6 +131,24 @@ People can sign in through any OpenID Connect provider, such as Google, Microsof
 | `SOPHO_OIDC_<NAME>_REDIRECT_URI`  | `https://<your Sopho host>/api/v1/auth/oidc/<name>/callback`. Register the same URI with the provider |
 
 Sopho asks for the `openid`, `email` and `profile` scopes. The provider must return the person's email, marked as verified, and their name. Someone signing in for the first time gets an account without a tenant and joins tenants by accepting invitations. Signing in through a provider that confirms the email of an existing account adds the provider to that account, once the account's email has been proven by an emailed link or another provider. The admin created at startup has not proven its email: it signs in with its password and connects a provider from its profile.
+
+### Running without passwords
+
+To accept sign-in only through a provider, set `SOPHO_FEATURE_PASSWORD_SIGN_IN`, `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` and `SOPHO_FEATURE_DEFAULT_TENANT` to `false`, configure a provider, and name at least one administrator in `SOPHO_PLATFORM_ADMINISTRATOR_EMAILS`. A new deployment then starts with no accounts and no tenants. The first listed person to sign in becomes a platform administrator. Turn on `SOPHO_FEATURE_SELF_SERVE_TENANT_CREATION` so people can create their own tenant.
+
+With passwords off, the sign-in page shows only the provider buttons, and the password pages and controls are not shown. Stored passwords are kept and work again if you turn the flag back on. People who are already signed in stay signed in.
+
+Before turning passwords off on a deployment that already has accounts:
+
+1. Configure the provider and add the administrator emails.
+2. Make sure every account can sign in through the provider. An account created from an emailed invitation links to the provider at its first provider sign-in. The seeded administrator has not proven its email, so that person must sign in with the password and connect the provider from their profile first.
+3. Set `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` and `SOPHO_FEATURE_DEFAULT_TENANT` to `false`. The existing administrator account and default tenant stay as they are.
+4. Set `SOPHO_FEATURE_PASSWORD_SIGN_IN` to `false`.
+
+An account that skipped step 2 cannot sign in until you turn password sign-in back on, and is told to contact its administrator. Two cases cannot be fixed from inside Sopho:
+
+- A seeded administrator whose `SOPHO_ADMIN_EMAIL` is not a real address at the provider can never connect it. Appoint another owner for the default tenant and name a real administrator in the list before you switch.
+- A person invited at an address that has no account with the provider cannot join.
 
 For example, for Google:
 

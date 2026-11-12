@@ -1,3 +1,4 @@
+use crate::authentication::constants::PASSWORD_SIGN_IN_OFF_MESSAGE;
 use crate::authentication::error::CredentialsError;
 use crate::authentication::password::constants::{
     INVALID_RESET_LINK_MESSAGE, NO_PASSWORD_MESSAGE, PASSWORD_CONTAINS_EMAIL_MESSAGE,
@@ -38,6 +39,8 @@ impl PasswordRuleError {
 
 #[derive(Debug, Error)]
 pub enum PasswordFlowError {
+    #[error("{PASSWORD_SIGN_IN_OFF_MESSAGE}")]
+    PasswordSignInOff,
     #[error("{PASSWORD_RESET_UNAVAILABLE_MESSAGE}")]
     ResetUnavailable,
     #[error("{TOO_MANY_RESET_EMAILS_MESSAGE}")]
@@ -65,6 +68,7 @@ pub enum PasswordFlowError {
 impl PasswordFlowError {
     pub fn error_code(&self) -> Option<ErrorCode> {
         match self {
+            PasswordFlowError::PasswordSignInOff => Some(ErrorCode::PasswordSignInOff),
             PasswordFlowError::ResetUnavailable => Some(ErrorCode::PasswordResetUnavailable),
             PasswordFlowError::TooManyResetEmails => Some(ErrorCode::TooManyResetEmails),
             PasswordFlowError::InvalidResetLink => Some(ErrorCode::InvalidResetLink),

@@ -38,6 +38,7 @@ pub struct PlatformUserDto {
     pub is_platform_administrator: bool,
     pub status: UserStatus,
     pub has_password: bool,
+    pub can_sign_in_with_password: bool,
     pub provider_names: Vec<String>,
     pub tenants: Vec<UserTenantMembershipDto>,
     pub created_at: DateTime<FixedOffset>,

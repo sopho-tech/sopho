@@ -22,10 +22,6 @@
   box-sizing: border-box;
 }
 
-.outlined {
-  border: var(--border-input);
-}
-
 .contentCenter {
   justify-content: center;
 }

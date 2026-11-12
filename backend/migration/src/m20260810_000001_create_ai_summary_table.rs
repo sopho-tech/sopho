@@ -7,6 +7,8 @@ use sea_orm_migration::{
     },
 };
 
+const TENANT_ID_INDEX: &str = "idx_ai_summary_tenant_id";
+
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
@@ -45,6 +47,16 @@ impl MigrationTrait for Migration {
                     .col(AiSummary::EntityType)
                     .col(AiSummary::EntityId)
                     .unique()
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .name(TENANT_ID_INDEX)
+                    .table(AiSummary::Table)
+                    .col(AiSummary::TenantId)
                     .to_owned(),
             )
             .await

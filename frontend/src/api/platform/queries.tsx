@@ -33,6 +33,7 @@ export type PlatformUserDto = {
   is_platform_administrator: boolean;
   status: AccountStatus;
   has_password: boolean;
+  can_sign_in_with_password: boolean;
   provider_names: string[];
   tenants: PlatformUserTenantDto[];
   created_at: string;

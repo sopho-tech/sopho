@@ -4,7 +4,11 @@ import "src/css/index.css";
 import { Home } from "src/components/Home/Home";
 import SignIn from "src/components/SignIn/SignIn";
 import { InvitationLink } from "src/components/InvitationLink";
-import { ForgotPassword, ResetPassword } from "src/components/PasswordReset";
+import {
+  ForgotPassword,
+  ResetPassword,
+  requirePasswordSignIn,
+} from "src/components/PasswordReset";
 import { Settings } from "src/components/Settings";
 import { Connections } from "src/components/Connection/ConnectionsPage";
 import { AIConfiguration } from "src/components/Settings/AIConfiguration";
@@ -181,10 +185,12 @@ const router = createBrowserRouter([
   },
   {
     path: APP_ROUTES.FORGOT_PASSWORD,
+    loader: requirePasswordSignIn,
     element: <ForgotPassword />,
   },
   {
     path: APP_ROUTES.RESET_PASSWORD,
+    loader: requirePasswordSignIn,
     element: <ResetPassword />,
   },
 ]);

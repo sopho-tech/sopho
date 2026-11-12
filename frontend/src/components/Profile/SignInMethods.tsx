@@ -178,29 +178,31 @@ export function SignInMethods() {
           columns={SIGN_IN_METHODS_TABLE_COLUMNS}
           aria-label="Sign-in methods"
         >
-          <Table.Row aria-label="Password">
-            <Table.Cell>
-              <Flex direction="column" overflow="hidden">
-                <Text fontSize="sm">Password</Text>
-                <Text fontSize="xs" color="subtle">
-                  {mySignInMethods.data.has_password
-                    ? "You can sign in with your password"
-                    : "Not set. You sign in with single sign-on"}
-                </Text>
-              </Flex>
-            </Table.Cell>
-            <Table.Cell align="end">
-              {mySignInMethods.data.has_password && (
-                <Button
-                  label="Change password"
-                  shape="rectangle"
-                  size="sm"
-                  backgroundColor="white"
-                  onClick={handleChangePassword}
-                />
-              )}
-            </Table.Cell>
-          </Table.Row>
+          {mySignInMethods.data.password_available && (
+            <Table.Row aria-label="Password">
+              <Table.Cell>
+                <Flex direction="column" overflow="hidden">
+                  <Text fontSize="sm">Password</Text>
+                  <Text fontSize="xs" color="subtle">
+                    {mySignInMethods.data.has_password
+                      ? "You can sign in with your password"
+                      : "Not set. You sign in with single sign-on"}
+                  </Text>
+                </Flex>
+              </Table.Cell>
+              <Table.Cell align="end">
+                {mySignInMethods.data.has_password && (
+                  <Button
+                    label="Change password"
+                    shape="rectangle"
+                    size="sm"
+                    backgroundColor="white"
+                    onClick={handleChangePassword}
+                  />
+                )}
+              </Table.Cell>
+            </Table.Row>
+          )}
           {mySignInMethods.data.providers.map((provider) => (
             <ProviderRow
               key={provider.name}

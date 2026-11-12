@@ -464,6 +464,9 @@ pub async fn lookup_invitation_link(
         email: invitation.email,
         expires_at: invitation.expires_at,
         next_step,
+        password_sign_up_available: authentication_service::is_password_sign_in_available(
+            app_state,
+        ),
     })
 }
 
@@ -472,6 +475,11 @@ pub async fn sign_up_from_invitation_link(
     cookies: &Cookies,
     sign_up: InvitationSignUpDto,
 ) -> Result<AcceptedInvitationDto, InvitationError> {
+    if !authentication_service::is_password_sign_in_available(app_state) {
+        return Err(InvitationError::PasswordSignInOff(
+            authentication_service::PasswordFlowError::PasswordSignInOff,
+        ));
+    }
     let invitation = find_invitation_by_link_token(app_state, &sign_up.token).await?;
     if authentication_service::find_optional_user_by_email(app_state, &invitation.email)
         .await?

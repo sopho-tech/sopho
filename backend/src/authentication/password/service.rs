@@ -65,7 +65,15 @@ pub fn validate_new_password(password: &str, email: &str) -> Result<String, Pass
     Ok(normalized)
 }
 
+fn require_password_sign_in(app_state: &AppState) -> Result<(), PasswordFlowError> {
+    if !authentication_service::is_password_sign_in_available(app_state) {
+        return Err(PasswordFlowError::PasswordSignInOff);
+    }
+    Ok(())
+}
+
 pub fn request_password_reset(app_state: AppState, email: String) -> Result<(), PasswordFlowError> {
+    require_password_sign_in(&app_state)?;
     if !email_delivery_service::is_email_enabled(&app_state) {
         return Err(PasswordFlowError::ResetUnavailable);
     }
@@ -182,6 +190,7 @@ pub async fn reset_password(
     app_state: &AppState,
     reset: PasswordResetDto,
 ) -> Result<(), PasswordFlowError> {
+    require_password_sign_in(app_state)?;
     let reset_token = repository::find_unused_reset_token_by_hash(
         &app_state.database_connection,
         &token_utils::hash_token(&reset.token),
@@ -237,6 +246,7 @@ pub async fn change_password(
     user_id: UserId,
     change: ChangePasswordDto,
 ) -> Result<(), PasswordFlowError> {
+    require_password_sign_in(app_state)?;
     let user = authentication_service::find_user_by_id(app_state, user_id).await?;
     if user.password_hash.is_none() {
         return Err(PasswordFlowError::NoPassword);

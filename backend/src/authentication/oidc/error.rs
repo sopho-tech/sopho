@@ -25,6 +25,8 @@ pub enum OidcLoginError {
     MissingProfile,
     #[error("This email belongs to an account that signs in with a password")]
     AccountRequiresPasswordSignIn,
+    #[error("This email belongs to an account that has no way to sign in while passwords are off")]
+    AccountCannotSignIn,
     #[error("This account has been deactivated")]
     AccountDeactivated,
     #[error("This account already signs in with another account at this provider")]
@@ -57,6 +59,7 @@ impl OidcLoginError {
             | OidcLoginError::AttemptExpired
             | OidcLoginError::StateMismatch => SignInErrorCode::SsoExpired,
             OidcLoginError::AccountRequiresPasswordSignIn => SignInErrorCode::PasswordAccount,
+            OidcLoginError::AccountCannotSignIn => SignInErrorCode::ContactAdministrator,
             OidcLoginError::AccountDeactivated => SignInErrorCode::AccountDeactivated,
             OidcLoginError::SecondFederatedIdentityAtProvider
             | OidcLoginError::EmailMismatch
@@ -90,6 +93,7 @@ impl OidcLoginError {
             OidcLoginError::UnknownProvider(_)
             | OidcLoginError::MissingProfile
             | OidcLoginError::AccountRequiresPasswordSignIn
+            | OidcLoginError::AccountCannotSignIn
             | OidcLoginError::Provider(_)
             | OidcLoginError::EmailDelivery(_)
             | OidcLoginError::EmailTemplate(_)

@@ -85,6 +85,35 @@ mod tests {
     }
 
     #[test]
+    fn the_password_and_seeding_flags_are_on_unless_turned_off() {
+        for (feature_flag, variable_name) in [
+            (
+                FeatureFlag::PasswordSignIn,
+                "SOPHO_FEATURE_PASSWORD_SIGN_IN",
+            ),
+            (
+                FeatureFlag::SeedPasswordAdministrator,
+                "SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR",
+            ),
+            (FeatureFlag::DefaultTenant, "SOPHO_FEATURE_DEFAULT_TENANT"),
+        ] {
+            assert_eq!(feature_flag.environment_variable_name(), variable_name);
+            assert!(
+                feature_flags_from_variables(|_| Ok(None))
+                    .unwrap()
+                    .is_enabled(feature_flag)
+            );
+            assert!(
+                !feature_flags_from_variables(|read_variable_name| {
+                    Ok((read_variable_name == variable_name).then(|| "false".to_string()))
+                })
+                .unwrap()
+                .is_enabled(feature_flag)
+            );
+        }
+    }
+
+    #[test]
     fn true_and_false_override_the_default() {
         assert!(self_serve_flag_with_value(Some("true")).unwrap());
         assert!(!self_serve_flag_with_value(Some("false")).unwrap());
