@@ -282,3 +282,21 @@ pub const LISTED_ADMINISTRATOR_EMAIL: &str = "founder@example.test";
 pub const RETIRED_SINGLE_SIGN_ON_PROVIDER: &str = "retired";
 pub const DEFAULT_TENANT_CONFIGURATION_KEY: &str = "default_tenant_id";
 pub const DEFAULT_TENANT_NAME: &str = "Default";
+pub const CONNECTION_TYPE_DISABLED_CODE: &str = "CONNECTION_TYPE_DISABLED";
+pub const CONNECTION_HOST_NOT_ALLOWED_CODE: &str = "CONNECTION_HOST_NOT_ALLOWED";
+pub const SQLITE_DISABLED_MESSAGE: &str = "SQLite connections are turned off on this deployment";
+pub const CONNECTION_HOST_NOT_ALLOWED_MESSAGE: &str =
+    "This host is not reachable from this deployment";
+pub const OFFERED_SOURCE_TYPE_PATH: &str = "/connection/source_type";
+pub const UNRESOLVABLE_HOST: &str = "no-such-host.invalid";
+pub const INTERNAL_HOSTS: [&str; 9] = [
+    "localhost",
+    "127.0.0.1",
+    "10.0.0.5",
+    "192.168.1.20",
+    "169.254.169.254",
+    "::1",
+    "[::1]",
+    "::ffff:127.0.0.1",
+    "/var/run/postgresql",
+];

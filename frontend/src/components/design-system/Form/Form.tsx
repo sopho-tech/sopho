@@ -345,14 +345,23 @@ type FormSubmitProps = {
   label?: string;
   size?: ButtonSize;
   fullWidth?: boolean;
+  isPending?: boolean;
 };
 
 const FormSubmit = ({
   label = "Submit",
   size = "sm",
   fullWidth = false,
+  isPending = false,
 }: FormSubmitProps) => {
-  return <SubscribeButton label={label} size={size} fullWidth={fullWidth} />;
+  return (
+    <SubscribeButton
+      label={label}
+      size={size}
+      fullWidth={fullWidth}
+      isPending={isPending}
+    />
+  );
 };
 
 FormSubmit.displayName = "Form.Submit";

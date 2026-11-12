@@ -1,6 +1,8 @@
 use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::AppState;
+use crate::feature_flag::constants::FeatureFlag;
+use crate::feature_flag::service::is_feature_enabled;
 use crate::suggested_question;
 use tokio_cron_scheduler::{Job, JobScheduler};
 use tracing::{error, info};
@@ -14,7 +16,7 @@ const SCHEDULER_NOTIFICATION_STATES_TABLE: &str = "scheduler_notification_state"
 pub async fn start(app_state: AppState) {
     let startup_state = app_state.clone();
     tokio::spawn(async move {
-        refresh_all_stale_for_every_tenant(&startup_state).await;
+        run_startup_suggested_question_refresh(&startup_state).await;
     });
 
     tokio::spawn(async move {
@@ -27,14 +29,16 @@ pub async fn start(app_state: AppState) {
 async fn start_scheduler(app_state: AppState) -> anyhow::Result<()> {
     let sched = build(&app_state).await?;
 
-    let job_state = app_state.clone();
-    let job = Job::new_async(SUGGESTED_QUESTION_DAILY_CRON, move |_uuid, _lock| {
-        let job_state = job_state.clone();
-        Box::pin(async move {
-            refresh_all_stale_for_every_tenant(&job_state).await;
-        })
-    })?;
-    sched.add(job).await?;
+    if is_background_suggested_question_refresh_enabled(&app_state) {
+        let job_state = app_state.clone();
+        let job = Job::new_async(SUGGESTED_QUESTION_DAILY_CRON, move |_uuid, _lock| {
+            let job_state = job_state.clone();
+            Box::pin(async move {
+                refresh_all_stale_for_every_tenant(&job_state).await;
+            })
+        })?;
+        sched.add(job).await?;
+    }
 
     sched.start().await?;
     info!("scheduler started");
@@ -81,6 +85,16 @@ async fn build_postgres(app_state: &AppState) -> anyhow::Result<JobScheduler> {
     )
     .await?;
     Ok(sched)
+}
+
+fn is_background_suggested_question_refresh_enabled(app_state: &AppState) -> bool {
+    is_feature_enabled(app_state, FeatureFlag::BackgroundSuggestedQuestionRefresh)
+}
+
+pub(crate) async fn run_startup_suggested_question_refresh(app_state: &AppState) {
+    if is_background_suggested_question_refresh_enabled(app_state) {
+        refresh_all_stale_for_every_tenant(app_state).await;
+    }
 }
 
 pub(crate) async fn refresh_all_stale_for_every_tenant(app_state: &AppState) {

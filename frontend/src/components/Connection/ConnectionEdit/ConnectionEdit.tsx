@@ -1,4 +1,5 @@
 import {
+  BannerSlim,
   Button,
   Flex,
   Form,
@@ -18,6 +19,7 @@ import {
 import { useStore } from "src/store";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { useTenantPath } from "src/utils/tenant";
+import { UNAVAILABLE_CONNECTION_MESSAGE } from "src/components/Connection/constants";
 import { ConnectionDetailsPageStateEnum } from "src/components/Connection/dto";
 
 export function ConnectionEdit() {
@@ -46,9 +48,15 @@ export function ConnectionEdit() {
       password: (values.password as string) || null,
       description: (values.description as string) || null,
     };
-    updateMutation.mutate({ connectionId: connection.id, payload });
-    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    void navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
+    updateMutation.mutate(
+      { connectionId: connection.id, payload },
+      {
+        onSuccess: () => {
+          setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
+          void navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
+        },
+      },
+    );
   };
 
   const handleBack = () => {
@@ -72,9 +80,7 @@ export function ConnectionEdit() {
     schema: connection.schema ?? "",
   };
 
-  const sourceTypeLabel =
-    connection.source_type.charAt(0) +
-    connection.source_type.slice(1).toLowerCase();
+  const sourceTypeLabel = connection.source_type_display_name;
 
   return (
     <Flex
@@ -98,6 +104,9 @@ export function ConnectionEdit() {
           onClick={handleBack}
         />
       </Flex>
+      {!connection.is_source_type_available && (
+        <BannerSlim type="warning" message={UNAVAILABLE_CONNECTION_MESSAGE} />
+      )}
       <Form
         onSubmit={onSubmitHandler}
         defaultValues={defaultValues}
@@ -163,11 +172,7 @@ export function ConnectionEdit() {
                 Specific Details
               </Heading>
               <Heading accessibilityLevel={3} textColor="subtle" size="base">
-                {connection.source_type === SourceTypeEnum.PostgreSQL
-                  ? "Enter your PostgreSQL connection details"
-                  : connection.source_type === SourceTypeEnum.Supabase
-                    ? "Enter your Supabase connection details"
-                    : `Enter your ${sourceTypeLabel} connection details`}
+                {`Enter your ${sourceTypeLabel} connection details`}
               </Heading>
             </Flex>
             {(connection.source_type === SourceTypeEnum.PostgreSQL ||
@@ -271,8 +276,13 @@ export function ConnectionEdit() {
           </Flex>
         </Form.Fields>
         <Separator />
+        <BannerSlim type="error" message={updateMutation.error?.message} />
         <Flex gap="md">
-          <Form.Submit label="Save Changes" size="md" />
+          <Form.Submit
+            label="Save Changes"
+            size="md"
+            isPending={updateMutation.isPending}
+          />
           <Button
             backgroundColor="white"
             label="Back"

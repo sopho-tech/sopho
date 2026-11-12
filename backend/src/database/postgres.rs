@@ -1,4 +1,4 @@
-use crate::common::errors::ExecuteQueryError;
+use crate::common::errors::{ConnectionSettingsError, ExecuteQueryError};
 use crate::data_catalog::dto::{Column as CatalogColumn, Database, Schema, Table};
 use crate::database::constants::QueryResult;
 use crate::database::constants::{
@@ -12,6 +12,7 @@ use rust_decimal::Decimal;
 use sqlx::Column;
 use sqlx::Connection;
 use sqlx::Row;
+use sqlx::postgres::PgConnectOptions;
 use uuid::Uuid;
 
 type TableKey = (String, String);
@@ -23,22 +24,36 @@ fn quote_ident(identifier: &str) -> String {
     format!("\"{}\"", identifier.replace('"', "\"\""))
 }
 
-pub fn get_database_url(payload: &entity::connection::Model) -> String {
-    format!(
-        "postgres://{}:{}@{}:{}/{}",
-        payload.username.as_deref().unwrap_or(""),
-        payload.password.as_deref().unwrap_or(""),
-        payload.host.as_deref().unwrap_or(""),
-        payload.port.as_deref().unwrap_or(""),
-        payload.database
-    )
+pub fn connect_options(
+    connection: &entity::connection::Model,
+) -> Result<PgConnectOptions, ConnectionSettingsError> {
+    let host = connection
+        .host
+        .as_deref()
+        .filter(|host| !host.is_empty())
+        .ok_or(ConnectionSettingsError::MissingHost)?;
+    let port = connection
+        .port
+        .as_deref()
+        .filter(|port| !port.is_empty())
+        .ok_or(ConnectionSettingsError::MissingPort)?;
+    let port_number = port
+        .parse::<u16>()
+        .ok()
+        .filter(|port_number| *port_number != 0)
+        .ok_or_else(|| ConnectionSettingsError::InvalidPort {
+            port: port.to_string(),
+        })?;
+    Ok(PgConnectOptions::new_without_pgpass()
+        .host(host)
+        .port(port_number)
+        .username(connection.username.as_deref().unwrap_or_default())
+        .password(connection.password.as_deref().unwrap_or_default())
+        .database(&connection.database))
 }
 
-pub async fn get_connection_status(
-    connection_entity: &entity::connection::Model,
-) -> ConnectionStatus {
-    let database_url = get_database_url(connection_entity);
-    let sqlx_connection_result = sqlx::postgres::PgConnection::connect(&database_url).await;
+pub async fn get_connection_status(connect_options: &PgConnectOptions) -> ConnectionStatus {
+    let sqlx_connection_result = sqlx::postgres::PgConnection::connect_with(connect_options).await;
 
     match sqlx_connection_result {
         Ok(mut conn) => {
@@ -310,4 +325,112 @@ pub async fn get_data_catalog(
         connection.description.as_deref().unwrap_or(""),
         schema_map.into_values().collect::<Vec<_>>(),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::connect_options;
+    use crate::common::errors::ConnectionSettingsError;
+    use crate::entity;
+    use uuid::Uuid;
+
+    fn postgres_connection(
+        host: Option<&str>,
+        port: Option<&str>,
+        password: &str,
+        database: &str,
+    ) -> entity::connection::Model {
+        let created_at = chrono::Utc::now().fixed_offset();
+        entity::connection::Model {
+            id: Uuid::new_v4(),
+            tenant_id: Uuid::new_v4(),
+            owner_user_id: Uuid::new_v4(),
+            visibility: "TENANT".to_string(),
+            name: "Warehouse".to_string(),
+            description: None,
+            status: "ACTIVE".to_string(),
+            database: database.to_string(),
+            host: host.map(str::to_string),
+            password: Some(password.to_string()),
+            port: port.map(str::to_string),
+            schema: None,
+            username: Some("analyst".to_string()),
+            source_type: "POSTGRESQL".to_string(),
+            created_by_user_id: None,
+            created_by_actor: "USER".to_string(),
+            modified_by_user_id: None,
+            modified_by_actor: "USER".to_string(),
+            created_at,
+            updated_at: created_at,
+        }
+    }
+
+    #[test]
+    fn a_password_or_database_carrying_another_host_does_not_change_the_dialled_host() {
+        for crafted_value in [
+            "secret@10.0.0.5:5432/postgres#",
+            "secret@169.254.169.254/",
+            "x?host=10.0.0.5",
+            "x/../y@127.0.0.1",
+        ] {
+            let with_crafted_password = connect_options(&postgres_connection(
+                Some("db.example.com"),
+                Some("6543"),
+                crafted_value,
+                "sales",
+            ))
+            .unwrap();
+            assert_eq!(with_crafted_password.get_host(), "db.example.com");
+            assert_eq!(with_crafted_password.get_port(), 6543);
+            assert_eq!(with_crafted_password.get_database(), Some("sales"));
+
+            let with_crafted_database = connect_options(&postgres_connection(
+                Some("db.example.com"),
+                Some("6543"),
+                "secret",
+                crafted_value,
+            ))
+            .unwrap();
+            assert_eq!(with_crafted_database.get_host(), "db.example.com");
+            assert_eq!(with_crafted_database.get_port(), 6543);
+            assert_eq!(with_crafted_database.get_database(), Some(crafted_value));
+        }
+    }
+
+    #[test]
+    fn a_missing_host_or_an_invalid_port_is_refused() {
+        assert!(matches!(
+            connect_options(&postgres_connection(None, Some("5432"), "secret", "sales")),
+            Err(ConnectionSettingsError::MissingHost)
+        ));
+        assert!(matches!(
+            connect_options(&postgres_connection(
+                Some(""),
+                Some("5432"),
+                "secret",
+                "sales"
+            )),
+            Err(ConnectionSettingsError::MissingHost)
+        ));
+        assert!(matches!(
+            connect_options(&postgres_connection(
+                Some("db.example.com"),
+                None,
+                "secret",
+                "sales"
+            )),
+            Err(ConnectionSettingsError::MissingPort)
+        ));
+        for invalid_port in ["0", "70000", "54a2", "-1"] {
+            assert!(matches!(
+                connect_options(&postgres_connection(
+                    Some("db.example.com"),
+                    Some(invalid_port),
+                    "secret",
+                    "sales"
+                )),
+                Err(ConnectionSettingsError::InvalidPort { .. })
+            ));
+        }
+    }
 }

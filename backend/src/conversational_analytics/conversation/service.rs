@@ -748,6 +748,8 @@ pub async fn execute_completion(
         }
         other => ExecuteCompletionError::GetConnection(other),
     })?;
+    connection_service::ensure_connection_can_be_used(&app_state, &connection)
+        .map_err(ExecuteCompletionError::GetConnection)?;
     let ai_actor = tenant_context.ai_actor();
     let conversation_message_id = create_conversation_message_for_completion(
         &app_state,

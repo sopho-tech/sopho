@@ -186,6 +186,9 @@ pub struct DeploymentFlags {
     pub is_default_tenant_off: bool,
     pub is_self_serve_tenant_creation_on: bool,
     pub platform_administrator_emails: Option<String>,
+    pub disabled_connection_types: Option<String>,
+    pub is_internal_address_connections_off: bool,
+    pub is_background_suggested_question_refresh_off: bool,
 }
 
 impl DeploymentFlags {
@@ -196,6 +199,7 @@ impl DeploymentFlags {
             is_default_tenant_off: true,
             is_self_serve_tenant_creation_on: true,
             platform_administrator_emails: Some(platform_administrator_emails.to_string()),
+            ..Self::default()
         }
     }
 }
@@ -208,6 +212,17 @@ enum EmailDelivery<'a> {
     SilentMailServer {
         silent_mail_server: &'a SilentMailServer,
     },
+}
+
+pub struct RedeployedApp {
+    pub admin: UserSession,
+    server_task: JoinHandle<()>,
+}
+
+impl Drop for RedeployedApp {
+    fn drop(&mut self) {
+        self.server_task.abort();
+    }
 }
 
 pub struct TestApp {
@@ -410,6 +425,51 @@ impl TestApp {
         sopho::initialize(&app_state).await
     }
 
+    pub async fn redeploy_with_deployment_flags(
+        &self,
+        deployment_flags: DeploymentFlags,
+    ) -> RedeployedApp {
+        let configurations = test_configurations(
+            &self._metadata_database,
+            &self.fake_llm,
+            Vec::new(),
+            None,
+            SelfServeTenants::FlagUnset,
+            &deployment_flags,
+        )
+        .expect("build the redeployed configuration");
+        let app_state = AppState::from_configurations(configurations)
+            .await
+            .expect("connect the redeployed application to the metadata database");
+        sopho::initialize(&app_state)
+            .await
+            .expect("initialize the redeployed application");
+        let listener = TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind the redeployed application listener");
+        let base_url = format!(
+            "http://{}",
+            listener
+                .local_addr()
+                .expect("read the redeployed application address")
+        );
+        let router = sopho::build_app(app_state);
+        let server_task = tokio::spawn(async move {
+            axum::serve(listener, router)
+                .await
+                .expect("serve the redeployed application");
+        });
+        let admin = UserSession::new(&base_url, Some(self.tenant_id));
+        let signed_in = admin.sign_in(ADMIN_EMAIL, ADMIN_PASSWORD).await;
+        assert_eq!(
+            signed_in.status,
+            StatusCode::OK,
+            "admin login on the redeployed application failed: {}",
+            signed_in.body
+        );
+        RedeployedApp { admin, server_task }
+    }
+
     pub fn session(&self, tenant_id: Option<Uuid>) -> UserSession {
         UserSession::new(self.admin.base_url(), tenant_id)
     }
@@ -572,6 +632,21 @@ fn test_configurations(
     let configurations_builder = match deployment_flags.is_self_serve_tenant_creation_on {
         true => configurations_builder.feature_flag(FeatureFlag::SelfServeTenantCreation, true),
         false => configurations_builder,
+    };
+    let configurations_builder = configurations_builder
+        .feature_flag(
+            FeatureFlag::InternalAddressConnections,
+            !deployment_flags.is_internal_address_connections_off,
+        )
+        .feature_flag(
+            FeatureFlag::BackgroundSuggestedQuestionRefresh,
+            !deployment_flags.is_background_suggested_question_refresh_off,
+        );
+    let configurations_builder = match &deployment_flags.disabled_connection_types {
+        Some(disabled_connection_types) => {
+            configurations_builder.disabled_connection_types(disabled_connection_types)
+        }
+        None => configurations_builder,
     };
     let configurations_builder = match &deployment_flags.platform_administrator_emails {
         Some(platform_administrator_emails) => {

@@ -13,6 +13,7 @@ import {
   StatusType,
   ConnectionDto,
 } from "src/components/Connection/dto";
+import { UNAVAILABLE_CONNECTION_STATUS_LABEL } from "src/components/Connection/constants";
 import {
   useConnections,
   useDeleteConnection,
@@ -83,7 +84,7 @@ export function ConnectionsTable() {
         key: "source_type",
         header: "Source Type",
         type: "accessor",
-        accessor: "source_type",
+        accessor: "source_type_display_name",
         size: 150,
       },
       {
@@ -92,6 +93,14 @@ export function ConnectionsTable() {
         type: "accessor",
         accessor: "status",
         cell: (props) => {
+          if (!props.row.original.is_source_type_available) {
+            return (
+              <StatusBadge
+                status={StatusType.Inactive}
+                text={UNAVAILABLE_CONNECTION_STATUS_LABEL}
+              />
+            );
+          }
           const statusValue = props.getValue();
           let statusEnumEntry: StatusType;
 

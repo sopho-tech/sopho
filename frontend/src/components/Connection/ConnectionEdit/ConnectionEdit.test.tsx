@@ -12,6 +12,13 @@ import {
   testTenantPath,
 } from "src/test/tenant_routes";
 import { POSTGRES_CONNECTION } from "src/test/test_data";
+import { UNAVAILABLE_CONNECTION_MESSAGE } from "src/components/Connection/constants";
+
+const TYPE_DISABLED_MESSAGE =
+  "PostgreSQL connections are turned off on this deployment";
+const editPath = testTenantPath(
+  APP_ROUTES.CONNECTION_EDIT.replace(":id", POSTGRES_CONNECTION.id),
+);
 
 describe("edit connection form", () => {
   test("shows the saved connection and sends the edited fields", async () => {
@@ -71,5 +78,70 @@ describe("edit connection form", () => {
         username: POSTGRES_CONNECTION.username,
         password: null,
       });
+  });
+
+  test("marks a connection whose type is turned off and shows the refusal", async () => {
+    worker.use(
+      http.get(testTenantApiUrl(API_ENDPOINTS.CONNECTION.GET_BY_ID), () =>
+        HttpResponse.json({
+          ...POSTGRES_CONNECTION,
+          is_source_type_available: false,
+        }),
+      ),
+      http.put(testTenantApiUrl(API_ENDPOINTS.CONNECTION.UPDATE), () =>
+        HttpResponse.json(
+          {
+            error: TYPE_DISABLED_MESSAGE,
+            error_code: "CONNECTION_TYPE_DISABLED",
+          },
+          { status: 403 },
+        ),
+      ),
+    );
+    const { router } = await renderWithProviders({
+      routes: [
+        {
+          path: tenantRoutePattern(APP_ROUTES.CONNECTION_EDIT),
+          element: <ConnectionEdit />,
+        },
+        {
+          path: tenantRoutePattern(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS),
+          element: <p>Connection list</p>,
+        },
+      ],
+      initialPath: editPath,
+    });
+
+    await expect
+      .element(page.getByText(UNAVAILABLE_CONNECTION_MESSAGE))
+      .toBeVisible();
+    await page.getByRole("button", { name: "Save Changes" }).click();
+
+    await expect.element(page.getByText(TYPE_DISABLED_MESSAGE)).toBeVisible();
+    expect(router.state.location.pathname).toBe(editPath);
+  });
+
+  test("shows no unavailable banner for an available connection", async () => {
+    worker.use(
+      http.get(testTenantApiUrl(API_ENDPOINTS.CONNECTION.GET_BY_ID), () =>
+        HttpResponse.json(POSTGRES_CONNECTION),
+      ),
+    );
+    await renderWithProviders({
+      routes: [
+        {
+          path: tenantRoutePattern(APP_ROUTES.CONNECTION_EDIT),
+          element: <ConnectionEdit />,
+        },
+      ],
+      initialPath: editPath,
+    });
+
+    await expect
+      .element(page.getByPlaceholder("Connection name"))
+      .toHaveValue(POSTGRES_CONNECTION.name);
+    await expect
+      .element(page.getByText(UNAVAILABLE_CONNECTION_MESSAGE))
+      .not.toBeInTheDocument();
   });
 });

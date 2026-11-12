@@ -1,7 +1,7 @@
 use crate::attribution::error::AttributionError;
 use crate::authorization::errors::AuthorizationError;
 use crate::common::errors::{
-    CreateConnectionError, GetDatabaseConnectionError, UpdateConnectionError,
+    ConnectionGuardError, CreateConnectionError, GetDatabaseConnectionError, UpdateConnectionError,
 };
 use crate::connection::constants::CONNECTION_NOT_FOUND_MESSAGE;
 use thiserror::Error;
@@ -16,6 +16,8 @@ pub enum ConnectionError {
     NotFound,
     #[error("{0}")]
     InvalidRequest(String),
+    #[error("{0}")]
+    Refused(ConnectionGuardError),
     #[error("Failed to encrypt connection")]
     Encryption,
     #[error("{0}")]
@@ -25,6 +27,7 @@ pub enum ConnectionError {
 impl From<CreateConnectionError> for ConnectionError {
     fn from(error: CreateConnectionError) -> Self {
         match error {
+            CreateConnectionError::Refused(guard_error) => ConnectionError::Refused(guard_error),
             CreateConnectionError::ConnectionStatus(status_error) => {
                 ConnectionError::InvalidRequest(status_error.to_string())
             }
@@ -43,6 +46,9 @@ impl From<GetDatabaseConnectionError> for ConnectionError {
     fn from(error: GetDatabaseConnectionError) -> Self {
         match error {
             GetDatabaseConnectionError::ConnectionNotFound => ConnectionError::NotFound,
+            GetDatabaseConnectionError::Refused(guard_error) => {
+                ConnectionError::Refused(guard_error)
+            }
             GetDatabaseConnectionError::Connection(database_error) => {
                 ConnectionError::Database(database_error)
             }
@@ -57,6 +63,7 @@ impl From<UpdateConnectionError> for ConnectionError {
             UpdateConnectionError::GetConnection(get_connection_error) => {
                 get_connection_error.into()
             }
+            UpdateConnectionError::Refused(guard_error) => ConnectionError::Refused(guard_error),
             UpdateConnectionError::ConnectionStatus(status_error) => {
                 ConnectionError::InvalidRequest(status_error.to_string())
             }

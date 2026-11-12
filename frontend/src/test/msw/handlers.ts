@@ -8,6 +8,7 @@ import type {
 } from "src/components/Notebook/Cell/dto";
 import {
   CANVAS,
+  OFFERED_SOURCE_TYPES,
   SQLITE_CONNECTION,
   TEST_USER,
   notebookWithCells,
@@ -44,6 +45,11 @@ type CanvasPageHandlersOptions = {
   dashboard: DashboardDto;
   executionResults: Record<string, ExecuteCellResponseDto>;
 };
+
+export const offeredSourceTypesHandler = http.get(
+  testTenantApiUrl(API_ENDPOINTS.CONNECTION.OFFERED_SOURCE_TYPES),
+  () => HttpResponse.json(OFFERED_SOURCE_TYPES),
+);
 
 function requireByIdentifier<T>(
   itemsByIdentifier: Record<string, T>,
@@ -125,4 +131,5 @@ export const handlers = [
   signedInSessionHandler,
   currentUserHandler,
   emaillessSignInPageOptionsHandler,
+  offeredSourceTypesHandler,
 ];

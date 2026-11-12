@@ -4,6 +4,8 @@ import { useStore } from "src/store";
 import { StatusBadge } from "src/components/StatusBadge/StatusBadge";
 import { useConnection } from "src/api/connection/queries";
 import { Dialog } from "src/components/Dialog/Dialog";
+import { BannerSlim } from "src/components/design-system/BannerSlim";
+import { UNAVAILABLE_CONNECTION_MESSAGE } from "src/components/Connection/constants";
 import { Form } from "src/components/design-system/Form/Form";
 import { Grid, GridItem } from "src/components/design-system/Grid";
 import { formatTimestamp } from "src/utils/timestamp_utils";
@@ -38,9 +40,7 @@ export function ConnectionDetail() {
       connectionDetails
         ? {
             name: connectionDetails.name,
-            source_type:
-              connectionDetails.source_type.charAt(0) +
-              connectionDetails.source_type.slice(1).toLowerCase(),
+            source_type: connectionDetails.source_type_display_name,
             host: connectionDetails.host,
             port:
               connectionDetails.port != null
@@ -62,6 +62,9 @@ export function ConnectionDetail() {
 
   const dialogContent = (
     <Fragment>
+      {connectionDetails && !connectionDetails.is_source_type_available && (
+        <BannerSlim type="warning" message={UNAVAILABLE_CONNECTION_MESSAGE} />
+      )}
       {defaultValues && connectionDetails && (
         <Form defaultValues={defaultValues} onSubmit={handleSubmit} readonly>
           <Form.Fields className={styles.fieldsContainer}>

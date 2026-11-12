@@ -72,30 +72,66 @@ Controls how much Sopho logs, using the [tracing filter syntax](https://docs.rs/
 
 A feature flag turns one behaviour of Sopho on or off for the whole deployment. Each flag is an environment variable named `SOPHO_FEATURE_<NAME>` that accepts `true` or `false`. Leave it unset to keep the default. Sopho fails to start if a flag has any other value, and logs every flag at startup.
 
-| Variable                                    | Default | Purpose                                                                                                                                                                      |
-| ------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SOPHO_FEATURE_SELF_SERVE_TENANT_CREATION`  | `false` | Lets anyone who signs in create their own tenants and become their owner, up to `SOPHO_SELF_SERVE_TENANT_LIMIT` each                                                         |
-| `SOPHO_FEATURE_PASSWORD_SIGN_IN`            | `true`  | Lets people sign in with an email and password. When `false`, every password request is refused and people sign in only through a [Single Sign-On](#single-sign-on) provider |
-| `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` | `true`  | Creates the administrator account from the [Admin Credentials](#admin-credentials) the first time Sopho runs                                                                 |
-| `SOPHO_FEATURE_DEFAULT_TENANT`              | `true`  | Creates the `Default` tenant with its demo data the first time Sopho runs, owned by the seeded administrator                                                                 |
+| Variable                                              | Default | Purpose                                                                                                                                                                              |
+| ----------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SOPHO_FEATURE_SELF_SERVE_TENANT_CREATION`            | `false` | Lets anyone who signs in create their own tenants and become their owner, up to `SOPHO_SELF_SERVE_TENANT_LIMIT` each                                                                 |
+| `SOPHO_FEATURE_PASSWORD_SIGN_IN`                      | `true`  | Lets people sign in with an email and password. When `false`, every password request is refused and people sign in only through a [Single Sign-On](#single-sign-on) provider         |
+| `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR`           | `true`  | Creates the administrator account from the [Admin Credentials](#admin-credentials) the first time Sopho runs                                                                         |
+| `SOPHO_FEATURE_DEFAULT_TENANT`                        | `true`  | Creates the `Default` tenant with its demo data the first time Sopho runs, owned by the seeded administrator                                                                         |
+| `SOPHO_FEATURE_INTERNAL_ADDRESS_CONNECTIONS`          | `true`  | Lets people connect to databases on loopback, private, link-local and other internal addresses. When `false`, a connection whose host is, or resolves to, such an address is refused |
+| `SOPHO_FEATURE_BACKGROUND_SUGGESTED_QUESTION_REFRESH` | `true`  | Generates suggested questions for every connection at startup and once a day, which calls the configured AI provider. When `false`, no suggested questions are generated             |
 
 ### Combinations Sopho refuses
 
 Some settings cannot work together. Sopho fails to start and names both settings when:
 
-| If                                                     | Then you also need                                            | Why                                                                       |
-| ------------------------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `SOPHO_FEATURE_PASSWORD_SIGN_IN` is `false`            | at least one provider in `SOPHO_OIDC_PROVIDERS`               | otherwise nobody can sign in                                              |
-| `SOPHO_FEATURE_PASSWORD_SIGN_IN` is `false`            | `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` set to `false`    | the seeded administrator has only a password, so it could never sign in   |
-| `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` is `false` | at least one address in `SOPHO_PLATFORM_ADMINISTRATOR_EMAILS` | otherwise a new deployment can never have an administrator                |
-| `SOPHO_PLATFORM_ADMINISTRATOR_EMAILS` is set           | at least one provider in `SOPHO_OIDC_PROVIDERS`               | a listed person becomes an administrator by signing in through a provider |
-| `SOPHO_FEATURE_DEFAULT_TENANT` is `true`               | `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` set to `true`     | the default tenant and its demo are owned by the seeded administrator     |
+| If                                                      | Then you also need                                            | Why                                                                       |
+| ------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `SOPHO_FEATURE_PASSWORD_SIGN_IN` is `false`             | at least one provider in `SOPHO_OIDC_PROVIDERS`               | otherwise nobody can sign in                                              |
+| `SOPHO_FEATURE_PASSWORD_SIGN_IN` is `false`             | `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` set to `false`    | the seeded administrator has only a password, so it could never sign in   |
+| `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` is `false`  | at least one address in `SOPHO_PLATFORM_ADMINISTRATOR_EMAILS` | otherwise a new deployment can never have an administrator                |
+| `SOPHO_PLATFORM_ADMINISTRATOR_EMAILS` is set            | at least one provider in `SOPHO_OIDC_PROVIDERS`               | a listed person becomes an administrator by signing in through a provider |
+| `SOPHO_FEATURE_DEFAULT_TENANT` is `true`                | `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` set to `true`     | the default tenant and its demo are owned by the seeded administrator     |
+| `SQLITE` is listed in `SOPHO_DISABLED_CONNECTION_TYPES` | `SOPHO_FEATURE_DEFAULT_TENANT` set to `false`                 | the default tenant's demo is a SQLite connection                          |
 
 ## SOPHO_SELF_SERVE_TENANT_LIMIT
 
 How many tenants one person may create when `SOPHO_FEATURE_SELF_SERVE_TENANT_CREATION` is on. It must be a whole number of at least `1`. Defaults to `2`.
 
 Every tenant a person has created counts. Tenants they joined by invitation, and tenants created by a platform administrator, do not count. Platform administrators create tenants without a limit.
+
+## SOPHO_DISABLED_CONNECTION_TYPES
+
+A comma-separated list of connection types to turn off, for example `SQLITE`. Every type is enabled unless it is listed here. The names are `POSTGRESQL`, `SUPABASE` and `SQLITE`, in capitals. Sopho fails to start if an entry is not a connection type or appears twice.
+
+A type that is turned off is not offered when creating a connection. Connections of that type that already exist stay listed and are marked unavailable. They cannot be queried or changed.
+
+A SQLite connection reads a file on the server that runs Sopho, so turn `SQLITE` off on a deployment that people outside your organisation can sign in to.
+
+## Internal addresses
+
+When `SOPHO_FEATURE_INTERNAL_ADDRESS_CONNECTIONS` is `false`, Sopho refuses a PostgreSQL or Supabase connection whose host is, or resolves to, a loopback, private, link-local, carrier-grade NAT or unspecified address, including the IPv6 equivalents. A host name that does not resolve is refused too. The check runs when a connection is created, changed or first used.
+
+This check gives people a clear error. It is not a complete guard: the host is checked when Sopho first opens a connection to it, and a host name can resolve to a different address later. On a public deployment, also block outbound traffic from Sopho to internal ranges and the cloud metadata address with a firewall.
+
+## Connection credentials
+
+Sopho passes a PostgreSQL or Supabase connection's host, port, username, password and database to the driver exactly as typed. Special characters such as `@`, `/` and `#` need no escaping.
+
+Earlier versions joined these fields into a URL. If you percent-encoded a value to make it work, for example `p%40ss` for `p@ss`, or added options after the database name, such as `sales?sslmode=require`, edit the connection and enter the plain value.
+
+## Response headers
+
+Sopho adds these headers to every response:
+
+| Header                    | Value                             |
+| ------------------------- | --------------------------------- |
+| `X-Content-Type-Options`  | `nosniff`                         |
+| `Referrer-Policy`         | `strict-origin-when-cross-origin` |
+| `Content-Security-Policy` | `frame-ancestors 'none'`          |
+| `X-Frame-Options`         | `DENY`                            |
+
+Sopho cannot be embedded in a frame on another site. Set `Strict-Transport-Security` on the proxy that serves HTTPS in front of Sopho.
 
 ## SOPHO_PLATFORM_ADMINISTRATOR_EMAILS
 

@@ -73,6 +73,8 @@ pub struct ConnectionDto {
     pub name: String,
     pub description: Option<String>,
     pub source_type: SourceType,
+    #[serde(default, skip_deserializing)]
+    pub source_type_display_name: String,
     pub database: String,
     pub host: String,
     #[serde(deserialize_with = "deserialize_port")]
@@ -82,6 +84,8 @@ pub struct ConnectionDto {
     pub created_at: DateTime<FixedOffset>,
     pub updated_at: DateTime<FixedOffset>,
     pub status: ConnectionStatus,
+    #[serde(default, skip_deserializing)]
+    pub is_source_type_available: bool,
     #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
     pub capabilities: Option<ResourceCapabilities>,
     #[serde(default, skip_deserializing)]
@@ -95,13 +99,24 @@ pub struct ExecuteQueryDto {
     pub query: String,
 }
 
-impl From<entity::connection::Model> for ConnectionDto {
-    fn from(model: entity::connection::Model) -> Self {
+#[derive(Debug, Serialize)]
+pub struct OfferedSourceTypeDto {
+    pub source_type: SourceType,
+    pub display_name: &'static str,
+}
+
+impl ConnectionDto {
+    pub fn from_connection(
+        model: entity::connection::Model,
+        source_type: SourceType,
+        is_source_type_available: bool,
+    ) -> Self {
         Self {
             id: model.id,
             name: model.name,
             description: model.description,
-            source_type: SourceType::from_str(&model.source_type).unwrap(),
+            source_type,
+            source_type_display_name: source_type.display_name().to_string(),
             database: model.database,
             host: model.host.unwrap_or_default(),
             port: model.port.unwrap_or_default(),
@@ -110,6 +125,7 @@ impl From<entity::connection::Model> for ConnectionDto {
             created_at: model.created_at,
             updated_at: model.updated_at,
             status: ConnectionStatus::from_str(&model.status).unwrap(),
+            is_source_type_available,
             capabilities: None,
             created_by: None,
             modified_by: None,

@@ -18,6 +18,13 @@ pub const ADMINISTRATOR_EMAILS_NEED_PROVIDER_REASON: &str =
     "a listed person becomes an administrator by signing in through an OIDC provider";
 pub const DEFAULT_TENANT_NEEDS_ADMINISTRATOR_REASON: &str =
     "the default tenant and its demo are owned by the seeded administrator";
+pub const DISABLED_CONNECTION_TYPE_SEPARATOR: char = ',';
+pub const DEFAULT_TENANT_DEMO_NEEDS_SQLITE_REASON: &str =
+    "the default tenant's demo is a SQLite connection";
+pub const CONTENT_TYPE_OPTIONS_HEADER_VALUE: &str = "nosniff";
+pub const REFERRER_POLICY_HEADER_VALUE: &str = "strict-origin-when-cross-origin";
+pub const CONTENT_SECURITY_POLICY_HEADER_VALUE: &str = "frame-ancestors 'none'";
+pub const FRAME_OPTIONS_HEADER_VALUE: &str = "DENY";
 pub const UNKNOWN_CREATED_BY_FILTER_MESSAGE: &str = "created_by only accepts \"me\"";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString)]
@@ -52,6 +59,7 @@ pub enum EnvironmentVariable {
     SophoPublicUrl,
     SophoSelfServeTenantLimit,
     SophoPlatformAdministratorEmails,
+    SophoDisabledConnectionTypes,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumString, Deserialize)]

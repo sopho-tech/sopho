@@ -1,4 +1,5 @@
 import {
+  BannerSlim,
   Button,
   Flex,
   Form,
@@ -11,7 +12,11 @@ import {
 import { SourceTypeEnum } from "src/constants/database_types";
 import styles from "src/components/Connection/ConnectionNew/ConnectionNew.module.css";
 import { useState } from "react";
-import { CreateConnectionDto, useCreateConnection } from "src/api/connection";
+import {
+  CreateConnectionDto,
+  useCreateConnection,
+  useOfferedSourceTypes,
+} from "src/api/connection";
 import {
   ConnectionDetailsPageStateEnum,
   StatusType,
@@ -29,10 +34,15 @@ export function ConnectionNew() {
   );
   const navigate = useNavigate();
   const toTenantPath = useTenantPath();
-  const sourceTypeOptions = Object.values(SourceTypeEnum).map((type) => ({
-    value: type,
-    label: type.charAt(0) + type.slice(1).toLowerCase(),
+  const { data: offeredSourceTypes = [], error: offeredSourceTypesError } =
+    useOfferedSourceTypes();
+  const sourceTypeOptions = offeredSourceTypes.map((offeredSourceType) => ({
+    value: offeredSourceType.source_type,
+    label: offeredSourceType.display_name,
   }));
+  const selectedSourceType = offeredSourceTypes.find(
+    (offeredSourceType) => offeredSourceType.source_type === sourceType,
+  );
 
   const onSubmitHandler = (values: Record<string, unknown>) => {
     const payload: CreateConnectionDto = {
@@ -47,9 +57,12 @@ export function ConnectionNew() {
       description: (values.description as string) || null,
       status: StatusType.Active,
     };
-    createMutation.mutate(payload);
-    setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
-    void navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
+    createMutation.mutate(payload, {
+      onSuccess: () => {
+        setConnectionDetailsPageState(ConnectionDetailsPageStateEnum.LIST);
+        void navigate(toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS));
+      },
+    });
   };
 
   const onChangeHandler = (fieldName: string, value: string) => {
@@ -142,13 +155,9 @@ export function ConnectionNew() {
                 Specific Details
               </Heading>
               <Heading accessibilityLevel={3} textColor="subtle" size="base">
-                {sourceType === null
-                  ? "Select source type to see the specific details"
-                  : sourceType === SourceTypeEnum.PostgreSQL
-                    ? "Enter your PostgreSQL connection details"
-                    : sourceType === SourceTypeEnum.Supabase
-                      ? "Enter your Supabase connection details"
-                      : `Enter your ${sourceType.charAt(0) + sourceType.slice(1).toLowerCase()} connection details`}
+                {selectedSourceType
+                  ? `Enter your ${selectedSourceType.display_name} connection details`
+                  : "Select source type to see the specific details"}
               </Heading>
             </Flex>
             {(sourceType === SourceTypeEnum.PostgreSQL ||
@@ -257,8 +266,14 @@ export function ConnectionNew() {
           </Flex>
         </Form.Fields>
         <Separator></Separator>
+        <BannerSlim type="error" message={offeredSourceTypesError?.message} />
+        <BannerSlim type="error" message={createMutation.error?.message} />
         <Flex gap="md">
-          <Form.Submit label="Save" size="md" />
+          <Form.Submit
+            label="Save"
+            size="md"
+            isPending={createMutation.isPending}
+          />
           <Button
             backgroundColor="white"
             label="Back"

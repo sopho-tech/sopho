@@ -7,6 +7,7 @@ use crate::connection::constants::CONNECTION_NOT_FOUND_MESSAGE;
 use crate::connection::dto;
 use crate::connection::error::ConnectionError;
 use crate::connection::service;
+use crate::database::service as database_service;
 use axum::Router;
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
@@ -21,12 +22,23 @@ struct ConnectionPath {
 
 pub fn routes(app_state: AppState) -> Router {
     Router::new()
+        .route("/source_type", get(get_offered_source_types))
         .route("/{id}", get(get_connection))
         .route("/", get(get_all_connections))
         .route("/", post(create_connection))
         .route("/{id}", put(update_connection))
         .route("/{id}/execute-query", post(execute_query))
         .with_state(app_state)
+}
+
+async fn get_offered_source_types(
+    State(app_state): State<AppState>,
+    _tenant_context: TenantContext,
+) -> impl IntoResponse {
+    (
+        StatusCode::OK,
+        axum::Json(serde_json::json!(service::offered_source_types(&app_state))),
+    )
 }
 
 async fn get_connection(
@@ -101,6 +113,9 @@ async fn execute_query(
             StatusCode::NOT_FOUND,
             axum::Json(serde_json::json!({ "error": "Connection not found" })),
         ),
+        Err(ExecuteSqlError::GetConnection(GetDatabaseConnectionError::Refused(guard_error))) => {
+            database_service::connection_guard_error_response(&guard_error)
+        }
         Err(ExecuteSqlError::GetConnection(e @ GetDatabaseConnectionError::Decryption(_))) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             axum::Json(serde_json::json!({ "error": e.to_string() })),
@@ -146,6 +161,9 @@ fn connection_error_http_response(
             StatusCode::NOT_FOUND,
             axum::Json(serde_json::json!({ "error": error.to_string() })),
         ),
+        ConnectionError::Refused(guard_error) => {
+            database_service::connection_guard_error_response(&guard_error)
+        }
         ConnectionError::InvalidRequest(_) => (
             StatusCode::BAD_REQUEST,
             axum::Json(serde_json::json!({ "error": error.to_string() })),

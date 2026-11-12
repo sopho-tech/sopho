@@ -3,16 +3,18 @@ use crate::ai_configuration;
 use crate::authorization::dto::TenantId;
 use crate::common::constants::{
     ADMINISTRATOR_EMAILS_NEED_PROVIDER_REASON, DEFAULT_SELF_SERVE_TENANT_LIMIT,
-    DEFAULT_TENANT_NEEDS_ADMINISTRATOR_REASON, EnvironmentVariable,
-    MINIMUM_SELF_SERVE_TENANT_LIMIT, NO_PLATFORM_ADMINISTRATOR_REASON, NOBODY_CAN_SIGN_IN_REASON,
-    OidcProviderVariable, PLATFORM_ADMINISTRATOR_EMAIL_SEPARATOR,
-    SEEDED_ADMINISTRATOR_CANNOT_SIGN_IN_REASON, SMTP_TIMEOUT_SECONDS, SmtpTls,
+    DEFAULT_TENANT_DEMO_NEEDS_SQLITE_REASON, DEFAULT_TENANT_NEEDS_ADMINISTRATOR_REASON,
+    DISABLED_CONNECTION_TYPE_SEPARATOR, EnvironmentVariable, MINIMUM_SELF_SERVE_TENANT_LIMIT,
+    NO_PLATFORM_ADMINISTRATOR_REASON, NOBODY_CAN_SIGN_IN_REASON, OidcProviderVariable,
+    PLATFORM_ADMINISTRATOR_EMAIL_SEPARATOR, SEEDED_ADMINISTRATOR_CANNOT_SIGN_IN_REASON,
+    SMTP_TIMEOUT_SECONDS, SmtpTls,
 };
 use crate::common::cryptography_utils::{
     SECRET_KEY_PATH, generate_and_store_encryption_key, get_encryption_key_from_path,
 };
 use crate::common::errors::ConfigurationError;
 use crate::common::url_utils::validated_base_url;
+use crate::connection::constants::SourceType;
 use crate::database::pool::{DatabasePoolRegistry, new_database_pool_registry};
 use crate::db;
 use crate::email_delivery;
@@ -207,6 +209,30 @@ pub fn platform_administrator_emails_from_variable(
     Ok(platform_administrator_emails)
 }
 
+pub fn disabled_connection_types_from_variable(
+    value: Option<String>,
+) -> Result<Vec<SourceType>, ConfigurationError> {
+    let Some(value) = value.filter(|value| !value.trim().is_empty()) else {
+        return Ok(Vec::new());
+    };
+    let mut disabled_connection_types: Vec<SourceType> = Vec::new();
+    for entry in value.split(DISABLED_CONNECTION_TYPE_SEPARATOR) {
+        let source_type_name = entry.trim();
+        let source_type = SourceType::from_str(source_type_name).map_err(|_| {
+            ConfigurationError::InvalidDisabledConnectionType {
+                value: source_type_name.to_string(),
+            }
+        })?;
+        if disabled_connection_types.contains(&source_type) {
+            return Err(ConfigurationError::DuplicateDisabledConnectionType {
+                value: source_type_name.to_string(),
+            });
+        }
+        disabled_connection_types.push(source_type);
+    }
+    Ok(disabled_connection_types)
+}
+
 pub fn validate_setting_combinations(
     configurations: &Configurations,
 ) -> Result<(), ConfigurationError> {
@@ -221,6 +247,9 @@ pub fn validate_setting_combinations(
         .is_enabled(FeatureFlag::DefaultTenant);
     let has_oidc_provider = !configurations.oidc_providers.is_empty();
     let has_administrator_emails = !configurations.platform_administrator_emails.is_empty();
+    let is_sqlite_disabled = configurations
+        .disabled_connection_types
+        .contains(&SourceType::Sqlite);
     let contradiction = |first_setting: String, second_setting: String, reason: &'static str| {
         Err(ConfigurationError::ContradictorySettings {
             first_setting,
@@ -264,6 +293,13 @@ pub fn validate_setting_combinations(
             ADMINISTRATOR_EMAILS_NEED_PROVIDER_REASON,
         );
     }
+    if is_sqlite_disabled && is_default_tenant_on {
+        return contradiction(
+            EnvironmentVariable::SophoDisabledConnectionTypes.to_string(),
+            FeatureFlag::DefaultTenant.environment_variable_name(),
+            DEFAULT_TENANT_DEMO_NEEDS_SQLITE_REASON,
+        );
+    }
     Ok(())
 }
 
@@ -291,6 +327,7 @@ pub struct Configurations {
     pub feature_flags: FeatureFlags,
     pub self_serve_tenant_limit: u64,
     pub platform_administrator_emails: Vec<String>,
+    pub disabled_connection_types: Vec<SourceType>,
 }
 
 pub struct ConfigurationsBuilder {
@@ -311,6 +348,7 @@ pub struct ConfigurationsBuilder {
     feature_flags: FeatureFlags,
     self_serve_tenant_limit: Option<u64>,
     platform_administrator_emails: Option<String>,
+    disabled_connection_types: Option<String>,
 }
 
 impl ConfigurationsBuilder {
@@ -333,6 +371,7 @@ impl ConfigurationsBuilder {
             feature_flags: FeatureFlags::from_defaults(),
             self_serve_tenant_limit: None,
             platform_administrator_emails: None,
+            disabled_connection_types: None,
         }
     }
 
@@ -424,6 +463,14 @@ impl ConfigurationsBuilder {
         self
     }
 
+    pub fn disabled_connection_types(
+        mut self,
+        disabled_connection_types: impl Into<String>,
+    ) -> Self {
+        self.disabled_connection_types = Some(disabled_connection_types.into());
+        self
+    }
+
     pub fn build(self) -> Result<Configurations, ConfigurationError> {
         let password_administrator = match self
             .feature_flags
@@ -483,6 +530,9 @@ impl ConfigurationsBuilder {
             )?,
             platform_administrator_emails: platform_administrator_emails_from_variable(
                 self.platform_administrator_emails,
+            )?,
+            disabled_connection_types: disabled_connection_types_from_variable(
+                self.disabled_connection_types,
             )?,
         };
         validate_setting_combinations(&configurations)?;
@@ -582,6 +632,10 @@ impl Configurations {
                     EnvironmentVariable::SophoPlatformAdministratorEmails,
                 )?
                 .map(Cow::into_owned),
+            )?,
+            disabled_connection_types: disabled_connection_types_from_variable(
+                optional_environment_variable(EnvironmentVariable::SophoDisabledConnectionTypes)?
+                    .map(Cow::into_owned),
             )?,
         };
         validate_setting_combinations(&configurations)?;
@@ -734,11 +788,13 @@ impl AppState {
 mod tests {
     use super::{
         Configurations, ConfigurationsBuilder, OidcProviderConfiguration,
-        email_configuration_from_variables, oidc_providers_from_variables,
-        platform_administrator_emails_from_variable, self_serve_tenant_limit_from_variable,
+        disabled_connection_types_from_variable, email_configuration_from_variables,
+        oidc_providers_from_variables, platform_administrator_emails_from_variable,
+        self_serve_tenant_limit_from_variable,
     };
     use crate::common::constants::{EnvironmentVariable, SmtpTls};
     use crate::common::errors::ConfigurationError;
+    use crate::connection::constants::SourceType;
     use crate::feature_flag::constants::FeatureFlag;
     use std::collections::HashMap;
 
@@ -932,6 +988,85 @@ mod tests {
                 .platform_administrator_emails("founder@example.test"),
             "SOPHO_PLATFORM_ADMINISTRATOR_EMAILS",
             "SOPHO_OIDC_PROVIDERS",
+        );
+    }
+
+    #[test]
+    fn disabling_sqlite_is_refused_while_the_default_tenant_is_on() {
+        assert_contradiction(
+            with_password_administrator(configurations_builder())
+                .disabled_connection_types("SQLITE"),
+            "SOPHO_DISABLED_CONNECTION_TYPES",
+            "SOPHO_FEATURE_DEFAULT_TENANT",
+        );
+    }
+
+    #[test]
+    fn disabling_sqlite_is_accepted_without_the_default_tenant() {
+        let configurations = passwordless(with_oidc_provider(configurations_builder()))
+            .platform_administrator_emails("founder@example.test")
+            .disabled_connection_types("SQLITE")
+            .build()
+            .unwrap();
+        assert_eq!(
+            configurations.disabled_connection_types,
+            vec![SourceType::Sqlite]
+        );
+    }
+
+    #[test]
+    fn disabling_another_connection_type_is_accepted_with_the_default_tenant() {
+        let configurations = with_password_administrator(configurations_builder())
+            .disabled_connection_types("SUPABASE")
+            .build()
+            .unwrap();
+        assert_eq!(
+            configurations.disabled_connection_types,
+            vec![SourceType::Supabase]
+        );
+    }
+
+    #[test]
+    fn disabled_connection_types_are_trimmed_and_default_to_none() {
+        assert!(
+            disabled_connection_types_from_variable(None)
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            disabled_connection_types_from_variable(Some("  ".to_string()))
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(
+            disabled_connection_types_from_variable(Some(" SQLITE , SUPABASE".to_string()))
+                .unwrap(),
+            vec![SourceType::Sqlite, SourceType::Supabase]
+        );
+    }
+
+    #[test]
+    fn an_unknown_or_repeated_disabled_connection_type_is_refused() {
+        for unknown_entry_list in ["sqlite", "SQLITE,", "SQLITE,,SUPABASE", "DUCKDB"] {
+            assert!(
+                matches!(
+                    disabled_connection_types_from_variable(Some(unknown_entry_list.into()))
+                        .unwrap_err(),
+                    ConfigurationError::InvalidDisabledConnectionType { .. }
+                ),
+                "{unknown_entry_list:?} was not refused"
+            );
+        }
+        let repeated =
+            disabled_connection_types_from_variable(Some("SQLITE, SQLITE".into())).unwrap_err();
+        assert!(matches!(
+            repeated,
+            ConfigurationError::DuplicateDisabledConnectionType { ref value } if value == "SQLITE"
+        ));
+        assert!(
+            repeated
+                .to_string()
+                .contains("SOPHO_DISABLED_CONNECTION_TYPES")
         );
     }
 

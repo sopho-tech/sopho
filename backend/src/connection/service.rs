@@ -19,9 +19,7 @@ use crate::connection::dto;
 use crate::connection::error::ConnectionError;
 use crate::connection::repository;
 use crate::database::constants::QueryResult;
-use crate::database::postgres;
 use crate::database::service as database_service;
-use crate::database::sqlite;
 use crate::entity;
 
 use tracing::info;
@@ -107,7 +105,12 @@ async fn connection_response_dto_with_names(
         &connection.modified_by_actor,
         connection.modified_by_user_id,
     )?;
-    let mut response_dto = dto::ConnectionDto::from(connection);
+    let source_type =
+        SourceType::from_str(&connection.source_type).map_err(ConnectionError::Internal)?;
+    let is_source_type_available =
+        database_service::is_source_type_available(app_state, source_type);
+    let mut response_dto =
+        dto::ConnectionDto::from_connection(connection, source_type, is_source_type_available);
     response_dto.capabilities = Some(
         authorization_service::resolve_capabilities(app_state, tenant_context, subject).await?,
     );
@@ -130,6 +133,16 @@ fn connection_subject(
     .map_err(ConnectionError::Internal)
 }
 
+pub fn offered_source_types(app_state: &AppState) -> Vec<dto::OfferedSourceTypeDto> {
+    database_service::offered_source_types(app_state)
+        .into_iter()
+        .map(|source_type| dto::OfferedSourceTypeDto {
+            source_type,
+            display_name: source_type.display_name(),
+        })
+        .collect()
+}
+
 pub async fn execute_get_connection(
     app_state: &AppState,
     tenant_id: &TenantId,
@@ -142,6 +155,18 @@ pub async fn execute_get_connection(
     cryptography_utils::decrypt_connection(&mut connection, &app_state.config.encryption_key)
         .map_err(GetDatabaseConnectionError::Decryption)?;
     Ok(connection)
+}
+
+pub fn ensure_connection_can_be_used(
+    app_state: &AppState,
+    connection: &entity::connection::Model,
+) -> Result<(), GetDatabaseConnectionError> {
+    let source_type = SourceType::from_str(&connection.source_type)
+        .map_err(GetDatabaseConnectionError::SourceTypeParse)?;
+    Ok(database_service::ensure_source_type_is_enabled(
+        app_state,
+        source_type,
+    )?)
 }
 
 pub async fn execute_get_all_connections(
@@ -212,19 +237,6 @@ pub async fn get_all_connections(
     Ok(response_dto_list)
 }
 
-async fn get_connection_status(
-    connection_entity: &entity::connection::Model,
-) -> Result<ConnectionStatus, crate::common::errors::ValidationError> {
-    let source_type = SourceType::from_str(&connection_entity.source_type).unwrap();
-    match source_type {
-        SourceType::Postgresql | SourceType::Supabase => {
-            Ok(postgres::get_connection_status(connection_entity).await)
-        }
-        SourceType::Sqlite => sqlite::get_connection_status(connection_entity).await,
-        _ => panic!("Unsupported source type"),
-    }
-}
-
 pub async fn execute_create_connection(
     app_state: &AppState,
     tenant_id: &TenantId,
@@ -255,9 +267,8 @@ pub async fn execute_create_connection(
         updated_at: time_utils::now_utc_into(),
     };
 
-    let connection_status = get_connection_status(&connection_entity)
-        .await
-        .map_err(CreateConnectionError::ConnectionStatus)?;
+    let connection_status =
+        database_service::probe_connection_status(app_state, &connection_entity).await?;
     connection_entity.status = connection_status.to_string();
 
     cryptography_utils::encrypt_connection(
@@ -324,7 +335,8 @@ async fn execute_update_connection(
         ..stored_connection
     };
 
-    let connection_status = get_connection_status(&connection_entity).await?;
+    let connection_status =
+        database_service::probe_connection_status(app_state, &connection_entity).await?;
     connection_entity.status = connection_status.to_string();
 
     cryptography_utils::encrypt_connection(
