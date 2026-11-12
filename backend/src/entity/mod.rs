@@ -20,6 +20,7 @@ pub mod password_reset_token;
 pub mod resource_grant;
 pub mod role;
 pub mod role_permission;
+pub mod self_serve_tenant_creation;
 pub mod session;
 pub mod suggested_question;
 pub mod tenant;

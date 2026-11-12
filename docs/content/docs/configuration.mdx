@@ -68,6 +68,20 @@ Base URL for requests to OpenAI, including the version path. Leave it unset to u
 
 Controls how much Sopho logs, using the [tracing filter syntax](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html#directives), for example `info` or `sopho=info,tower_http=warn`. Defaults to `sopho=debug,tower_http=debug`.
 
+## Feature flags
+
+A feature flag turns one behaviour of Sopho on or off for the whole deployment. Each flag is an environment variable named `SOPHO_FEATURE_<NAME>` that accepts `true` or `false`. Leave it unset to keep the default. Sopho fails to start if a flag has any other value, and logs every flag at startup.
+
+| Variable                                   | Default | Purpose                                                                                                              |
+| ------------------------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| `SOPHO_FEATURE_SELF_SERVE_TENANT_CREATION` | `false` | Lets anyone who signs in create their own tenants and become their owner, up to `SOPHO_SELF_SERVE_TENANT_LIMIT` each |
+
+## SOPHO_SELF_SERVE_TENANT_LIMIT
+
+How many tenants one person may create when `SOPHO_FEATURE_SELF_SERVE_TENANT_CREATION` is on. It must be a whole number of at least `1`. Defaults to `2`.
+
+Every tenant a person has created counts. Tenants they joined by invitation, and tenants created by a platform administrator, do not count. Platform administrators create tenants without a limit.
+
 ## Admin Credentials
 
 The first time Sopho runs, the following four environment variables are used to seed the initial admin user so you can log in after bootup. The application fails to start if any of these are not set.

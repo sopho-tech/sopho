@@ -263,3 +263,11 @@ pub const NOTEBOOK_NOT_FOUND_MESSAGE: &str = "Notebook not found";
 pub const CONNECTION_NOT_FOUND_MESSAGE: &str = "Connection not found";
 pub const CELL_NOT_FOUND_MESSAGE: &str = "Cell not found";
 pub const CELL_NOTEBOOK_IS_FIXED_MESSAGE: &str = "A cell cannot be moved to another notebook";
+
+pub const SELF_SERVE_TENANT_CREATION_TABLE: &str = "self_serve_tenant_creation";
+pub const TENANT_CREATION_CAPABILITY_PATH: &str = "/tenant/creation_capability";
+pub const TENANT_CREATION_LIMIT_REACHED_CODE: &str = "TENANT_CREATION_LIMIT_REACHED";
+pub const TWO_TENANT_LIMIT_MESSAGE: &str = "You have created the maximum of 2 tenants";
+pub const ONE_TENANT_LIMIT_MESSAGE: &str = "You have created the maximum of 1 tenants";
+pub const TENANT_NAME_TOO_LONG_MESSAGE: &str = "Use at most 100 characters for the tenant name";
+pub const MAXIMUM_TENANT_NAME_CHARACTERS: usize = 100;

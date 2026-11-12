@@ -6,8 +6,13 @@ use crate::authorization::service as authorization_service;
 use crate::common::AppState;
 use crate::configuration::constants::ConfigurationKey;
 use crate::entity::tenant;
-use crate::tenant::constants::DEFAULT_TENANT_NAME;
-use crate::tenant::dto::{TenantMembershipDto, UserTenantMembershipDto};
+use crate::feature_flag::constants::FeatureFlag;
+use crate::feature_flag::service as feature_flag_service;
+use crate::tenant::constants::{DEFAULT_TENANT_NAME, MAXIMUM_TENANT_NAME_CHARACTERS};
+use crate::tenant::dto::{
+    TenantCreationCapabilityDto, TenantCreationDecision, TenantMembershipDto,
+    UserTenantMembershipDto,
+};
 use crate::tenant::error::TenantError;
 use crate::tenant::membership::service as membership_service;
 use crate::tenant::repository;
@@ -33,15 +38,22 @@ pub async fn create_tenant_for_user(
     user_id: UserId,
     name: String,
 ) -> Result<tenant::Model, TenantError> {
-    let platform_role =
-        crate::authentication::service::find_platform_role(app_state, user_id).await?;
-    authorization_service::require_platform_permission(
-        platform_role,
-        PlatformPermission::TenantCreate,
-    )?;
+    let is_self_serve_creation = match decide_tenant_creation(app_state, user_id).await? {
+        TenantCreationDecision::AllowedByPlatformPermission => false,
+        TenantCreationDecision::AllowedBySelfServe => true,
+        TenantCreationDecision::RefusedWithoutPermission {
+            authorization_error,
+        } => return Err(TenantError::Unauthorized(authorization_error)),
+        TenantCreationDecision::RefusedAtLimit { limit } => {
+            return Err(TenantError::SelfServeLimitReached { limit });
+        }
+    };
     let name = name.trim().to_string();
     if name.is_empty() {
         return Err(TenantError::NameRequired);
+    }
+    if name.chars().count() > MAXIMUM_TENANT_NAME_CHARACTERS {
+        return Err(TenantError::NameTooLong);
     }
 
     let creator = Actor::human(user_id);
@@ -55,7 +67,67 @@ pub async fn create_tenant_for_user(
     )
     .await
     .map_err(anyhow::Error::from)?;
+    if is_self_serve_creation {
+        repository::insert_self_serve_tenant_creation(
+            &app_state.database_connection,
+            user_id.get_uuid(),
+            created_tenant.id,
+        )
+        .await
+        .map_err(anyhow::Error::from)?;
+    }
     Ok(created_tenant)
+}
+
+async fn decide_tenant_creation(
+    app_state: &AppState,
+    user_id: UserId,
+) -> Result<TenantCreationDecision, TenantError> {
+    let platform_role =
+        crate::authentication::service::find_platform_role(app_state, user_id).await?;
+    let Err(authorization_error) = authorization_service::require_platform_permission(
+        platform_role,
+        PlatformPermission::TenantCreate,
+    ) else {
+        return Ok(TenantCreationDecision::AllowedByPlatformPermission);
+    };
+    if !feature_flag_service::is_feature_enabled(app_state, FeatureFlag::SelfServeTenantCreation) {
+        return Ok(TenantCreationDecision::RefusedWithoutPermission {
+            authorization_error,
+        });
+    }
+    let limit = app_state.config.self_serve_tenant_limit;
+    let created_tenant_count = repository::count_self_serve_tenant_creations(
+        &app_state.database_connection,
+        user_id.get_uuid(),
+    )
+    .await
+    .map_err(anyhow::Error::from)?;
+    if created_tenant_count >= limit {
+        return Ok(TenantCreationDecision::RefusedAtLimit { limit });
+    }
+    Ok(TenantCreationDecision::AllowedBySelfServe)
+}
+
+pub async fn tenant_creation_capability(
+    app_state: &AppState,
+    user_id: UserId,
+) -> Result<TenantCreationCapabilityDto, TenantError> {
+    Ok(match decide_tenant_creation(app_state, user_id).await? {
+        TenantCreationDecision::AllowedByPlatformPermission
+        | TenantCreationDecision::AllowedBySelfServe => TenantCreationCapabilityDto {
+            can_create_tenant: true,
+            limit_reached_message: None,
+        },
+        TenantCreationDecision::RefusedWithoutPermission { .. } => TenantCreationCapabilityDto {
+            can_create_tenant: false,
+            limit_reached_message: None,
+        },
+        TenantCreationDecision::RefusedAtLimit { limit } => TenantCreationCapabilityDto {
+            can_create_tenant: false,
+            limit_reached_message: Some(TenantError::SelfServeLimitReached { limit }.to_string()),
+        },
+    })
 }
 
 pub async fn list_all_tenants(app_state: &AppState) -> Result<Vec<tenant::Model>, sea_orm::DbErr> {

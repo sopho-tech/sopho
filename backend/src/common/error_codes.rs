@@ -40,6 +40,7 @@ pub enum ErrorCode {
     UserNotFound,
     TenantNotFound,
     EmailNotFound,
+    TenantCreationLimitReached,
 }
 
 impl ErrorCode {

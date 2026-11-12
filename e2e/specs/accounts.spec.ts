@@ -22,11 +22,16 @@ import {
   RESET_LINK_PATH,
   RESET_PASSWORD,
   RESET_REQUESTED_MESSAGE,
+  SELF_SERVE_TENANT_LIMIT_MESSAGE,
   SINGLE_SIGN_ON_PROVIDER_DISPLAY_NAME,
 } from "e2e/support/constants";
 import { expect, test } from "e2e/support/fixtures";
 import { linkInEmail, tokenInLink, waitForEmail } from "e2e/support/mailbox";
-import { APP_URLS, tenantUrl } from "e2e/support/navigation";
+import {
+  APP_URLS,
+  TENANT_HOME_URL_PATTERN,
+  tenantUrl,
+} from "e2e/support/navigation";
 
 type Person = {
   email: string;
@@ -240,5 +245,65 @@ test("connecting single sign-on from the profile, then signing in with it", asyn
     .click();
   await signInAtIdentityProvider(visitor.page, subject, connector);
   await expect(visitor.page).toHaveURL(tenantHomeUrl(tenantId));
+  await visitor.context.close();
+});
+
+test("a new person signs in with single sign-on and creates their own tenants", async ({
+  browser,
+  baseURL,
+}) => {
+  const founder = newPerson("founder");
+  const visitor = await openVisitorPage(browser, baseURL);
+  await visitor.page.goto(APP_URLS.SIGN_IN);
+  await visitor.page
+    .getByRole("button", {
+      name: SINGLE_SIGN_ON_PROVIDER_DISPLAY_NAME,
+      exact: true,
+    })
+    .click();
+  await signInAtIdentityProvider(
+    visitor.page,
+    `founder-subject-${randomUUID()}`,
+    founder,
+  );
+
+  await expect(visitor.page.getByLabel("Enter tenant name")).toBeVisible();
+  await visitor.page.getByLabel("Enter tenant name").fill("Founder Analytics");
+  await visitor.page
+    .getByRole("button", { name: "Create tenant", exact: true })
+    .click();
+  await expect(visitor.page).toHaveURL(TENANT_HOME_URL_PATTERN);
+  const firstTenantUrl = visitor.page.url();
+
+  await visitor.page
+    .getByRole("button", { name: "Tenant: Founder Analytics" })
+    .click();
+  await visitor.page.getByRole("menuitem", { name: "Create a tenant" }).click();
+  await visitor.page
+    .getByRole("dialog")
+    .getByLabel("Name", { exact: true })
+    .fill("Founder Side Project");
+  await visitor.page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Create tenant", exact: true })
+    .click();
+  await expect(visitor.page).toHaveURL(TENANT_HOME_URL_PATTERN);
+  await expect(visitor.page).not.toHaveURL(firstTenantUrl);
+
+  await visitor.page
+    .getByRole("button", { name: "Tenant: Founder Side Project" })
+    .click();
+  await expect(
+    visitor.page.getByRole("menuitemradio", { name: "Founder Analytics" }),
+  ).toBeVisible();
+  await expect(
+    visitor.page.getByRole("menuitem", { name: "Create a tenant" }),
+  ).toHaveCount(0);
+  await visitor.page.keyboard.press("Escape");
+
+  await visitor.page.goto("/onboarding");
+  await expect(
+    visitor.page.getByText(SELF_SERVE_TENANT_LIMIT_MESSAGE),
+  ).toBeVisible();
   await visitor.context.close();
 });

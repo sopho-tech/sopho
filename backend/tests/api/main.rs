@@ -17,6 +17,7 @@ mod platform;
 mod platform_emails;
 mod platform_users;
 mod referenced_resources;
+mod self_serve_tenants;
 mod sign_in;
 mod sign_in_methods;
 mod startup;
