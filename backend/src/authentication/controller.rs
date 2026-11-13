@@ -1,7 +1,11 @@
 use crate::authentication::dto;
+use crate::authentication::oidc::controller as oidc_controller;
+use crate::authentication::password::controller as password_controller;
 use crate::authentication::service;
 use crate::authorization::dto::AuthenticatedUser;
+use crate::authorization::service as authorization_service;
 use crate::common::AppState;
+use crate::rate_limit::service as rate_limit_service;
 use axum::{
     Router,
     extract::State,
@@ -10,18 +14,50 @@ use axum::{
 };
 use tower_cookies::Cookies;
 
-pub fn routes(app_state: AppState) -> Router {
+fn open_routes() -> Router<AppState> {
     Router::new()
         .route("/session", get(get_session))
-        .route("/session", post(create_session))
         .route("/session", delete(delete_session))
         .route("/refresh", post(refresh_token))
-        .route("/me", get(get_current_user))
         .route("/sign_in_page_option", get(get_sign_in_page_options))
+}
+
+fn sign_in_routes() -> Router<AppState> {
+    Router::new()
+        .route("/session", post(create_session))
+        .merge(password_controller::sign_in_routes())
+}
+
+fn authenticated_routes() -> Router<AppState> {
+    Router::new()
+        .route("/me", get(get_current_user))
         .route("/my_sign_in_method", get(get_my_sign_in_methods))
-        .merge(crate::authentication::password::controller::routes())
-        .nest("/oidc", crate::authentication::oidc::controller::routes())
-        .with_state(app_state)
+        .merge(password_controller::authenticated_routes())
+}
+
+pub fn routes(app_state: AppState) -> Router {
+    let rate_limiters = &app_state.rate_limiters;
+    let behind_the_authentication_guard = |router: Router<AppState>| {
+        rate_limit_service::limit_api_requests(rate_limiters, router).route_layer(
+            authorization_service::require_authentication_layer(&app_state),
+        )
+    };
+    let oidc_routes = oidc_controller::open_routes()
+        .merge(rate_limit_service::limit_sign_in_navigations(
+            rate_limiters,
+            oidc_controller::sign_in_navigation_routes(),
+        ))
+        .merge(behind_the_authentication_guard(
+            oidc_controller::authenticated_routes(),
+        ));
+    open_routes()
+        .merge(rate_limit_service::limit_sign_in_requests(
+            rate_limiters,
+            sign_in_routes(),
+        ))
+        .merge(behind_the_authentication_guard(authenticated_routes()))
+        .nest("/oidc", oidc_routes)
+        .with_state(app_state.clone())
 }
 
 async fn get_sign_in_page_options(State(app_state): State<AppState>) -> impl IntoResponse {

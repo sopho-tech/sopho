@@ -60,6 +60,12 @@ pub enum EnvironmentVariable {
     SophoSelfServeTenantLimit,
     SophoPlatformAdministratorEmails,
     SophoDisabledConnectionTypes,
+    SophoRateLimitSignInPerMinute,
+    SophoRateLimitSignInBurst,
+    SophoRateLimitApiPerMinute,
+    SophoRateLimitApiBurst,
+    SophoRateLimitAiPerMinute,
+    SophoRateLimitAiBurst,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumString, Deserialize)]

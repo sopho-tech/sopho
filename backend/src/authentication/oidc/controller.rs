@@ -16,12 +16,19 @@ struct ProviderPath {
     provider_name: String,
 }
 
-pub fn routes() -> Router<AppState> {
+pub fn open_routes() -> Router<AppState> {
+    Router::new().route("/provider", get(list_providers))
+}
+
+pub fn sign_in_navigation_routes() -> Router<AppState> {
     Router::new()
-        .route("/provider", get(list_providers))
         .route("/{provider_name}/start", get(start_login))
-        .route("/{provider_name}/connect", get(start_connect))
         .route("/{provider_name}/callback", get(complete_login))
+}
+
+pub fn authenticated_routes() -> Router<AppState> {
+    Router::new()
+        .route("/{provider_name}/connect", get(start_connect))
         .route(
             "/{provider_name}/federated_identity",
             delete(disconnect_provider),

@@ -14,6 +14,8 @@ pub enum FeatureFlag {
     DefaultTenant,
     InternalAddressConnections,
     BackgroundSuggestedQuestionRefresh,
+    RateLimiting,
+    TrustProxyClientAddress,
 }
 
 impl FeatureFlag {
@@ -23,7 +25,9 @@ impl FeatureFlag {
 
     pub fn is_enabled_by_default(self) -> bool {
         match self {
-            FeatureFlag::SelfServeTenantCreation => false,
+            FeatureFlag::SelfServeTenantCreation
+            | FeatureFlag::RateLimiting
+            | FeatureFlag::TrustProxyClientAddress => false,
             FeatureFlag::PasswordSignIn
             | FeatureFlag::SeedPasswordAdministrator
             | FeatureFlag::DefaultTenant

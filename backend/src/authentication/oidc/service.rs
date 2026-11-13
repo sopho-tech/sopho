@@ -3,7 +3,7 @@ use crate::authentication::oidc::constants::{
     AFTER_SIGN_IN_PATH, CONNECT_RESULT_PARAMETER, CONNECTED_PROVIDER_PARAMETER, CallbackPurpose,
     ConnectResult, EMAIL_SCOPE, GOOGLE_ISSUER_HOST, LOGIN_ATTEMPT_EXPIRY_MINUTES, OIDC_COOKIE_PATH,
     OIDC_STATE_COOKIE_NAME, ONLY_SIGN_IN_METHOD_REASON, PROFILE_PATH, PROFILE_SCOPE, ProviderIcon,
-    SIGN_IN_ERROR_PARAMETER, SIGN_IN_PATH, SignInMethodChange,
+    SIGN_IN_ERROR_PARAMETER, SIGN_IN_PATH, SignInErrorCode, SignInMethodChange,
 };
 use crate::authentication::oidc::dto::{
     CallbackOutcome, CallbackQuery, LoginSecrets, MySignInMethodsDto, OidcProviderDto,
@@ -125,6 +125,13 @@ pub async fn complete_callback(
             }
         }
     }
+}
+
+pub fn too_many_attempts_sign_in_path() -> String {
+    format!(
+        "{SIGN_IN_PATH}?{SIGN_IN_ERROR_PARAMETER}={}",
+        SignInErrorCode::TooManyAttempts.as_str()
+    )
 }
 
 fn sign_in_failure_path(error: &OidcLoginError) -> String {

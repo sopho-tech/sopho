@@ -254,6 +254,11 @@ pub enum ConfigurationError {
         variable = EnvironmentVariable::SophoDisabledConnectionTypes
     )]
     DuplicateDisabledConnectionType { value: String },
+    #[error("invalid {variable} {value:?}, expected a whole number of at least 1")]
+    InvalidRateLimit {
+        variable: EnvironmentVariable,
+        value: String,
+    },
     #[error("{first_setting} and {second_setting} contradict each other: {reason}")]
     ContradictorySettings {
         first_setting: String,

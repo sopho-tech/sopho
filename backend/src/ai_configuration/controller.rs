@@ -5,6 +5,7 @@ use crate::ai_configuration::error::AiConfigurationError;
 use crate::ai_configuration::service;
 use crate::authorization::dto::TenantContext;
 use crate::common::AppState;
+use crate::rate_limit::service::limit_ai_requests;
 use axum::Router;
 use axum::extract::{Json, State};
 use axum::http::StatusCode;
@@ -15,9 +16,15 @@ use serde_json::json;
 pub fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(get_status))
-        .route("/", put(upsert))
+        .route(
+            "/",
+            limit_ai_requests(&app_state.rate_limiters, put(upsert)),
+        )
         .route("/", delete(delete_handler))
-        .route("/test", post(test_handler))
+        .route(
+            "/test",
+            limit_ai_requests(&app_state.rate_limiters, post(test_handler)),
+        )
         .with_state(app_state)
 }
 

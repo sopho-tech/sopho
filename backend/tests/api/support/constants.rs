@@ -300,3 +300,16 @@ pub const INTERNAL_HOSTS: [&str; 9] = [
     "::ffff:127.0.0.1",
     "/var/run/postgresql",
 ];
+pub const RATE_LIMITED_CODE: &str = "RATE_LIMITED";
+pub const RATE_LIMITED_MESSAGE_PREFIX: &str = "Too many requests. Try again in ";
+pub const TOO_MANY_ATTEMPTS_SIGN_IN_LOCATION: &str = "/signin?error=too_many_attempts";
+pub const FORWARDED_FOR_HEADER: &str = "x-forwarded-for";
+pub const FIRST_CLIENT_ADDRESS: &str = "203.0.113.5";
+pub const SECOND_CLIENT_ADDRESS: &str = "203.0.113.6";
+pub const SIGN_IN_BURST_FOR_TESTS: u32 = 3;
+pub const API_BURST_FOR_TESTS: u32 = 8;
+pub const AI_BURST_FOR_TESTS: u32 = 2;
+pub const UNLIMITED_BURST_FOR_TESTS: u32 = 1000;
+pub const SLOWEST_REFILL_PER_MINUTE: u32 = 1;
+pub const FAST_REFILL_PER_MINUTE: u32 = 120;
+pub const FAST_REFILL_WAIT_MILLISECONDS: u64 = 700;

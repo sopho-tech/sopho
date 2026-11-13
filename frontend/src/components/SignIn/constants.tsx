@@ -21,4 +21,5 @@ export const SIGN_IN_ERROR_MESSAGES: Record<string, string> = {
     "This email belongs to an account that cannot sign in with single sign-on yet. Ask your Sopho administrator for help.",
   account_deactivated:
     "This account has been deactivated. Ask your Sopho administrator for help.",
+  too_many_attempts: "Too many attempts. Try again in a minute.",
 };
