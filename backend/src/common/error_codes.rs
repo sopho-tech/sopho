@@ -44,6 +44,7 @@ pub enum ErrorCode {
     PasswordSignInOff,
     ConnectionTypeDisabled,
     ConnectionHostNotAllowed,
+    RateLimited,
 }
 
 impl ErrorCode {

@@ -24,6 +24,7 @@ mod grant;
 mod monitor;
 mod notebook;
 mod platform;
+mod rate_limit;
 mod scheduler;
 mod search;
 mod startup_seeding;
@@ -36,8 +37,9 @@ pub use crate::common::{
     SmtpCredentials,
 };
 pub use crate::feature_flag::constants::FeatureFlag;
+pub use crate::rate_limit::dto::{RateLimitQuota, RateLimitSettings};
 
-use crate::authorization::dto::AuthenticatedUser;
+use axum::extract::connect_info::IntoMakeServiceWithConnectInfo;
 use axum::http::HeaderValue;
 use axum::http::Method;
 use axum::response::Html;
@@ -50,6 +52,7 @@ use axum::{
 };
 use dotenvy::dotenv;
 use http::header;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use tower_cookies::CookieManagerLayer;
 use tower_http::cors::CorsLayer;
@@ -108,8 +111,8 @@ fn api_router(app_state: AppState) -> Router {
         .nest(
             "/invitation",
             tenant::invitation::tenant_routes(app_state.clone()),
-        )
-        .route_layer(require_authentication(&app_state));
+        );
+    let tenant_scoped_routes = behind_the_authentication_guard(&app_state, tenant_scoped_routes);
 
     Router::new()
         .nest("/api/v1/monitor", monitor::routes())
@@ -117,27 +120,38 @@ fn api_router(app_state: AppState) -> Router {
         .nest("/api/v1/tenant/{tenant_id}", tenant_scoped_routes)
         .nest(
             "/api/v1/tenant",
-            tenant::routes(app_state.clone()).route_layer(require_authentication(&app_state)),
+            behind_the_authentication_guard(&app_state, tenant::routes(app_state.clone())),
         )
         .nest(
             "/api/v1/invitation",
-            tenant::invitation::user_routes(app_state.clone())
-                .route_layer(require_authentication(&app_state)),
+            behind_the_authentication_guard(
+                &app_state,
+                tenant::invitation::user_routes(app_state.clone()),
+            ),
         )
         .nest(
             "/api/v1/invitation_link",
-            tenant::invitation::link_routes(app_state.clone()),
+            rate_limit::service::limit_sign_in_requests(
+                &app_state.rate_limiters,
+                tenant::invitation::link_routes(app_state.clone()),
+            ),
         )
         .nest(
             "/api/v1/platform",
-            platform::routes(app_state.clone()).route_layer(require_authentication(&app_state)),
+            behind_the_authentication_guard(&app_state, platform::routes(app_state.clone())),
         )
 }
 
-fn require_authentication(
-    app_state: &AppState,
-) -> middleware::FromExtractorLayer<AuthenticatedUser, AppState> {
-    middleware::from_extractor_with_state::<AuthenticatedUser, AppState>(app_state.clone())
+fn behind_the_authentication_guard(app_state: &AppState, router: Router) -> Router {
+    rate_limit::service::limit_api_requests(&app_state.rate_limiters, router).route_layer(
+        authorization::service::require_authentication_layer(app_state),
+    )
+}
+
+pub fn into_service_with_client_address(
+    router: Router,
+) -> IntoMakeServiceWithConnectInfo<Router, SocketAddr> {
+    router.into_make_service_with_connect_info::<SocketAddr>()
 }
 
 pub fn build_app(app_state: AppState) -> Router {
@@ -220,9 +234,14 @@ pub async fn run() -> anyhow::Result<()> {
     initialize(&app_state).await?;
     scheduler::start(app_state.clone()).await;
     email_delivery::service::start_email_sender(app_state.clone());
+    rate_limit::service::start_limiter_cleanup(&app_state.rate_limiters);
     let listener =
         tokio::net::TcpListener::bind(format!("0.0.0.0:{}", app_state.config.port)).await?;
     tracing::debug!("listening on {}", listener.local_addr()?);
-    axum::serve(listener, build_app(app_state)).await?;
+    axum::serve(
+        listener,
+        into_service_with_client_address(build_app(app_state)),
+    )
+    .await?;
     Ok(())
 }

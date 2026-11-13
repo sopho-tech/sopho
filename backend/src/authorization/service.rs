@@ -388,6 +388,15 @@ pub fn role_description(role_name: &str) -> Option<String> {
         .map(|system_role| system_role.description().to_string())
 }
 
+pub fn require_authentication_layer(
+    app_state: &AppState,
+) -> axum::middleware::FromExtractorLayer<crate::authorization::dto::AuthenticatedUser, AppState> {
+    axum::middleware::from_extractor_with_state::<
+        crate::authorization::dto::AuthenticatedUser,
+        AppState,
+    >(app_state.clone())
+}
+
 #[cfg(test)]
 mod tests {
     use super::{AccessDecision, decide_without_grant, grant_satisfies};

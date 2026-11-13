@@ -80,6 +80,8 @@ A feature flag turns one behaviour of Sopho on or off for the whole deployment. 
 | `SOPHO_FEATURE_DEFAULT_TENANT`                        | `true`  | Creates the `Default` tenant with its demo data the first time Sopho runs, owned by the seeded administrator                                                                         |
 | `SOPHO_FEATURE_INTERNAL_ADDRESS_CONNECTIONS`          | `true`  | Lets people connect to databases on loopback, private, link-local and other internal addresses. When `false`, a connection whose host is, or resolves to, such an address is refused |
 | `SOPHO_FEATURE_BACKGROUND_SUGGESTED_QUESTION_REFRESH` | `true`  | Generates suggested questions for every connection at startup and once a day, which calls the configured AI provider. When `false`, no suggested questions are generated             |
+| `SOPHO_FEATURE_RATE_LIMITING`                         | `false` | Limits how fast requests may arrive. See [Rate limiting](#rate-limiting)                                                                                                             |
+| `SOPHO_FEATURE_TRUST_PROXY_CLIENT_ADDRESS`            | `false` | Reads a visitor's address from the `x-forwarded-for` header a reverse proxy sets. Turn it on only when Sopho is reachable solely through that proxy                                  |
 
 ### Combinations Sopho refuses
 
@@ -113,6 +115,28 @@ A SQLite connection reads a file on the server that runs Sopho, so turn `SQLITE`
 When `SOPHO_FEATURE_INTERNAL_ADDRESS_CONNECTIONS` is `false`, Sopho refuses a PostgreSQL or Supabase connection whose host is, or resolves to, a loopback, private, link-local, carrier-grade NAT or unspecified address, including the IPv6 equivalents. A host name that does not resolve is refused too. The check runs when a connection is created, changed or first used.
 
 This check gives people a clear error. It is not a complete guard: the host is checked when Sopho first opens a connection to it, and a host name can resolve to a different address later. On a public deployment, also block outbound traffic from Sopho to internal ranges and the cloud metadata address with a firewall.
+
+## Rate limiting
+
+When `SOPHO_FEATURE_RATE_LIMITING` is `true`, Sopho limits requests in three groups. Each group has a burst, the number of requests allowed at once, and a rate at which that allowance refills.
+
+| Group                                                                          | Counted per     | Variables                                                               | Default         |
+| ------------------------------------------------------------------------------ | --------------- | ----------------------------------------------------------------------- | --------------- |
+| Sign-in: password sign-in, single sign-on, password reset and invitation links | visitor address | `SOPHO_RATE_LIMIT_SIGN_IN_PER_MINUTE`, `SOPHO_RATE_LIMIT_SIGN_IN_BURST` | `10` and `10`   |
+| Every signed-in request                                                        | person          | `SOPHO_RATE_LIMIT_API_PER_MINUTE`, `SOPHO_RATE_LIMIT_API_BURST`         | `600` and `120` |
+| Requests that call the AI provider                                             | person          | `SOPHO_RATE_LIMIT_AI_PER_MINUTE`, `SOPHO_RATE_LIMIT_AI_BURST`           | `20` and `10`   |
+
+Each value must be a whole number of at least `1`. Visitors on IPv6 are counted by their `/64` network, so changing address within one network gives no fresh allowance. A request that calls the AI provider counts against both the AI limit and the signed-in limit. Token refresh, the session check, the health check and static files are never limited.
+
+A refused request gets HTTP `429` with a `retry-after` header. A refused single sign-on step returns the person to the sign-in page with a message.
+
+The counters are kept in memory, so they reset when Sopho restarts and are not shared between several Sopho instances.
+
+### Behind a reverse proxy
+
+Behind a proxy, every request reaches Sopho from the proxy's address, so the sign-in limit would treat all visitors as one. Set `SOPHO_FEATURE_TRUST_PROXY_CLIENT_ADDRESS` to `true` and Sopho uses the last entry of the `x-forwarded-for` header, which is the address the proxy itself saw.
+
+Only turn it on when nothing can reach Sopho except through that one proxy. Without a proxy, a visitor could send the header themselves and choose their own address. With it on, a sign-in request that arrives without the header is refused with a server error, because it did not come through the proxy.
 
 ## Connection credentials
 

@@ -67,6 +67,18 @@ describe("sign in", () => {
     await expect.element(page.getByText("Password is required")).toBeVisible();
   });
 
+  test("tells a person who was rate limited at single sign-on to wait", async () => {
+    worker.use(signedOutSessionHandler);
+    await renderWithProviders({
+      routes: signInRoutes,
+      initialPath: `${APP_ROUTES.SIGN_IN}?error=too_many_attempts`,
+    });
+
+    await expect
+      .element(page.getByText("Too many attempts. Try again in a minute."))
+      .toBeVisible();
+  });
+
   test("hides password reset until the backend says email is set up", async () => {
     worker.use(signedOutSessionHandler);
     await renderWithProviders({

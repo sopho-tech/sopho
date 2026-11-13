@@ -35,6 +35,7 @@ pub enum SignInErrorCode {
     PasswordAccount,
     ContactAdministrator,
     AccountDeactivated,
+    TooManyAttempts,
 }
 
 impl SignInErrorCode {

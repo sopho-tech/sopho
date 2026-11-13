@@ -15,11 +15,14 @@ use axum::routing::{post, put};
 use serde_json::Value;
 use tower_cookies::Cookies;
 
-pub fn routes() -> Router<AppState> {
+pub fn sign_in_routes() -> Router<AppState> {
     Router::new()
         .route("/password_reset_request", post(request_password_reset))
         .route("/password_reset", post(reset_password))
-        .route("/password", put(change_password))
+}
+
+pub fn authenticated_routes() -> Router<AppState> {
+    Router::new().route("/password", put(change_password))
 }
 
 async fn request_password_reset(

@@ -22,6 +22,14 @@ use crate::email_delivery::service::EmailTransport;
 use crate::feature_flag::constants::FeatureFlag;
 use crate::feature_flag::dto::FeatureFlags;
 use crate::feature_flag::service::feature_flags_from_variables;
+use crate::rate_limit;
+use crate::rate_limit::constants::{
+    DEFAULT_AI_BURST_SIZE, DEFAULT_AI_REQUESTS_PER_MINUTE, DEFAULT_API_BURST_SIZE,
+    DEFAULT_API_REQUESTS_PER_MINUTE, DEFAULT_SIGN_IN_BURST_SIZE,
+    DEFAULT_SIGN_IN_REQUESTS_PER_MINUTE, MINIMUM_RATE_LIMIT_VALUE,
+};
+use crate::rate_limit::dto::{RateLimitQuota, RateLimitSettings};
+use crate::rate_limit::service::RateLimiters;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use std::borrow::Cow;
@@ -209,6 +217,114 @@ pub fn platform_administrator_emails_from_variable(
     Ok(platform_administrator_emails)
 }
 
+pub fn rate_limit_value_from_variable(
+    variable: EnvironmentVariable,
+    value: Option<String>,
+    default_value: u32,
+) -> Result<u32, ConfigurationError> {
+    let Some(value) = value else {
+        return Ok(default_value);
+    };
+    match value.parse::<u32>() {
+        Ok(rate_limit_value) if rate_limit_value >= MINIMUM_RATE_LIMIT_VALUE => {
+            Ok(rate_limit_value)
+        }
+        _ => Err(ConfigurationError::InvalidRateLimit { variable, value }),
+    }
+}
+
+fn rate_limit_settings_from_variables(
+    read_variable: impl Fn(EnvironmentVariable) -> Result<Option<String>, ConfigurationError>,
+) -> Result<RateLimitSettings, ConfigurationError> {
+    let quota = |requests_per_minute_variable: EnvironmentVariable,
+                 default_requests_per_minute: u32,
+                 burst_size_variable: EnvironmentVariable,
+                 default_burst_size: u32| {
+        Ok::<RateLimitQuota, ConfigurationError>(RateLimitQuota {
+            requests_per_minute: rate_limit_value_from_variable(
+                requests_per_minute_variable,
+                read_variable(requests_per_minute_variable)?,
+                default_requests_per_minute,
+            )?,
+            burst_size: rate_limit_value_from_variable(
+                burst_size_variable,
+                read_variable(burst_size_variable)?,
+                default_burst_size,
+            )?,
+        })
+    };
+    Ok(RateLimitSettings {
+        sign_in: quota(
+            EnvironmentVariable::SophoRateLimitSignInPerMinute,
+            DEFAULT_SIGN_IN_REQUESTS_PER_MINUTE,
+            EnvironmentVariable::SophoRateLimitSignInBurst,
+            DEFAULT_SIGN_IN_BURST_SIZE,
+        )?,
+        api: quota(
+            EnvironmentVariable::SophoRateLimitApiPerMinute,
+            DEFAULT_API_REQUESTS_PER_MINUTE,
+            EnvironmentVariable::SophoRateLimitApiBurst,
+            DEFAULT_API_BURST_SIZE,
+        )?,
+        ai: quota(
+            EnvironmentVariable::SophoRateLimitAiPerMinute,
+            DEFAULT_AI_REQUESTS_PER_MINUTE,
+            EnvironmentVariable::SophoRateLimitAiBurst,
+            DEFAULT_AI_BURST_SIZE,
+        )?,
+    })
+}
+
+fn validated_rate_limit_value(
+    variable: EnvironmentVariable,
+    rate_limit_value: u32,
+) -> Result<u32, ConfigurationError> {
+    if rate_limit_value < MINIMUM_RATE_LIMIT_VALUE {
+        return Err(ConfigurationError::InvalidRateLimit {
+            variable,
+            value: rate_limit_value.to_string(),
+        });
+    }
+    Ok(rate_limit_value)
+}
+
+fn validated_rate_limit_settings(
+    rate_limits: RateLimitSettings,
+) -> Result<RateLimitSettings, ConfigurationError> {
+    Ok(RateLimitSettings {
+        sign_in: RateLimitQuota {
+            requests_per_minute: validated_rate_limit_value(
+                EnvironmentVariable::SophoRateLimitSignInPerMinute,
+                rate_limits.sign_in.requests_per_minute,
+            )?,
+            burst_size: validated_rate_limit_value(
+                EnvironmentVariable::SophoRateLimitSignInBurst,
+                rate_limits.sign_in.burst_size,
+            )?,
+        },
+        api: RateLimitQuota {
+            requests_per_minute: validated_rate_limit_value(
+                EnvironmentVariable::SophoRateLimitApiPerMinute,
+                rate_limits.api.requests_per_minute,
+            )?,
+            burst_size: validated_rate_limit_value(
+                EnvironmentVariable::SophoRateLimitApiBurst,
+                rate_limits.api.burst_size,
+            )?,
+        },
+        ai: RateLimitQuota {
+            requests_per_minute: validated_rate_limit_value(
+                EnvironmentVariable::SophoRateLimitAiPerMinute,
+                rate_limits.ai.requests_per_minute,
+            )?,
+            burst_size: validated_rate_limit_value(
+                EnvironmentVariable::SophoRateLimitAiBurst,
+                rate_limits.ai.burst_size,
+            )?,
+        },
+    })
+}
+
 pub fn disabled_connection_types_from_variable(
     value: Option<String>,
 ) -> Result<Vec<SourceType>, ConfigurationError> {
@@ -328,6 +444,7 @@ pub struct Configurations {
     pub self_serve_tenant_limit: u64,
     pub platform_administrator_emails: Vec<String>,
     pub disabled_connection_types: Vec<SourceType>,
+    pub rate_limits: RateLimitSettings,
 }
 
 pub struct ConfigurationsBuilder {
@@ -349,6 +466,7 @@ pub struct ConfigurationsBuilder {
     self_serve_tenant_limit: Option<u64>,
     platform_administrator_emails: Option<String>,
     disabled_connection_types: Option<String>,
+    rate_limits: Option<RateLimitSettings>,
 }
 
 impl ConfigurationsBuilder {
@@ -372,6 +490,7 @@ impl ConfigurationsBuilder {
             self_serve_tenant_limit: None,
             platform_administrator_emails: None,
             disabled_connection_types: None,
+            rate_limits: None,
         }
     }
 
@@ -471,6 +590,11 @@ impl ConfigurationsBuilder {
         self
     }
 
+    pub fn rate_limits(mut self, rate_limits: RateLimitSettings) -> Self {
+        self.rate_limits = Some(rate_limits);
+        self
+    }
+
     pub fn build(self) -> Result<Configurations, ConfigurationError> {
         let password_administrator = match self
             .feature_flags
@@ -534,6 +658,10 @@ impl ConfigurationsBuilder {
             disabled_connection_types: disabled_connection_types_from_variable(
                 self.disabled_connection_types,
             )?,
+            rate_limits: match self.rate_limits {
+                Some(rate_limits) => validated_rate_limit_settings(rate_limits)?,
+                None => rate_limit_settings_from_variables(|_| Ok(None))?,
+            },
         };
         validate_setting_combinations(&configurations)?;
         Ok(configurations)
@@ -637,6 +765,9 @@ impl Configurations {
                 optional_environment_variable(EnvironmentVariable::SophoDisabledConnectionTypes)?
                     .map(Cow::into_owned),
             )?,
+            rate_limits: rate_limit_settings_from_variables(|variable| {
+                Ok(optional_environment_variable(variable)?.map(Cow::into_owned))
+            })?,
         };
         validate_setting_combinations(&configurations)?;
         Ok(configurations)
@@ -726,6 +857,7 @@ pub struct AppState {
     pub model_client: Arc<RwLock<HashMap<Uuid, ModelClient>>>,
     pub database_pools: DatabasePoolRegistry,
     pub email_transport: Option<EmailTransport>,
+    pub rate_limiters: Option<RateLimiters>,
 }
 
 impl AppState {
@@ -736,8 +868,10 @@ impl AppState {
             .as_ref()
             .map(email_delivery::service::build_email_transport)
             .transpose()?;
+        let rate_limiters = rate_limit::service::build_rate_limiters(&config)?;
         Ok(Self {
             database_connection,
+            rate_limiters,
             config,
             model_client: Arc::new(RwLock::new(HashMap::new())),
             database_pools: new_database_pool_registry(),
@@ -790,12 +924,13 @@ mod tests {
         Configurations, ConfigurationsBuilder, OidcProviderConfiguration,
         disabled_connection_types_from_variable, email_configuration_from_variables,
         oidc_providers_from_variables, platform_administrator_emails_from_variable,
-        self_serve_tenant_limit_from_variable,
+        rate_limit_value_from_variable, self_serve_tenant_limit_from_variable,
     };
     use crate::common::constants::{EnvironmentVariable, SmtpTls};
     use crate::common::errors::ConfigurationError;
     use crate::connection::constants::SourceType;
     use crate::feature_flag::constants::FeatureFlag;
+    use crate::rate_limit::dto::{RateLimitQuota, RateLimitSettings};
     use std::collections::HashMap;
 
     fn variable_reader(
@@ -989,6 +1124,114 @@ mod tests {
             "SOPHO_PLATFORM_ADMINISTRATOR_EMAILS",
             "SOPHO_OIDC_PROVIDERS",
         );
+    }
+
+    #[test]
+    fn rate_limits_default_to_the_code_values() {
+        let configurations = with_password_administrator(configurations_builder())
+            .build()
+            .unwrap();
+        assert_eq!(
+            configurations.rate_limits,
+            RateLimitSettings {
+                sign_in: RateLimitQuota {
+                    requests_per_minute: 10,
+                    burst_size: 10
+                },
+                api: RateLimitQuota {
+                    requests_per_minute: 600,
+                    burst_size: 120
+                },
+                ai: RateLimitQuota {
+                    requests_per_minute: 20,
+                    burst_size: 10
+                },
+            }
+        );
+        assert!(
+            !configurations
+                .feature_flags
+                .is_enabled(FeatureFlag::RateLimiting)
+        );
+        assert!(
+            !configurations
+                .feature_flags
+                .is_enabled(FeatureFlag::TrustProxyClientAddress)
+        );
+    }
+
+    #[test]
+    fn a_rate_limit_value_overrides_its_default() {
+        assert_eq!(
+            rate_limit_value_from_variable(
+                EnvironmentVariable::SophoRateLimitAiBurst,
+                Some("4".to_string()),
+                10
+            )
+            .unwrap(),
+            4
+        );
+        assert_eq!(
+            rate_limit_value_from_variable(EnvironmentVariable::SophoRateLimitAiBurst, None, 10)
+                .unwrap(),
+            10
+        );
+    }
+
+    #[test]
+    fn a_rate_limit_below_one_or_not_a_number_is_refused_naming_the_variable() {
+        for invalid_value in ["0", "-1", "ten", "", " 5", "1.5", "4294967296"] {
+            let error = rate_limit_value_from_variable(
+                EnvironmentVariable::SophoRateLimitSignInPerMinute,
+                Some(invalid_value.to_string()),
+                10,
+            )
+            .unwrap_err();
+            assert!(
+                matches!(
+                    error,
+                    ConfigurationError::InvalidRateLimit {
+                        variable: EnvironmentVariable::SophoRateLimitSignInPerMinute,
+                        ..
+                    }
+                ),
+                "{invalid_value:?} was not refused"
+            );
+            assert!(
+                error
+                    .to_string()
+                    .contains("SOPHO_RATE_LIMIT_SIGN_IN_PER_MINUTE"),
+                "{error}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_zero_rate_limit_given_to_the_builder_is_refused() {
+        let error = with_password_administrator(configurations_builder())
+            .rate_limits(RateLimitSettings {
+                sign_in: RateLimitQuota {
+                    requests_per_minute: 10,
+                    burst_size: 10,
+                },
+                api: RateLimitQuota {
+                    requests_per_minute: 600,
+                    burst_size: 0,
+                },
+                ai: RateLimitQuota {
+                    requests_per_minute: 20,
+                    burst_size: 10,
+                },
+            })
+            .build()
+            .unwrap_err();
+        assert!(matches!(
+            error,
+            ConfigurationError::InvalidRateLimit {
+                variable: EnvironmentVariable::SophoRateLimitApiBurst,
+                ..
+            }
+        ));
     }
 
     #[test]

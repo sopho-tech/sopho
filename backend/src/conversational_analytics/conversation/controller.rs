@@ -7,6 +7,7 @@ use crate::authorization::dto::TenantContext;
 use crate::common::AppState;
 use crate::common::error_codes::codes;
 use crate::common::errors::GetDatabaseConnectionError;
+use crate::rate_limit::service::limit_ai_requests;
 use axum::Router;
 use axum::extract::Json;
 use axum::extract::Path;
@@ -31,8 +32,14 @@ pub fn routes(app_state: AppState) -> Router {
         .route("/{conversation_id}", get(get_conversation))
         .route("/{conversation_id}", put(update_conversation))
         .route("/{conversation_id}", delete(delete_conversation))
-        .route("/{conversation_id}/completion", post(execute_completion))
-        .route("/{conversation_id}/suggest-name", post(suggest_name))
+        .route(
+            "/{conversation_id}/completion",
+            limit_ai_requests(&app_state.rate_limiters, post(execute_completion)),
+        )
+        .route(
+            "/{conversation_id}/suggest-name",
+            limit_ai_requests(&app_state.rate_limiters, post(suggest_name)),
+        )
         .route("/{conversation_id}/messages", post(append_user_message))
         .with_state(app_state)
 }

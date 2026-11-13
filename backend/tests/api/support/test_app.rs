@@ -21,7 +21,10 @@ use reqwest::{Client, Method, StatusCode};
 use sea_orm::ConnectionTrait;
 use sea_orm::sea_query::{Alias, Query};
 use serde_json::{Value, json};
-use sopho::{AppState, Configurations, EmailConfiguration, FeatureFlag, OidcProviderConfiguration};
+use sopho::{
+    AppState, Configurations, EmailConfiguration, FeatureFlag, OidcProviderConfiguration,
+    RateLimitSettings,
+};
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
@@ -189,6 +192,9 @@ pub struct DeploymentFlags {
     pub disabled_connection_types: Option<String>,
     pub is_internal_address_connections_off: bool,
     pub is_background_suggested_question_refresh_off: bool,
+    pub is_rate_limiting_on: bool,
+    pub is_proxy_client_address_trusted: bool,
+    pub rate_limits: Option<RateLimitSettings>,
 }
 
 impl DeploymentFlags {
@@ -381,7 +387,7 @@ impl TestApp {
         let tenant_id = default_tenant_id.unwrap_or(NO_DEFAULT_TENANT_ID);
         let router = sopho::build_app(app_state.clone());
         let server_task = tokio::spawn(async move {
-            axum::serve(listener, router)
+            axum::serve(listener, sopho::into_service_with_client_address(router))
                 .await
                 .expect("serve the application");
         });
@@ -455,7 +461,7 @@ impl TestApp {
         );
         let router = sopho::build_app(app_state);
         let server_task = tokio::spawn(async move {
-            axum::serve(listener, router)
+            axum::serve(listener, sopho::into_service_with_client_address(router))
                 .await
                 .expect("serve the redeployed application");
         });
@@ -642,6 +648,19 @@ fn test_configurations(
             FeatureFlag::BackgroundSuggestedQuestionRefresh,
             !deployment_flags.is_background_suggested_question_refresh_off,
         );
+    let configurations_builder = configurations_builder
+        .feature_flag(
+            FeatureFlag::RateLimiting,
+            deployment_flags.is_rate_limiting_on,
+        )
+        .feature_flag(
+            FeatureFlag::TrustProxyClientAddress,
+            deployment_flags.is_proxy_client_address_trusted,
+        );
+    let configurations_builder = match deployment_flags.rate_limits {
+        Some(rate_limits) => configurations_builder.rate_limits(rate_limits),
+        None => configurations_builder,
+    };
     let configurations_builder = match &deployment_flags.disabled_connection_types {
         Some(disabled_connection_types) => {
             configurations_builder.disabled_connection_types(disabled_connection_types)

@@ -2,6 +2,7 @@ use crate::ai_summary::dto;
 use crate::ai_summary::service::{self, GenerateOutcome, SummaryError};
 use crate::authorization::dto::TenantContext;
 use crate::common::AppState;
+use crate::rate_limit::service::limit_ai_requests;
 use axum::Router;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -24,13 +25,16 @@ pub fn routes(app_state: AppState) -> Router {
         .route("/dashboard/{dashboard_id}", get(get_dashboard_summaries))
         .route(
             "/dashboard/{dashboard_id}",
-            post(generate_dashboard_summary),
+            limit_ai_requests(&app_state.rate_limiters, post(generate_dashboard_summary)),
         )
         .route(
             "/dashboard/{dashboard_id}/charts",
-            post(generate_all_chart_summaries),
+            limit_ai_requests(&app_state.rate_limiters, post(generate_all_chart_summaries)),
         )
-        .route("/chart/{cell_id}", post(generate_chart_summary))
+        .route(
+            "/chart/{cell_id}",
+            limit_ai_requests(&app_state.rate_limiters, post(generate_chart_summary)),
+        )
         .route(
             "/dashboard/{dashboard_id}/prompt",
             put(set_dashboard_prompt),
