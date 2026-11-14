@@ -195,6 +195,7 @@ pub struct DeploymentFlags {
     pub is_rate_limiting_on: bool,
     pub is_proxy_client_address_trusted: bool,
     pub rate_limits: Option<RateLimitSettings>,
+    pub tenant_member_limit: Option<u64>,
 }
 
 impl DeploymentFlags {
@@ -659,6 +660,12 @@ fn test_configurations(
         );
     let configurations_builder = match deployment_flags.rate_limits {
         Some(rate_limits) => configurations_builder.rate_limits(rate_limits),
+        None => configurations_builder,
+    };
+    let configurations_builder = match deployment_flags.tenant_member_limit {
+        Some(tenant_member_limit) => {
+            configurations_builder.tenant_member_limit(tenant_member_limit)
+        }
         None => configurations_builder,
     };
     let configurations_builder = match &deployment_flags.disabled_connection_types {

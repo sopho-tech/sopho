@@ -24,6 +24,7 @@ const CURRENT_TENANT: TenantMembershipDto = {
   role_name: "OWNER",
   role_display_name: "Owner",
   permissions: [],
+  suspended_message: null,
 };
 
 function ignorePinnedChange() {}
@@ -97,6 +98,46 @@ describe("tenant switcher", () => {
     await expect
       .poll(() => router.state.location.pathname)
       .toBe(tenantPath(CREATED_TENANT_ID, APP_ROUTES.INDEX));
+  });
+
+  test("marks a suspended tenant in the list", async () => {
+    worker.use(
+      http.get(API_ENDPOINTS.TENANT.LIST, () =>
+        HttpResponse.json([
+          CURRENT_TENANT,
+          {
+            ...CURRENT_TENANT,
+            tenant_id: CREATED_TENANT_ID,
+            tenant_name: "Frozen Works",
+            suspended_message: "This tenant is suspended. Contact support",
+          },
+        ]),
+      ),
+      ...switcherHandlers({
+        can_create_tenant: false,
+        limit_reached_message: null,
+      }),
+    );
+    await renderWithProviders({
+      routes: switcherRoutes,
+      initialPath: testTenantPath(APP_ROUTES.INDEX),
+    });
+
+    await openSwitcher();
+
+    await expect
+      .element(
+        page.getByRole("menuitemradio", { name: "Frozen Works (Suspended)" }),
+      )
+      .toBeVisible();
+    await expect
+      .element(
+        page.getByRole("menuitemradio", {
+          name: "Acme Analytics",
+          exact: true,
+        }),
+      )
+      .toBeVisible();
   });
 
   test("hides tenant creation when the backend does not allow it", async () => {

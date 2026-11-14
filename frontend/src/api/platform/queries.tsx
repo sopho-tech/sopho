@@ -5,7 +5,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { EmailStatus } from "src/api/invitation/queries";
-import { AccountStatus } from "src/api/tenant/queries";
+import { AccountStatus, tenantKeys } from "src/api/tenant/queries";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { ApiService } from "src/utils/api_client";
 
@@ -57,9 +57,18 @@ export type DeactivatedUserDto = {
   tenants_without_active_owner: TenantSummaryDto[];
 };
 
+export type TenantStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
+
+export type PlatformTenantCapabilities = {
+  can_suspend: boolean;
+  can_restore: boolean;
+};
+
 export type PlatformTenantDto = {
   tenant_id: string;
   name: string;
+  status: TenantStatus;
+  capabilities: PlatformTenantCapabilities;
   active_owner_count: number;
   created_at: string;
 };
@@ -193,6 +202,26 @@ const platformApi = {
     return response as PlatformTenantDto[];
   },
 
+  suspendTenant: async (tenantId: string) => {
+    await ApiService.post({
+      url: API_ENDPOINTS.PLATFORM.SUSPEND_TENANT.replace(
+        ":tenant_id",
+        tenantId,
+      ),
+      onlyBody: false,
+    });
+  },
+
+  restoreTenant: async (tenantId: string) => {
+    await ApiService.post({
+      url: API_ENDPOINTS.PLATFORM.RESTORE_TENANT.replace(
+        ":tenant_id",
+        tenantId,
+      ),
+      onlyBody: false,
+    });
+  },
+
   appointOwner: async ({ tenantId, userId }: AppointOwnerDto) => {
     await ApiService.put({
       url: API_ENDPOINTS.PLATFORM.APPOINT_OWNER.replace(
@@ -280,6 +309,33 @@ export const usePlatformTenants = () => {
   return useQuery({
     queryKey: platformKeys.tenants(),
     queryFn: platformApi.listTenants,
+  });
+};
+
+function useInvalidatePlatformAndMemberships() {
+  const queryClient = useQueryClient();
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: platformKeys.all }),
+      queryClient.invalidateQueries({ queryKey: tenantKeys.memberships }),
+    ]);
+}
+
+export const useSuspendTenant = () => {
+  const invalidatePlatformAndMemberships =
+    useInvalidatePlatformAndMemberships();
+  return useMutation({
+    mutationFn: platformApi.suspendTenant,
+    onSuccess: invalidatePlatformAndMemberships,
+  });
+};
+
+export const useRestoreTenant = () => {
+  const invalidatePlatformAndMemberships =
+    useInvalidatePlatformAndMemberships();
+  return useMutation({
+    mutationFn: platformApi.restoreTenant,
+    onSuccess: invalidatePlatformAndMemberships,
   });
 };
 

@@ -1,4 +1,5 @@
 use crate::authentication::service::UserStatus;
+use crate::authorization::constants::TenantStatus;
 use crate::email_delivery::constants::EmailStatus;
 use crate::email_template::constants::EmailKind;
 use crate::tenant::dto::UserTenantMembershipDto;
@@ -65,10 +66,18 @@ pub struct DeactivatedUserDto {
     pub tenants_without_active_owner: Vec<TenantSummaryDto>,
 }
 
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct PlatformTenantCapabilities {
+    pub can_suspend: bool,
+    pub can_restore: bool,
+}
+
 #[derive(Debug, Serialize)]
 pub struct PlatformTenantDto {
     pub tenant_id: Uuid,
     pub name: String,
+    pub status: TenantStatus,
+    pub capabilities: PlatformTenantCapabilities,
     pub active_owner_count: u64,
     pub created_at: DateTime<FixedOffset>,
 }

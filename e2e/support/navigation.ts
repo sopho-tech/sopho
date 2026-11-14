@@ -4,6 +4,7 @@ export const APP_URLS = {
   PROFILE: "/profile",
   CONNECTIONS: "/settings/connections",
   MEMBERS: "/settings/members",
+  TENANTS: "/settings/tenants",
   NEW_CONNECTION: "/settings/connection/new",
   AI_CONFIGURATIONS: "/settings/ai-configurations",
   NEW_CONVERSATION: "/conversational_analytics/",

@@ -6,6 +6,7 @@ pub const INVALID_ACCESS_TOKEN_MESSAGE: &str = "Invalid access token";
 pub const ACCESS_TOKEN_EXPIRED_MESSAGE: &str = "Access token expired";
 pub const MEMBERSHIP_SUSPENDED_MESSAGE: &str = "Membership suspended";
 pub const TENANT_NOT_FOUND_MESSAGE: &str = "Tenant not found";
+pub const TENANT_SUSPENDED_MESSAGE: &str = "This tenant is suspended. Contact support";
 
 #[derive(
     Debug,
@@ -183,6 +184,8 @@ pub enum PlatformPermission {
     TenantAppointOwner,
     #[strum(serialize = "email:manage")]
     EmailManage,
+    #[strum(serialize = "tenant:suspend")]
+    TenantSuspend,
 }
 
 impl PlatformPermission {
@@ -215,6 +218,7 @@ impl PlatformRole {
                 PlatformPermission::UserManage,
                 PlatformPermission::TenantAppointOwner,
                 PlatformPermission::EmailManage,
+                PlatformPermission::TenantSuspend,
             ],
             PlatformRole::Member => Vec::new(),
         }
@@ -239,11 +243,13 @@ impl MembershipStatus {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumString, IntoStaticStr)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumString, IntoStaticStr, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum TenantStatus {
     Active,
     Inactive,
+    Suspended,
 }
 
 impl TenantStatus {

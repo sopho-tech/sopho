@@ -116,6 +116,25 @@ When `SOPHO_FEATURE_INTERNAL_ADDRESS_CONNECTIONS` is `false`, Sopho refuses a Po
 
 This check gives people a clear error. It is not a complete guard: the host is checked when Sopho first opens a connection to it, and a host name can resolve to a different address later. On a public deployment, also block outbound traffic from Sopho to internal ranges and the cloud metadata address with a firewall.
 
+## SOPHO_TENANT_MEMBER_LIMIT
+
+The most people one tenant may have. It must be a whole number of at least `1`. Leave it unset for no limit.
+
+Active members and pending invitations both count. When a tenant is at the limit, inviting another person is refused until a member is removed or an invitation is revoked. Accepting an invitation that was already sent always works, and a platform administrator appointing an owner is not limited. Lowering the limit below a tenant's current size removes nobody; it only stops new invitations.
+
+## Suspending a tenant
+
+A platform administrator can suspend a tenant from **Global Tenants**, and restore it from the same screen. While a tenant is suspended:
+
+- every member is refused on every page and request of that tenant, with the message "This tenant is suspended. Contact support";
+- the tenant still appears in each member's tenant list, marked as suspended;
+- the background suggested-question refresh skips it;
+- emails it has queued, such as invitations, are held and sent once it is restored, unless their links expire first.
+
+A person can still accept an invitation to a suspended tenant; they see the suspension message until it is restored.
+
+Suspending deletes nothing. Data, members, invitations and sign-in sessions stay as they are, and restoring the tenant puts everything back as it was.
+
 ## Rate limiting
 
 When `SOPHO_FEATURE_RATE_LIMITING` is `true`, Sopho limits requests in three groups. Each group has a burst, the number of requests allowed at once, and a rate at which that allowance refills.

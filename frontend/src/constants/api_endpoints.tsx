@@ -24,6 +24,8 @@ export const API_ENDPOINTS = {
     REMOVE_ADMINISTRATOR: "/api/v1/platform/user/:user_id/remove_administrator",
     TENANTS: "/api/v1/platform/tenant",
     APPOINT_OWNER: "/api/v1/platform/tenant/:tenant_id/owner/:user_id",
+    SUSPEND_TENANT: "/api/v1/platform/tenant/:tenant_id/suspend",
+    RESTORE_TENANT: "/api/v1/platform/tenant/:tenant_id/restore",
     EMAILS: "/api/v1/platform/email",
     RETRY_EMAIL: "/api/v1/platform/email/:email_id/retry",
     EMAIL_TEMPLATES: "/api/v1/platform/email_template",

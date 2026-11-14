@@ -7,6 +7,7 @@ pub const SMTP_TIMEOUT_SECONDS: u64 = 30;
 pub const OIDC_PROVIDER_VARIABLE_PREFIX: &str = "SOPHO_OIDC_";
 pub const DEFAULT_SELF_SERVE_TENANT_LIMIT: u64 = 2;
 pub const MINIMUM_SELF_SERVE_TENANT_LIMIT: u64 = 1;
+pub const MINIMUM_TENANT_MEMBER_LIMIT: u64 = 1;
 pub const PLATFORM_ADMINISTRATOR_EMAIL_SEPARATOR: char = ',';
 pub const NOBODY_CAN_SIGN_IN_REASON: &str =
     "with password sign-in off, people need an OIDC provider to sign in";
@@ -66,6 +67,7 @@ pub enum EnvironmentVariable {
     SophoRateLimitApiBurst,
     SophoRateLimitAiPerMinute,
     SophoRateLimitAiBurst,
+    SophoTenantMemberLimit,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumString, Deserialize)]

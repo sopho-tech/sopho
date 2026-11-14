@@ -20,11 +20,16 @@ pub async fn find_due_email_ids(
     database_connection: &DatabaseConnection,
     now: DateTimeWithTimeZone,
     limit: u64,
+    held_tenant_ids: Vec<Uuid>,
 ) -> Result<Vec<Uuid>, DbErr> {
+    let not_held = Condition::any()
+        .add(email_outbox::Column::TenantId.is_null())
+        .add(email_outbox::Column::TenantId.is_not_in(held_tenant_ids));
     email_outbox::Entity::find()
         .select_only()
         .column(email_outbox::Column::Id)
         .filter(due_for_sending(now))
+        .filter(not_held)
         .order_by_asc(email_outbox::Column::NextAttemptAt)
         .limit(limit)
         .into_tuple::<Uuid>()

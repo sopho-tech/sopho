@@ -9,6 +9,7 @@ import {
   Text,
 } from "src/components/design-system";
 import { TenantMembershipDto } from "src/api/tenant/queries";
+import { SUSPENDED_BADGE_LABEL } from "src/components/SuspendedTenant/constants";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { tenantPath } from "src/utils/tenant";
 
@@ -24,6 +25,9 @@ function TenantRow({ membership }: { membership: TenantMembershipDto }) {
       title={membership.tenant_name}
       trailing={
         <>
+          {membership.suspended_message !== null && (
+            <Badge variant="yellow">{SUSPENDED_BADGE_LABEL}</Badge>
+          )}
           <Badge variant="subtle">{membership.role_display_name}</Badge>
           <Icon type="chevron_right" color="current" size="sm" />
         </>

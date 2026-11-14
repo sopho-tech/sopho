@@ -28,6 +28,7 @@ const CURRENT_TENANT: TenantMembershipDto = {
   role_name: "OWNER",
   role_display_name: "Owner",
   permissions: [],
+  suspended_message: null,
 };
 
 function ConnectionsTableOnceMembershipLoads() {

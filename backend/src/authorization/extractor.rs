@@ -1,13 +1,13 @@
 use crate::authentication::service::{AccessTokenValidationError, authenticate_from_cookies};
 use crate::authorization::constants::{
     ACCESS_TOKEN_EXPIRED_MESSAGE, ACCESS_TOKEN_REQUIRED_MESSAGE, INVALID_ACCESS_TOKEN_MESSAGE,
-    MEMBERSHIP_SUSPENDED_MESSAGE, TENANT_NOT_FOUND_MESSAGE,
+    MEMBERSHIP_SUSPENDED_MESSAGE, TENANT_NOT_FOUND_MESSAGE, TENANT_SUSPENDED_MESSAGE,
 };
 use crate::authorization::dto::{AuthenticatedUser, TenantContext};
 use crate::authorization::errors::TenantContextError;
 use crate::authorization::service::resolve_tenant_context;
 use crate::common::AppState;
-use crate::common::error_codes::codes;
+use crate::common::error_codes::{ErrorCode, codes};
 use axum::Json;
 use axum::extract::{FromRequestParts, Path};
 use axum::http::StatusCode;
@@ -62,6 +62,13 @@ impl FromRequestParts<AppState> for TenantContext {
                 TenantContextError::MembershipSuspended => (
                     StatusCode::FORBIDDEN,
                     Json(serde_json::json!({ "message": MEMBERSHIP_SUSPENDED_MESSAGE })),
+                ),
+                TenantContextError::TenantSuspended => (
+                    StatusCode::FORBIDDEN,
+                    Json(serde_json::json!({
+                        "message": TENANT_SUSPENDED_MESSAGE,
+                        "error_code": ErrorCode::TenantSuspended.as_str(),
+                    })),
                 ),
                 TenantContextError::Database(database_error) => (
                     StatusCode::INTERNAL_SERVER_ERROR,

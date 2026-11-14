@@ -24,6 +24,7 @@ import {
   RESET_REQUESTED_MESSAGE,
   SELF_SERVE_TENANT_LIMIT_MESSAGE,
   SINGLE_SIGN_ON_PROVIDER_DISPLAY_NAME,
+  TENANT_SUSPENDED_MESSAGE,
 } from "e2e/support/constants";
 import { expect, test } from "e2e/support/fixtures";
 import { linkInEmail, tokenInLink, waitForEmail } from "e2e/support/mailbox";
@@ -304,6 +305,64 @@ test("a new person signs in with single sign-on and creates their own tenants", 
   await visitor.page.goto("/onboarding");
   await expect(
     visitor.page.getByText(SELF_SERVE_TENANT_LIMIT_MESSAGE),
+  ).toBeVisible();
+  await visitor.context.close();
+});
+
+test("a platform administrator suspends and restores a tenant", async ({
+  signedInPage,
+  tenantId,
+  browser,
+  baseURL,
+}) => {
+  const founder = newPerson("suspended-founder");
+  const tenantName = `Suspendable ${randomUUID().slice(0, 8)}`;
+  const visitor = await openVisitorPage(browser, baseURL);
+  await visitor.page.goto(APP_URLS.SIGN_IN);
+  await visitor.page
+    .getByRole("button", {
+      name: SINGLE_SIGN_ON_PROVIDER_DISPLAY_NAME,
+      exact: true,
+    })
+    .click();
+  await signInAtIdentityProvider(
+    visitor.page,
+    `suspended-founder-subject-${randomUUID()}`,
+    founder,
+  );
+  await visitor.page.getByLabel("Enter tenant name").fill(tenantName);
+  await visitor.page
+    .getByRole("button", { name: "Create tenant", exact: true })
+    .click();
+  await expect(visitor.page).toHaveURL(TENANT_HOME_URL_PATTERN);
+  const founderTenantUrl = visitor.page.url();
+
+  await signedInPage.goto(tenantUrl(tenantId, APP_URLS.TENANTS));
+  const tenantRow = signedInPage.getByRole("row", { name: tenantName });
+  await expect(tenantRow.getByText("Active", { exact: true })).toBeVisible();
+  await tenantRow.getByRole("button", { name: "Suspend" }).click();
+  await signedInPage
+    .getByRole("dialog")
+    .getByRole("button", { name: "Suspend" })
+    .click();
+  await expect(tenantRow.getByText("Suspended", { exact: true })).toBeVisible();
+
+  await visitor.page.goto(founderTenantUrl);
+  await expect(visitor.page.getByText(TENANT_SUSPENDED_MESSAGE)).toBeVisible();
+  await expect(
+    visitor.page.getByRole("button", { name: `Tenant: ${tenantName}` }),
+  ).toBeHidden();
+
+  await tenantRow.getByRole("button", { name: "Restore" }).click();
+  await signedInPage
+    .getByRole("dialog")
+    .getByRole("button", { name: "Restore" })
+    .click();
+  await expect(tenantRow.getByText("Active", { exact: true })).toBeVisible();
+
+  await visitor.page.goto(founderTenantUrl);
+  await expect(
+    visitor.page.getByRole("button", { name: `Tenant: ${tenantName}` }),
   ).toBeVisible();
   await visitor.context.close();
 });

@@ -98,7 +98,7 @@ pub(crate) async fn run_startup_suggested_question_refresh(app_state: &AppState)
 }
 
 pub(crate) async fn refresh_all_stale_for_every_tenant(app_state: &AppState) {
-    let tenant_ids = match crate::tenant::service::list_all_tenant_ids(app_state).await {
+    let tenant_ids = match crate::tenant::service::list_active_tenant_ids(app_state).await {
         Ok(tenant_ids) => tenant_ids,
         Err(e) => {
             tracing::error!("scheduler: failed to list tenants: {e}");

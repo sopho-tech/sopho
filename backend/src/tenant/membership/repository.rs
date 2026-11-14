@@ -7,7 +7,7 @@ use crate::entity::{role, tenant_membership, user};
 use sea_orm::sea_query::{Expr, Query};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr,
-    EntityTrait, QueryFilter, QuerySelect, Set,
+    EntityTrait, PaginatorTrait, QueryFilter, QuerySelect, Set,
 };
 use uuid::Uuid;
 
@@ -187,6 +187,17 @@ pub async fn delete_membership_transaction(
         .exec(txn)
         .await?;
     Ok(result.rows_affected)
+}
+
+pub async fn count_active_memberships(
+    database_connection: &DatabaseConnection,
+    tenant_id: &TenantId,
+) -> Result<u64, DbErr> {
+    tenant_membership::Entity::find()
+        .filter(tenant_membership::Column::TenantId.eq(tenant_id.get_uuid()))
+        .filter(tenant_membership::Column::Status.eq(MembershipStatus::Active.as_str()))
+        .count(database_connection)
+        .await
 }
 
 pub async fn list_active_members(

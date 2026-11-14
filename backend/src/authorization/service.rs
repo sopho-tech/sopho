@@ -78,6 +78,13 @@ pub async fn resolve_tenant_context(
     if membership.status != MembershipStatus::Active.as_str() {
         return Err(TenantContextError::MembershipSuspended);
     }
+    if crate::tenant::service::is_tenant_suspended(app_state, tenant_id)
+        .await
+        .map_err(TenantContextError::Database)?
+        .ok_or(TenantContextError::NotAMember)?
+    {
+        return Err(TenantContextError::TenantSuspended);
+    }
 
     let permissions = resolve_permissions_for_role(app_state, membership.role_id).await?;
 

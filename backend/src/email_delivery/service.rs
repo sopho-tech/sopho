@@ -116,8 +116,14 @@ pub async fn deliver_due_emails(app_state: &AppState) -> Result<(), EmailDeliver
     repository::fail_expired_pending_emails(database_connection, now.into()).await?;
     repository::clear_bodies_of_expired_failed_emails(database_connection, now.into()).await?;
 
-    let due_email_ids =
-        repository::find_due_email_ids(database_connection, now.into(), SENDER_BATCH_SIZE).await?;
+    let suspended_tenant_ids = crate::tenant::service::list_suspended_tenant_ids(app_state).await?;
+    let due_email_ids = repository::find_due_email_ids(
+        database_connection,
+        now.into(),
+        SENDER_BATCH_SIZE,
+        suspended_tenant_ids,
+    )
+    .await?;
     for email_id in due_email_ids {
         let claimed_at = Utc::now();
         let lease_expires_at = claimed_at + Duration::minutes(SENDING_LEASE_MINUTES);

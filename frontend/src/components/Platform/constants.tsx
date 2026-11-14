@@ -1,4 +1,5 @@
 import { EmailStatus } from "src/api/invitation/queries";
+import { TenantStatus } from "src/api/platform/queries";
 import { BadgeProps } from "src/components/design-system/Badge";
 
 export const FIRST_PAGE = 1;
@@ -50,7 +51,26 @@ export const USER_ACTIONS_LABEL = "User actions";
 
 export const USERS_TABLE_COLUMNS =
   "minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 1.2fr) 2.5rem";
-export const TENANTS_TABLE_COLUMNS = "minmax(0, 1fr) 10rem 10rem";
+export const TENANTS_TABLE_COLUMNS = "minmax(0, 1fr) 8rem 10rem 10rem 7rem";
+export const SUSPEND_TENANT_LABEL = "Suspend";
+export const RESTORE_TENANT_LABEL = "Restore";
+export const SUSPEND_TENANT_DESCRIPTION =
+  "Nobody can use this tenant until it is restored. Its data, members and invitations stay as they are.";
+export const RESTORE_TENANT_DESCRIPTION =
+  "Members can use this tenant again, with everything as it was.";
+export const TENANT_STATUS_NAMES: Record<TenantStatus, string> = {
+  ACTIVE: "Active",
+  INACTIVE: "Inactive",
+  SUSPENDED: "Suspended",
+};
+export const TENANT_STATUS_BADGE_VARIANTS: Record<
+  TenantStatus,
+  NonNullable<BadgeProps["variant"]>
+> = {
+  ACTIVE: "green",
+  INACTIVE: "subtle",
+  SUSPENDED: "yellow",
+};
 export const EMAILS_TABLE_COLUMNS =
   "minmax(0, 1.2fr) minmax(0, 1.4fr) 9rem 6rem 5rem 10rem 2.5rem";
 export const EMAIL_ACTIONS_LABEL = "Email actions";

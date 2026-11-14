@@ -8,6 +8,7 @@ import { isUnauthorizedError } from "src/api/dto";
 import { useReceivedInvitations } from "src/api/invitation/queries";
 import { useMemberships } from "src/api/tenant/queries";
 import { Sidebar } from "src/components/Sidebar/Sidebar";
+import { SuspendedTenant } from "src/components/SuspendedTenant";
 import { CommandMenu } from "src/components/design-system/CommandMenu/CommandMenu";
 import { Flex } from "src/components/design-system";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -23,11 +24,19 @@ export function TenantRoute() {
     throw memberships.error;
   }
 
-  const isMember = memberships.data.some(
+  const currentMembership = memberships.data.find(
     (membership) => membership.tenant_id === tenantId,
   );
-  if (!isMember) {
+  if (!currentMembership) {
     return <Navigate to={APP_ROUTES.INDEX} replace />;
+  }
+  if (currentMembership.suspended_message !== null) {
+    return (
+      <SuspendedTenant
+        tenantName={currentMembership.tenant_name}
+        suspendedMessage={currentMembership.suspended_message}
+      />
+    );
   }
 
   return (

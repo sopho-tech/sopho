@@ -151,3 +151,5 @@ export const SELF_SERVE_TENANT_CREATION_FLAG =
   "SOPHO_FEATURE_SELF_SERVE_TENANT_CREATION";
 export const SELF_SERVE_TENANT_LIMIT_MESSAGE =
   "You have created the maximum of 2 tenants";
+export const TENANT_SUSPENDED_MESSAGE =
+  "This tenant is suspended. Contact support";
