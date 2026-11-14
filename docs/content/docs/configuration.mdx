@@ -135,6 +135,34 @@ A person can still accept an invitation to a suspended tenant; they see the susp
 
 Suspending deletes nothing. Data, members, invitations and sign-in sessions stay as they are, and restoring the tenant puts everything back as it was.
 
+## Logs
+
+Sopho writes its logs to standard output. `RUST_LOG` sets how much is logged; keep it at `info` in production, because `debug` also logs the statements Sopho runs against its own database. Statements run against the databases people connect are never logged.
+
+Every request gets a request ID. It is returned in the `x-request-id` response header of every response, and as `request_id` in the body of JSON error responses. The app shows it next to a server error. A request ID sent by the client is ignored and replaced.
+
+Each log line written while handling a request carries:
+
+| Field            | Meaning                                        |
+| ---------------- | ---------------------------------------------- |
+| `request_id`     | The request's ID                               |
+| `method`, `path` | The request, without its query string          |
+| `user_id`        | The signed-in person, once they are identified |
+| `tenant_id`      | The tenant, for a request inside one           |
+
+Background work carries `job` and, where it applies, `tenant_id`.
+
+`SOPHO_FEATURE_LOGS_FORMAT` chooses how each line is written:
+
+| Value  | Output                                                                                                                         |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `text` | Plain text with the fields above. This is the default                                                                          |
+| `json` | One JSON object per line, with the fields above at the top level of the object, so a log service can search and filter by them |
+
+Sopho fails to start if it has any other value.
+
+Logs do not contain connection credentials, API keys, sign-in tokens, query results, generated SQL or the text of people's questions.
+
 ## Rate limiting
 
 When `SOPHO_FEATURE_RATE_LIMITING` is `true`, Sopho limits requests in three groups. Each group has a burst, the number of requests allowed at once, and a rate at which that allowance refills.

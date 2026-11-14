@@ -1,5 +1,7 @@
 import { ApiError, ApiErrorBody } from "src/api/dto";
 
+const REQUEST_ID_HEADER = "x-request-id";
+
 async function handleErrorResponse(response: Response): Promise<never> {
   let body: ApiErrorBody = {};
   const contentType = response.headers.get("content-type");
@@ -9,6 +11,10 @@ async function handleErrorResponse(response: Response): Promise<never> {
     } catch {
       body = {};
     }
+  }
+  const requestId = response.headers.get(REQUEST_ID_HEADER);
+  if (requestId !== null) {
+    body.request_id = requestId;
   }
   throw new ApiError(response.status, body, body.message ?? body.error);
 }

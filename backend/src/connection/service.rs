@@ -374,7 +374,7 @@ pub async fn update_connection(
     let subject = connection_subject(tenant_context, &connection)?;
     let response_dto =
         connection_response_dto(&app_state, tenant_context, &subject, connection).await?;
-    info!("Connection updated: {:?}", response_dto);
+    info!("Connection {} updated", response_dto.id);
     Ok(response_dto)
 }
 

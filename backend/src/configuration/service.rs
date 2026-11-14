@@ -16,7 +16,7 @@ async fn is_setup_done(app_state: &AppState, key: ConfigurationKey) -> bool {
         Ok(Some(model)) => model.value.eq_ignore_ascii_case("true"),
         Ok(None) => false,
         Err(e) => {
-            error!("Failed to get configuration {}: {:?}", key, e);
+            error!("Failed to get configuration {}: {}", key, e);
             false
         }
     }
@@ -42,12 +42,12 @@ async fn mark_setup_done(app_state: &AppState, key: ConfigurationKey) {
             return;
         }
         Err(e) => {
-            error!("Failed to get configuration {}: {:?}", key, e);
+            error!("Failed to get configuration {}: {}", key, e);
             return;
         }
     };
     if let Err(e) = result {
-        error!("Failed to mark configuration {} as done: {:?}", key, e);
+        error!("Failed to mark configuration {} as done: {}", key, e);
     }
 }
 

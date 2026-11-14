@@ -77,11 +77,14 @@ pub fn request_password_reset(app_state: AppState, email: String) -> Result<(), 
     if !email_delivery_service::is_email_enabled(&app_state) {
         return Err(PasswordFlowError::ResetUnavailable);
     }
-    tokio::spawn(async move {
-        if let Err(error) = queue_reset_email_for_address(&app_state, &email).await {
-            tracing::error!("Could not handle a password reset request: {error}");
-        }
-    });
+    tokio::spawn(tracing::Instrument::instrument(
+        async move {
+            if let Err(error) = queue_reset_email_for_address(&app_state, &email).await {
+                tracing::error!("Could not handle a password reset request: {error}");
+            }
+        },
+        tracing::Span::current(),
+    ));
     Ok(())
 }
 

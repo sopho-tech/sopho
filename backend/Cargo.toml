@@ -39,7 +39,7 @@ openidconnect = { version = "4.0.1", default-features = false, features = ["acce
 rig-core = "0.32.0"
 rust_decimal = { version = "1.36", features = ["serde-with-str"] }
 schemars = { version = "1.2", features = ["derive"] }
-sea-orm = { version = "1.1.19", features = ["debug-print", "macros", "runtime-tokio-native-tls", "sqlx-postgres", "sqlx-sqlite"] }
+sea-orm = { version = "1.1.19", features = ["macros", "runtime-tokio-native-tls", "sqlx-postgres", "sqlx-sqlite"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.140"
 sha2 = "0.11"
@@ -55,7 +55,7 @@ tower-cookies = "0.11.0"
 tower_governor = { version = "0.8.0", default-features = false, features = ["axum"] }
 tower-http = { version = "0.7.1", features = ["cors", "fs", "set-header", "trace"] }
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter", "json"] }
 unicode-normalization = "0.1.26"
 uuid = { version = "1.4", features = ["serde", "v4"] }
 
@@ -66,6 +66,9 @@ percent-encoding = "2.3.2"
 reqwest = { version = "0.13.5", features = ["cookies", "form", "json", "stream"] }
 tempfile = "3.27.0"
 testcontainers = { version = "0.28.0", features = ["reusable-containers"] }
+tower = { version = "0.5", features = ["util"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
 
 [lints]
 workspace = true

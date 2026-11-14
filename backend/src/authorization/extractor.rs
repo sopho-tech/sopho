@@ -8,6 +8,7 @@ use crate::authorization::errors::TenantContextError;
 use crate::authorization::service::resolve_tenant_context;
 use crate::common::AppState;
 use crate::common::error_codes::{ErrorCode, codes};
+use crate::request_trace::service as request_trace_service;
 use axum::Json;
 use axum::extract::{FromRequestParts, Path};
 use axum::http::StatusCode;
@@ -36,6 +37,7 @@ impl FromRequestParts<AppState> for AuthenticatedUser {
         let authenticated_user = authenticate_from_cookies(&cookies, app_state)
             .await
             .map_err(access_token_error_response)?;
+        request_trace_service::record_user_id(authenticated_user.user_id().get_uuid());
         parts.extensions.insert(authenticated_user.clone());
         Ok(authenticated_user)
     }
@@ -57,6 +59,7 @@ impl FromRequestParts<AppState> for TenantContext {
 
         resolve_tenant_context(app_state, authenticated_user.user_id(), tenant_id)
             .await
+            .inspect(|_| request_trace_service::record_tenant_id(tenant_id))
             .map_err(|error| match error {
                 TenantContextError::NotAMember => tenant_not_found(),
                 TenantContextError::MembershipSuspended => (

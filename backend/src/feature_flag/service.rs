@@ -4,8 +4,26 @@ use crate::feature_flag::constants::{
     FEATURE_FLAG_DISABLED_VALUE, FEATURE_FLAG_ENABLED_VALUE, FeatureFlag,
 };
 use crate::feature_flag::dto::FeatureFlags;
+use std::env::VarError;
 use strum::VariantArray;
 use tracing::info;
+
+fn feature_flag_environment_variable(
+    variable_name: &str,
+) -> Result<Option<String>, ConfigurationError> {
+    match std::env::var(variable_name) {
+        Ok(value) => Ok(Some(value)),
+        Err(VarError::NotPresent) => Ok(None),
+        Err(VarError::NotUnicode(value)) => Err(ConfigurationError::InvalidFeatureFlag {
+            variable_name: variable_name.to_string(),
+            value: value.to_string_lossy().into_owned(),
+        }),
+    }
+}
+
+pub fn feature_flags_from_environment() -> Result<FeatureFlags, ConfigurationError> {
+    feature_flags_from_variables(feature_flag_environment_variable)
+}
 
 pub fn feature_flags_from_variables(
     read_variable: impl Fn(&str) -> Result<Option<String>, ConfigurationError>,

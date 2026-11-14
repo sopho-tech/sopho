@@ -46,7 +46,7 @@ pub async fn execute(
         linked_schema,
     )
     .await?;
-    info!("generated_sql: {}", generated_sql);
+    info!("generated_sql: ready (chars={})", generated_sql.len());
     channels
         .send(Event::GeneratedSql {
             sql: generated_sql.clone(),
@@ -90,7 +90,7 @@ pub async fn execute_schema_linking(
         }
     )?;
 
-    info!("master_plan: {master_plan}");
+    info!("master_plan: ready (chars={})", master_plan.len());
 
     channels.send(Event::ExecutingSearchSpaceReduction).await?;
     let pruned_data_catalog = execute_search_space_reduction(
@@ -107,10 +107,7 @@ pub async fn execute_schema_linking(
             pruned_data_catalog: pruned_data_catalog.clone(),
         })
         .await?;
-    info!(
-        "pruned_data_catalog: {}",
-        serde_json::to_string_pretty(&pruned_data_catalog).unwrap_or_default()
-    );
+    info!("pruned_data_catalog: ready");
     let (emperical_observations, functional_role_analysis_result) =
         execute_hypothesis_verification(
             app_state,
@@ -123,12 +120,9 @@ pub async fn execute_schema_linking(
         )
         .await?;
     info!(
-        "emperical_observations: {}",
-        serde_json::to_string_pretty(&emperical_observations).unwrap_or_default()
-    );
-    info!(
-        "functional_role_analysis_result: {}",
-        serde_json::to_string_pretty(&functional_role_analysis_result).unwrap_or_default()
+        "hypothesis_verification: ready (tables={}, empirical_observations={})",
+        functional_role_analysis_result.table_functions.len(),
+        emperical_observations.len()
     );
 
     channels
@@ -149,10 +143,7 @@ pub async fn execute_schema_linking(
             linked_schema: linked_schema.clone(),
         })
         .await?;
-    info!(
-        "linked_schema: {}",
-        serde_json::to_string_pretty(&linked_schema).unwrap_or_default()
-    );
+    info!("linked_schema: ready");
     Ok((master_plan, linked_schema))
 }
 
@@ -235,7 +226,10 @@ pub(crate) async fn execute_search_space_reduction(
     master_plan: &str,
     data_catalog_batches: Vec<Database>,
 ) -> Result<Database> {
-    info!("initial data_catalog_batches: {:?}", data_catalog_batches);
+    info!(
+        "search_space_reduction: starting (batches={})",
+        data_catalog_batches.len()
+    );
     let pruning_results: Vec<Result<Database>> =
         futures_util::stream::iter(data_catalog_batches.into_iter().map(
             |mut data_catalog_batch| {
@@ -270,8 +264,6 @@ pub(crate) async fn execute_search_space_reduction(
                     );
                     let deletion_set = deletion_result?;
                     let selection_set = selection_result?;
-                    info!("Deletion: {:?}", deletion_set);
-                    info!("Selection: {:?}", selection_set);
                     prune_data_catalog_batch(&mut data_catalog_batch, deletion_set, selection_set);
                     Ok(data_catalog_batch)
                 }
@@ -362,8 +354,8 @@ async fn execute_functional_role_analysis(
     let functional_role_analysis_result: FunctionalRoleAnalysisResult =
         functional_role_analysis_agent.prompt_typed(prompt).await?;
     info!(
-        "functional_role_analysis_result: {:?}",
-        functional_role_analysis_result
+        "functional_role_analysis: ready (tables={})",
+        functional_role_analysis_result.table_functions.len()
     );
     Ok(functional_role_analysis_result)
 }
@@ -440,10 +432,6 @@ async fn execute_data_profiling(
                         }
                     })
                     .collect();
-                info!(
-                    "observations: {}",
-                    serde_json::to_string_pretty(&observations).unwrap_or_default()
-                );
 
                 let prompt = UserPrompt::DataProfilingAfter {
                     table_name: table_function.table.clone(),
@@ -454,11 +442,6 @@ async fn execute_data_profiling(
                 let table_emperical_observation: EmpericalObservation = data_profiling_agent
                     .prompt_typed_with_history(prompt, &mut chat_history)
                     .await?;
-
-                info!(
-                    "table_emperical_observation: {}",
-                    serde_json::to_string_pretty(&table_emperical_observation).unwrap_or_default()
-                );
 
                 Ok((table_function.clone(), table_emperical_observation))
             },
