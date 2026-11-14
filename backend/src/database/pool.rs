@@ -6,7 +6,7 @@ use crate::database::{guard, postgres, sqlite};
 use crate::entity;
 use sha2::{Digest, Sha256};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
-use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{PgPool, SqlitePool};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -32,7 +32,7 @@ enum DatabaseTarget {
         connect_options: Box<PgConnectOptions>,
     },
     Sqlite {
-        database_url: String,
+        connect_options: Box<SqliteConnectOptions>,
     },
 }
 
@@ -71,7 +71,7 @@ fn resolve_database_target(
             connect_options: Box::new(postgres::connect_options(connection)?),
         }),
         SourceType::Sqlite => Ok(DatabaseTarget::Sqlite {
-            database_url: sqlite::get_database_url(connection),
+            connect_options: Box::new(sqlite::connect_options(connection)?),
         }),
     }
 }
@@ -95,10 +95,10 @@ async fn build_database_pool(
                     .await?,
             ))
         }
-        DatabaseTarget::Sqlite { database_url } => Ok(DatabasePool::Sqlite(
+        DatabaseTarget::Sqlite { connect_options } => Ok(DatabasePool::Sqlite(
             SqlitePoolOptions::new()
                 .max_connections(SQLITE_POOL_MAX_CONNECTIONS)
-                .connect(&database_url)
+                .connect_with(*connect_options)
                 .await?,
         )),
     }

@@ -862,11 +862,10 @@ impl CanvasPlan {
                 continue;
             };
             match &op {
-                CanvasOp::Create { title, sql, .. } => {
+                CanvasOp::Create { sql, .. } => {
                     if !present.insert(normalize_sql(sql)) {
                         tracing::warn!(
-                            "canvas plan: dropped create of {:?} because its query is already in the target canvas",
-                            title.as_deref().unwrap_or("<untitled>")
+                            "canvas plan: dropped a create because its query is already in the target canvas"
                         );
                         continue;
                     }

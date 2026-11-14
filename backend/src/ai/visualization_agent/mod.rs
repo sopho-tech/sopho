@@ -30,10 +30,7 @@ pub async fn execute(
     )
     .await?;
     let visualization = recommendation.resolved()?;
-    info!(
-        "visualization: {}",
-        serde_json::to_string_pretty(&visualization).unwrap_or_default()
-    );
+    info!("visualization: recommendation ready");
     channels
         .send(Event::RecommendedVisualization { visualization })
         .await?;

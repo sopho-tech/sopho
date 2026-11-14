@@ -1,0 +1,13 @@
+pub const REQUEST_ID_HEADER: &str = "x-request-id";
+pub const REQUEST_ID_BODY_FIELD: &str = "request_id";
+pub const REQUEST_SPAN_NAME: &str = "request";
+pub const BACKGROUND_JOB_SPAN_NAME: &str = "background_job";
+pub const JSON_CONTENT_TYPE_PREFIX: &str = "application/json";
+pub const REQUEST_ID_SPAN_FIELD: &str = "request_id";
+pub const METHOD_SPAN_FIELD: &str = "method";
+pub const PATH_SPAN_FIELD: &str = "path";
+pub const USER_ID_SPAN_FIELD: &str = "user_id";
+pub const TENANT_ID_SPAN_FIELD: &str = "tenant_id";
+pub const JOB_SPAN_FIELD: &str = "job";
+pub const SUGGESTED_QUESTION_REFRESH_JOB: &str = "suggested_question_refresh";
+pub const EMAIL_SENDER_JOB: &str = "email_sender";

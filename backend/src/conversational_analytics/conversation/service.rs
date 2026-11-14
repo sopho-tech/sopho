@@ -766,82 +766,88 @@ pub async fn execute_completion(
     let tenant_id = tenant_id.clone();
     let persist_tenant_id = tenant_id.clone();
 
-    let persistence_task = tokio::spawn(async move {
-        persist_events(
-            &db,
-            &persist_tenant_id,
-            conversation_message_id,
-            persist_rx,
-            &ai_actor,
-        )
-        .await
-    });
-
-    tokio::spawn(async move {
-        let tenant_id = &tenant_id;
-        let channels = EventChannels { sse_tx, persist_tx };
-        let result = async {
-            let conversation_history = history::load(
-                &app_state,
-                tenant_id,
-                conversation_id,
+    let persistence_task = tokio::spawn(tracing::Instrument::instrument(
+        async move {
+            persist_events(
+                &db,
+                &persist_tenant_id,
                 conversation_message_id,
-            )
-            .await?;
-            run_pipeline(
-                &app_state,
-                tenant_id,
-                &connection,
-                conversation_id,
-                PipelineRequest {
-                    question: &question,
-                    commands: &commands,
-                    conversation_history: &conversation_history,
-                },
-                &channels,
+                persist_rx,
                 &ai_actor,
             )
             .await
-        }
-        .await;
+        },
+        tracing::Span::current(),
+    ));
 
-        let (final_event, status) = match result {
-            Ok(PipelineOutcome::Completed) => {
-                (crate::ai::dto::Event::Completed, MessageStatus::Processed)
+    tokio::spawn(tracing::Instrument::instrument(
+        async move {
+            let tenant_id = &tenant_id;
+            let channels = EventChannels { sse_tx, persist_tx };
+            let result = async {
+                let conversation_history = history::load(
+                    &app_state,
+                    tenant_id,
+                    conversation_id,
+                    conversation_message_id,
+                )
+                .await?;
+                run_pipeline(
+                    &app_state,
+                    tenant_id,
+                    &connection,
+                    conversation_id,
+                    PipelineRequest {
+                        question: &question,
+                        commands: &commands,
+                        conversation_history: &conversation_history,
+                    },
+                    &channels,
+                    &ai_actor,
+                )
+                .await
             }
-            Ok(PipelineOutcome::AwaitingClarification) => (
-                crate::ai::dto::Event::AwaitingClarification,
-                MessageStatus::AwaitingClarification,
-            ),
-            Ok(PipelineOutcome::Rejected) => {
-                (crate::ai::dto::Event::Rejected, MessageStatus::Rejected)
-            }
-            Err(e) => (
-                crate::ai::dto::Event::Error(e.to_string()),
-                MessageStatus::Failed,
-            ),
-        };
+            .await;
 
-        let EventChannels { sse_tx, persist_tx } = channels;
-        let final_event = complete_assistant_message(
-            &app_state.database_connection,
-            tenant_id,
-            conversation_message_id,
-            EventPersistence {
-                persist_tx,
-                persistence_task,
-            },
-            final_event,
-            status,
-            &ai_actor,
-        )
-        .await;
-        if let Err(e) = sse_tx.send(final_event).await {
-            tracing::error!(
-                "conversation message {conversation_message_id}: failed to send the final event: {e}"
-            );
-        }
-    });
+            let (final_event, status) = match result {
+                Ok(PipelineOutcome::Completed) => {
+                    (crate::ai::dto::Event::Completed, MessageStatus::Processed)
+                }
+                Ok(PipelineOutcome::AwaitingClarification) => (
+                    crate::ai::dto::Event::AwaitingClarification,
+                    MessageStatus::AwaitingClarification,
+                ),
+                Ok(PipelineOutcome::Rejected) => {
+                    (crate::ai::dto::Event::Rejected, MessageStatus::Rejected)
+                }
+                Err(e) => (
+                    crate::ai::dto::Event::Error(e.to_string()),
+                    MessageStatus::Failed,
+                ),
+            };
+
+            let EventChannels { sse_tx, persist_tx } = channels;
+            let final_event = complete_assistant_message(
+                &app_state.database_connection,
+                tenant_id,
+                conversation_message_id,
+                EventPersistence {
+                    persist_tx,
+                    persistence_task,
+                },
+                final_event,
+                status,
+                &ai_actor,
+            )
+            .await;
+            if let Err(e) = sse_tx.send(final_event).await {
+                tracing::error!(
+                    "conversation message {conversation_message_id}: failed to send the final event: {e}"
+                );
+            }
+        },
+        tracing::Span::current(),
+    ));
 
     let stream = ReceiverStream::new(sse_rx)
         .map(|agent_event| Ok(Event::default().data(agent_event.to_json_string())));
@@ -929,17 +935,20 @@ async fn run_pipeline(
                 let followup_sql = sql.clone();
                 let conversation_history = conversation_history.clone();
                 let followup_tenant_id = tenant_id.clone();
-                tokio::spawn(async move {
-                    compute_followup_questions(
-                        &app_state,
-                        &followup_tenant_id,
-                        &connection,
-                        &followup_question,
-                        &followup_sql,
-                        &conversation_history,
-                    )
-                    .await
-                })
+                tokio::spawn(tracing::Instrument::instrument(
+                    async move {
+                        compute_followup_questions(
+                            &app_state,
+                            &followup_tenant_id,
+                            &connection,
+                            &followup_question,
+                            &followup_sql,
+                            &conversation_history,
+                        )
+                        .await
+                    },
+                    tracing::Span::current(),
+                ))
             };
 
             channels

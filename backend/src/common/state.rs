@@ -21,7 +21,7 @@ use crate::email_delivery;
 use crate::email_delivery::service::EmailTransport;
 use crate::feature_flag::constants::FeatureFlag;
 use crate::feature_flag::dto::FeatureFlags;
-use crate::feature_flag::service::feature_flags_from_variables;
+use crate::feature_flag::service::feature_flags_from_environment;
 use crate::rate_limit;
 use crate::rate_limit::constants::{
     DEFAULT_AI_BURST_SIZE, DEFAULT_AI_REQUESTS_PER_MINUTE, DEFAULT_API_BURST_SIZE,
@@ -706,7 +706,7 @@ impl Configurations {
     pub fn from_env() -> Result<Self, ConfigurationError> {
         dotenvy::dotenv().ok();
 
-        let feature_flags = feature_flags_from_variables(feature_flag_environment_variable)?;
+        let feature_flags = feature_flags_from_environment()?;
         let password_administrator = match feature_flags
             .is_enabled(FeatureFlag::SeedPasswordAdministrator)
         {
@@ -840,19 +840,6 @@ fn oidc_environment_variable(variable_name: &str) -> Result<Option<String>, Conf
         Err(source) => Err(ConfigurationError::InvalidOidcVariable {
             variable_name: variable_name.to_string(),
             source,
-        }),
-    }
-}
-
-fn feature_flag_environment_variable(
-    variable_name: &str,
-) -> Result<Option<String>, ConfigurationError> {
-    match std::env::var(variable_name) {
-        Ok(value) => Ok(Some(value)),
-        Err(VarError::NotPresent) => Ok(None),
-        Err(VarError::NotUnicode(value)) => Err(ConfigurationError::InvalidFeatureFlag {
-            variable_name: variable_name.to_string(),
-            value: value.to_string_lossy().into_owned(),
         }),
     }
 }

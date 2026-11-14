@@ -10,6 +10,7 @@ use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use futures_util::StreamExt;
 use rust_decimal::Decimal;
 use sqlx::Column;
+use sqlx::ConnectOptions;
 use sqlx::Connection;
 use sqlx::Row;
 use sqlx::postgres::PgConnectOptions;
@@ -45,6 +46,7 @@ pub fn connect_options(
             port: port.to_string(),
         })?;
     Ok(PgConnectOptions::new_without_pgpass()
+        .disable_statement_logging()
         .host(host)
         .port(port_number)
         .username(connection.username.as_deref().unwrap_or_default())

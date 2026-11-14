@@ -262,41 +262,45 @@ fn spawn_chart_summary_batch(
     if claimed.is_empty() {
         return;
     }
-    tokio::spawn(async move {
-        stream::iter(claimed.into_iter().map(|(cell_id, user_prompt)| {
-            let app_state = &app_state;
-            let tenant_id = &tenant_id;
-            let ai_actor = &ai_actor;
-            async move {
-                let outcome =
-                    match summarize_chart(app_state, tenant_id, cell_id, &user_prompt).await {
-                        Ok(summary) => Ok((summary, None)),
-                        Err(e) => {
-                            error!("ai_summary: chart {cell_id} generation failed: {e:#}");
-                            Err(truncate_error(e))
-                        }
-                    };
-                if let Err(e) = record_generation_result(
-                    app_state,
-                    tenant_id,
-                    SummaryEntityType::ChartCell,
-                    cell_id,
-                    outcome,
-                    user_prompt,
-                    ai_actor,
-                )
-                .await
-                {
-                    error!("ai_summary: chart {cell_id} result could not be stored: {e}");
+    let request_span = tracing::Span::current();
+    tokio::spawn(tracing::Instrument::instrument(
+        async move {
+            stream::iter(claimed.into_iter().map(|(cell_id, user_prompt)| {
+                let app_state = &app_state;
+                let tenant_id = &tenant_id;
+                let ai_actor = &ai_actor;
+                async move {
+                    let outcome =
+                        match summarize_chart(app_state, tenant_id, cell_id, &user_prompt).await {
+                            Ok(summary) => Ok((summary, None)),
+                            Err(e) => {
+                                error!("ai_summary: chart {cell_id} generation failed: {e:#}");
+                                Err(truncate_error(e))
+                            }
+                        };
+                    if let Err(e) = record_generation_result(
+                        app_state,
+                        tenant_id,
+                        SummaryEntityType::ChartCell,
+                        cell_id,
+                        outcome,
+                        user_prompt,
+                        ai_actor,
+                    )
+                    .await
+                    {
+                        error!("ai_summary: chart {cell_id} result could not be stored: {e}");
+                    }
                 }
-            }
-        }))
-        .buffer_unordered(constants::GENERATION_CONCURRENCY)
-        .collect::<Vec<_>>()
-        .await;
+            }))
+            .buffer_unordered(constants::GENERATION_CONCURRENCY)
+            .collect::<Vec<_>>()
+            .await;
 
-        info!("ai_summary: dashboard {dashboard_id} finished background chart summaries");
-    });
+            info!("ai_summary: dashboard {dashboard_id} finished background chart summaries");
+        },
+        request_span,
+    ));
 }
 
 pub async fn generate_chart_summary(

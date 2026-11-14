@@ -23,7 +23,8 @@ pub async fn run_migrations(db: &DatabaseConnection) -> Result<(), DbErr> {
 
 pub async fn get_db(database_url: &str) -> Result<DatabaseConnection, DbErr> {
     let mut opt = ConnectOptions::new(database_url);
-    opt.sqlx_logging(true).sqlx_logging_level(LevelFilter::Info);
+    opt.sqlx_logging(true)
+        .sqlx_logging_level(LevelFilter::Debug);
     let db = Database::connect(opt).await?;
     Ok(db)
 }

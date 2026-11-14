@@ -9,18 +9,30 @@ use base64::{Engine, engine::general_purpose::STANDARD};
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use futures_util::StreamExt;
 use sqlx::Column;
+use sqlx::ConnectOptions;
 use sqlx::Connection;
 use sqlx::Row;
 use sqlx::TypeInfo;
 use sqlx::ValueRef;
+use sqlx::sqlite::SqliteConnectOptions;
+use std::str::FromStr;
 use uuid::Uuid;
 
 fn quote_ident(identifier: &str) -> String {
     format!("\"{}\"", identifier.replace('"', "\"\""))
 }
 
-pub(crate) fn get_database_url(connection_entity: &entity::connection::Model) -> String {
+fn get_database_url(connection_entity: &entity::connection::Model) -> String {
     format!("sqlite:///{}?mode=rwc", connection_entity.database)
+}
+
+pub(crate) fn connect_options(
+    connection_entity: &entity::connection::Model,
+) -> Result<SqliteConnectOptions, sqlx::Error> {
+    Ok(
+        SqliteConnectOptions::from_str(&get_database_url(connection_entity))?
+            .disable_statement_logging(),
+    )
 }
 
 pub fn validate_sqlite_path(path: &str) -> Result<(), ValidationError> {
@@ -60,8 +72,11 @@ pub async fn get_connection_status(
     connection_entity: &entity::connection::Model,
 ) -> Result<ConnectionStatus, ValidationError> {
     validate_sqlite_path(&connection_entity.database)?;
-    let database_url = get_database_url(connection_entity);
-    let sqlx_connection_result = sqlx::sqlite::SqliteConnection::connect(&database_url).await;
+    let Ok(connect_options) = connect_options(connection_entity) else {
+        return Ok(ConnectionStatus::Failed);
+    };
+    let sqlx_connection_result =
+        sqlx::sqlite::SqliteConnection::connect_with(&connect_options).await;
 
     match sqlx_connection_result {
         Ok(mut conn) => {

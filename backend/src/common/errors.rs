@@ -264,6 +264,11 @@ pub enum ConfigurationError {
         variable: EnvironmentVariable,
         value: String,
     },
+    #[error(
+        "invalid {variable} {value:?}: expected text or json",
+        variable = EnvironmentVariable::SophoFeatureLogsFormat
+    )]
+    InvalidLogsFormat { value: String },
     #[error("{first_setting} and {second_setting} contradict each other: {reason}")]
     ContradictorySettings {
         first_setting: String,

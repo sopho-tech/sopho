@@ -3,9 +3,11 @@ use crate::authorization::dto::TenantId;
 use crate::common::AppState;
 use crate::feature_flag::constants::FeatureFlag;
 use crate::feature_flag::service::is_feature_enabled;
+use crate::request_trace::constants::SUGGESTED_QUESTION_REFRESH_JOB;
+use crate::request_trace::service as request_trace_service;
 use crate::suggested_question;
 use tokio_cron_scheduler::{Job, JobScheduler};
-use tracing::{error, info};
+use tracing::{Instrument, error, info};
 
 const SUGGESTED_QUESTION_DAILY_CRON: &str = "0 0 3 * * *";
 
@@ -106,8 +108,13 @@ pub(crate) async fn refresh_all_stale_for_every_tenant(app_state: &AppState) {
         }
     };
     for tenant_id in tenant_ids {
+        let job_span = request_trace_service::background_job_span_for_tenant(
+            SUGGESTED_QUESTION_REFRESH_JOB,
+            tenant_id,
+        );
         let tenant_id = TenantId::from_system_unchecked(tenant_id);
         suggested_question::service::refresh_all_stale(app_state, &tenant_id, &Actor::system())
+            .instrument(job_span)
             .await;
     }
 }

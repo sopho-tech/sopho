@@ -21,10 +21,12 @@ mod email_template;
 mod entity;
 mod feature_flag;
 mod grant;
+mod logging;
 mod monitor;
 mod notebook;
 mod platform;
 mod rate_limit;
+mod request_trace;
 mod scheduler;
 mod search;
 mod startup_seeding;
@@ -37,6 +39,8 @@ pub use crate::common::{
     SmtpCredentials,
 };
 pub use crate::feature_flag::constants::FeatureFlag;
+pub use crate::logging::constants::LogsFormat;
+pub use crate::logging::service::{initialize_logging, log_layer};
 pub use crate::rate_limit::dto::{RateLimitQuota, RateLimitSettings};
 
 use axum::extract::connect_info::IntoMakeServiceWithConnectInfo;
@@ -182,7 +186,13 @@ pub fn build_app(app_state: AppState) -> Router {
                 }
             }
         }))
-        .layer(TraceLayer::new_for_http())
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(|request: &Request| request_trace::service::request_span(request)),
+        )
+        .layer(middleware::from_fn(
+            request_trace::service::assign_request_id,
+        ))
         .layer(CookieManagerLayer::new())
         .layer(SetResponseHeaderLayer::overriding(
             header::X_CONTENT_TYPE_OPTIONS,

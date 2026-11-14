@@ -16,11 +16,14 @@ pub use crate::email_delivery::transport::EmailTransport;
 use crate::email_delivery::transport::{self, SendFailure};
 use crate::email_template::service as email_template_service;
 use crate::entity::email_outbox;
+use crate::request_trace::constants::EMAIL_SENDER_JOB;
+use crate::request_trace::service as request_trace_service;
 use chrono::{Duration, Utc};
 use sea_orm::DatabaseTransaction;
 use sea_orm::prelude::DateTimeWithTimeZone;
 use std::collections::HashMap;
 use std::str::FromStr;
+use tracing::Instrument;
 use uuid::Uuid;
 
 pub fn build_email_transport(
@@ -151,8 +154,12 @@ pub fn start_email_sender(app_state: AppState) {
             tokio::time::interval(std::time::Duration::from_secs(SENDER_POLL_INTERVAL_SECONDS));
         loop {
             poll_interval.tick().await;
-            if let Err(error) = deliver_due_emails(&app_state).await {
-                tracing::error!("Sending queued emails failed: {error}");
+            let job_span = request_trace_service::background_job_span(EMAIL_SENDER_JOB);
+            if let Err(error) = deliver_due_emails(&app_state)
+                .instrument(job_span.clone())
+                .await
+            {
+                job_span.in_scope(|| tracing::error!("Sending queued emails failed: {error}"));
             }
         }
     });

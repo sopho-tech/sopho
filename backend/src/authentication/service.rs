@@ -80,10 +80,11 @@ async fn find_session_by_access_token_cookie(
     )
     .await
     .map_err(|error| {
-        tracing::error!("Failed to get session: {:?}", error);
+        tracing::error!("Failed to get session: {}", error);
         AccessTokenValidationError::Invalid
     })?
     .ok_or(AccessTokenValidationError::Invalid)
+    .inspect(|session| crate::request_trace::service::record_user_id(session.user_id))
 }
 
 pub async fn authenticate_from_cookies(
@@ -176,7 +177,7 @@ pub async fn get_current_user(cookies: Cookies, app_state: AppState) -> impl Int
     {
         Ok(user_dto) => (StatusCode::OK, Json(serde_json::json!(user_dto))),
         Err(error) => {
-            tracing::error!("Failed to get user: {:?}", error);
+            tracing::error!("Failed to get user: {}", error);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({
@@ -483,7 +484,7 @@ pub async fn create_session(
     let user = match verify_credentials(&app_state, &payload.email, &payload.password).await {
         Ok(user) => user,
         Err(CredentialsError::InvalidCredentials) => {
-            tracing::warn!("Rejected sign-in for {}", payload.email);
+            tracing::warn!("Rejected sign-in: the email or password is wrong");
             return (
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({
@@ -510,7 +511,7 @@ pub async fn create_session(
             );
         }
         Err(CredentialsError::Database(error)) => {
-            tracing::error!("Failed to look up user for sign-in: {:?}", error);
+            tracing::error!("Failed to look up user for sign-in: {}", error);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({
@@ -523,7 +524,7 @@ pub async fn create_session(
     let session_dto = match create_new_session(&app_state, user.id).await {
         Ok(session) => session,
         Err(e) => {
-            tracing::error!("Failed to create session: {:?}", e);
+            tracing::error!("Failed to create session: {}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({
@@ -705,7 +706,7 @@ pub async fn signout(cookies: Cookies, app_state: AppState) -> impl IntoResponse
     {
         Ok(sess) => sess,
         Err(e) => {
-            tracing::warn!("Failed to get session for signout: {:?}", e);
+            tracing::warn!("Failed to get session for signout: {}", e);
             // Still invalidate cookies even if session not found
             invalidate_session_cookies(&cookies, &app_state);
             return (
@@ -726,7 +727,7 @@ pub async fn signout(cookies: Cookies, app_state: AppState) -> impl IntoResponse
             tracing::warn!("Session {} was already gone when signing out", session.id);
         }
         Err(e) => {
-            tracing::error!("Failed to deactivate session: {:?}", e);
+            tracing::error!("Failed to deactivate session: {}", e);
             // Still invalidate cookies even if database update fails
         }
     }
@@ -766,7 +767,7 @@ pub async fn refresh_token(cookies: Cookies, app_state: AppState) -> impl IntoRe
     {
         Ok(sess) => sess,
         Err(e) => {
-            tracing::error!("Failed to get session by refresh token: {:?}", e);
+            tracing::error!("Failed to get session by refresh token: {}", e);
             return invalid_refresh_token_response();
         }
     };
@@ -789,7 +790,7 @@ pub async fn refresh_token(cookies: Cookies, app_state: AppState) -> impl IntoRe
             return invalid_refresh_token_response();
         }
         Err(e) => {
-            tracing::error!("Failed to rotate session tokens: {:?}", e);
+            tracing::error!("Failed to rotate session tokens: {}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({

@@ -322,3 +322,7 @@ pub const TENANT_MEMBER_LIMIT_REACHED_CODE: &str = "TENANT_MEMBER_LIMIT_REACHED"
 pub const THREE_MEMBER_LIMIT_MESSAGE: &str = "This tenant has reached its limit of 3 members";
 pub const ONE_MEMBER_LIMIT_MESSAGE: &str = "This tenant has reached its limit of 1 member";
 pub const TENANT_MEMBER_LIMIT_FOR_TESTS: u64 = 3;
+pub const REQUEST_ID_HEADER: &str = "x-request-id";
+pub const SECRET_CALLBACK_CODE: &str = "secret-authorization-code-9f3a";
+pub const TERMINAL_ESCAPE_CHARACTER: char = '\u{1b}';
+pub const TERMINAL_COLOUR_CODE_END: char = 'm';

@@ -21,6 +21,7 @@ mod platform_emails;
 mod platform_users;
 mod rate_limiting;
 mod referenced_resources;
+mod request_trace;
 mod response_headers;
 mod self_serve_tenants;
 mod sign_in;

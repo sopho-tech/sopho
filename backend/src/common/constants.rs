@@ -68,6 +68,7 @@ pub enum EnvironmentVariable {
     SophoRateLimitAiPerMinute,
     SophoRateLimitAiBurst,
     SophoTenantMemberLimit,
+    SophoFeatureLogsFormat,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumString, Deserialize)]
