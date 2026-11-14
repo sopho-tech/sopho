@@ -91,6 +91,18 @@ pub async fn create_invitation(
     {
         return Err(InvitationError::AlreadyInvited);
     }
+    if let Some(tenant_member_limit) = app_state.config.tenant_member_limit {
+        let active_member_count =
+            membership_service::count_active_members(app_state, tenant_id).await?;
+        let pending_invitation_count =
+            repository::count_pending_invitations(&app_state.database_connection, tenant_id)
+                .await?;
+        if active_member_count + pending_invitation_count >= tenant_member_limit {
+            return Err(InvitationError::MemberLimitReached {
+                limit: tenant_member_limit,
+            });
+        }
+    }
 
     let inviter =
         authentication_service::find_user_by_id(app_state, tenant_context.user_id()).await?;

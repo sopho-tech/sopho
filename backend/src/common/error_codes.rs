@@ -45,6 +45,8 @@ pub enum ErrorCode {
     ConnectionTypeDisabled,
     ConnectionHostNotAllowed,
     RateLimited,
+    TenantSuspended,
+    TenantMemberLimitReached,
 }
 
 impl ErrorCode {

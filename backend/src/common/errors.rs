@@ -254,6 +254,11 @@ pub enum ConfigurationError {
         variable = EnvironmentVariable::SophoDisabledConnectionTypes
     )]
     DuplicateDisabledConnectionType { value: String },
+    #[error(
+        "invalid {variable} {value:?}, expected a whole number of at least 1",
+        variable = EnvironmentVariable::SophoTenantMemberLimit
+    )]
+    InvalidTenantMemberLimit { value: String },
     #[error("invalid {variable} {value:?}, expected a whole number of at least 1")]
     InvalidRateLimit {
         variable: EnvironmentVariable,

@@ -2,6 +2,7 @@ use crate::authorization::constants::{MembershipStatus, TenantStatus};
 use crate::authorization::dto::Actor;
 use crate::common::time_utils;
 use crate::entity::{role, self_serve_tenant_creation, tenant, tenant_membership};
+use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait,
     QueryFilter, QueryOrder, Set,
@@ -32,6 +33,52 @@ pub async fn insert_tenant(
     }
     .insert(database_connection)
     .await
+}
+
+pub async fn update_tenant_status(
+    database_connection: &DatabaseConnection,
+    tenant_id: Uuid,
+    current_tenant_status: TenantStatus,
+    tenant_status: TenantStatus,
+    actor: &Actor,
+) -> Result<u64, DbErr> {
+    let update_result = tenant::Entity::update_many()
+        .col_expr(
+            tenant::Column::Status,
+            Expr::value(tenant_status.as_str().to_string()),
+        )
+        .col_expr(
+            tenant::Column::ModifiedByUserId,
+            Expr::value(actor.user_id()),
+        )
+        .col_expr(
+            tenant::Column::ModifiedByActor,
+            Expr::value(actor.kind_name()),
+        )
+        .col_expr(
+            tenant::Column::UpdatedAt,
+            Expr::value(time_utils::now_utc_into::<
+                sea_orm::prelude::DateTimeWithTimeZone,
+            >()),
+        )
+        .filter(tenant::Column::Id.eq(tenant_id))
+        .filter(tenant::Column::Status.eq(current_tenant_status.as_str()))
+        .exec(database_connection)
+        .await?;
+    Ok(update_result.rows_affected)
+}
+
+pub async fn list_tenant_ids_with_status(
+    database_connection: &DatabaseConnection,
+    tenant_status: TenantStatus,
+) -> Result<Vec<Uuid>, DbErr> {
+    Ok(tenant::Entity::find()
+        .filter(tenant::Column::Status.eq(tenant_status.as_str()))
+        .all(database_connection)
+        .await?
+        .into_iter()
+        .map(|found_tenant| found_tenant.id)
+        .collect())
 }
 
 pub async fn find_tenant_by_id(

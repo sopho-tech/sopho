@@ -1,4 +1,6 @@
-use crate::authorization::constants::{PlatformPermission, SystemRole};
+use crate::authorization::constants::{
+    PlatformPermission, SystemRole, TENANT_SUSPENDED_MESSAGE, TenantStatus,
+};
 use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::authorization::dto::UserId;
@@ -208,7 +210,10 @@ pub async fn list_tenants_for_user(
         let permissions = authorization_service::resolve_permissions_for_role(app_state, role.id)
             .await?
             .as_strings();
+        let suspended_message = (tenant.status == TenantStatus::Suspended.as_str())
+            .then(|| TENANT_SUSPENDED_MESSAGE.to_string());
         response_dto_list.push(TenantMembershipDto {
+            suspended_message,
             tenant_id: tenant.id,
             tenant_name: tenant.name,
             role_display_name: authorization_service::role_display_name(&role.name),
@@ -286,6 +291,47 @@ pub async fn seed_default_tenant_with_owner(
         default_tenant_id
     );
     Ok(default_tenant_id)
+}
+
+pub async fn is_tenant_suspended(
+    app_state: &AppState,
+    tenant_id: Uuid,
+) -> Result<Option<bool>, sea_orm::DbErr> {
+    Ok(
+        repository::find_tenant_by_id(&app_state.database_connection, tenant_id)
+            .await?
+            .map(|found_tenant| found_tenant.status == TenantStatus::Suspended.as_str()),
+    )
+}
+
+pub async fn change_tenant_status(
+    app_state: &AppState,
+    tenant_id: Uuid,
+    current_tenant_status: TenantStatus,
+    tenant_status: TenantStatus,
+    actor: &Actor,
+) -> Result<u64, sea_orm::DbErr> {
+    repository::update_tenant_status(
+        &app_state.database_connection,
+        tenant_id,
+        current_tenant_status,
+        tenant_status,
+        actor,
+    )
+    .await
+}
+
+pub async fn list_suspended_tenant_ids(app_state: &AppState) -> Result<Vec<Uuid>, sea_orm::DbErr> {
+    repository::list_tenant_ids_with_status(&app_state.database_connection, TenantStatus::Suspended)
+        .await
+}
+
+pub async fn list_active_tenant_ids(app_state: &AppState) -> anyhow::Result<Vec<Uuid>> {
+    Ok(repository::list_tenant_ids_with_status(
+        &app_state.database_connection,
+        TenantStatus::Active,
+    )
+    .await?)
 }
 
 pub async fn list_all_tenant_ids(app_state: &AppState) -> anyhow::Result<Vec<Uuid>> {

@@ -10,7 +10,7 @@ use crate::tenant::invitation::constants::{
 use crate::tenant::invitation::constants::{
     ALREADY_A_MEMBER_MESSAGE, ALREADY_INVITED_MESSAGE, INVALID_EMAIL_MESSAGE,
     INVITATION_EXPIRED_MESSAGE, INVITATION_NOT_FOUND_MESSAGE, INVITATIONS_UNAVAILABLE_MESSAGE,
-    RESEND_NEEDS_EMAIL_MESSAGE,
+    MEMBER_NOUN, MEMBERS_NOUN, RESEND_NEEDS_EMAIL_MESSAGE, SINGLE_MEMBER_LIMIT,
 };
 use crate::tenant::membership::constants::{ROLE_TOO_POWERFUL_MESSAGE, UNKNOWN_ROLE_MESSAGE};
 use crate::tenant::membership::error::MembershipError;
@@ -48,6 +48,14 @@ pub enum InvitationError {
     AlreadyMember,
     #[error("{ALREADY_INVITED_MESSAGE}")]
     AlreadyInvited,
+    #[error(
+        "This tenant has reached its limit of {limit} {}",
+        match *.limit {
+            SINGLE_MEMBER_LIMIT => MEMBER_NOUN,
+            _ => MEMBERS_NOUN,
+        }
+    )]
+    MemberLimitReached { limit: u64 },
     #[error("{INVITATION_NOT_FOUND_MESSAGE}")]
     NotFound,
     #[error("{INVITATION_EXPIRED_MESSAGE}")]

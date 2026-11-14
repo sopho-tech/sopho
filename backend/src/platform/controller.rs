@@ -26,6 +26,11 @@ struct OwnerPath {
 }
 
 #[derive(Deserialize)]
+struct TenantPath {
+    tenant_id: Uuid,
+}
+
+#[derive(Deserialize)]
 struct EmailPath {
     email_id: Uuid,
 }
@@ -46,6 +51,8 @@ pub fn routes(app_state: AppState) -> Router {
         )
         .route("/tenant", get(list_tenants))
         .route("/tenant/{tenant_id}/owner/{user_id}", put(appoint_owner))
+        .route("/tenant/{tenant_id}/suspend", post(suspend_tenant))
+        .route("/tenant/{tenant_id}/restore", post(restore_tenant))
         .route("/email", get(list_email_log))
         .route("/email_template", get(list_email_template_previews))
         .route("/email/{email_id}/retry", post(retry_email))
@@ -135,6 +142,28 @@ async fn appoint_owner(
 ) -> Response {
     match service::appoint_owner(&app_state, authenticated_user.user_id(), tenant_id, user_id).await
     {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => platform_error_response(error).into_response(),
+    }
+}
+
+async fn suspend_tenant(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+    Path(TenantPath { tenant_id }): Path<TenantPath>,
+) -> Response {
+    match service::suspend_tenant(&app_state, authenticated_user.user_id(), tenant_id).await {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => platform_error_response(error).into_response(),
+    }
+}
+
+async fn restore_tenant(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+    Path(TenantPath { tenant_id }): Path<TenantPath>,
+) -> Response {
+    match service::restore_tenant(&app_state, authenticated_user.user_id(), tenant_id).await {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(error) => platform_error_response(error).into_response(),
     }

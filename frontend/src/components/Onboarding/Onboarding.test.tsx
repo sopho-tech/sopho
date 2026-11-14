@@ -26,6 +26,7 @@ const OWNED_TENANT: TenantMembershipDto = {
   role_name: "OWNER",
   role_display_name: "Owner",
   permissions: [],
+  suspended_message: null,
 };
 
 const onboardingRoutes = [
@@ -220,5 +221,32 @@ describe("onboarding", () => {
     await expect
       .element(page.getByRole("dialog").getByLabelText("Name", { exact: true }))
       .toBeVisible();
+  });
+
+  test("marks a suspended tenant in the list", async () => {
+    worker.use(
+      ...onboardingHandlers(
+        [
+          OWNED_TENANT,
+          {
+            ...OWNED_TENANT,
+            tenant_id: "00000000-0000-4000-8000-000000000903",
+            tenant_name: "Frozen Works",
+            suspended_message: "This tenant is suspended. Contact support",
+          },
+        ],
+        { can_create_tenant: false, limit_reached_message: null },
+      ),
+    );
+    await renderWithProviders({
+      routes: onboardingRoutes,
+      initialPath: APP_ROUTES.ONBOARDING,
+    });
+
+    await expect.element(page.getByText("Frozen Works")).toBeVisible();
+    await expect.element(page.getByText("Acme Analytics")).toBeVisible();
+    expect(
+      page.getByText("Suspended", { exact: true }).elements(),
+    ).toHaveLength(1);
   });
 });

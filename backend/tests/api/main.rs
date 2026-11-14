@@ -29,3 +29,5 @@ mod startup;
 mod startup_seeding;
 mod support;
 mod tenant_isolation;
+mod tenant_member_limit;
+mod tenant_suspension;

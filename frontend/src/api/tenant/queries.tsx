@@ -11,6 +11,7 @@ export type TenantMembershipDto = {
   role_name: string;
   role_display_name: string;
   permissions: string[];
+  suspended_message: string | null;
 };
 
 export type AccountStatus = "ACTIVE" | "DEACTIVATED";

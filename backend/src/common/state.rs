@@ -5,9 +5,9 @@ use crate::common::constants::{
     ADMINISTRATOR_EMAILS_NEED_PROVIDER_REASON, DEFAULT_SELF_SERVE_TENANT_LIMIT,
     DEFAULT_TENANT_DEMO_NEEDS_SQLITE_REASON, DEFAULT_TENANT_NEEDS_ADMINISTRATOR_REASON,
     DISABLED_CONNECTION_TYPE_SEPARATOR, EnvironmentVariable, MINIMUM_SELF_SERVE_TENANT_LIMIT,
-    NO_PLATFORM_ADMINISTRATOR_REASON, NOBODY_CAN_SIGN_IN_REASON, OidcProviderVariable,
-    PLATFORM_ADMINISTRATOR_EMAIL_SEPARATOR, SEEDED_ADMINISTRATOR_CANNOT_SIGN_IN_REASON,
-    SMTP_TIMEOUT_SECONDS, SmtpTls,
+    MINIMUM_TENANT_MEMBER_LIMIT, NO_PLATFORM_ADMINISTRATOR_REASON, NOBODY_CAN_SIGN_IN_REASON,
+    OidcProviderVariable, PLATFORM_ADMINISTRATOR_EMAIL_SEPARATOR,
+    SEEDED_ADMINISTRATOR_CANNOT_SIGN_IN_REASON, SMTP_TIMEOUT_SECONDS, SmtpTls,
 };
 use crate::common::cryptography_utils::{
     SECRET_KEY_PATH, generate_and_store_encryption_key, get_encryption_key_from_path,
@@ -215,6 +215,18 @@ pub fn platform_administrator_emails_from_variable(
         platform_administrator_emails.push(email);
     }
     Ok(platform_administrator_emails)
+}
+
+pub fn tenant_member_limit_from_variable(
+    value: Option<String>,
+) -> Result<Option<u64>, ConfigurationError> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    match value.parse::<u64>() {
+        Ok(limit) if limit >= MINIMUM_TENANT_MEMBER_LIMIT => Ok(Some(limit)),
+        _ => Err(ConfigurationError::InvalidTenantMemberLimit { value }),
+    }
 }
 
 pub fn rate_limit_value_from_variable(
@@ -445,6 +457,7 @@ pub struct Configurations {
     pub platform_administrator_emails: Vec<String>,
     pub disabled_connection_types: Vec<SourceType>,
     pub rate_limits: RateLimitSettings,
+    pub tenant_member_limit: Option<u64>,
 }
 
 pub struct ConfigurationsBuilder {
@@ -467,6 +480,7 @@ pub struct ConfigurationsBuilder {
     platform_administrator_emails: Option<String>,
     disabled_connection_types: Option<String>,
     rate_limits: Option<RateLimitSettings>,
+    tenant_member_limit: Option<u64>,
 }
 
 impl ConfigurationsBuilder {
@@ -491,6 +505,7 @@ impl ConfigurationsBuilder {
             platform_administrator_emails: None,
             disabled_connection_types: None,
             rate_limits: None,
+            tenant_member_limit: None,
         }
     }
 
@@ -590,6 +605,11 @@ impl ConfigurationsBuilder {
         self
     }
 
+    pub fn tenant_member_limit(mut self, tenant_member_limit: u64) -> Self {
+        self.tenant_member_limit = Some(tenant_member_limit);
+        self
+    }
+
     pub fn rate_limits(mut self, rate_limits: RateLimitSettings) -> Self {
         self.rate_limits = Some(rate_limits);
         self
@@ -662,6 +682,10 @@ impl ConfigurationsBuilder {
                 Some(rate_limits) => validated_rate_limit_settings(rate_limits)?,
                 None => rate_limit_settings_from_variables(|_| Ok(None))?,
             },
+            tenant_member_limit: tenant_member_limit_from_variable(
+                self.tenant_member_limit
+                    .map(|tenant_member_limit| tenant_member_limit.to_string()),
+            )?,
         };
         validate_setting_combinations(&configurations)?;
         Ok(configurations)
@@ -768,6 +792,10 @@ impl Configurations {
             rate_limits: rate_limit_settings_from_variables(|variable| {
                 Ok(optional_environment_variable(variable)?.map(Cow::into_owned))
             })?,
+            tenant_member_limit: tenant_member_limit_from_variable(
+                optional_environment_variable(EnvironmentVariable::SophoTenantMemberLimit)?
+                    .map(Cow::into_owned),
+            )?,
         };
         validate_setting_combinations(&configurations)?;
         Ok(configurations)
@@ -925,6 +953,7 @@ mod tests {
         disabled_connection_types_from_variable, email_configuration_from_variables,
         oidc_providers_from_variables, platform_administrator_emails_from_variable,
         rate_limit_value_from_variable, self_serve_tenant_limit_from_variable,
+        tenant_member_limit_from_variable,
     };
     use crate::common::constants::{EnvironmentVariable, SmtpTls};
     use crate::common::errors::ConfigurationError;
@@ -1124,6 +1153,34 @@ mod tests {
             "SOPHO_PLATFORM_ADMINISTRATOR_EMAILS",
             "SOPHO_OIDC_PROVIDERS",
         );
+    }
+
+    #[test]
+    fn the_tenant_member_limit_is_unlimited_unless_set() {
+        assert_eq!(tenant_member_limit_from_variable(None).unwrap(), None);
+        assert_eq!(
+            tenant_member_limit_from_variable(Some("20".to_string())).unwrap(),
+            Some(20)
+        );
+        for invalid_value in ["0", "-1", "twenty", "", " 5"] {
+            let error =
+                tenant_member_limit_from_variable(Some(invalid_value.to_string())).unwrap_err();
+            assert!(
+                matches!(error, ConfigurationError::InvalidTenantMemberLimit { .. }),
+                "{invalid_value:?} was not refused"
+            );
+            assert!(
+                error.to_string().contains("SOPHO_TENANT_MEMBER_LIMIT"),
+                "{error}"
+            );
+        }
+        assert!(matches!(
+            with_password_administrator(configurations_builder())
+                .tenant_member_limit(0)
+                .build()
+                .unwrap_err(),
+            ConfigurationError::InvalidTenantMemberLimit { .. }
+        ));
     }
 
     #[test]

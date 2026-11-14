@@ -6,6 +6,8 @@ pub enum TenantContextError {
     NotAMember,
     #[error("Membership suspended")]
     MembershipSuspended,
+    #[error("Tenant suspended")]
+    TenantSuspended,
     #[error("Database error: {0}")]
     Database(#[from] sea_orm::DbErr),
     #[error("Unknown permission in role: {0}")]

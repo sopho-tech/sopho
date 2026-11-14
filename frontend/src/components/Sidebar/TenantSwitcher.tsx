@@ -12,6 +12,7 @@ import {
   useTenantCreationCapability,
 } from "src/api/tenant/queries";
 import { CreateTenantDialog } from "src/components/CreateTenantDialog";
+import { SUSPENDED_BADGE_LABEL } from "src/components/SuspendedTenant/constants";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { useReceivedInvitations } from "src/api/invitation/queries";
 import { tenantPath, useTenantId } from "src/utils/tenant";
@@ -80,7 +81,9 @@ export function TenantSwitcher() {
                 key={membership.tenant_id}
                 value={membership.tenant_id}
               >
-                {membership.tenant_name}
+                {membership.suspended_message === null
+                  ? membership.tenant_name
+                  : `${membership.tenant_name} (${SUSPENDED_BADGE_LABEL})`}
               </DropdownMenu.RadioItem>
             ))}
           </DropdownMenu.RadioGroup>

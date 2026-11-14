@@ -6,7 +6,7 @@ use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr,
-    EntityTrait, QueryFilter, Set,
+    EntityTrait, PaginatorTrait, QueryFilter, Set,
 };
 use uuid::Uuid;
 
@@ -186,6 +186,17 @@ pub async fn list_pending_invitations(
         .filter(tenant_invitation::Column::TenantId.eq(tenant_id.get_uuid()))
         .filter(tenant_invitation::Column::Status.eq(InvitationStatus::Pending.as_str()))
         .all(database_connection)
+        .await
+}
+
+pub async fn count_pending_invitations(
+    database_connection: &DatabaseConnection,
+    tenant_id: &TenantId,
+) -> Result<u64, DbErr> {
+    tenant_invitation::Entity::find()
+        .filter(tenant_invitation::Column::TenantId.eq(tenant_id.get_uuid()))
+        .filter(tenant_invitation::Column::Status.eq(InvitationStatus::Pending.as_str()))
+        .count(database_connection)
         .await
 }
 

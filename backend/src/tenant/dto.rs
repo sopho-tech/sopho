@@ -10,6 +10,7 @@ pub struct TenantMembershipDto {
     pub role_name: String,
     pub role_display_name: String,
     pub permissions: Vec<String>,
+    pub suspended_message: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -203,6 +203,15 @@ fn invitation_error_http_response(error: InvitationError) -> (StatusCode, axum::
             INVITATION_NOT_FOUND_MESSAGE,
         );
     }
+    if let InvitationError::MemberLimitReached { .. } = error {
+        return (
+            invitation_error_status(&error),
+            axum::Json(serde_json::json!({
+                "error": error.to_string(),
+                "error_code": ErrorCode::TenantMemberLimitReached.as_str(),
+            })),
+        );
+    }
     (
         invitation_error_status(&error),
         axum::Json(serde_json::json!({ "error": error.to_string() })),
@@ -220,6 +229,7 @@ fn invitation_error_status(error: &InvitationError) -> StatusCode {
         | InvitationError::PasswordSignInOff(_)
         | InvitationError::InvitationForAnotherAccount => StatusCode::FORBIDDEN,
         InvitationError::AlreadyMember
+        | InvitationError::MemberLimitReached { .. }
         | InvitationError::AlreadyInvited
         | InvitationError::Expired
         | InvitationError::InvitationsUnavailable

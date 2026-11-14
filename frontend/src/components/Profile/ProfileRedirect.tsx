@@ -14,13 +14,15 @@ export function ProfileRedirect() {
     throw memberships.error;
   }
 
-  const [firstMembership] = memberships.data;
-  if (!firstMembership) {
+  const firstUsableMembership = memberships.data.find(
+    (membership) => membership.suspended_message === null,
+  );
+  if (!firstUsableMembership) {
     return <Navigate to={APP_ROUTES.ONBOARDING} replace />;
   }
   return (
     <Navigate
-      to={`${tenantPath(firstMembership.tenant_id, APP_ROUTES.PROFILE)}${location.search}`}
+      to={`${tenantPath(firstUsableMembership.tenant_id, APP_ROUTES.PROFILE)}${location.search}`}
       replace
     />
   );

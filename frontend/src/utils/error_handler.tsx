@@ -2,6 +2,7 @@ import { Mutation, Query, QueryKey } from "@tanstack/react-query";
 import { refreshSessionTokens } from "src/api/auth/queries";
 import { ApiError } from "src/api/dto";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { TENANT_SUSPENDED_ERROR_CODE } from "src/constants/error_codes";
 
 let isRefreshing = false;
 
@@ -58,6 +59,11 @@ const errorHandler = (
     }
   }
 };
+
+export const isTenantSuspendedError = (error: unknown): boolean =>
+  error instanceof ApiError &&
+  error.status === 403 &&
+  error.errorCode === TENANT_SUSPENDED_ERROR_CODE;
 
 export const queryErrorHandler = (
   error: unknown,

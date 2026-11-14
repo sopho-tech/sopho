@@ -56,3 +56,6 @@ pub enum InvitationLinkNextStep {
     Join,
     WrongAccount,
 }
+pub const SINGLE_MEMBER_LIMIT: u64 = 1;
+pub const MEMBER_NOUN: &str = "member";
+pub const MEMBERS_NOUN: &str = "members";

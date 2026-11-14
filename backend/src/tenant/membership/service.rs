@@ -67,6 +67,13 @@ pub async fn is_active_member(
     )
 }
 
+pub async fn count_active_members(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+) -> Result<u64, MembershipError> {
+    Ok(repository::count_active_memberships(&app_state.database_connection, tenant_id).await?)
+}
+
 pub async fn require_grantable_role(
     app_state: &AppState,
     tenant_context: &TenantContext,

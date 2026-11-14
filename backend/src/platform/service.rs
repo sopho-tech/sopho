@@ -1,7 +1,7 @@
 use crate::authentication::oidc::service as oidc_service;
 use crate::authentication::service as authentication_service;
 use crate::authentication::service::{PasswordFlowError, UserStatus};
-use crate::authorization::constants::{PlatformPermission, PlatformRole, SystemRole};
+use crate::authorization::constants::{PlatformPermission, PlatformRole, SystemRole, TenantStatus};
 use crate::authorization::dto::{Actor, TenantId, UserId};
 use crate::authorization::service as authorization_service;
 use crate::common::AppState;
@@ -11,9 +11,9 @@ use crate::email_template::service as email_template_service;
 use crate::entity::user;
 use crate::platform::constants::{FIRST_PAGE, PLATFORM_PAGE_SIZE};
 use crate::platform::dto::{
-    DeactivatedUserDto, EmailLogQuery, EmailTemplatePreviewDto, PlatformTenantDto,
-    PlatformUserCapabilities, PlatformUserDto, PlatformUserPageDto, TenantSummaryDto,
-    UserListQuery,
+    DeactivatedUserDto, EmailLogQuery, EmailTemplatePreviewDto, PlatformTenantCapabilities,
+    PlatformTenantDto, PlatformUserCapabilities, PlatformUserDto, PlatformUserPageDto,
+    TenantSummaryDto, UserListQuery,
 };
 use crate::platform::error::PlatformError;
 use crate::tenant::invitation::service as invitation_service;
@@ -240,23 +240,96 @@ pub async fn list_tenants(
     app_state: &AppState,
     actor: UserId,
 ) -> Result<Vec<PlatformTenantDto>, PlatformError> {
-    require_platform_permission(app_state, actor, PlatformPermission::TenantAppointOwner).await?;
+    let platform_role =
+        require_platform_permission(app_state, actor, PlatformPermission::TenantAppointOwner)
+            .await?;
+    let can_change_suspension = platform_role
+        .permissions()
+        .contains(&PlatformPermission::TenantSuspend);
     let active_owner_counts = membership_service::active_owner_counts(app_state)
         .await
         .map_err(PlatformError::Membership)?;
-    Ok(tenant_service::list_all_tenants(app_state)
-        .await?
-        .into_iter()
-        .map(|found_tenant| PlatformTenantDto {
+    let mut platform_tenants = Vec::new();
+    for found_tenant in tenant_service::list_all_tenants(app_state).await? {
+        let tenant_status =
+            TenantStatus::from_str(&found_tenant.status).map_err(PlatformError::Internal)?;
+        let is_suspended = tenant_status == TenantStatus::Suspended;
+        let is_active = tenant_status == TenantStatus::Active;
+        platform_tenants.push(PlatformTenantDto {
             active_owner_count: active_owner_counts
                 .get(&found_tenant.id)
                 .copied()
                 .unwrap_or_default(),
             tenant_id: found_tenant.id,
             name: found_tenant.name,
+            status: tenant_status,
+            capabilities: PlatformTenantCapabilities {
+                can_suspend: can_change_suspension && is_active,
+                can_restore: can_change_suspension && is_suspended,
+            },
             created_at: found_tenant.created_at,
-        })
-        .collect())
+        });
+    }
+    Ok(platform_tenants)
+}
+
+pub async fn suspend_tenant(
+    app_state: &AppState,
+    actor: UserId,
+    tenant_id: Uuid,
+) -> Result<(), PlatformError> {
+    change_tenant_suspension(
+        app_state,
+        actor,
+        tenant_id,
+        TenantStatus::Active,
+        TenantStatus::Suspended,
+    )
+    .await
+}
+
+pub async fn restore_tenant(
+    app_state: &AppState,
+    actor: UserId,
+    tenant_id: Uuid,
+) -> Result<(), PlatformError> {
+    change_tenant_suspension(
+        app_state,
+        actor,
+        tenant_id,
+        TenantStatus::Suspended,
+        TenantStatus::Active,
+    )
+    .await
+}
+
+async fn change_tenant_suspension(
+    app_state: &AppState,
+    actor: UserId,
+    tenant_id: Uuid,
+    current_tenant_status: TenantStatus,
+    tenant_status: TenantStatus,
+) -> Result<(), PlatformError> {
+    require_platform_permission(app_state, actor, PlatformPermission::TenantSuspend).await?;
+    tenant_service::find_tenant(app_state, tenant_id)
+        .await?
+        .ok_or(PlatformError::TenantNotFound)?;
+    let updated_tenant_count = tenant_service::change_tenant_status(
+        app_state,
+        tenant_id,
+        current_tenant_status,
+        tenant_status,
+        &Actor::human(actor),
+    )
+    .await?;
+    if updated_tenant_count == 0 {
+        return Ok(());
+    }
+    tracing::info!(
+        "platform administrator {} set tenant {tenant_id} to {tenant_status}",
+        actor.get_uuid()
+    );
+    Ok(())
 }
 
 pub async fn appoint_owner(
