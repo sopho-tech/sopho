@@ -7,6 +7,7 @@ export type { MotionFlexProps } from "src/components/design-system/MotionFlex";
 export { Grid, GridItem } from "src/components/design-system/Grid";
 export { Button } from "src/components/design-system/Button";
 export { IconButton } from "src/components/design-system/IconButton";
+export { BackButton } from "src/components/design-system/BackButton";
 export { Icon } from "src/components/design-system/Icon";
 export { InlineEdit } from "src/components/design-system/InlineEdit";
 export { Heading } from "src/components/design-system/Heading";

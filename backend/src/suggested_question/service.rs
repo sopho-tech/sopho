@@ -1,6 +1,7 @@
 use super::dto::SuggestedQuestionDto;
 use super::repository;
 use crate::ai::suggested_questions_agent;
+use crate::ai_usage::dto::AiCallContext;
 use crate::authorization::constants::Action;
 use crate::authorization::dto::Actor;
 use crate::authorization::dto::{TenantContext, TenantId};
@@ -108,9 +109,14 @@ async fn regenerate(
     actor: &Actor,
 ) -> anyhow::Result<()> {
     let catalog = data_catalog::get_data_catalog_of_connection(app_state, connection).await?;
-    let questions =
-        suggested_questions_agent::suggest_questions(app_state, tenant_id, connection, &catalog)
-            .await?;
+    let call_context = AiCallContext::for_background_work(tenant_id.clone());
+    let questions = suggested_questions_agent::suggest_questions(
+        app_state,
+        &call_context,
+        connection,
+        &catalog,
+    )
+    .await?;
     if questions.is_empty() {
         anyhow::bail!("no questions generated");
     }

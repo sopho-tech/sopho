@@ -64,6 +64,53 @@ test("answers a question with SQL and a chart", async ({
   await expect(page.getByText(ORDER_STATUS_SQL)).toBeVisible();
 });
 
+test("shows the tokens of an answered question on the usage page", async ({
+  signedInPage: page,
+  tenantId,
+}) => {
+  await configureAnthropicProvider(page.request);
+  await page.goto(tenantUrl(tenantId, APP_URLS.NEW_CONVERSATION));
+  await page.getByRole("combobox").click();
+  await page.getByRole("option", { name: DEMO_CONNECTION_NAME }).click();
+  const composer = page.getByRole("textbox", {
+    name: "Ask anything about your data",
+  });
+  await composer.fill(ORDER_STATUS_QUESTION);
+  await composer.press("Enter");
+  await expect(page.getByText(ORDER_STATUS_NARRATION)).toBeVisible();
+
+  await page.goto(tenantUrl(tenantId, APP_URLS.CONNECTIONS));
+  await page.getByRole("link", { name: "AI Usage" }).click();
+
+  await expect(page.getByRole("group", { name: "Total tokens" })).toBeVisible();
+  await page.getByRole("tab", { name: "By User" }).click();
+  await expect(
+    page.getByRole("table", { name: "Usage by user" }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "By Work" }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "Tokens by kind of work" })
+      .getByText("Answering questions"),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "By Conversation" }).click();
+  await page
+    .getByRole("table", { name: "Usage by conversation" })
+    .getByRole("row")
+    .nth(1)
+    .click();
+  await expect(page).toHaveURL(
+    /\/settings\/ai-usage\/by-conversation\/[0-9a-f-]{36}/,
+  );
+  await expect(
+    page.getByRole("row", { name: ORDER_STATUS_QUESTION }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(
+    page.getByRole("table", { name: "Usage by conversation" }),
+  ).toBeVisible();
+});
+
 test("summarises a dashboard", async ({ signedInPage: page, tenantId }) => {
   await configureAnthropicProvider(page.request);
   const demoConnection = await findDemoConnection(page.request);

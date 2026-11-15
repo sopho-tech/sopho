@@ -2,6 +2,10 @@
   font-family: var(--font-family-mono);
 }
 
+.container *:focus {
+  outline: none;
+}
+
 .tooltipContent {
   display: flex;
   flex-direction: column;

@@ -51,3 +51,18 @@
 .alignEnd {
   justify-content: flex-end;
 }
+
+.clickableRow {
+  cursor: pointer;
+  transition-property: background-color;
+  transition-duration: 150ms;
+}
+
+.clickableRow:hover {
+  background-color: var(--color-hover);
+}
+
+.clickableRow:focus-visible {
+  outline: 2px solid var(--color-primary-700);
+  outline-offset: -2px;
+}

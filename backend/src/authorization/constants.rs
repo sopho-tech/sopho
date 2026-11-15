@@ -85,6 +85,8 @@ pub enum Permission {
     AiConfigurationRead,
     #[strum(serialize = "ai_configuration:write")]
     AiConfigurationWrite,
+    #[strum(serialize = "usage:read")]
+    UsageRead,
 }
 
 impl Permission {

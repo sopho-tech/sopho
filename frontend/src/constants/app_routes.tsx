@@ -18,6 +18,12 @@ export const APP_ROUTES = {
   SETTINGS_ROUTES: {
     CONNECTIONS: "/settings/connections",
     AI_CONFIGURATIONS: "/settings/ai-configurations",
+    AI_USAGE: "/settings/ai-usage",
+    AI_USAGE_SUMMARY: "/settings/ai-usage/summary",
+    AI_USAGE_BY_USER: "/settings/ai-usage/by-user",
+    AI_USAGE_BY_WORK: "/settings/ai-usage/by-work",
+    AI_USAGE_BY_CONVERSATION: "/settings/ai-usage/by-conversation",
+    AI_USAGE_CONVERSATION: "/settings/ai-usage/by-conversation/:conversationId",
     MEMBERS: "/settings/members",
     INVITATIONS: "/settings/invitations",
     USERS: "/settings/users",

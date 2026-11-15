@@ -7,6 +7,7 @@ export const APP_URLS = {
   TENANTS: "/settings/tenants",
   NEW_CONNECTION: "/settings/connection/new",
   AI_CONFIGURATIONS: "/settings/ai-configurations",
+  AI_USAGE: "/settings/ai-usage",
   NEW_CONVERSATION: "/conversational_analytics/",
 } as const;
 

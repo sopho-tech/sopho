@@ -110,6 +110,18 @@ pub async fn delete_conversations_transaction(
     Ok(())
 }
 
+pub async fn find_conversations_by_ids(
+    db: &DatabaseConnection,
+    tenant_id: &TenantId,
+    conversation_ids: &[Uuid],
+) -> Result<Vec<conversation::Model>, DbErr> {
+    conversation::Entity::find()
+        .filter(conversation::Column::TenantId.eq(tenant_id.get_uuid()))
+        .filter(conversation::Column::Id.is_in(conversation_ids.to_vec()))
+        .all(db)
+        .await
+}
+
 pub async fn count_conversations_by_ids(
     db: &DatabaseConnection,
     tenant_id: &TenantId,

@@ -14,6 +14,7 @@ export function Settings() {
   const toTenantPath = useTenantPath();
   const platformNavigationItems = usePlatformNavigationItems();
   const canInvite = useTenantPermission(PERMISSIONS.MEMBER_INVITE);
+  const canReadUsage = useTenantPermission(PERMISSIONS.USAGE_READ);
   const items = useMemo<SectionNavigationItem[]>(
     () => [
       {
@@ -27,6 +28,18 @@ export function Settings() {
         label: "AI Configurations",
         to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.AI_CONFIGURATIONS),
       },
+      ...(canReadUsage
+        ? [
+            {
+              id: "ai-usage",
+              label: "AI Usage",
+              to: toTenantPath(APP_ROUTES.SETTINGS_ROUTES.AI_USAGE_SUMMARY),
+              matchPrefixes: [
+                toTenantPath(APP_ROUTES.SETTINGS_ROUTES.AI_USAGE),
+              ],
+            },
+          ]
+        : []),
       {
         id: "tenant-management",
         label: "Tenant Management",
@@ -48,7 +61,7 @@ export function Settings() {
       },
       ...platformNavigationItems,
     ],
-    [toTenantPath, platformNavigationItems, canInvite],
+    [toTenantPath, platformNavigationItems, canInvite, canReadUsage],
   );
 
   return (

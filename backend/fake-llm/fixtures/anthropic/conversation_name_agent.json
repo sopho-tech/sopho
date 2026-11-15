@@ -14,8 +14,8 @@
     "stop_reason": "end_turn",
     "stop_sequence": null,
     "usage": {
-      "input_tokens": 1,
-      "output_tokens": 1
+      "input_tokens": 40,
+      "output_tokens": 6
     }
   }
 }

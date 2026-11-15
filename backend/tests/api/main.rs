@@ -1,4 +1,6 @@
 mod ai;
+mod ai_usage;
+mod ai_usage_reports;
 mod attribution;
 mod auth;
 mod authorization;

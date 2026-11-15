@@ -218,7 +218,9 @@ async fn append_user_message(
 
 fn conversation_error_http_response(e: ConversationError) -> (StatusCode, axum::Json<Value>) {
     let (status, error, code) = match &e {
-        ConversationError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string(), None),
+        ConversationError::Database(_) | ConversationError::AiUsageRecording(_) => {
+            (StatusCode::INTERNAL_SERVER_ERROR, e.to_string(), None)
+        }
         ConversationError::Conversion(_) => (StatusCode::UNPROCESSABLE_ENTITY, e.to_string(), None),
         ConversationError::NotFound => (StatusCode::NOT_FOUND, e.to_string(), None),
         ConversationError::InvalidRequest(_) => (StatusCode::BAD_REQUEST, e.to_string(), None),

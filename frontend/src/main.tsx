@@ -12,6 +12,14 @@ import {
 import { Settings } from "src/components/Settings";
 import { Connections } from "src/components/Connection/ConnectionsPage";
 import { AIConfiguration } from "src/components/Settings/AIConfiguration";
+import {
+  AIUsage,
+  UsageByConversation,
+  UsageByUser,
+  UsageByWork,
+  UsageConversationQuestions,
+  UsageSummary,
+} from "src/components/Settings/AIUsage";
 import { Profile, ProfileRedirect } from "src/components/Profile";
 import { ProtectedRoute } from "src/components/ProtectedRoute";
 import { TenantIndexRedirect, TenantRoute } from "src/components/TenantRoute";
@@ -96,6 +104,36 @@ const router = createBrowserRouter([
               {
                 path: "ai-configurations",
                 element: <AIConfiguration />,
+              },
+              {
+                path: "ai-usage",
+                element: <AIUsage />,
+                children: [
+                  {
+                    index: true,
+                    element: <Navigate to="summary" replace />,
+                  },
+                  {
+                    path: "summary",
+                    element: <UsageSummary />,
+                  },
+                  {
+                    path: "by-user",
+                    element: <UsageByUser />,
+                  },
+                  {
+                    path: "by-work",
+                    element: <UsageByWork />,
+                  },
+                  {
+                    path: "by-conversation",
+                    element: <UsageByConversation />,
+                  },
+                  {
+                    path: "by-conversation/:conversationId",
+                    element: <UsageConversationQuestions />,
+                  },
+                ],
               },
               {
                 path: "members",

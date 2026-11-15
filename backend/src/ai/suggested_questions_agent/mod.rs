@@ -1,8 +1,8 @@
 mod system_prompt;
 mod user_prompt;
 
-use crate::ai::agent_utils::{AgentName, ModelRole};
-use crate::authorization::dto::TenantId;
+use crate::ai::agent_utils::{AgentName, AgentSettings, ModelRole};
+use crate::ai_usage::dto::AiCallContext;
 use crate::common::AppState;
 use crate::data_catalog::dto::Database;
 use crate::entity;
@@ -15,17 +15,23 @@ struct SuggestedQuestionsResponse {
 
 pub async fn suggest_questions(
     app_state: &AppState,
-    tenant_id: &TenantId,
+    call_context: &AiCallContext,
     connection: &entity::connection::Model,
     catalog: &Database,
 ) -> Result<Vec<String>> {
-    let model_client = app_state.require_model_client(tenant_id).await?;
+    let model_client = app_state
+        .require_model_client(call_context.tenant_id())
+        .await?;
     let agent = model_client.build_agent(
-        ModelRole::Default,
-        AgentName::SuggestedQuestionsAgent,
-        system_prompt::SystemPrompt::SuggestQuestions.as_str(),
-        0.4,
-        600,
+        app_state,
+        call_context,
+        AgentSettings {
+            role: ModelRole::Default,
+            agent_name: AgentName::SuggestedQuestionsAgent,
+            system_prompt: system_prompt::SystemPrompt::SuggestQuestions.as_str(),
+            temperature: 0.4,
+            max_tokens: 600,
+        },
     );
 
     let schema = catalog.to_display_string().map_err(anyhow::Error::from)?;

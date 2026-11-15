@@ -1,9 +1,9 @@
 mod system_prompt;
 mod user_prompt;
 
-use crate::ai::agent_utils::{AgentName, ModelRole};
+use crate::ai::agent_utils::{AgentName, AgentSettings, ModelRole};
 use crate::ai::dto::{Event, EventChannels, VisualizationRecommendation};
-use crate::authorization::dto::TenantId;
+use crate::ai_usage::dto::AiCallContext;
 use crate::common::AppState;
 use crate::database::constants::QueryResult;
 use anyhow::Result;
@@ -13,7 +13,7 @@ const VISUALIZATION_SAMPLE_ROWS: usize = 5;
 
 pub async fn execute(
     app_state: &AppState,
-    tenant_id: &TenantId,
+    call_context: &AiCallContext,
     question: &str,
     query_result: &QueryResult,
     channels: &EventChannels,
@@ -23,7 +23,7 @@ pub async fn execute(
         .await;
     let recommendation = recommend_visualization(
         app_state,
-        tenant_id,
+        call_context,
         question,
         &query_result.columns,
         &query_result.data,
@@ -40,7 +40,7 @@ pub async fn execute(
 
 async fn recommend_visualization(
     app_state: &AppState,
-    tenant_id: &TenantId,
+    call_context: &AiCallContext,
     question: &str,
     columns: &[serde_json::Value],
     data: &[serde_json::Value],
@@ -51,13 +51,19 @@ async fn recommend_visualization(
         .cloned()
         .collect();
 
-    let model_client = app_state.require_model_client(tenant_id).await?;
+    let model_client = app_state
+        .require_model_client(call_context.tenant_id())
+        .await?;
     let agent = model_client.build_agent(
-        ModelRole::Default,
-        AgentName::VisualizationRecommendationAgent,
-        system_prompt::SystemPrompt::Recommendation.as_str(),
-        0.2,
-        1024,
+        app_state,
+        call_context,
+        AgentSettings {
+            role: ModelRole::Default,
+            agent_name: AgentName::VisualizationRecommendationAgent,
+            system_prompt: system_prompt::SystemPrompt::Recommendation.as_str(),
+            temperature: 0.2,
+            max_tokens: 1024,
+        },
     );
 
     let prompt = user_prompt::UserPrompt::Recommendation {

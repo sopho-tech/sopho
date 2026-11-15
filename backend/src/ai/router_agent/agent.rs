@@ -1,15 +1,15 @@
 use super::system_prompt::SystemPrompt;
 use super::user_prompt::UserPrompt;
-use crate::ai::agent_utils::{AgentName, ModelRole};
+use crate::ai::agent_utils::{AgentName, AgentSettings, ModelRole};
 use crate::ai::dto::{ConversationHistory, RouterDecision};
-use crate::authorization::dto::TenantId;
+use crate::ai_usage::dto::AiCallContext;
 use crate::common::AppState;
 use anyhow::Result;
 use tracing::info;
 
 pub async fn execute(
     app_state: &AppState,
-    tenant_id: &TenantId,
+    call_context: &AiCallContext,
     question: &str,
     conversation_history: &ConversationHistory,
 ) -> Result<RouterDecision> {
@@ -19,13 +19,19 @@ pub async fn execute(
         conversation_history.len()
     );
 
-    let model_client = app_state.require_model_client(tenant_id).await?;
+    let model_client = app_state
+        .require_model_client(call_context.tenant_id())
+        .await?;
     let agent = model_client.build_agent(
-        ModelRole::Small,
-        AgentName::RouterAgent,
-        SystemPrompt::Routing.as_str(),
-        0.0,
-        256,
+        app_state,
+        call_context,
+        AgentSettings {
+            role: ModelRole::Small,
+            agent_name: AgentName::RouterAgent,
+            system_prompt: SystemPrompt::Routing.as_str(),
+            temperature: 0.0,
+            max_tokens: 256,
+        },
     );
 
     let prompt = UserPrompt::Route {
