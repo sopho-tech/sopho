@@ -8,6 +8,8 @@ pub enum AiConfigurationError {
     Encryption(String),
     #[error("AI client construction failed: {0}")]
     ClientBuild(String),
+    #[error("AI usage could not be recorded: {0}")]
+    UsageRecording(String),
     #[error("API key must not be empty")]
     EmptyApiKey,
     #[error("{0}")]

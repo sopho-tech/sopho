@@ -5,4 +5,6 @@ use strum::{Display, EnumString};
 pub enum FailureKind {
     ServerError,
     MalformedJson,
+    UnparsableAnswer,
+    MissingUsage,
 }

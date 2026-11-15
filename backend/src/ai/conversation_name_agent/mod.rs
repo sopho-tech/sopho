@@ -1,8 +1,8 @@
 mod system_prompt;
 mod user_prompt;
 
-use crate::ai::agent_utils::{AgentName, ModelRole};
-use crate::authorization::dto::TenantId;
+use crate::ai::agent_utils::{AgentName, AgentSettings, ModelRole};
+use crate::ai_usage::dto::AiCallContext;
 use crate::common::AppState;
 use anyhow::Result;
 
@@ -10,16 +10,22 @@ const MAX_NAME_LENGTH: usize = 60;
 
 pub async fn suggest_name(
     app_state: &AppState,
-    tenant_id: &TenantId,
+    call_context: &AiCallContext,
     question: &str,
 ) -> Result<String> {
-    let model_client = app_state.require_model_client(tenant_id).await?;
+    let model_client = app_state
+        .require_model_client(call_context.tenant_id())
+        .await?;
     let agent = model_client.build_agent(
-        ModelRole::Default,
-        AgentName::ConversationNameAgent,
-        system_prompt::SystemPrompt::SuggestName.as_str(),
-        0.3,
-        100,
+        app_state,
+        call_context,
+        AgentSettings {
+            role: ModelRole::Default,
+            agent_name: AgentName::ConversationNameAgent,
+            system_prompt: system_prompt::SystemPrompt::SuggestName.as_str(),
+            temperature: 0.3,
+            max_tokens: 100,
+        },
     );
 
     let prompt = user_prompt::UserPrompt::SuggestName {

@@ -14,6 +14,8 @@ pub enum ConversationError {
     InvalidRequest(String),
     #[error("AI provider is not configured or not live")]
     AiNotLive,
+    #[error("AI usage could not be recorded: {0}")]
+    AiUsageRecording(String),
 }
 
 #[derive(Debug, Error)]
@@ -70,6 +72,9 @@ impl From<ConversationError> for AppendUserMessageError {
                 AppendUserMessageError::Database(sea_orm::DbErr::Custom(s))
             }
             ConversationError::AiNotLive => AppendUserMessageError::AiNotLive,
+            ConversationError::AiUsageRecording(s) => {
+                AppendUserMessageError::Database(sea_orm::DbErr::Custom(s))
+            }
         }
     }
 }
@@ -86,6 +91,9 @@ impl From<ConversationError> for ExecuteCompletionError {
                 ExecuteCompletionError::Database(sea_orm::DbErr::Custom(s))
             }
             ConversationError::AiNotLive => ExecuteCompletionError::AiNotLive,
+            ConversationError::AiUsageRecording(s) => {
+                ExecuteCompletionError::Database(sea_orm::DbErr::Custom(s))
+            }
         }
     }
 }

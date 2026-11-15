@@ -1,9 +1,9 @@
 mod system_prompt;
 mod user_prompt;
 
-use crate::ai::agent_utils::{AgentName, ModelRole};
+use crate::ai::agent_utils::{AgentName, AgentSettings, ModelRole};
 use crate::ai::dto::ChartSummaryInput;
-use crate::authorization::dto::TenantId;
+use crate::ai_usage::dto::AiCallContext;
 use crate::common::AppState;
 use anyhow::Result;
 
@@ -17,17 +17,23 @@ struct ChartSummaryResponse {
 
 pub async fn summarize_chart(
     app_state: &AppState,
-    tenant_id: &TenantId,
+    call_context: &AiCallContext,
     chart: &ChartSummaryInput,
     user_prompt: &Option<String>,
 ) -> Result<String> {
-    let model_client = app_state.require_model_client(tenant_id).await?;
+    let model_client = app_state
+        .require_model_client(call_context.tenant_id())
+        .await?;
     let agent = model_client.build_agent(
-        ModelRole::Default,
-        AgentName::ChartSummaryAgent,
-        system_prompt::SystemPrompt::SummarizeChart.as_str(),
-        TEMPERATURE,
-        MAX_TOKENS,
+        app_state,
+        call_context,
+        AgentSettings {
+            role: ModelRole::Default,
+            agent_name: AgentName::ChartSummaryAgent,
+            system_prompt: system_prompt::SystemPrompt::SummarizeChart.as_str(),
+            temperature: TEMPERATURE,
+            max_tokens: MAX_TOKENS,
+        },
     );
 
     let prompt = user_prompt::UserPrompt::SummarizeChart { chart, user_prompt }.render();

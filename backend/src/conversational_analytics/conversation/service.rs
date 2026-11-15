@@ -11,6 +11,7 @@ use super::repository;
 use crate::ai::conversation_name_agent;
 use crate::ai::dto::EventChannels;
 use crate::ai::dto::{ConversationHistory, RouterCode};
+use crate::ai::error::is_usage_recording_failure;
 use crate::ai::followup_questions_agent;
 use crate::ai::result_narration_agent;
 use crate::ai::router_agent;
@@ -18,6 +19,7 @@ use crate::ai::text_to_sql_agent;
 use crate::ai::visualization_agent;
 use crate::ai_configuration::dto::AiConfigurationStatus;
 use crate::ai_configuration::service as ai_config_service;
+use crate::ai_usage::dto::AiCallContext;
 use crate::attribution::service::{self as attribution_service, AttributionNames};
 use crate::authorization::constants::{Action, Permission, ResourceType, Visibility};
 use crate::authorization::dto::Actor;
@@ -521,9 +523,16 @@ pub async fn suggest_conversation_name(
     .map(|c| c.content)
     .unwrap_or_default();
 
-    let suggested_name = conversation_name_agent::suggest_name(&app_state, tenant_id, &question)
-        .await
-        .unwrap_or_else(|_| conversation.name.clone());
+    let call_context = AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id())
+        .in_conversation(conversation_id);
+    let suggested_name =
+        match conversation_name_agent::suggest_name(&app_state, &call_context, &question).await {
+            Ok(suggested_name) => suggested_name,
+            Err(error) if is_usage_recording_failure(&error) => {
+                return Err(ConversationError::AiUsageRecording(error.to_string()));
+            }
+            Err(_) => conversation.name.clone(),
+        };
 
     let updated_payload = dto::ConversationDto {
         id: conversation_id,
@@ -760,6 +769,9 @@ pub async fn execute_completion(
     )
     .await?;
 
+    let call_context = AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id())
+        .answering_message(conversation_id, conversation_message_id);
+
     let (sse_tx, sse_rx) = mpsc::channel(constants::CHANNEL_SIZE);
     let (persist_tx, persist_rx) = mpsc::channel(constants::CHANNEL_SIZE);
     let db = app_state.database_connection.clone();
@@ -798,6 +810,7 @@ pub async fn execute_completion(
                     &connection,
                     conversation_id,
                     PipelineRequest {
+                        call_context: &call_context,
                         question: &question,
                         commands: &commands,
                         conversation_history: &conversation_history,
@@ -881,6 +894,7 @@ fn resolve_command_decision(
 }
 
 struct PipelineRequest<'a> {
+    call_context: &'a AiCallContext,
     question: &'a str,
     commands: &'a [Command],
     conversation_history: &'a ConversationHistory,
@@ -896,6 +910,7 @@ async fn run_pipeline(
     actor: &Actor,
 ) -> anyhow::Result<PipelineOutcome> {
     let PipelineRequest {
+        call_context,
         question,
         commands,
         conversation_history,
@@ -905,7 +920,7 @@ async fn run_pipeline(
     let decision = if let Some(command) = commands.first() {
         resolve_command_decision(*command, conversation_history)
     } else {
-        router_agent::execute(app_state, tenant_id, question, conversation_history).await?
+        router_agent::execute(app_state, call_context, question, conversation_history).await?
     };
     channels
         .send(crate::ai::dto::Event::Routed {
@@ -921,7 +936,7 @@ async fn run_pipeline(
             };
             let sql = text_to_sql_agent::execute(
                 app_state,
-                tenant_id,
+                call_context,
                 connection,
                 effective_question,
                 channels,
@@ -934,12 +949,12 @@ async fn run_pipeline(
                 let followup_question = effective_question.to_string();
                 let followup_sql = sql.clone();
                 let conversation_history = conversation_history.clone();
-                let followup_tenant_id = tenant_id.clone();
+                let followup_call_context = call_context.clone();
                 tokio::spawn(tracing::Instrument::instrument(
                     async move {
                         compute_followup_questions(
                             &app_state,
-                            &followup_tenant_id,
+                            &followup_call_context,
                             &connection,
                             &followup_question,
                             &followup_sql,
@@ -962,10 +977,10 @@ async fn run_pipeline(
                 })
                 .await;
 
-            let (_, visualization_result) = tokio::join!(
+            let (narration_result, visualization_result) = tokio::join!(
                 result_narration_agent::execute(
                     app_state,
-                    tenant_id,
+                    call_context,
                     effective_question,
                     &sql,
                     &query_result,
@@ -973,15 +988,19 @@ async fn run_pipeline(
                 ),
                 visualization_agent::execute(
                     app_state,
-                    tenant_id,
+                    call_context,
                     effective_question,
                     &query_result,
                     channels
                 ),
             );
+            narration_result?;
             visualization_result?;
 
-            let followup_questions = followup_questions_handle.await.unwrap_or_default();
+            let followup_questions = match followup_questions_handle.await {
+                Ok(followup_questions) => followup_questions?,
+                Err(_) => Vec::new(),
+            };
             if !followup_questions.is_empty() {
                 let _ = channels
                     .send(crate::ai::dto::Event::SuggestedFollowups {
@@ -998,7 +1017,7 @@ async fn run_pipeline(
                     .map_err(|error| anyhow::anyhow!(error))?;
             canvas::generate(
                 app_state,
-                tenant_id,
+                call_context,
                 CanvasAuthorship {
                     ownership: conversation_subject.ownership(),
                     actor: *actor,
@@ -1018,22 +1037,22 @@ async fn run_pipeline(
 
 async fn compute_followup_questions(
     app_state: &AppState,
-    tenant_id: &TenantId,
+    call_context: &AiCallContext,
     connection: &entity::connection::Model,
     question: &str,
     sql: &str,
     conversation_history: &ConversationHistory,
-) -> Vec<String> {
+) -> anyhow::Result<Vec<String>> {
     let catalog = match data_catalog::get_data_catalog_of_connection(app_state, connection).await {
         Ok(catalog) => catalog,
         Err(error) => {
             tracing::error!("followup questions: failed to load catalog: {error}");
-            return Vec::new();
+            return Ok(Vec::new());
         }
     };
     match followup_questions_agent::suggest_followups(
         app_state,
-        tenant_id,
+        call_context,
         connection,
         question,
         sql,
@@ -1042,10 +1061,11 @@ async fn compute_followup_questions(
     )
     .await
     {
-        Ok(questions) => questions,
+        Ok(questions) => Ok(questions),
+        Err(error) if is_usage_recording_failure(&error) => Err(error),
         Err(error) => {
             tracing::error!("followup questions: generation failed: {error}");
-            Vec::new()
+            Ok(Vec::new())
         }
     }
 }
@@ -1200,4 +1220,139 @@ pub async fn stamp_modified(
         ));
     }
     Ok(())
+}
+
+async fn is_conversation_readable(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    conversation: &entity::conversation::Model,
+) -> Result<bool, ConversationError> {
+    let subject = authorization_service::subject_from_parts(
+        tenant_context.tenant_id(),
+        ResourceType::Conversation,
+        conversation.id,
+        conversation.owner_user_id,
+        &conversation.visibility,
+    )
+    .map_err(ConversationError::Conversion)?;
+    match authorization_service::require_access(app_state, tenant_context, &subject, Action::Read)
+        .await
+    {
+        Ok(()) => Ok(true),
+        Err(AuthorizationError::Database(database_error)) => {
+            Err(ConversationError::Database(database_error))
+        }
+        Err(
+            AuthorizationError::WrongTenant
+            | AuthorizationError::NotReachable
+            | AuthorizationError::MissingPermission(_),
+        ) => Ok(false),
+    }
+}
+
+pub async fn describe_conversations_for_usage(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    conversation_ids: &[Uuid],
+) -> Result<Vec<dto::ConversationDescriptionForUsage>, ConversationError> {
+    let conversations = repository::find_conversations_by_ids(
+        &app_state.database_connection,
+        tenant_context.tenant_id(),
+        conversation_ids,
+    )
+    .await?;
+    let mut descriptions = Vec::with_capacity(conversations.len());
+    for conversation in conversations {
+        let is_readable =
+            is_conversation_readable(app_state, tenant_context, &conversation).await?;
+        descriptions.push(dto::ConversationDescriptionForUsage {
+            conversation_id: conversation.id,
+            name_when_readable: is_readable.then_some(conversation.name),
+        });
+    }
+    Ok(descriptions)
+}
+
+pub async fn find_conversation_questions_for_usage(
+    app_state: &AppState,
+    tenant_context: &TenantContext,
+    conversation_id: Uuid,
+) -> Result<Option<dto::ConversationQuestionsForUsage>, ConversationError> {
+    let tenant_id = tenant_context.tenant_id();
+    let Some(conversation) =
+        repository::get_conversation(&app_state.database_connection, tenant_id, conversation_id)
+            .await?
+    else {
+        return Ok(None);
+    };
+    if !is_conversation_readable(app_state, tenant_context, &conversation).await? {
+        return Ok(Some(dto::ConversationQuestionsForUsage {
+            is_readable: false,
+            questions_by_answer_message_id: HashMap::new(),
+        }));
+    }
+
+    let messages = message_service::list_messages_for_conversation(
+        &app_state.database_connection,
+        tenant_id,
+        conversation_id,
+        None,
+        false,
+    )
+    .await?;
+    let human_message_ids: Vec<Uuid> = messages
+        .iter()
+        .filter(|message| message.sender == Sender::Human.to_string())
+        .map(|message| message.id)
+        .collect();
+    let human_message_contents = message_content_service::list_message_content_for_messages(
+        &app_state.database_connection,
+        tenant_id,
+        &human_message_ids,
+    )
+    .await?;
+    let content_by_human_message_id: HashMap<Uuid, String> = human_message_contents
+        .into_iter()
+        .map(|message_content| {
+            (
+                message_content.conversation_message_id,
+                message_content.content,
+            )
+        })
+        .collect();
+
+    let mut questions_by_answer_message_id = HashMap::new();
+    let mut latest_human_message_id = None;
+    for message in messages {
+        if message.sender == Sender::Human.to_string() {
+            latest_human_message_id = Some(message.id);
+            continue;
+        }
+        let human_message_id = latest_human_message_id.ok_or_else(|| {
+            ConversationError::Conversion(format!(
+                "answer message {} has no question before it",
+                message.id
+            ))
+        })?;
+        let content = content_by_human_message_id
+            .get(&human_message_id)
+            .ok_or_else(|| {
+                ConversationError::Conversion(format!(
+                    "question message {human_message_id} has no content"
+                ))
+            })?;
+        let question_text = segment::extract_plain_text(content);
+        let question = if question_text.trim().is_empty() {
+            dto::QuestionForUsage::Command
+        } else {
+            dto::QuestionForUsage::Text {
+                text: question_text,
+            }
+        };
+        questions_by_answer_message_id.insert(message.id, question);
+    }
+    Ok(Some(dto::ConversationQuestionsForUsage {
+        is_readable: true,
+        questions_by_answer_message_id,
+    }))
 }

@@ -5,6 +5,7 @@ use crate::ai_summary::constants::{self, SummaryEntityType};
 use crate::ai_summary::dto::{AiSummaryDto, DashboardSummariesDto};
 use crate::ai_summary::repository;
 use crate::ai_summary::repository::ReadySummary;
+use crate::ai_usage::dto::AiCallContext;
 use crate::authorization::constants::Action;
 use crate::authorization::dto::Actor;
 use crate::authorization::dto::{TenantContext, TenantId};
@@ -154,9 +155,10 @@ pub async fn generate_dashboard_summary(
         cell_ids.len()
     );
 
+    let call_context = AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id());
     let outcome = match summarize_dashboard(
         app_state,
-        tenant_id,
+        &call_context,
         dashboard_id,
         &cell_ids,
         &user_prompt,
@@ -243,7 +245,7 @@ pub async fn generate_all_chart_summaries(
 
     spawn_chart_summary_batch(
         app_state.clone(),
-        tenant_id.clone(),
+        AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id()),
         dashboard_id,
         claimed,
         ai_actor,
@@ -254,7 +256,7 @@ pub async fn generate_all_chart_summaries(
 
 fn spawn_chart_summary_batch(
     app_state: AppState,
-    tenant_id: TenantId,
+    call_context: AiCallContext,
     dashboard_id: Uuid,
     claimed: Vec<(Uuid, Option<String>)>,
     ai_actor: Actor,
@@ -267,11 +269,13 @@ fn spawn_chart_summary_batch(
         async move {
             stream::iter(claimed.into_iter().map(|(cell_id, user_prompt)| {
                 let app_state = &app_state;
-                let tenant_id = &tenant_id;
+                let call_context = &call_context;
+                let tenant_id = call_context.tenant_id();
                 let ai_actor = &ai_actor;
                 async move {
                     let outcome =
-                        match summarize_chart(app_state, tenant_id, cell_id, &user_prompt).await {
+                        match summarize_chart(app_state, call_context, cell_id, &user_prompt).await
+                        {
                             Ok(summary) => Ok((summary, None)),
                             Err(e) => {
                                 error!("ai_summary: chart {cell_id} generation failed: {e:#}");
@@ -329,7 +333,8 @@ pub async fn generate_chart_summary(
 
     info!("ai_summary: chart {cell_id} starting summary");
 
-    let outcome = match summarize_chart(app_state, tenant_id, cell_id, &user_prompt).await {
+    let call_context = AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id());
+    let outcome = match summarize_chart(app_state, &call_context, cell_id, &user_prompt).await {
         Ok(summary) => {
             info!("ai_summary: chart {cell_id} summarised");
             Ok((summary, None))
@@ -560,14 +565,14 @@ async fn record_generation_result(
 
 async fn summarize_dashboard(
     app_state: &AppState,
-    tenant_id: &TenantId,
+    call_context: &AiCallContext,
     dashboard_id: Uuid,
     cell_ids: &[Uuid],
     user_prompt: &Option<String>,
 ) -> anyhow::Result<(String, i32)> {
     let outcomes = cell_service::execute_chart_cells_data(
         app_state,
-        tenant_id,
+        call_context.tenant_id(),
         cell_ids,
         constants::GENERATION_CONCURRENCY,
     )
@@ -612,19 +617,20 @@ async fn summarize_dashboard(
     };
 
     let summary =
-        dashboard_summary_agent::summarize_dashboard(app_state, tenant_id, &input).await?;
+        dashboard_summary_agent::summarize_dashboard(app_state, call_context, &input).await?;
     Ok((summary, summarized_chart_count))
 }
 
 async fn summarize_chart(
     app_state: &AppState,
-    tenant_id: &TenantId,
+    call_context: &AiCallContext,
     cell_id: Uuid,
     user_prompt: &Option<String>,
 ) -> anyhow::Result<String> {
-    let execution = cell_service::execute_chart_cell_data(app_state, tenant_id, cell_id).await?;
+    let execution =
+        cell_service::execute_chart_cell_data(app_state, call_context.tenant_id(), cell_id).await?;
     let input = to_summary_input(execution, constants::CHART_SUMMARY_ROW_LIMIT);
-    chart_summary_agent::summarize_chart(app_state, tenant_id, &input, user_prompt).await
+    chart_summary_agent::summarize_chart(app_state, call_context, &input, user_prompt).await
 }
 
 fn to_summary_input(execution: ChartExecution, row_limit: usize) -> ChartSummaryInput {

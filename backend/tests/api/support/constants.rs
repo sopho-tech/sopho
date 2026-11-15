@@ -2,7 +2,7 @@ use strum::{AsRefStr, Display};
 
 pub const API_PREFIX: &str = "/api/v1";
 pub const TENANT_PATH_SEGMENT: &str = "tenant";
-pub const TENANT_SCOPED_ROUTE_GROUPS: [&str; 13] = [
+pub const TENANT_SCOPED_ROUTE_GROUPS: [&str; 14] = [
     "dashboard",
     "connection",
     "notebook",
@@ -14,6 +14,7 @@ pub const TENANT_SCOPED_ROUTE_GROUPS: [&str; 13] = [
     "ai_configuration",
     "suggested_question",
     "ai_summary",
+    "ai_usage",
     "member",
     "role",
 ];

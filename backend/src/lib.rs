@@ -1,6 +1,7 @@
 mod ai;
 mod ai_configuration;
 mod ai_summary;
+mod ai_usage;
 mod attribution;
 mod authentication;
 mod authorization;
@@ -107,6 +108,7 @@ fn api_router(app_state: AppState) -> Router {
             suggested_question::routes(app_state.clone()),
         )
         .nest("/ai_summary", ai_summary::routes(app_state.clone()))
+        .nest("/ai_usage", ai_usage::routes(app_state.clone()))
         .nest(
             "/member",
             tenant::membership::member_routes(app_state.clone()),

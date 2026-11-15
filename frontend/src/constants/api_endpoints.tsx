@@ -115,6 +115,14 @@ export const API_ENDPOINTS = {
     DELETE: "/ai_configuration",
     TEST: "/ai_configuration/test",
   },
+  AI_USAGE: {
+    SUMMARY: "/ai_usage/summary",
+    OVER_TIME: "/ai_usage/over_time",
+    BY_USER: "/ai_usage/by_user",
+    BY_KIND: "/ai_usage/by_kind",
+    BY_CONVERSATION: "/ai_usage/by_conversation",
+    CONVERSATION_QUESTIONS: "/ai_usage/conversation/:conversation_id/questions",
+  },
   SUGGESTED_QUESTION: {
     GET_BY_CONNECTION: "/suggested_question/connection/:connection_id",
   },

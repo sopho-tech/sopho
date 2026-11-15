@@ -1,7 +1,9 @@
-use crate::ai::agent_utils::{AgentName, ModelClient, ModelRole};
+use crate::ai::agent_utils::{AgentName, AgentSettings, ModelClient, ModelRole};
+use crate::ai::error::is_usage_recording_failure;
 use crate::ai_configuration::dto::{AiConfigurationDto, Provider, TestAiConfigurationResponse};
 use crate::ai_configuration::error::AiConfigurationError;
 use crate::ai_configuration::repository;
+use crate::ai_usage::dto::AiCallContext;
 use crate::authorization::constants::Permission;
 use crate::authorization::dto::{TenantContext, TenantId};
 use crate::authorization::service::require_capability;
@@ -44,9 +46,13 @@ pub async fn upsert(
     let encrypted = encrypt(encryption_key, api_key.clone())
         .map_err(|e| AiConfigurationError::Encryption(e.to_string()))?;
 
-    let liveness = run_liveness_ping(provider, &api_key, &app_state.config).await;
+    let call_context = AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id());
+    let liveness = run_liveness_ping(app_state, &call_context, provider, &api_key).await;
     let liveness_db = match liveness {
         Ok(()) => "LIVE",
+        Err(error) if is_usage_recording_failure(&error) => {
+            return Err(AiConfigurationError::UsageRecording(error.to_string()));
+        }
         Err(e) => {
             warn!("liveness ping failed: {e}");
             "FAILED"
@@ -93,11 +99,16 @@ pub async fn verify_provider_api_key(
     if api_key.trim().is_empty() {
         return Err(AiConfigurationError::EmptyApiKey);
     }
-    match run_liveness_ping(provider, &api_key, &app_state.config).await {
+    let call_context =
+        AiCallContext::for_user(tenant_context.tenant_id().clone(), tenant_context.user_id());
+    match run_liveness_ping(app_state, &call_context, provider, &api_key).await {
         Ok(()) => Ok(TestAiConfigurationResponse {
             ok: true,
             error: None,
         }),
+        Err(error) if is_usage_recording_failure(&error) => {
+            Err(AiConfigurationError::UsageRecording(error.to_string()))
+        }
         Err(e) => Ok(TestAiConfigurationResponse {
             ok: false,
             error: Some(e.to_string()),
@@ -142,17 +153,22 @@ fn build_client_for_provider(
 }
 
 async fn run_liveness_ping(
+    app_state: &AppState,
+    call_context: &AiCallContext,
     provider: Provider,
     api_key: &str,
-    configurations: &Configurations,
 ) -> anyhow::Result<()> {
-    let client = build_client_for_provider(provider, api_key, configurations)?;
+    let client = build_client_for_provider(provider, api_key, &app_state.config)?;
     let agent = client.build_agent(
-        ModelRole::Default,
-        AgentName::LivenessCheckAgent,
-        "Respond with exactly the word OK and nothing else.",
-        0.0,
-        5,
+        app_state,
+        call_context,
+        AgentSettings {
+            role: ModelRole::Default,
+            agent_name: AgentName::LivenessCheckAgent,
+            system_prompt: "Respond with exactly the word OK and nothing else.",
+            temperature: 0.0,
+            max_tokens: 5,
+        },
     );
     let _ = agent.prompt("ping").await?;
     Ok(())

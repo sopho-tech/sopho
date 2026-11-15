@@ -4,6 +4,7 @@ export const PERMISSIONS = {
   CONNECTION_CREATE: "connection:create",
   AI_CONFIGURATION_WRITE: "ai_configuration:write",
   MEMBER_INVITE: "member:invite",
+  USAGE_READ: "usage:read",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

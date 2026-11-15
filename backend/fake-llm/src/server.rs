@@ -1,6 +1,7 @@
 use crate::constants::{
-    ANTHROPIC_MESSAGES_PATH, INJECTED_SERVER_ERROR_MESSAGE, MALFORMED_JSON_BODY, OPENAI_BASE_PATH,
-    OPENAI_CHAT_COMPLETIONS_PATH, UNMATCHED_ERROR_TYPE,
+    ANTHROPIC_ANSWER_TEXT_POINTER, ANTHROPIC_MESSAGES_PATH, INJECTED_SERVER_ERROR_MESSAGE,
+    MALFORMED_JSON_BODY, OPENAI_ANSWER_TEXT_POINTER, OPENAI_BASE_PATH,
+    OPENAI_CHAT_COMPLETIONS_PATH, UNMATCHED_ERROR_TYPE, UNPARSABLE_ANSWER_TEXT, USAGE_FIELD,
 };
 use crate::failure_kind::FailureKind;
 use crate::fixture::{Fixture, load_fixtures};
@@ -189,8 +190,40 @@ fn respond(provider: Provider, shared_state: &SharedState, body: String) -> Resp
             MALFORMED_JSON_BODY,
         )
             .into_response(),
+        Some(FailureKind::UnparsableAnswer) => {
+            axum::Json(response_with_unparsable_answer(provider, &fixture.response)).into_response()
+        }
+        Some(FailureKind::MissingUsage) => {
+            axum::Json(response_without_usage(&fixture.response)).into_response()
+        }
         None => axum::Json(fixture.response.clone()).into_response(),
     }
+}
+
+fn response_with_unparsable_answer(
+    provider: Provider,
+    fixture_response: &serde_json::Value,
+) -> serde_json::Value {
+    let answer_text_pointer = match provider {
+        Provider::Anthropic => ANTHROPIC_ANSWER_TEXT_POINTER,
+        Provider::Openai => OPENAI_ANSWER_TEXT_POINTER,
+    };
+    let mut response = fixture_response.clone();
+    let answer_text = response
+        .pointer_mut(answer_text_pointer)
+        .expect("the fixture response has an answer text");
+    *answer_text = json!(UNPARSABLE_ANSWER_TEXT);
+    response
+}
+
+fn response_without_usage(fixture_response: &serde_json::Value) -> serde_json::Value {
+    let mut response = fixture_response.clone();
+    response
+        .as_object_mut()
+        .expect("the fixture response is a JSON object")
+        .remove(USAGE_FIELD)
+        .expect("the fixture response has usage");
+    response
 }
 
 fn server_error_body(provider: Provider) -> serde_json::Value {

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import styles from "src/components/design-system/Table/Table.module.css";
 
 type TableProps = {
@@ -46,12 +46,41 @@ function TableHeaderCell({ children, align = "start" }: TableCellProps) {
 
 type TableRowProps = {
   "aria-label"?: string;
+  onClick?: () => void;
   children: React.ReactNode;
 };
 
-function TableRow({ "aria-label": ariaLabel, children }: TableRowProps) {
+const ROW_ACTIVATION_KEYS = ["Enter", " "];
+
+function TableRow({
+  "aria-label": ariaLabel,
+  onClick,
+  children,
+}: TableRowProps) {
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLTableRowElement>) => {
+      if (onClick && ROW_ACTIVATION_KEYS.includes(event.key)) {
+        event.preventDefault();
+        onClick();
+      }
+    },
+    [onClick],
+  );
+  if (!onClick) {
+    return (
+      <tr aria-label={ariaLabel} className={styles.row}>
+        {children}
+      </tr>
+    );
+  }
   return (
-    <tr aria-label={ariaLabel} className={styles.row}>
+    <tr
+      aria-label={ariaLabel}
+      className={`${styles.row} ${styles.clickableRow}`}
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+    >
       {children}
     </tr>
   );

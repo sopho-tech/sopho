@@ -1,5 +1,6 @@
 use crate::ai::canvas_generation_agent;
 use crate::ai::dto::{CanvasCandidate, ConversationHistory, Event, EventChannels};
+use crate::ai_usage::dto::AiCallContext;
 use crate::authorization::dto::TenantId;
 
 use crate::canvas::dto::{CanvasAuthorship, CanvasChangeSummary};
@@ -13,7 +14,7 @@ use uuid::Uuid;
 
 pub async fn generate(
     app_state: &AppState,
-    tenant_id: &TenantId,
+    call_context: &AiCallContext,
     authorship: CanvasAuthorship,
     conversation_id: Uuid,
     connection_id: Uuid,
@@ -22,10 +23,15 @@ pub async fn generate(
 ) -> anyhow::Result<()> {
     channels.send(Event::GeneratingCanvas).await?;
 
+    let tenant_id = call_context.tenant_id();
     let candidates = load(app_state, tenant_id, conversation_id).await;
-    let plan =
-        canvas_generation_agent::execute(app_state, tenant_id, conversation_history, &candidates)
-            .await?;
+    let plan = canvas_generation_agent::execute(
+        app_state,
+        call_context,
+        conversation_history,
+        &candidates,
+    )
+    .await?;
 
     let target_canvas_id = plan.resolve_target_canvas(&candidates);
     let target =

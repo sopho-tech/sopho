@@ -5,6 +5,7 @@ pub mod prelude;
 
 pub mod ai_configuration;
 pub mod ai_summary;
+pub mod ai_usage;
 pub mod canvas;
 pub mod cell;
 pub mod configuration;
