@@ -160,9 +160,7 @@ async fn execute_hypothesis_generation(
     channels: &EventChannels,
 ) -> Result<Vec<LogicalPlanningResponse>> {
     channels.send(Event::GeneratingCandidateHypothesis).await?;
-    let model_client = app_state
-        .require_model_client(call_context.tenant_id())
-        .await?;
+    let model_client = call_context.model_client();
 
     let generation_results: Vec<Result<LogicalPlanningResponse, _>> = futures_util::stream::iter(
         (0..LOGICAL_PLAN_HYPOTHESIS_GENERATION_ROUNDS).map(|_round| {
@@ -211,9 +209,7 @@ async fn execute_integrate_candidate_plans(
     question: &str,
     candidate_hypothesis: Vec<LogicalPlanningResponse>,
 ) -> Result<String> {
-    let model_client = app_state
-        .require_model_client(call_context.tenant_id())
-        .await?;
+    let model_client = call_context.model_client();
     let integrate_candidate_plan_agent = model_client.build_agent(
         app_state,
         call_context,
@@ -250,11 +246,10 @@ pub(crate) async fn execute_search_space_reduction(
     let pruning_results: Vec<Result<Database>> =
         futures_util::stream::iter(data_catalog_batches.into_iter().map(
             |mut data_catalog_batch| {
-                let model_client = app_state.require_model_client(call_context.tenant_id());
+                let model_client = call_context.model_client();
                 let question = question.to_string();
                 let master_plan = master_plan.to_string();
                 async move {
-                    let model_client = model_client.await?;
                     let data_catalog_deletion_agent = model_client.build_agent(
                         app_state,
                         call_context,
@@ -362,9 +357,7 @@ async fn execute_functional_role_analysis(
     master_plan: &str,
     pruned_data_catalog: &Database,
 ) -> Result<FunctionalRoleAnalysisResult> {
-    let model_client = app_state
-        .require_model_client(call_context.tenant_id())
-        .await?;
+    let model_client = call_context.model_client();
     let functional_role_analysis_agent = model_client.build_agent(
         app_state,
         call_context,
@@ -423,9 +416,7 @@ async fn execute_data_profiling(
             |(table_function, table_columns)| async move {
                 let mut chat_history: Vec<Message> = Vec::new();
 
-                let model_client = app_state
-                    .require_model_client(call_context.tenant_id())
-                    .await?;
+                let model_client = call_context.model_client();
                 let data_profiling_agent = model_client.build_agent(
                     app_state,
                     call_context,
@@ -505,9 +496,7 @@ pub(crate) async fn schema_linking_final_synthesis(
         emperical_observations.len()
     );
 
-    let model_client = app_state
-        .require_model_client(call_context.tenant_id())
-        .await?;
+    let model_client = call_context.model_client();
     let agent = model_client.build_agent(
         app_state,
         call_context,
@@ -620,9 +609,7 @@ pub(crate) async fn sql_generation(
     linked_schema: SchemaLinkingFinalSynthesisResponse,
 ) -> Result<String> {
     let mut generated_sql = String::new();
-    let model_client = app_state
-        .require_model_client(call_context.tenant_id())
-        .await?;
+    let model_client = call_context.model_client();
     let agent = model_client.build_agent(
         app_state,
         call_context,

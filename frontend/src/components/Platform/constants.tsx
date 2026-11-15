@@ -51,7 +51,9 @@ export const USER_ACTIONS_LABEL = "User actions";
 
 export const USERS_TABLE_COLUMNS =
   "minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 1.2fr) 2.5rem";
-export const TENANTS_TABLE_COLUMNS = "minmax(0, 1fr) 8rem 10rem 10rem 7rem";
+export const TENANTS_TABLE_COLUMNS =
+  "minmax(0, 1fr) 7rem 8rem 7rem 11rem 8rem 7rem";
+export const NO_PLATFORM_AI_USAGE_LABEL = "Off";
 export const SUSPEND_TENANT_LABEL = "Suspend";
 export const RESTORE_TENANT_LABEL = "Restore";
 export const SUSPEND_TENANT_DESCRIPTION =

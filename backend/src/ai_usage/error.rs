@@ -13,6 +13,8 @@ pub enum AiUsageError {
         token_kind: &'static str,
         token_count: u64,
     },
+    #[error("the platform AI key was used for a call that reported no token counts")]
+    PlatformCallWithoutTokenCounts,
     #[error("{0}")]
     Unauthorized(#[from] AuthorizationError),
     #[error("The date range starts after it ends")]

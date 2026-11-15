@@ -130,6 +130,7 @@ fn usage_response<UsageBody: Serialize>(usage_result: Result<UsageBody, AiUsageE
             usage_error @ (AiUsageError::Database(_)
             | AiUsageError::Metadata(_)
             | AiUsageError::TokenCountOutOfRange { .. }
+            | AiUsageError::PlatformCallWithoutTokenCounts
             | AiUsageError::UnknownAgent { .. }
             | AiUsageError::UnreadableStoredValue(_)
             | AiUsageError::Conversation(_)),

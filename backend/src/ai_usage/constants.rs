@@ -3,9 +3,13 @@ use strum::{Display, EnumString, IntoStaticStr};
 pub const INPUT_TOKEN_KIND: &str = "input";
 pub const OUTPUT_TOKEN_KIND: &str = "output";
 pub const CACHED_INPUT_TOKEN_KIND: &str = "cached input";
+pub const TOTAL_TOKEN_KIND: &str = "total";
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Display, EnumString, IntoStaticStr)]
+#[derive(
+    Clone, Copy, Debug, PartialEq, Eq, Display, EnumString, IntoStaticStr, serde::Serialize,
+)]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum KeySource {
     Tenant,
     Platform,

@@ -148,7 +148,7 @@ export function CanvasButtons({
     isDashboardView &&
     !isEditing &&
     hasSavedCharts &&
-    aiConfiguration?.status === "live" &&
+    aiConfiguration?.is_ai_available === true &&
     !!dashboardId;
 
   return (

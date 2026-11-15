@@ -22,6 +22,9 @@ const ACTIVE_TENANT: PlatformTenantDto = {
   capabilities: { can_suspend: true, can_restore: false },
   active_owner_count: 1,
   created_at: "2026-10-01T09:00:00Z",
+  ai_key_label: "Platform AI",
+  platform_ai_used_tokens: 41250,
+  platform_ai_token_allowance: 100000,
 };
 
 const SUSPENDED_TENANT: PlatformTenantDto = {
@@ -31,6 +34,9 @@ const SUSPENDED_TENANT: PlatformTenantDto = {
   capabilities: { can_suspend: false, can_restore: true },
   active_owner_count: 1,
   created_at: "2026-10-02T09:00:00Z",
+  ai_key_label: "Own key",
+  platform_ai_used_tokens: null,
+  platform_ai_token_allowance: null,
 };
 
 const tenantsRoutes = [
@@ -66,6 +72,12 @@ describe("platform tenants", () => {
 
     const activeRow = page.getByRole("row", { name: "Acme Analytics" });
     const suspendedRow = page.getByRole("row", { name: "Frozen Works" });
+    await expect.element(activeRow.getByText("Platform AI")).toBeVisible();
+    await expect
+      .element(activeRow.getByText("41,250 of 100,000"))
+      .toBeVisible();
+    await expect.element(suspendedRow.getByText("Own key")).toBeVisible();
+    await expect.element(suspendedRow.getByText("Off")).toBeVisible();
     await expect.element(activeRow.getByText("Active")).toBeVisible();
     await expect
       .element(activeRow.getByRole("button", { name: "Suspend" }))

@@ -47,6 +47,7 @@ pub enum ErrorCode {
     RateLimited,
     TenantSuspended,
     TenantMemberLimitReached,
+    PlatformAiAllowanceUsed,
 }
 
 impl ErrorCode {
@@ -68,4 +69,5 @@ pub mod codes {
     pub const AI_NOT_LIVE: ErrorCode = ErrorCode::AiNotLive;
     pub const CONVERSATION_BUSY: ErrorCode = ErrorCode::ConversationBusy;
     pub const USER_MESSAGE_LIMIT_REACHED: ErrorCode = ErrorCode::UserMessageLimitReached;
+    pub const PLATFORM_AI_ALLOWANCE_USED: ErrorCode = ErrorCode::PlatformAiAllowanceUsed;
 }

@@ -1,5 +1,4 @@
 use crate::ai::error::AgentCallError;
-use crate::ai_usage::constants::KeySource;
 use crate::ai_usage::dto::{AiCallContext, ModelCallRecord, TokenUsage};
 use crate::ai_usage::service as ai_usage_service;
 use crate::common::AppState;
@@ -134,7 +133,6 @@ impl ModelClient {
                 agent_name,
                 model_provider: self.model_provider(),
                 model_name,
-                key_source: KeySource::Tenant,
             },
         }
     }
@@ -179,7 +177,6 @@ struct UsageRecorder {
     agent_name: AgentName,
     model_provider: ModelProvider,
     model_name: &'static str,
-    key_source: KeySource,
 }
 
 impl UsageRecorder {
@@ -191,7 +188,6 @@ impl UsageRecorder {
                 agent_name: self.agent_name.as_str(),
                 provider: self.model_provider.into(),
                 model: self.model_name,
-                key_source: self.key_source,
                 token_usage: normalized_token_usage(self.model_provider, reported_usage),
             },
         )

@@ -1,3 +1,4 @@
+use crate::ai_configuration::constants::PLATFORM_AI_ALLOWANCE_USED_MESSAGE;
 use crate::attribution::error::AttributionError;
 use crate::common::errors::GetDatabaseConnectionError;
 use thiserror::Error;
@@ -14,6 +15,8 @@ pub enum ConversationError {
     InvalidRequest(String),
     #[error("AI provider is not configured or not live")]
     AiNotLive,
+    #[error("{PLATFORM_AI_ALLOWANCE_USED_MESSAGE}")]
+    PlatformAiAllowanceUsed,
     #[error("AI usage could not be recorded: {0}")]
     AiUsageRecording(String),
 }
@@ -40,6 +43,8 @@ pub enum ExecuteCompletionError {
     QuestionTooLong,
     #[error("AI provider is not configured or not live")]
     AiNotLive,
+    #[error("{PLATFORM_AI_ALLOWANCE_USED_MESSAGE}")]
+    PlatformAiAllowanceUsed,
 }
 
 #[derive(Debug, Error)]
@@ -58,6 +63,8 @@ pub enum AppendUserMessageError {
     UserMessageLimitReached,
     #[error("AI provider is not configured or not live")]
     AiNotLive,
+    #[error("{PLATFORM_AI_ALLOWANCE_USED_MESSAGE}")]
+    PlatformAiAllowanceUsed,
 }
 
 impl From<ConversationError> for AppendUserMessageError {
@@ -72,6 +79,9 @@ impl From<ConversationError> for AppendUserMessageError {
                 AppendUserMessageError::Database(sea_orm::DbErr::Custom(s))
             }
             ConversationError::AiNotLive => AppendUserMessageError::AiNotLive,
+            ConversationError::PlatformAiAllowanceUsed => {
+                AppendUserMessageError::PlatformAiAllowanceUsed
+            }
             ConversationError::AiUsageRecording(s) => {
                 AppendUserMessageError::Database(sea_orm::DbErr::Custom(s))
             }
@@ -91,6 +101,9 @@ impl From<ConversationError> for ExecuteCompletionError {
                 ExecuteCompletionError::Database(sea_orm::DbErr::Custom(s))
             }
             ConversationError::AiNotLive => ExecuteCompletionError::AiNotLive,
+            ConversationError::PlatformAiAllowanceUsed => {
+                ExecuteCompletionError::PlatformAiAllowanceUsed
+            }
             ConversationError::AiUsageRecording(s) => {
                 ExecuteCompletionError::Database(sea_orm::DbErr::Custom(s))
             }

@@ -1,12 +1,14 @@
 use crate::ai::agent_utils::ModelClient;
 use crate::ai_configuration;
+use crate::ai_configuration::dto::Provider;
 use crate::authorization::dto::TenantId;
 use crate::common::constants::{
     ADMINISTRATOR_EMAILS_NEED_PROVIDER_REASON, DEFAULT_SELF_SERVE_TENANT_LIMIT,
     DEFAULT_TENANT_DEMO_NEEDS_SQLITE_REASON, DEFAULT_TENANT_NEEDS_ADMINISTRATOR_REASON,
-    DISABLED_CONNECTION_TYPE_SEPARATOR, EnvironmentVariable, MINIMUM_SELF_SERVE_TENANT_LIMIT,
-    MINIMUM_TENANT_MEMBER_LIMIT, NO_PLATFORM_ADMINISTRATOR_REASON, NOBODY_CAN_SIGN_IN_REASON,
-    OidcProviderVariable, PLATFORM_ADMINISTRATOR_EMAIL_SEPARATOR,
+    DISABLED_CONNECTION_TYPE_SEPARATOR, EnvironmentVariable, MINIMUM_PLATFORM_AI_TOKEN_ALLOWANCE,
+    MINIMUM_SELF_SERVE_TENANT_LIMIT, MINIMUM_TENANT_MEMBER_LIMIT, NO_PLATFORM_ADMINISTRATOR_REASON,
+    NOBODY_CAN_SIGN_IN_REASON, OidcProviderVariable, PLATFORM_ADMINISTRATOR_EMAIL_SEPARATOR,
+    PLATFORM_AI_WITH_BACKGROUND_REFRESH_REASON, REDACTED_SECRET,
     SEEDED_ADMINISTRATOR_CANNOT_SIGN_IN_REASON, SMTP_TIMEOUT_SECONDS, SmtpTls,
 };
 use crate::common::cryptography_utils::{
@@ -35,6 +37,7 @@ use serde::Deserialize;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::env::VarError;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::warn;
@@ -229,6 +232,36 @@ pub fn tenant_member_limit_from_variable(
     }
 }
 
+pub fn platform_ai_configuration_from_values(
+    provider: &str,
+    api_key: String,
+    token_allowance: &str,
+) -> Result<PlatformAiConfiguration, ConfigurationError> {
+    let provider = Provider::from_str(provider).map_err(|_| {
+        ConfigurationError::InvalidPlatformAiProvider {
+            value: provider.to_string(),
+        }
+    })?;
+    if api_key.trim().is_empty() {
+        return Err(ConfigurationError::EmptyPlatformAiApiKey);
+    }
+    let token_allowance = match token_allowance.parse::<u64>() {
+        Ok(token_allowance) if token_allowance >= MINIMUM_PLATFORM_AI_TOKEN_ALLOWANCE => {
+            token_allowance
+        }
+        _ => {
+            return Err(ConfigurationError::InvalidPlatformAiTokenAllowance {
+                value: token_allowance.to_string(),
+            });
+        }
+    };
+    Ok(PlatformAiConfiguration {
+        provider,
+        api_key,
+        token_allowance,
+    })
+}
+
 pub fn rate_limit_value_from_variable(
     variable: EnvironmentVariable,
     value: Option<String>,
@@ -421,6 +454,19 @@ pub fn validate_setting_combinations(
             ADMINISTRATOR_EMAILS_NEED_PROVIDER_REASON,
         );
     }
+    let is_platform_ai_on = configurations
+        .feature_flags
+        .is_enabled(FeatureFlag::UsePlatformAi);
+    let is_background_refresh_on = configurations
+        .feature_flags
+        .is_enabled(FeatureFlag::BackgroundSuggestedQuestionRefresh);
+    if is_platform_ai_on && is_background_refresh_on {
+        return contradiction(
+            FeatureFlag::UsePlatformAi.environment_variable_name(),
+            FeatureFlag::BackgroundSuggestedQuestionRefresh.environment_variable_name(),
+            PLATFORM_AI_WITH_BACKGROUND_REFRESH_REASON,
+        );
+    }
     if is_sqlite_disabled && is_default_tenant_on {
         return contradiction(
             EnvironmentVariable::SophoDisabledConnectionTypes.to_string(),
@@ -437,6 +483,24 @@ pub struct PasswordAdministratorConfiguration {
     pub password: String,
     pub email: String,
     pub full_name: String,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct PlatformAiConfiguration {
+    pub provider: Provider,
+    pub api_key: String,
+    pub token_allowance: u64,
+}
+
+impl std::fmt::Debug for PlatformAiConfiguration {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("PlatformAiConfiguration")
+            .field("provider", &self.provider)
+            .field("api_key", &REDACTED_SECRET)
+            .field("token_allowance", &self.token_allowance)
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -458,6 +522,7 @@ pub struct Configurations {
     pub disabled_connection_types: Vec<SourceType>,
     pub rate_limits: RateLimitSettings,
     pub tenant_member_limit: Option<u64>,
+    pub platform_ai: Option<PlatformAiConfiguration>,
 }
 
 pub struct ConfigurationsBuilder {
@@ -481,6 +546,9 @@ pub struct ConfigurationsBuilder {
     disabled_connection_types: Option<String>,
     rate_limits: Option<RateLimitSettings>,
     tenant_member_limit: Option<u64>,
+    platform_ai_provider: Option<Cow<'static, str>>,
+    platform_ai_api_key: Option<Cow<'static, str>>,
+    platform_ai_token_allowance: Option<Cow<'static, str>>,
 }
 
 impl ConfigurationsBuilder {
@@ -506,6 +574,9 @@ impl ConfigurationsBuilder {
             disabled_connection_types: None,
             rate_limits: None,
             tenant_member_limit: None,
+            platform_ai_provider: None,
+            platform_ai_api_key: None,
+            platform_ai_token_allowance: None,
         }
     }
 
@@ -610,6 +681,24 @@ impl ConfigurationsBuilder {
         self
     }
 
+    pub fn platform_ai_provider(mut self, platform_ai_provider: impl Into<String>) -> Self {
+        self.platform_ai_provider = Some(Cow::Owned(platform_ai_provider.into()));
+        self
+    }
+
+    pub fn platform_ai_api_key(mut self, platform_ai_api_key: impl Into<String>) -> Self {
+        self.platform_ai_api_key = Some(Cow::Owned(platform_ai_api_key.into()));
+        self
+    }
+
+    pub fn platform_ai_token_allowance(
+        mut self,
+        platform_ai_token_allowance: impl Into<String>,
+    ) -> Self {
+        self.platform_ai_token_allowance = Some(Cow::Owned(platform_ai_token_allowance.into()));
+        self
+    }
+
     pub fn rate_limits(mut self, rate_limits: RateLimitSettings) -> Self {
         self.rate_limits = Some(rate_limits);
         self
@@ -639,6 +728,24 @@ impl ConfigurationsBuilder {
                 )?
                 .into_owned(),
             }),
+            false => None,
+        };
+        let platform_ai = match self.feature_flags.is_enabled(FeatureFlag::UsePlatformAi) {
+            true => Some(platform_ai_configuration_from_values(
+                &required_setting(
+                    self.platform_ai_provider,
+                    EnvironmentVariable::SophoPlatformAiProvider,
+                )?,
+                required_setting(
+                    self.platform_ai_api_key,
+                    EnvironmentVariable::SophoPlatformAiApiKey,
+                )?
+                .into_owned(),
+                &required_setting(
+                    self.platform_ai_token_allowance,
+                    EnvironmentVariable::SophoPlatformAiTokenAllowance,
+                )?,
+            )?),
             false => None,
         };
         let configurations = Configurations {
@@ -686,6 +793,7 @@ impl ConfigurationsBuilder {
                 self.tenant_member_limit
                     .map(|tenant_member_limit| tenant_member_limit.to_string()),
             )?,
+            platform_ai,
         };
         validate_setting_combinations(&configurations)?;
         Ok(configurations)
@@ -720,6 +828,15 @@ impl Configurations {
                 full_name: required_environment_variable(EnvironmentVariable::SophoAdminFullName)?
                     .into_owned(),
             }),
+            false => None,
+        };
+        let platform_ai = match feature_flags.is_enabled(FeatureFlag::UsePlatformAi) {
+            true => Some(platform_ai_configuration_from_values(
+                &required_environment_variable(EnvironmentVariable::SophoPlatformAiProvider)?,
+                required_environment_variable(EnvironmentVariable::SophoPlatformAiApiKey)?
+                    .into_owned(),
+                &required_environment_variable(EnvironmentVariable::SophoPlatformAiTokenAllowance)?,
+            )?),
             false => None,
         };
         let configurations = Self {
@@ -796,6 +913,7 @@ impl Configurations {
                 optional_environment_variable(EnvironmentVariable::SophoTenantMemberLimit)?
                     .map(Cow::into_owned),
             )?,
+            platform_ai,
         };
         validate_setting_combinations(&configurations)?;
         Ok(configurations)
@@ -870,6 +988,7 @@ pub struct AppState {
     pub database_connection: DatabaseConnection,
     pub config: Configurations,
     pub model_client: Arc<RwLock<HashMap<Uuid, ModelClient>>>,
+    pub platform_model_client: Option<ModelClient>,
     pub database_pools: DatabasePoolRegistry,
     pub email_transport: Option<EmailTransport>,
     pub rate_limiters: Option<RateLimiters>,
@@ -884,9 +1003,21 @@ impl AppState {
             .map(email_delivery::service::build_email_transport)
             .transpose()?;
         let rate_limiters = rate_limit::service::build_rate_limiters(&config)?;
+        let platform_model_client = config
+            .platform_ai
+            .as_ref()
+            .map(|platform_ai| {
+                ai_configuration::service::build_client_for_provider(
+                    platform_ai.provider,
+                    &platform_ai.api_key,
+                    &config,
+                )
+            })
+            .transpose()?;
         Ok(Self {
             database_connection,
             rate_limiters,
+            platform_model_client,
             config,
             model_client: Arc::new(RwLock::new(HashMap::new())),
             database_pools: new_database_pool_registry(),
@@ -916,12 +1047,6 @@ impl AppState {
             .remove(&tenant_id.get_uuid());
     }
 
-    pub async fn require_model_client(&self, tenant_id: &TenantId) -> anyhow::Result<ModelClient> {
-        self.current_model_client(tenant_id)
-            .await
-            .ok_or_else(|| anyhow::anyhow!("AI is not configured for this tenant"))
-    }
-
     pub async fn from_env() -> anyhow::Result<Self> {
         Self::from_configurations(Configurations::from_env()?).await
     }
@@ -942,6 +1067,7 @@ mod tests {
         rate_limit_value_from_variable, self_serve_tenant_limit_from_variable,
         tenant_member_limit_from_variable,
     };
+    use crate::ai_configuration::dto::Provider;
     use crate::common::constants::{EnvironmentVariable, SmtpTls};
     use crate::common::errors::ConfigurationError;
     use crate::connection::constants::SourceType;
@@ -1056,6 +1182,141 @@ mod tests {
         assert!(
             message.contains(first_expected_setting) && message.contains(second_expected_setting),
             "{message}"
+        );
+    }
+
+    fn with_platform_ai(builder: ConfigurationsBuilder) -> ConfigurationsBuilder {
+        builder
+            .feature_flag(FeatureFlag::UsePlatformAi, true)
+            .feature_flag(FeatureFlag::BackgroundSuggestedQuestionRefresh, false)
+            .platform_ai_provider("anthropic")
+            .platform_ai_api_key("platform-key")
+            .platform_ai_token_allowance("100000")
+    }
+
+    #[test]
+    fn platform_ai_is_off_and_its_settings_unread_unless_the_flag_is_on() {
+        let configurations = with_password_administrator(configurations_builder())
+            .platform_ai_provider("not a provider")
+            .platform_ai_token_allowance("not a number")
+            .build()
+            .unwrap();
+
+        assert!(configurations.platform_ai.is_none());
+    }
+
+    #[test]
+    fn platform_ai_on_reads_its_provider_key_and_allowance() {
+        let configurations =
+            with_platform_ai(with_password_administrator(configurations_builder()))
+                .build()
+                .unwrap();
+
+        let platform_ai = configurations.platform_ai.expect("platform AI settings");
+        assert_eq!(platform_ai.provider, Provider::Anthropic);
+        assert_eq!(platform_ai.api_key, "platform-key");
+        assert_eq!(platform_ai.token_allowance, 100_000);
+        assert!(!format!("{platform_ai:?}").contains("platform-key"));
+    }
+
+    #[test]
+    fn platform_ai_on_requires_each_of_its_settings() {
+        for (missing_setting, builder) in [
+            (
+                EnvironmentVariable::SophoPlatformAiProvider,
+                configurations_builder()
+                    .platform_ai_api_key("platform-key")
+                    .platform_ai_token_allowance("100000"),
+            ),
+            (
+                EnvironmentVariable::SophoPlatformAiApiKey,
+                configurations_builder()
+                    .platform_ai_provider("openai")
+                    .platform_ai_token_allowance("100000"),
+            ),
+            (
+                EnvironmentVariable::SophoPlatformAiTokenAllowance,
+                configurations_builder()
+                    .platform_ai_provider("openai")
+                    .platform_ai_api_key("platform-key"),
+            ),
+        ] {
+            let error = with_password_administrator(builder)
+                .feature_flag(FeatureFlag::UsePlatformAi, true)
+                .feature_flag(FeatureFlag::BackgroundSuggestedQuestionRefresh, false)
+                .build()
+                .unwrap_err();
+
+            assert!(
+                matches!(
+                    &error,
+                    ConfigurationError::MissingSetting { setting } if *setting == missing_setting
+                ),
+                "unexpected error: {error}"
+            );
+        }
+    }
+
+    #[test]
+    fn platform_ai_refuses_an_unknown_provider_and_an_allowance_below_one() {
+        let unknown_provider =
+            with_platform_ai(with_password_administrator(configurations_builder()))
+                .platform_ai_provider("gemini")
+                .build()
+                .unwrap_err();
+        assert!(
+            matches!(
+                unknown_provider,
+                ConfigurationError::InvalidPlatformAiProvider { .. }
+            ),
+            "unexpected error: {unknown_provider}"
+        );
+        assert!(
+            unknown_provider
+                .to_string()
+                .contains("SOPHO_PLATFORM_AI_PROVIDER")
+        );
+        for invalid_allowance in ["0", "-5", "many"] {
+            let error = with_platform_ai(with_password_administrator(configurations_builder()))
+                .platform_ai_token_allowance(invalid_allowance)
+                .build()
+                .unwrap_err();
+            assert!(
+                matches!(
+                    error,
+                    ConfigurationError::InvalidPlatformAiTokenAllowance { .. }
+                ),
+                "unexpected error: {error}"
+            );
+            assert!(
+                error
+                    .to_string()
+                    .contains("SOPHO_PLATFORM_AI_TOKEN_ALLOWANCE")
+            );
+        }
+    }
+
+    #[test]
+    fn platform_ai_refuses_a_blank_key() {
+        let error = with_platform_ai(with_password_administrator(configurations_builder()))
+            .platform_ai_api_key("   ")
+            .build()
+            .unwrap_err();
+
+        assert!(
+            matches!(error, ConfigurationError::EmptyPlatformAiApiKey),
+            "unexpected error: {error}"
+        );
+        assert!(error.to_string().contains("SOPHO_PLATFORM_AI_API_KEY"));
+    }
+
+    #[test]
+    fn platform_ai_refuses_the_background_suggested_question_refresh() {
+        assert_contradiction(
+            with_platform_ai(with_password_administrator(configurations_builder()))
+                .feature_flag(FeatureFlag::BackgroundSuggestedQuestionRefresh, true),
+            "SOPHO_FEATURE_USE_PLATFORM_AI",
+            "SOPHO_FEATURE_BACKGROUND_SUGGESTED_QUESTION_REFRESH",
         );
     }
 

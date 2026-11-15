@@ -15,6 +15,8 @@ import {
   testTenantPath,
 } from "src/test/tenant_routes";
 import {
+  AI_ON_OWN_KEY,
+  AI_WITH_THE_ALLOWANCE_USED,
   CONVERSATION,
   CONVERSATION_ID,
   ORDER_STATUS_ANSWER_EVENTS,
@@ -50,6 +52,37 @@ function serverSentEvent(event: object) {
 }
 
 describe("conversational analytics", () => {
+  test("a new question cannot be sent when the backend says AI cannot be used", async () => {
+    worker.use(
+      http.get(testTenantApiUrl(API_ENDPOINTS.AI_CONFIGURATION.GET), () =>
+        HttpResponse.json(AI_WITH_THE_ALLOWANCE_USED),
+      ),
+      http.get(testTenantApiUrl(API_ENDPOINTS.CONNECTION.GET_ALL), () =>
+        HttpResponse.json([SQLITE_CONNECTION]),
+      ),
+      http.get(
+        testTenantApiUrl(API_ENDPOINTS.SUGGESTED_QUESTION.GET_BY_CONNECTION),
+        () => HttpResponse.json([]),
+      ),
+      http.get(
+        testTenantApiUrl(API_ENDPOINTS.CONVERSATIONAL_ANALYTICS.GET_ALL),
+        () =>
+          HttpResponse.json({ items: [], total: 0, page: 1, page_size: 25 }),
+      ),
+    );
+
+    await renderWithProviders({
+      routes: conversationRoutes,
+      initialPath: testTenantPath(
+        APP_ROUTES.CONVERSATIONAL_ANALYTICS_ROUTES.INDEX,
+      ),
+    });
+
+    await expect
+      .element(page.getByRole("button", { name: "Send message" }))
+      .toBeDisabled();
+  });
+
   test("a question sent from the composer streams back the answer", async () => {
     let releaseCompletion: () => void = () => {
       throw new Error("the completion stream has not started");
@@ -61,7 +94,7 @@ describe("conversational analytics", () => {
     let createdConversation: unknown = null;
     worker.use(
       http.get(testTenantApiUrl(API_ENDPOINTS.AI_CONFIGURATION.GET), () =>
-        HttpResponse.json({ status: "live", provider: "anthropic" }),
+        HttpResponse.json(AI_ON_OWN_KEY),
       ),
       http.get(testTenantApiUrl(API_ENDPOINTS.CONNECTION.GET_ALL), () =>
         HttpResponse.json([SQLITE_CONNECTION]),

@@ -1,15 +1,24 @@
 use crate::ai::agent_utils::{AgentName, AgentSettings, ModelClient, ModelRole};
 use crate::ai::error::is_usage_recording_failure;
-use crate::ai_configuration::dto::{AiConfigurationDto, Provider, TestAiConfigurationResponse};
-use crate::ai_configuration::error::AiConfigurationError;
+use crate::ai_configuration::constants::{
+    AI_NOT_CONFIGURED_MESSAGE, AI_NOT_LIVE_MESSAGE, PLATFORM_AI_ALLOWANCE_USED_MESSAGE,
+};
+use crate::ai_configuration::dto::{
+    AiConfigurationDto, AiConfigurationStatus, PlatformAiAllowanceDto, Provider,
+    TestAiConfigurationResponse,
+};
+use crate::ai_configuration::error::{AiAccessError, AiConfigurationError};
 use crate::ai_configuration::repository;
-use crate::ai_usage::dto::AiCallContext;
+use crate::ai_usage::constants::KeySource;
+use crate::ai_usage::dto::{AiAccess, AiCallContext};
+use crate::ai_usage::service as ai_usage_service;
 use crate::authorization::constants::Permission;
 use crate::authorization::dto::{TenantContext, TenantId};
 use crate::authorization::service::require_capability;
 use crate::common::cryptography_utils::{decrypt, encrypt};
 use crate::common::time_utils;
 use crate::common::{AppState, Configurations};
+use crate::entity;
 use tracing::warn;
 
 pub async fn get_status(
@@ -24,10 +33,102 @@ pub async fn execute_get_status(
     app_state: &AppState,
     tenant_id: &TenantId,
 ) -> Result<AiConfigurationDto, AiConfigurationError> {
-    match repository::find(&app_state.database_connection, tenant_id).await? {
-        Some(model) => Ok(AiConfigurationDto::from_model(&model)),
-        None => Ok(AiConfigurationDto::unconfigured()),
+    let saved_configuration = repository::find(&app_state.database_connection, tenant_id).await?;
+    status_of_tenant(app_state, tenant_id, saved_configuration.as_ref()).await
+}
+
+async fn status_of_tenant(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    saved_configuration: Option<&entity::ai_configuration::Model>,
+) -> Result<AiConfigurationDto, AiConfigurationError> {
+    if let Some(saved_configuration) = saved_configuration {
+        let status = AiConfigurationStatus::from_db_liveness_when_row_exists(
+            saved_configuration.liveness_status.as_str(),
+        );
+        let is_ai_available = status == AiConfigurationStatus::Live;
+        return Ok(AiConfigurationDto {
+            status,
+            provider: Provider::from_db_str(&saved_configuration.provider),
+            last_checked_at: saved_configuration.last_checked_at,
+            is_ai_available,
+            key_source: Some(KeySource::Tenant),
+            unavailable_message: (!is_ai_available).then_some(AI_NOT_LIVE_MESSAGE),
+            platform_ai: None,
+        });
     }
+    let Some(platform_ai) = &app_state.config.platform_ai else {
+        return Ok(AiConfigurationDto {
+            status: AiConfigurationStatus::NotConfigured,
+            provider: None,
+            last_checked_at: None,
+            is_ai_available: false,
+            key_source: None,
+            unavailable_message: Some(AI_NOT_CONFIGURED_MESSAGE),
+            platform_ai: None,
+        });
+    };
+    let used_tokens = ai_usage_service::platform_ai_used_tokens(app_state, tenant_id).await?;
+    let is_allowance_used = used_tokens >= platform_ai.token_allowance;
+    Ok(AiConfigurationDto {
+        status: AiConfigurationStatus::NotConfigured,
+        provider: None,
+        last_checked_at: None,
+        is_ai_available: !is_allowance_used,
+        key_source: Some(KeySource::Platform),
+        unavailable_message: is_allowance_used.then_some(PLATFORM_AI_ALLOWANCE_USED_MESSAGE),
+        platform_ai: Some(PlatformAiAllowanceDto {
+            token_allowance: platform_ai.token_allowance,
+            used_tokens,
+            remaining_tokens: platform_ai.token_allowance.saturating_sub(used_tokens),
+            is_allowance_used,
+        }),
+    })
+}
+
+pub async fn resolve_ai_access(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+) -> Result<AiAccess, AiAccessError> {
+    if let Some(saved_configuration) =
+        repository::find(&app_state.database_connection, tenant_id).await?
+    {
+        let status = AiConfigurationStatus::from_db_liveness_when_row_exists(
+            saved_configuration.liveness_status.as_str(),
+        );
+        if status != AiConfigurationStatus::Live {
+            return Err(AiAccessError::NotLive);
+        }
+        let model_client = app_state.current_model_client(tenant_id).await.ok_or(
+            AiAccessError::MissingModelClient {
+                tenant_id: tenant_id.get_uuid(),
+            },
+        )?;
+        return Ok(AiAccess {
+            model_client,
+            key_source: KeySource::Tenant,
+        });
+    }
+    let (Some(platform_ai), Some(platform_model_client)) = (
+        &app_state.config.platform_ai,
+        &app_state.platform_model_client,
+    ) else {
+        return Err(AiAccessError::NotConfigured);
+    };
+    let used_tokens = ai_usage_service::platform_ai_used_tokens(app_state, tenant_id).await?;
+    if used_tokens >= platform_ai.token_allowance {
+        return Err(AiAccessError::PlatformAiAllowanceUsed);
+    }
+    Ok(AiAccess {
+        model_client: platform_model_client.clone(),
+        key_source: KeySource::Platform,
+    })
+}
+
+pub async fn list_tenant_ids_with_saved_key(
+    app_state: &AppState,
+) -> Result<Vec<uuid::Uuid>, AiConfigurationError> {
+    Ok(repository::list_tenant_ids(&app_state.database_connection).await?)
 }
 
 pub async fn upsert(
@@ -46,8 +147,7 @@ pub async fn upsert(
     let encrypted = encrypt(encryption_key, api_key.clone())
         .map_err(|e| AiConfigurationError::Encryption(e.to_string()))?;
 
-    let call_context = AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id());
-    let liveness = run_liveness_ping(app_state, &call_context, provider, &api_key).await;
+    let liveness = run_liveness_ping(app_state, tenant_context, provider, &api_key).await;
     let liveness_db = match liveness {
         Ok(()) => "LIVE",
         Err(error) if is_usage_recording_failure(&error) => {
@@ -75,7 +175,7 @@ pub async fn upsert(
         .map_err(|e| AiConfigurationError::ClientBuild(e.to_string()))?;
     app_state.set_model_client(tenant_id, new_client).await;
 
-    Ok(AiConfigurationDto::from_model(&model))
+    status_of_tenant(app_state, tenant_id, Some(&model)).await
 }
 
 pub async fn delete(
@@ -99,9 +199,7 @@ pub async fn verify_provider_api_key(
     if api_key.trim().is_empty() {
         return Err(AiConfigurationError::EmptyApiKey);
     }
-    let call_context =
-        AiCallContext::for_user(tenant_context.tenant_id().clone(), tenant_context.user_id());
-    match run_liveness_ping(app_state, &call_context, provider, &api_key).await {
+    match run_liveness_ping(app_state, tenant_context, provider, &api_key).await {
         Ok(()) => Ok(TestAiConfigurationResponse {
             ok: true,
             error: None,
@@ -139,7 +237,7 @@ pub async fn load_at_startup_for_tenant(
     Ok(())
 }
 
-fn build_client_for_provider(
+pub fn build_client_for_provider(
     provider: Provider,
     api_key: &str,
     configurations: &Configurations,
@@ -154,14 +252,22 @@ fn build_client_for_provider(
 
 async fn run_liveness_ping(
     app_state: &AppState,
-    call_context: &AiCallContext,
+    tenant_context: &TenantContext,
     provider: Provider,
     api_key: &str,
 ) -> anyhow::Result<()> {
     let client = build_client_for_provider(provider, api_key, &app_state.config)?;
+    let call_context = AiCallContext::for_user(
+        tenant_context.tenant_id().clone(),
+        tenant_context.user_id(),
+        AiAccess {
+            model_client: client.clone(),
+            key_source: KeySource::Tenant,
+        },
+    );
     let agent = client.build_agent(
         app_state,
-        call_context,
+        &call_context,
         AgentSettings {
             role: ModelRole::Default,
             agent_name: AgentName::LivenessCheckAgent,

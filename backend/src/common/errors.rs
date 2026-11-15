@@ -259,6 +259,21 @@ pub enum ConfigurationError {
         variable = EnvironmentVariable::SophoTenantMemberLimit
     )]
     InvalidTenantMemberLimit { value: String },
+    #[error(
+        "invalid {variable} {value:?}, expected anthropic or openai",
+        variable = EnvironmentVariable::SophoPlatformAiProvider
+    )]
+    InvalidPlatformAiProvider { value: String },
+    #[error(
+        "invalid {variable} {value:?}, expected a whole number of at least 1",
+        variable = EnvironmentVariable::SophoPlatformAiTokenAllowance
+    )]
+    InvalidPlatformAiTokenAllowance { value: String },
+    #[error(
+        "{variable} must not be empty",
+        variable = EnvironmentVariable::SophoPlatformAiApiKey
+    )]
+    EmptyPlatformAiApiKey,
     #[error("invalid {variable} {value:?}, expected a whole number of at least 1")]
     InvalidRateLimit {
         variable: EnvironmentVariable,

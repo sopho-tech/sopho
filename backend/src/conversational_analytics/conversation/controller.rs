@@ -151,6 +151,11 @@ async fn execute_completion(
                     e.to_string(),
                     Some(codes::AI_NOT_LIVE.as_str()),
                 ),
+                ExecuteCompletionError::PlatformAiAllowanceUsed => (
+                    StatusCode::FORBIDDEN,
+                    e.to_string(),
+                    Some(codes::PLATFORM_AI_ALLOWANCE_USED.as_str()),
+                ),
             };
             let body = match code {
                 Some(c) => serde_json::json!({ "error": error, "code": c }),
@@ -206,6 +211,11 @@ async fn append_user_message(
                     e.to_string(),
                     Some(codes::AI_NOT_LIVE.as_str()),
                 ),
+                AppendUserMessageError::PlatformAiAllowanceUsed => (
+                    StatusCode::FORBIDDEN,
+                    e.to_string(),
+                    Some(codes::PLATFORM_AI_ALLOWANCE_USED.as_str()),
+                ),
             };
             let body = match code {
                 Some(c) => serde_json::json!({ "error": error, "code": c }),
@@ -228,6 +238,11 @@ fn conversation_error_http_response(e: ConversationError) -> (StatusCode, axum::
             StatusCode::FORBIDDEN,
             e.to_string(),
             Some(codes::AI_NOT_LIVE.as_str()),
+        ),
+        ConversationError::PlatformAiAllowanceUsed => (
+            StatusCode::FORBIDDEN,
+            e.to_string(),
+            Some(codes::PLATFORM_AI_ALLOWANCE_USED.as_str()),
         ),
     };
     let body = match code {

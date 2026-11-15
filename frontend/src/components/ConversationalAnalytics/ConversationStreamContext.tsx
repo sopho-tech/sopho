@@ -1,3 +1,4 @@
+import { aiConfigurationKeys } from "src/api/ai_configuration";
 import {
   createContext,
   useCallback,
@@ -137,6 +138,9 @@ export function ConversationStreamProvider({
                         conversationId,
                       ),
                     });
+                    void queryClient.invalidateQueries({
+                      queryKey: aiConfigurationKeys.all(tenantId),
+                    });
                     return;
                   }
                   const prev = store.streams.get(conversationId)?.events ?? [];
@@ -154,6 +158,9 @@ export function ConversationStreamProvider({
         } catch (e) {
           if (e instanceof DOMException && e.name === "AbortError") return;
           console.error(e);
+          void queryClient.invalidateQueries({
+            queryKey: aiConfigurationKeys.all(tenantId),
+          });
         } finally {
           store.controllers.delete(conversationId);
           if (store.streams.has(conversationId)) {

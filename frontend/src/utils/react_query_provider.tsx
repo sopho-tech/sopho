@@ -5,8 +5,10 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
+import { AI_CONFIGURATION_QUERY_SCOPE } from "src/api/ai_configuration";
 import { tenantKeys } from "src/api/tenant/queries";
 import {
+  isPlatformAiAllowanceUsedError,
   isTenantSuspendedError,
   queryErrorHandler,
   mutationErrorHandler,
@@ -25,6 +27,16 @@ export const ReactQueryClientProvider = ({
         });
       }
     };
+    const refreshAiStatusWhenThePlatformAiAllowanceIsUsed = (
+      error: unknown,
+    ) => {
+      if (isPlatformAiAllowanceUsedError(error)) {
+        void createdQueryClient.invalidateQueries({
+          predicate: (query) =>
+            query.queryKey.includes(AI_CONFIGURATION_QUERY_SCOPE),
+        });
+      }
+    };
     const createdQueryClient: QueryClient = new QueryClient({
       defaultOptions: {
         queries: {
@@ -38,12 +50,14 @@ export const ReactQueryClientProvider = ({
         onError: (error, variables, context, mutation) => {
           mutationErrorHandler(error, variables, context, mutation);
           refreshMembershipsWhenTenantIsSuspended(error);
+          refreshAiStatusWhenThePlatformAiAllowanceIsUsed(error);
         },
       }),
       queryCache: new QueryCache({
         onError: (error, query) => {
           queryErrorHandler(error, query);
           refreshMembershipsWhenTenantIsSuspended(error);
+          refreshAiStatusWhenThePlatformAiAllowanceIsUsed(error);
         },
       }),
     });

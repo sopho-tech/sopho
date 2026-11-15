@@ -104,7 +104,9 @@ fn error_response(e: AiConfigurationError) -> axum::response::Response {
         AiConfigurationError::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
         AiConfigurationError::Encryption(_) => StatusCode::INTERNAL_SERVER_ERROR,
         AiConfigurationError::ClientBuild(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        AiConfigurationError::UsageRecording(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        AiConfigurationError::UsageRecording(_) | AiConfigurationError::Usage(_) => {
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
         AiConfigurationError::EmptyApiKey => StatusCode::BAD_REQUEST,
         AiConfigurationError::Unauthorized(_) => unreachable!("handled above"),
     };

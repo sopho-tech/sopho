@@ -2,7 +2,8 @@ use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::entity::ai_configuration;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, QuerySelect, Set};
+use uuid::Uuid;
 
 pub async fn find(
     db: &DatabaseConnection,
@@ -56,4 +57,13 @@ pub async fn delete(db: &DatabaseConnection, tenant_id: &TenantId) -> Result<u64
         .exec(db)
         .await?;
     Ok(result.rows_affected)
+}
+
+pub async fn list_tenant_ids(db: &DatabaseConnection) -> Result<Vec<Uuid>, DbErr> {
+    ai_configuration::Entity::find()
+        .select_only()
+        .column(ai_configuration::Column::TenantId)
+        .into_tuple()
+        .all(db)
+        .await
 }

@@ -32,10 +32,11 @@ export function NewConversationPanel() {
   }, [connections, selectedConnectionId]);
 
   const { data: aiConfiguration } = useAiConfiguration();
-  const isAiReady = aiConfiguration?.status === "live";
+  const isAiReady = aiConfiguration?.is_ai_available === true;
   const disabled = !isAiReady || !selectedConnectionId || isPending;
 
-  const aiDisabledTooltip = "Configure AI provider in Settings";
+  const aiDisabledTooltip =
+    aiConfiguration?.unavailable_message ?? "Configure AI provider in Settings";
   const connectionDisabledTooltip = "Select a connection to start.";
   const disabledTooltip = !isAiReady
     ? aiDisabledTooltip

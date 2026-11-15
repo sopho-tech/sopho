@@ -42,7 +42,13 @@ fn requests_answered_by(app: &TestApp, fixture_name: &str) -> usize {
 async fn assert_ai_configuration_lifecycle(provider_name: &str, provider: Provider) {
     let app = TestApp::spawn().await;
     app.login_as_admin().await;
-    let not_configured = json!({ "status": "not_configured" });
+    let not_configured = json!({
+        "status": "not_configured",
+        "is_ai_available": false,
+        "key_source": null,
+        "unavailable_message": "AI is not configured for this tenant. Add an AI key in Settings to use AI.",
+        "platform_ai": null,
+    });
     assert_eq!(app.get("/ai_configuration").await.body, not_configured);
 
     let saved = app.configure_ai_provider(provider_name).await;

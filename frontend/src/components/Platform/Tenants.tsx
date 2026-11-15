@@ -1,3 +1,4 @@
+import { formatWholeNumber } from "src/utils/number_format";
 import { useCallback, useState } from "react";
 import {
   Badge,
@@ -22,6 +23,7 @@ import {
   SUSPEND_TENANT_LABEL,
   TENANT_STATUS_BADGE_VARIANTS,
   TENANT_STATUS_NAMES,
+  NO_PLATFORM_AI_USAGE_LABEL,
   TENANTS_TABLE_COLUMNS,
 } from "src/components/Platform/constants";
 import { TenantSuspensionDialog } from "src/components/Platform/TenantSuspensionDialog";
@@ -59,6 +61,19 @@ function TenantRow({ tenant, onChangeSuspension }: TenantRowProps) {
             {tenant.active_owner_count}
           </Text>
         )}
+      </Table.Cell>
+      <Table.Cell>
+        <Text fontSize="sm" color="darkGrey">
+          {tenant.ai_key_label}
+        </Text>
+      </Table.Cell>
+      <Table.Cell>
+        <Text fontSize="sm" color="darkGrey">
+          {tenant.platform_ai_used_tokens !== null &&
+          tenant.platform_ai_token_allowance !== null
+            ? `${formatWholeNumber(tenant.platform_ai_used_tokens)} of ${formatWholeNumber(tenant.platform_ai_token_allowance)}`
+            : NO_PLATFORM_AI_USAGE_LABEL}
+        </Text>
       </Table.Cell>
       <Table.Cell>
         <Text fontSize="sm" color="darkGrey">
@@ -135,6 +150,8 @@ function TenantsTable() {
           <Table.HeaderCell>Tenant</Table.HeaderCell>
           <Table.HeaderCell>Status</Table.HeaderCell>
           <Table.HeaderCell>Active owners</Table.HeaderCell>
+          <Table.HeaderCell>AI key</Table.HeaderCell>
+          <Table.HeaderCell>Platform AI tokens</Table.HeaderCell>
           <Table.HeaderCell>Created</Table.HeaderCell>
           <Table.HeaderCell>Actions</Table.HeaderCell>
         </Table.Header>

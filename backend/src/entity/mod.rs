@@ -18,6 +18,7 @@ pub mod email_outbox;
 pub mod notebook;
 pub mod oidc_login_attempt;
 pub mod password_reset_token;
+pub mod platform_ai_usage;
 pub mod resource_grant;
 pub mod role;
 pub mod role_permission;

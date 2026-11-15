@@ -1,4 +1,7 @@
 pub const PLATFORM_PAGE_SIZE: u64 = 50;
+pub const OWN_AI_KEY_LABEL: &str = "Own key";
+pub const PLATFORM_AI_KEY_LABEL: &str = "Platform AI";
+pub const NO_AI_KEY_LABEL: &str = "None";
 pub const FIRST_PAGE: u64 = 1;
 pub const PLATFORM_USER_NOT_FOUND_MESSAGE: &str = "User not found";
 pub const PLATFORM_TENANT_NOT_FOUND_MESSAGE: &str = "Tenant not found";

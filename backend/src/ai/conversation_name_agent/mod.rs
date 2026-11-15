@@ -13,9 +13,7 @@ pub async fn suggest_name(
     call_context: &AiCallContext,
     question: &str,
 ) -> Result<String> {
-    let model_client = app_state
-        .require_model_client(call_context.tenant_id())
-        .await?;
+    let model_client = call_context.model_client();
     let agent = model_client.build_agent(
         app_state,
         call_context,

@@ -1,3 +1,5 @@
+use crate::ai_configuration::service as ai_configuration_service;
+use crate::ai_usage::service as ai_usage_service;
 use crate::authentication::oidc::service as oidc_service;
 use crate::authentication::service as authentication_service;
 use crate::authentication::service::{PasswordFlowError, UserStatus};
@@ -9,7 +11,9 @@ use crate::email_delivery::dto::EmailLogPageDto;
 use crate::email_delivery::service as email_delivery_service;
 use crate::email_template::service as email_template_service;
 use crate::entity::user;
-use crate::platform::constants::{FIRST_PAGE, PLATFORM_PAGE_SIZE};
+use crate::platform::constants::{
+    FIRST_PAGE, NO_AI_KEY_LABEL, OWN_AI_KEY_LABEL, PLATFORM_AI_KEY_LABEL, PLATFORM_PAGE_SIZE,
+};
 use crate::platform::dto::{
     DeactivatedUserDto, EmailLogQuery, EmailTemplatePreviewDto, PlatformTenantCapabilities,
     PlatformTenantDto, PlatformUserCapabilities, PlatformUserDto, PlatformUserPageDto,
@@ -20,6 +24,7 @@ use crate::tenant::invitation::service as invitation_service;
 use crate::tenant::membership::service as membership_service;
 use crate::tenant::service as tenant_service;
 use sea_orm::TransactionTrait;
+use std::collections::HashSet;
 use std::str::FromStr;
 use uuid::Uuid;
 
@@ -249,8 +254,45 @@ pub async fn list_tenants(
     let active_owner_counts = membership_service::active_owner_counts(app_state)
         .await
         .map_err(PlatformError::Membership)?;
+    let tenant_ids_with_saved_key: HashSet<Uuid> =
+        ai_configuration_service::list_tenant_ids_with_saved_key(app_state)
+            .await
+            .map_err(|ai_configuration_error| {
+                PlatformError::Internal(ai_configuration_error.to_string())
+            })?
+            .into_iter()
+            .collect();
+    let platform_ai_token_allowance = app_state
+        .config
+        .platform_ai
+        .as_ref()
+        .map(|platform_ai| platform_ai.token_allowance);
+    let platform_ai_used_tokens_by_tenant = match platform_ai_token_allowance {
+        Some(_) => Some(
+            ai_usage_service::platform_ai_used_tokens_by_tenant(app_state)
+                .await
+                .map_err(|ai_usage_error| PlatformError::Internal(ai_usage_error.to_string()))?,
+        ),
+        None => None,
+    };
     let mut platform_tenants = Vec::new();
     for found_tenant in tenant_service::list_all_tenants(app_state).await? {
+        let ai_key_label = if tenant_ids_with_saved_key.contains(&found_tenant.id) {
+            OWN_AI_KEY_LABEL
+        } else if platform_ai_token_allowance.is_some() {
+            PLATFORM_AI_KEY_LABEL
+        } else {
+            NO_AI_KEY_LABEL
+        };
+        let platform_ai_used_tokens =
+            platform_ai_used_tokens_by_tenant
+                .as_ref()
+                .map(|used_tokens_by_tenant| {
+                    used_tokens_by_tenant
+                        .get(&found_tenant.id)
+                        .copied()
+                        .unwrap_or_default()
+                });
         let tenant_status =
             TenantStatus::from_str(&found_tenant.status).map_err(PlatformError::Internal)?;
         let is_suspended = tenant_status == TenantStatus::Suspended;
@@ -268,6 +310,9 @@ pub async fn list_tenants(
                 can_restore: can_change_suspension && is_suspended,
             },
             created_at: found_tenant.created_at,
+            ai_key_label,
+            platform_ai_used_tokens,
+            platform_ai_token_allowance,
         });
     }
     Ok(platform_tenants)

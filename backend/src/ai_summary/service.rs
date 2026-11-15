@@ -1,11 +1,14 @@
 use crate::ai::chart_summary_agent;
 use crate::ai::dashboard_summary_agent;
 use crate::ai::dto::{ChartSummaryInput, DashboardSummaryInput};
+use crate::ai_configuration::constants::{AI_NOT_LIVE_MESSAGE, PLATFORM_AI_ALLOWANCE_USED_MESSAGE};
+use crate::ai_configuration::error::AiAccessError;
+use crate::ai_configuration::service as ai_configuration_service;
 use crate::ai_summary::constants::{self, SummaryEntityType};
 use crate::ai_summary::dto::{AiSummaryDto, DashboardSummariesDto};
 use crate::ai_summary::repository;
 use crate::ai_summary::repository::ReadySummary;
-use crate::ai_usage::dto::AiCallContext;
+use crate::ai_usage::dto::{AiAccess, AiCallContext};
 use crate::authorization::constants::Action;
 use crate::authorization::dto::Actor;
 use crate::authorization::dto::{TenantContext, TenantId};
@@ -35,6 +38,10 @@ pub enum SummaryError {
     NoCharts,
     #[error("AI is not configured")]
     AiNotConfigured,
+    #[error("{AI_NOT_LIVE_MESSAGE}")]
+    AiNotLive,
+    #[error("{PLATFORM_AI_ALLOWANCE_USED_MESSAGE}")]
+    PlatformAiAllowanceUsed,
     #[error("Prompt must be at most {0} characters")]
     PromptTooLong(usize),
     #[error("Database error: {0}")]
@@ -125,7 +132,7 @@ pub async fn generate_dashboard_summary(
 ) -> Result<GenerateOutcome, SummaryError> {
     require_dashboard_access(app_state, tenant_context, dashboard_id, Action::Write).await?;
     let tenant_id = tenant_context.tenant_id();
-    require_ai(app_state, tenant_id).await?;
+    let ai_access = resolve_ai_access(app_state, tenant_id).await?;
 
     let dashboard = dashboard_service::get_dashboard_entity(app_state, tenant_id, dashboard_id)
         .await
@@ -155,7 +162,8 @@ pub async fn generate_dashboard_summary(
         cell_ids.len()
     );
 
-    let call_context = AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id());
+    let call_context =
+        AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id(), ai_access);
     let outcome = match summarize_dashboard(
         app_state,
         &call_context,
@@ -196,7 +204,7 @@ pub async fn generate_all_chart_summaries(
 ) -> Result<Vec<AiSummaryDto>, SummaryError> {
     require_dashboard_access(app_state, tenant_context, dashboard_id, Action::Write).await?;
     let tenant_id = tenant_context.tenant_id();
-    require_ai(app_state, tenant_id).await?;
+    let ai_access = resolve_ai_access(app_state, tenant_id).await?;
 
     let dashboard = dashboard_service::get_dashboard_entity(app_state, tenant_id, dashboard_id)
         .await
@@ -245,7 +253,7 @@ pub async fn generate_all_chart_summaries(
 
     spawn_chart_summary_batch(
         app_state.clone(),
-        AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id()),
+        AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id(), ai_access),
         dashboard_id,
         claimed,
         ai_actor,
@@ -314,7 +322,7 @@ pub async fn generate_chart_summary(
 ) -> Result<GenerateOutcome, SummaryError> {
     require_chart_cell_access(app_state, tenant_context, cell_id, Action::Write).await?;
     let tenant_id = tenant_context.tenant_id();
-    require_ai(app_state, tenant_id).await?;
+    let ai_access = resolve_ai_access(app_state, tenant_id).await?;
 
     if !cell_service::does_cell_exist(app_state, tenant_id, cell_id).await {
         return Err(SummaryError::NotFound);
@@ -333,7 +341,8 @@ pub async fn generate_chart_summary(
 
     info!("ai_summary: chart {cell_id} starting summary");
 
-    let call_context = AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id());
+    let call_context =
+        AiCallContext::for_user(tenant_id.clone(), tenant_context.user_id(), ai_access);
     let outcome = match summarize_chart(app_state, &call_context, cell_id, &user_prompt).await {
         Ok(summary) => {
             info!("ai_summary: chart {cell_id} summarised");
@@ -465,11 +474,21 @@ pub async fn delete_dashboard_summary(
     repository::delete_for_entity(db, tenant_id, SummaryEntityType::Dashboard, dashboard_id).await
 }
 
-async fn require_ai(app_state: &AppState, tenant_id: &TenantId) -> Result<(), SummaryError> {
-    if app_state.current_model_client(tenant_id).await.is_none() {
-        return Err(SummaryError::AiNotConfigured);
-    }
-    Ok(())
+async fn resolve_ai_access(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+) -> Result<AiAccess, SummaryError> {
+    ai_configuration_service::resolve_ai_access(app_state, tenant_id)
+        .await
+        .map_err(|ai_access_error| match ai_access_error {
+            AiAccessError::NotConfigured => SummaryError::AiNotConfigured,
+            AiAccessError::NotLive => SummaryError::AiNotLive,
+            AiAccessError::PlatformAiAllowanceUsed => SummaryError::PlatformAiAllowanceUsed,
+            AiAccessError::Database(database_error) => SummaryError::Repository(database_error),
+            AiAccessError::Usage(_) | AiAccessError::MissingModelClient { .. } => {
+                SummaryError::Repository(DbErr::Custom(ai_access_error.to_string()))
+            }
+        })
 }
 
 fn map_not_found(err: DbErr) -> SummaryError {

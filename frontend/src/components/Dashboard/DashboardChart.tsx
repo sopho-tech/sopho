@@ -167,7 +167,7 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
     useGenerateChartSummary(dashboardId);
   const { mutate: savePrompt, isPending: isSavingPrompt } =
     useUpdateChartPrompt(dashboardId, cellId);
-  const isAiConfigured = aiConfiguration?.status === "live";
+  const isAiConfigured = aiConfiguration?.is_ai_available === true;
   const canEdit = useCanvasCapabilities().can_edit;
   const isSummarizing = summary?.status === "GENERATING" || isPending;
 
@@ -226,7 +226,7 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
           >
             {cellQuery?.data?.name}
           </Heading>
-          {isAiConfigured && summary && (
+          {summary && (
             <Box display="flex" revealOnHover={revealChrome}>
               <ChartSummary summary={summary} />
             </Box>

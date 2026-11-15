@@ -3,9 +3,9 @@ use crate::ai_usage::constants::{
     AiUsageKind, BACKGROUND_WORK_LABEL, CACHED_INPUT_TOKEN_KIND, CANVAS_COMMAND_LABEL,
     ConversationNameKind, DEFAULT_CONVERSATION_PAGE_SIZE, DEFAULT_RANGE_DAY_COUNT,
     DELETED_ACCOUNT_LABEL, DELETED_CONVERSATION_LABEL, DELETED_QUESTION_LABEL, INPUT_TOKEN_KIND,
-    MAXIMUM_CONVERSATION_PAGE_SIZE, MAXIMUM_RANGE_DAY_COUNT, NO_QUESTION_LABEL,
+    KeySource, MAXIMUM_CONVERSATION_PAGE_SIZE, MAXIMUM_RANGE_DAY_COUNT, NO_QUESTION_LABEL,
     ONE_CALL_WITHOUT_TOKEN_COUNTS_NOTE, OUTPUT_TOKEN_KIND, PRIVATE_CONVERSATION_LABEL,
-    PRIVATE_QUESTION_LABEL, QuestionTextKind, UTC_DAY_FORMAT,
+    PRIVATE_QUESTION_LABEL, QuestionTextKind, TOTAL_TOKEN_KIND, UTC_DAY_FORMAT,
 };
 use crate::ai_usage::dto::{
     AiCallContext, ConversationPageQuery, ModelCallRecord, UsageByKindDto, UsageByUserDto,
@@ -16,7 +16,7 @@ use crate::ai_usage::error::AiUsageError;
 use crate::ai_usage::repository;
 use crate::authentication::service as authentication_service;
 use crate::authorization::constants::Permission;
-use crate::authorization::dto::TenantContext;
+use crate::authorization::dto::{TenantContext, TenantId};
 use crate::authorization::service::require_capability;
 use crate::common::AppState;
 use crate::common::server_utils::PaginatedResponse;
@@ -27,7 +27,8 @@ use crate::conversational_analytics::conversation::dto::{
 use crate::conversational_analytics::conversation::service as conversation_service;
 use crate::entity::ai_usage;
 use chrono::{Days, NaiveDate, NaiveTime};
-use sea_orm::Set;
+use sea_orm::prelude::DateTimeWithTimeZone;
+use sea_orm::{Set, TransactionTrait};
 use std::collections::HashMap;
 use std::str::FromStr;
 use uuid::Uuid;
@@ -38,7 +39,19 @@ pub async fn record_model_call(
     model_call_record: ModelCallRecord,
 ) -> Result<(), AiUsageError> {
     let token_usage = model_call_record.token_usage;
-    let key_source: &'static str = model_call_record.key_source.into();
+    let key_source = call_context.key_source();
+    let platform_ai_tokens = match key_source {
+        KeySource::Tenant => None,
+        KeySource::Platform => {
+            let total_tokens = token_usage.input_tokens + token_usage.output_tokens;
+            if total_tokens == 0 {
+                return Err(AiUsageError::PlatformCallWithoutTokenCounts);
+            }
+            Some(storable_token_count(TOTAL_TOKEN_KIND, total_tokens)?)
+        }
+    };
+    let key_source: &'static str = key_source.into();
+    let recorded_at: DateTimeWithTimeZone = time_utils::now_utc_into();
     let ai_usage_row = ai_usage::ActiveModel {
         id: Set(Uuid::new_v4()),
         tenant_id: Set(call_context.tenant_id().get_uuid()),
@@ -60,10 +73,52 @@ pub async fn record_model_call(
             token_usage.cached_input_tokens,
         )?),
         metadata: Set(serde_json::to_value(call_context.metadata())?),
-        created_at: Set(time_utils::now_utc_into()),
+        created_at: Set(recorded_at),
     };
-    repository::insert_ai_usage(&app_state.database_connection, ai_usage_row).await?;
+    let transaction = app_state.database_connection.begin().await?;
+    repository::insert_ai_usage(&transaction, ai_usage_row).await?;
+    if let Some(platform_ai_tokens) = platform_ai_tokens {
+        repository::add_platform_ai_tokens(
+            &transaction,
+            call_context.tenant_id(),
+            platform_ai_tokens,
+            recorded_at,
+        )
+        .await?;
+    }
+    transaction.commit().await?;
     Ok(())
+}
+
+fn stored_token_total(used_tokens: i64) -> Result<u64, AiUsageError> {
+    u64::try_from(used_tokens).map_err(|_| {
+        AiUsageError::UnreadableStoredValue(format!("platform AI tokens used {used_tokens}"))
+    })
+}
+
+pub async fn platform_ai_used_tokens(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+) -> Result<u64, AiUsageError> {
+    match repository::find_platform_ai_usage(&app_state.database_connection, tenant_id).await? {
+        Some(platform_ai_usage) => stored_token_total(platform_ai_usage.used_tokens),
+        None => Ok(0),
+    }
+}
+
+pub async fn platform_ai_used_tokens_by_tenant(
+    app_state: &AppState,
+) -> Result<HashMap<Uuid, u64>, AiUsageError> {
+    repository::list_platform_ai_usage(&app_state.database_connection)
+        .await?
+        .into_iter()
+        .map(|platform_ai_usage| {
+            Ok((
+                platform_ai_usage.tenant_id,
+                stored_token_total(platform_ai_usage.used_tokens)?,
+            ))
+        })
+        .collect()
 }
 
 fn storable_token_count(token_kind: &'static str, token_count: u64) -> Result<i64, AiUsageError> {

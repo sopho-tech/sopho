@@ -26,6 +26,7 @@ pub const ADMIN_FULL_NAME: &str = "Test Admin";
 pub const ENCRYPTION_KEY: &str = "integration-test-encryption-key";
 pub const ENVIRONMENT: &str = "production";
 pub const AI_PROVIDER_API_KEY: &str = "fake-llm-api-key";
+pub const PLATFORM_AI_API_KEY: &str = "fake-llm-platform-ai-key";
 
 pub const ACCESS_TOKEN_COOKIE: &str = "ACCESS_TOKEN";
 pub const REFRESH_TOKEN_COOKIE: &str = "REFRESH_TOKEN";

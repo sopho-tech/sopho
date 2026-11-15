@@ -1,3 +1,4 @@
+use crate::ai::agent_utils::ModelClient;
 use crate::ai_usage::constants::{ConversationNameKind, KeySource, QuestionTextKind};
 use crate::authorization::dto::{TenantId, UserId};
 use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
@@ -13,28 +14,54 @@ pub struct AiUsageMetadata {
     pub conversation_message_id: Option<Uuid>,
 }
 
+#[derive(Clone)]
+pub struct AiAccess {
+    pub model_client: ModelClient,
+    pub key_source: KeySource,
+}
+
+impl std::fmt::Debug for AiAccess {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("AiAccess")
+            .field("key_source", &self.key_source)
+            .finish_non_exhaustive()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct AiCallContext {
     tenant_id: TenantId,
     user_id: Option<UserId>,
+    ai_access: AiAccess,
     metadata: AiUsageMetadata,
 }
 
 impl AiCallContext {
-    pub fn for_user(tenant_id: TenantId, user_id: UserId) -> Self {
+    pub fn for_user(tenant_id: TenantId, user_id: UserId, ai_access: AiAccess) -> Self {
         Self {
             tenant_id,
             user_id: Some(user_id),
+            ai_access,
             metadata: AiUsageMetadata::default(),
         }
     }
 
-    pub fn for_background_work(tenant_id: TenantId) -> Self {
+    pub fn for_background_work(tenant_id: TenantId, ai_access: AiAccess) -> Self {
         Self {
             tenant_id,
             user_id: None,
+            ai_access,
             metadata: AiUsageMetadata::default(),
         }
+    }
+
+    pub fn model_client(&self) -> &ModelClient {
+        &self.ai_access.model_client
+    }
+
+    pub fn key_source(&self) -> KeySource {
+        self.ai_access.key_source
     }
 
     pub fn in_conversation(mut self, conversation_id: Uuid) -> Self {
@@ -82,7 +109,6 @@ pub struct ModelCallRecord {
     pub agent_name: &'static str,
     pub provider: &'static str,
     pub model: &'static str,
-    pub key_source: KeySource,
     pub token_usage: TokenUsage,
 }
 

@@ -7,12 +7,12 @@ use crate::ai_usage::constants::{
 };
 use crate::ai_usage::dto::UsageRange;
 use crate::authorization::dto::TenantId;
-use crate::entity::ai_usage;
+use crate::entity::{ai_usage, platform_ai_usage};
 use sea_orm::prelude::DateTimeWithTimeZone;
-use sea_orm::sea_query::{Alias, Expr, Func, SimpleExpr};
+use sea_orm::sea_query::{Alias, Expr, Func, OnConflict, SimpleExpr};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection, DbBackend,
-    DbErr, EntityTrait, FromQueryResult, Order, QueryFilter, QueryOrder, QuerySelect, Select,
+    DbErr, EntityTrait, FromQueryResult, Order, QueryFilter, QueryOrder, QuerySelect, Select, Set,
 };
 use uuid::Uuid;
 
@@ -79,10 +79,56 @@ struct ConversationCountRow {
 }
 
 pub async fn insert_ai_usage(
-    database_connection: &DatabaseConnection,
+    database_connection: &impl ConnectionTrait,
     ai_usage_row: ai_usage::ActiveModel,
 ) -> Result<ai_usage::Model, DbErr> {
     ai_usage_row.insert(database_connection).await
+}
+
+pub async fn add_platform_ai_tokens(
+    database_connection: &impl ConnectionTrait,
+    tenant_id: &TenantId,
+    used_tokens: i64,
+    updated_at: DateTimeWithTimeZone,
+) -> Result<(), DbErr> {
+    platform_ai_usage::Entity::insert(platform_ai_usage::ActiveModel {
+        tenant_id: Set(tenant_id.get_uuid()),
+        used_tokens: Set(used_tokens),
+        updated_at: Set(updated_at),
+    })
+    .on_conflict(
+        OnConflict::column(platform_ai_usage::Column::TenantId)
+            .value(
+                platform_ai_usage::Column::UsedTokens,
+                Expr::col((
+                    platform_ai_usage::Entity,
+                    platform_ai_usage::Column::UsedTokens,
+                ))
+                .add(used_tokens),
+            )
+            .value(platform_ai_usage::Column::UpdatedAt, updated_at)
+            .to_owned(),
+    )
+    .exec(database_connection)
+    .await?;
+    Ok(())
+}
+
+pub async fn find_platform_ai_usage(
+    database_connection: &DatabaseConnection,
+    tenant_id: &TenantId,
+) -> Result<Option<platform_ai_usage::Model>, DbErr> {
+    platform_ai_usage::Entity::find_by_id(tenant_id.get_uuid())
+        .one(database_connection)
+        .await
+}
+
+pub async fn list_platform_ai_usage(
+    database_connection: &DatabaseConnection,
+) -> Result<Vec<platform_ai_usage::Model>, DbErr> {
+    platform_ai_usage::Entity::find()
+        .all(database_connection)
+        .await
 }
 
 fn summed_tokens(token_column: ai_usage::Column) -> SimpleExpr {
