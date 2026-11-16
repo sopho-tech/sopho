@@ -2,6 +2,7 @@ use super::canvas;
 use super::constants;
 use super::constants::{CONNECTION_NOT_FOUND_MESSAGE, CONVERSATION_NOT_FOUND_MESSAGE};
 use super::constants::{ConversationStatus, PipelineOutcome};
+use super::datatypes;
 use super::dto;
 use super::error::AppendUserMessageError;
 use super::error::ConversationError;
@@ -19,7 +20,7 @@ use crate::ai::text_to_sql_agent;
 use crate::ai::visualization_agent;
 use crate::ai_configuration::error::AiAccessError;
 use crate::ai_configuration::service as ai_config_service;
-use crate::ai_usage::dto::{AiAccess, AiCallContext};
+use crate::ai_usage::datatypes::{AiAccess, AiCallContext};
 use crate::attribution::service::{self as attribution_service, AttributionNames};
 use crate::authorization::constants::{Action, Permission, ResourceType, Visibility};
 use crate::authorization::dto::Actor;
@@ -1253,7 +1254,7 @@ pub async fn describe_conversations_for_usage(
     app_state: &AppState,
     tenant_context: &TenantContext,
     conversation_ids: &[Uuid],
-) -> Result<Vec<dto::ConversationDescriptionForUsage>, ConversationError> {
+) -> Result<Vec<datatypes::ConversationDescriptionForUsage>, ConversationError> {
     let conversations = repository::find_conversations_by_ids(
         &app_state.database_connection,
         tenant_context.tenant_id(),
@@ -1264,7 +1265,7 @@ pub async fn describe_conversations_for_usage(
     for conversation in conversations {
         let is_readable =
             is_conversation_readable(app_state, tenant_context, &conversation).await?;
-        descriptions.push(dto::ConversationDescriptionForUsage {
+        descriptions.push(datatypes::ConversationDescriptionForUsage {
             conversation_id: conversation.id,
             name_when_readable: is_readable.then_some(conversation.name),
         });
@@ -1272,11 +1273,45 @@ pub async fn describe_conversations_for_usage(
     Ok(descriptions)
 }
 
+pub async fn describe_conversations_for_platform_usage(
+    app_state: &AppState,
+    conversation_ids: &[Uuid],
+) -> Result<Vec<datatypes::ConversationDescriptionForUsage>, ConversationError> {
+    let conversations = repository::find_conversations_by_ids_across_tenants(
+        &app_state.database_connection,
+        conversation_ids,
+    )
+    .await?;
+    Ok(conversations
+        .into_iter()
+        .map(|conversation| datatypes::ConversationDescriptionForUsage {
+            conversation_id: conversation.id,
+            name_when_readable: Some(conversation.name),
+        })
+        .collect())
+}
+
+pub async fn find_conversation_questions_for_platform_usage(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    conversation_id: Uuid,
+) -> Result<Option<datatypes::ConversationQuestionsForUsage>, ConversationError> {
+    if repository::get_conversation(&app_state.database_connection, tenant_id, conversation_id)
+        .await?
+        .is_none()
+    {
+        return Ok(None);
+    }
+    Ok(Some(
+        load_conversation_questions(app_state, tenant_id, conversation_id).await?,
+    ))
+}
+
 pub async fn find_conversation_questions_for_usage(
     app_state: &AppState,
     tenant_context: &TenantContext,
     conversation_id: Uuid,
-) -> Result<Option<dto::ConversationQuestionsForUsage>, ConversationError> {
+) -> Result<Option<datatypes::ConversationQuestionsForUsage>, ConversationError> {
     let tenant_id = tenant_context.tenant_id();
     let Some(conversation) =
         repository::get_conversation(&app_state.database_connection, tenant_id, conversation_id)
@@ -1285,12 +1320,21 @@ pub async fn find_conversation_questions_for_usage(
         return Ok(None);
     };
     if !is_conversation_readable(app_state, tenant_context, &conversation).await? {
-        return Ok(Some(dto::ConversationQuestionsForUsage {
+        return Ok(Some(datatypes::ConversationQuestionsForUsage {
             is_readable: false,
             questions_by_answer_message_id: HashMap::new(),
         }));
     }
+    Ok(Some(
+        load_conversation_questions(app_state, tenant_id, conversation_id).await?,
+    ))
+}
 
+async fn load_conversation_questions(
+    app_state: &AppState,
+    tenant_id: &TenantId,
+    conversation_id: Uuid,
+) -> Result<datatypes::ConversationQuestionsForUsage, ConversationError> {
     let messages = message_service::list_messages_for_conversation(
         &app_state.database_connection,
         tenant_id,
@@ -1342,16 +1386,16 @@ pub async fn find_conversation_questions_for_usage(
             })?;
         let question_text = segment::extract_plain_text(content);
         let question = if question_text.trim().is_empty() {
-            dto::QuestionForUsage::Command
+            datatypes::QuestionForUsage::Command
         } else {
-            dto::QuestionForUsage::Text {
+            datatypes::QuestionForUsage::Text {
                 text: question_text,
             }
         };
         questions_by_answer_message_id.insert(message.id, question);
     }
-    Ok(Some(dto::ConversationQuestionsForUsage {
+    Ok(datatypes::ConversationQuestionsForUsage {
         is_readable: true,
         questions_by_answer_message_id,
-    }))
+    })
 }

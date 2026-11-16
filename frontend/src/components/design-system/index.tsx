@@ -15,6 +15,7 @@ export { Form } from "src/components/design-system/Form";
 export { Select } from "src/components/design-system/Select";
 export type { SelectOption } from "src/components/design-system/Select";
 export { Text } from "src/components/design-system/Text";
+export { Link } from "src/components/design-system/Link";
 export { Input } from "src/components/design-system/Input";
 export type { InputProps } from "src/components/design-system/Input";
 export { Kbd, KbdGroup } from "src/components/design-system/Kbd";

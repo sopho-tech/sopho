@@ -8,6 +8,7 @@ import {
   Heading,
   IconButton,
   Input,
+  Link,
   Select,
   Table,
   Text,
@@ -26,10 +27,11 @@ import {
   EMAIL_STATUS_FILTERS,
   EMAIL_STATUS_NAMES,
   EMAILS_TABLE_COLUMNS,
-  FIRST_PAGE,
   SEARCH_DEBOUNCE_MILLISECONDS,
   SEARCH_INPUT_STYLE,
 } from "src/components/Platform/constants";
+import { FIRST_PAGE } from "src/constants/pagination";
+import { emailTemplatePath } from "src/utils/email_template";
 import { useDebouncedValue } from "src/utils/hooks";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 
@@ -78,9 +80,9 @@ function EmailRow({ email, onRetry, isRetrying }: EmailRowProps) {
         </Text>
       </Table.Cell>
       <Table.Cell>
-        <Text fontSize="sm" color="darkGrey" truncate>
+        <Link to={emailTemplatePath(email.kind)} truncate>
           {email.kind_display_name}
-        </Text>
+        </Link>
       </Table.Cell>
       <Table.Cell>
         <EmailStatusBadge email={email} />
@@ -166,7 +168,7 @@ export function SentEmails() {
           Sent emails
         </Heading>
         <Text fontSize="sm" color="subtle">
-          Track sent emails and retry failed ones.
+          Manage emails.
         </Text>
       </Flex>
       <Flex direction="row" alignItems="center" gap="sm">

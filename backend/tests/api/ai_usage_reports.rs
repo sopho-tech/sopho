@@ -226,6 +226,7 @@ async fn reports_add_up_the_calls_in_the_range_and_leave_out_the_rest() {
             "total_tokens": 208,
             "call_count": 4,
             "has_usage": true,
+            "is_platform_ai_on": false,
             "missing_token_counts_note": "1 call in this range reported no token counts. It is included in the number of calls but adds no tokens.",
         })
     );
@@ -388,6 +389,23 @@ async fn conversations_are_listed_largest_first_one_page_at_a_time() {
     assert_eq!(tokens_on(&second_page), [10]);
     assert_eq!(first_page["total_items"], 3);
     assert_eq!(first_page["total_pages"], 2);
+    for refused_page in [
+        "page=2&page_size=2",
+        "page=0&page_size=0",
+        "page=0&page_size=51",
+    ] {
+        let refused = app
+            .get(&format!(
+                "/ai_usage/by_conversation?{RANGE_QUERY}&{refused_page}"
+            ))
+            .await;
+        assert_eq!(
+            refused.status,
+            StatusCode::BAD_REQUEST,
+            "{refused_page}: {}",
+            refused.body
+        );
+    }
 }
 
 #[tokio::test]

@@ -1,5 +1,5 @@
 use crate::ai::error::AgentCallError;
-use crate::ai_usage::dto::{AiCallContext, ModelCallRecord, TokenUsage};
+use crate::ai_usage::datatypes::{AiCallContext, ModelCallRecord, TokenUsage};
 use crate::ai_usage::service as ai_usage_service;
 use crate::common::AppState;
 use rig::agent::PromptResponse;
@@ -284,7 +284,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{ModelProvider, normalized_token_usage};
-    use crate::ai_usage::dto::TokenUsage;
+    use crate::ai_usage::datatypes::TokenUsage;
 
     fn reported_usage(
         input_tokens: u64,

@@ -3,6 +3,13 @@ import { SegmentedControlOption } from "src/components/design-system";
 import { APP_ROUTES } from "src/constants/app_routes";
 
 export const RANGE_SEARCH_PARAMETER = "days";
+export const KEY_SEARCH_PARAMETER = "key";
+export const ALL_KEYS_OPTION = "ALL";
+export const KEY_OPTIONS = [
+  { value: ALL_KEYS_OPTION, label: "All usage" },
+  { value: "TENANT", label: "Own key" },
+  { value: "PLATFORM", label: "Platform AI" },
+];
 export const DEFAULT_RANGE_OPTION = "30";
 export const RANGE_OPTIONS = [
   { value: "7", label: "Last 7 days" },
@@ -22,7 +29,6 @@ export const USAGE_TABS: (SegmentedControlOption & { label: string })[] = [
 
 export const CONVERSATION_PAGE_SIZE = 10;
 export const CONVERSATION_PAGE_SEARCH_PARAMETER = "page";
-export const FIRST_CONVERSATION_PAGE = "0";
 export const CONVERSATION_ID_PATH_PARAMETER = ":conversationId";
 
 export const GRID_GUTTER = { base: "md", md: "lg" } as const;

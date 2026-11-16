@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useEffect } from "react";
 import {
   invitationPath,
   pendingInvitationToken,
@@ -12,11 +12,23 @@ import { SuspendedTenant } from "src/components/SuspendedTenant";
 import { CommandMenu } from "src/components/design-system/CommandMenu/CommandMenu";
 import { Flex } from "src/components/design-system";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { useStore } from "src/store";
 import { tenantPath, useTenantId } from "src/utils/tenant";
 
 export function TenantRoute() {
   const tenantId = useTenantId();
   const memberships = useMemberships();
+  const setLastTenantId = useStore((state) => state.tenant.setLastTenantId);
+  const currentMembership = memberships.data?.find(
+    (membership) => membership.tenant_id === tenantId,
+  );
+  const isMemberOfTenant = currentMembership !== undefined;
+
+  useEffect(() => {
+    if (isMemberOfTenant) {
+      setLastTenantId(tenantId);
+    }
+  }, [isMemberOfTenant, tenantId, setLastTenantId]);
 
   if (memberships.isPending) return null;
   if (memberships.isError) {
@@ -24,9 +36,6 @@ export function TenantRoute() {
     throw memberships.error;
   }
 
-  const currentMembership = memberships.data.find(
-    (membership) => membership.tenant_id === tenantId,
-  );
   if (!currentMembership) {
     return <Navigate to={APP_ROUTES.INDEX} replace />;
   }

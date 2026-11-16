@@ -1,3 +1,12 @@
+import {
+  PlatformAIUsage,
+  PlatformUsageByConversation,
+  PlatformUsageByTenant,
+  PlatformUsageByUser,
+  PlatformUsageByWork,
+  PlatformUsageConversationQuestions,
+  PlatformUsageSummary,
+} from "src/components/Platform/AIUsage";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "src/css/index.css";
@@ -27,6 +36,7 @@ import { Onboarding } from "src/components/Onboarding";
 import { Invitations, Members } from "src/components/Settings/Members";
 import {
   EmailTemplates,
+  PlatformIndexRedirect,
   PlatformRoute,
   SentEmails,
   Tenants,
@@ -62,6 +72,75 @@ const router = createBrowserRouter([
       {
         path: APP_ROUTES.PROFILE,
         element: <ProfileRedirect />,
+      },
+      {
+        path: APP_ROUTES.PLATFORM,
+        element: <PlatformRoute />,
+        children: [
+          {
+            index: true,
+            element: <PlatformIndexRedirect />,
+          },
+          {
+            path: "users",
+            element: <Users />,
+          },
+          {
+            path: "tenants",
+            element: <Tenants />,
+          },
+          {
+            path: "ai-usage",
+            element: <PlatformAIUsage />,
+            children: [
+              {
+                index: true,
+                element: <Navigate to="summary" replace />,
+              },
+              {
+                path: "summary",
+                element: <PlatformUsageSummary />,
+              },
+              {
+                path: "by-tenant",
+                element: <PlatformUsageByTenant />,
+              },
+              {
+                path: "by-user",
+                element: <PlatformUsageByUser />,
+              },
+              {
+                path: "by-work",
+                element: <PlatformUsageByWork />,
+              },
+              {
+                path: "by-conversation",
+                element: <PlatformUsageByConversation />,
+              },
+              {
+                path: "by-conversation/:usageTenantId/:conversationId",
+                element: <PlatformUsageConversationQuestions />,
+              },
+            ],
+          },
+          {
+            path: "emails",
+            children: [
+              {
+                index: true,
+                element: <Navigate to="sent" replace />,
+              },
+              {
+                path: "sent",
+                element: <SentEmails />,
+              },
+              {
+                path: "templates",
+                element: <EmailTemplates />,
+              },
+            ],
+          },
+        ],
       },
       {
         path: APP_ROUTES.TENANT,
@@ -150,36 +229,6 @@ const router = createBrowserRouter([
               {
                 path: "connection/:id/edit",
                 element: <ConnectionEdit />,
-              },
-              {
-                element: <PlatformRoute />,
-                children: [
-                  {
-                    path: "users",
-                    element: <Users />,
-                  },
-                  {
-                    path: "tenants",
-                    element: <Tenants />,
-                  },
-                  {
-                    path: "emails",
-                    children: [
-                      {
-                        index: true,
-                        element: <Navigate to="sent" replace />,
-                      },
-                      {
-                        path: "sent",
-                        element: <SentEmails />,
-                      },
-                      {
-                        path: "templates",
-                        element: <EmailTemplates />,
-                      },
-                    ],
-                  },
-                ],
               },
             ],
           },

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useSearchParams } from "react-router";
 import {
   ActionList,
   BannerSlim,
@@ -16,6 +17,7 @@ import {
 } from "src/api/platform/queries";
 import {
   EMAIL_FORMATS,
+  EMAIL_TEMPLATE_KIND_PARAMETER,
   EMAIL_TEMPLATE_LIST_STYLE,
   EMAIL_TEMPLATE_PREVIEW_STYLE,
   HTML_EMAIL_FORMAT,
@@ -95,7 +97,13 @@ function EmailTemplatePreview({ emailTemplate }: EmailTemplatePreviewProps) {
 
 export function EmailTemplates() {
   const emailTemplates = useEmailTemplates();
-  const [selectedKind, setSelectedKind] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedKind = searchParams.get(EMAIL_TEMPLATE_KIND_PARAMETER);
+  const handleSelectKind = useCallback(
+    (kind: string) =>
+      setSearchParams({ [EMAIL_TEMPLATE_KIND_PARAMETER]: kind }),
+    [setSearchParams],
+  );
 
   if (emailTemplates.error) {
     return <BannerSlim type="error" message={emailTemplates.error.message} />;
@@ -131,7 +139,7 @@ export function EmailTemplates() {
                 key={emailTemplate.kind}
                 emailTemplate={emailTemplate}
                 isSelected={emailTemplate.kind === selectedEmailTemplate.kind}
-                onSelect={setSelectedKind}
+                onSelect={handleSelectKind}
               />
             ))}
           </ActionList>

@@ -8,7 +8,7 @@ use crate::ai_summary::constants::{self, SummaryEntityType};
 use crate::ai_summary::dto::{AiSummaryDto, DashboardSummariesDto};
 use crate::ai_summary::repository;
 use crate::ai_summary::repository::ReadySummary;
-use crate::ai_usage::dto::{AiAccess, AiCallContext};
+use crate::ai_usage::datatypes::{AiAccess, AiCallContext};
 use crate::authorization::constants::Action;
 use crate::authorization::dto::Actor;
 use crate::authorization::dto::{TenantContext, TenantId};

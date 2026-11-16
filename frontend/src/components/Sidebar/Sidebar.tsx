@@ -1,6 +1,8 @@
 import { useLocation } from "react-router";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { CollapsibleSidebar } from "src/components/design-system";
+import { usePlatformNavigationItems } from "src/components/Platform/hooks";
+import { PLATFORM_AREA_TITLE } from "src/components/Platform/constants";
 import { TenantSwitcher } from "src/components/Sidebar/TenantSwitcher";
 import { useTenantPath } from "src/utils/tenant";
 import { useStore } from "src/store";
@@ -10,6 +12,7 @@ const withoutTrailingSlash = (path: string) => path.replace(/\/$/, "");
 export function Sidebar() {
   const location = useLocation();
   const toTenantPath = useTenantPath();
+  const hasPlatformPages = usePlatformNavigationItems().length > 0;
   const isPinned = useStore((state) => state.sidebar.isPinned);
   const setIsPinned = useStore((state) => state.sidebar.setIsPinned);
 
@@ -50,6 +53,14 @@ export function Sidebar() {
       </CollapsibleSidebar.Navigation>
       <CollapsibleSidebar.Footer>
         <CollapsibleSidebar.Navigation>
+          {hasPlatformPages && (
+            <CollapsibleSidebar.Link
+              to={APP_ROUTES.PLATFORM}
+              icon="shield_user"
+              label={PLATFORM_AREA_TITLE}
+              isActive={false}
+            />
+          )}
           <CollapsibleSidebar.Link
             to={toTenantPath(APP_ROUTES.SETTINGS_ROUTES.CONNECTIONS)}
             icon="settings"

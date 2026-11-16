@@ -318,6 +318,7 @@ pub const FAST_REFILL_WAIT_MILLISECONDS: u64 = 700;
 pub const TENANT_SUSPENDED_CODE: &str = "TENANT_SUSPENDED";
 pub const TENANT_SUSPENDED_MESSAGE: &str = "This tenant is suspended. Contact support";
 pub const TENANT_SUSPEND_PERMISSION: &str = "tenant:suspend";
+pub const PLATFORM_AI_USAGE_READ_PERMISSION: &str = "platform_ai_usage:read";
 pub const SUSPENDED_TENANT_STATUS: &str = "SUSPENDED";
 pub const ACTIVE_TENANT_STATUS: &str = "ACTIVE";
 pub const TENANT_MEMBER_LIMIT_REACHED_CODE: &str = "TENANT_MEMBER_LIMIT_REACHED";

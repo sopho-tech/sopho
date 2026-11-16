@@ -201,7 +201,7 @@ pub async fn list_email_log(
         &app_state.database_connection,
         status.map(|status| status.as_str()),
         recipient_search,
-        page.saturating_sub(1),
+        page,
         page_size,
     )
     .await?;

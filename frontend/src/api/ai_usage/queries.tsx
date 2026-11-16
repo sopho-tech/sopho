@@ -54,6 +54,9 @@ export const aiUsageKeys = {
 function rangeSearchParams(range: UsageRangeParams): URLSearchParams {
   const searchParams = new URLSearchParams();
   searchParams.set("last_day_count", range.lastDayCount);
+  if (range.keySource !== null) {
+    searchParams.set("key_source", range.keySource);
+  }
   return searchParams;
 }
 

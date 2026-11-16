@@ -36,7 +36,7 @@ type ConversationQuestionsProps = {
   onBack: () => void;
 };
 
-function ConversationQuestions({
+export function ConversationQuestions({
   conversationQuestions,
   onBack,
 }: ConversationQuestionsProps) {

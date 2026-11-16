@@ -114,27 +114,12 @@ fn usage_response<UsageBody: Serialize>(usage_result: Result<UsageBody, AiUsageE
             authorization_error_response(authorization_error, USAGE_NOT_FOUND_MESSAGE)
                 .into_response()
         }
-        Err(
-            usage_error @ (AiUsageError::RangeReversed
-            | AiUsageError::RangeTooLong { .. }
-            | AiUsageError::RangeAmbiguous
-            | AiUsageError::PageOutOfRange
-            | AiUsageError::RangeWithoutDays
-            | AiUsageError::RangeOutOfCalendar),
-        ) => (
+        Err(usage_error) if usage_error.is_invalid_request() => (
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": usage_error.to_string() })),
         )
             .into_response(),
-        Err(
-            usage_error @ (AiUsageError::Database(_)
-            | AiUsageError::Metadata(_)
-            | AiUsageError::TokenCountOutOfRange { .. }
-            | AiUsageError::PlatformCallWithoutTokenCounts
-            | AiUsageError::UnknownAgent { .. }
-            | AiUsageError::UnreadableStoredValue(_)
-            | AiUsageError::Conversation(_)),
-        ) => (
+        Err(usage_error) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": usage_error.to_string() })),
         )

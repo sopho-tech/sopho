@@ -346,6 +346,7 @@ ul ul li {
   --section-nav-item-height: 2rem;
   --section-nav-sub-item-height: 1.75rem;
   --section-nav-item-hover-background: hsl(250deg 5% 99% / 55%);
+  --section-nav-item-active-shadow: 0 1px 2px hsl(250deg 60% 40% / 12%);
 
   /* Shadow System */
   --shadow-2xs: 0 1px 2px hsl(0deg 0% 0% / 8%), 0 1px 1px hsl(0deg 0% 0% / 12%);

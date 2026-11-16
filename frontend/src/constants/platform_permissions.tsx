@@ -4,6 +4,7 @@ export const PLATFORM_PERMISSIONS = {
   TENANT_APPOINT_OWNER: "tenant:appoint_owner",
   EMAIL_MANAGE: "email:manage",
   TENANT_SUSPEND: "tenant:suspend",
+  PLATFORM_AI_USAGE_READ: "platform_ai_usage:read",
 } as const;
 
 export type PlatformPermission =

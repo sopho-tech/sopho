@@ -46,6 +46,7 @@ const SUMMARY: UsageSummaryDto = {
   total_tokens: 208000,
   call_count: 412,
   has_usage: true,
+  is_platform_ai_on: false,
   missing_token_counts_note:
     "3 calls in this range reported no token counts. They are included in the number of calls but add no tokens.",
 };
@@ -343,6 +344,81 @@ describe("AI usage", () => {
       testTenantPath(APP_ROUTES.SETTINGS_ROUTES.AI_USAGE_BY_WORK),
     );
     expect(router.state.location.search).toBe("?days=7");
+  });
+
+  test("offers the AI key choice only when the backend says platform AI is on", async () => {
+    worker.use(...usageHandlers(SUMMARY, []));
+
+    await renderUsagePage(APP_ROUTES.SETTINGS_ROUTES.AI_USAGE_SUMMARY);
+
+    await expect
+      .element(page.getByRole("group", { name: "Total tokens" }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole("combobox", { name: "AI key" }))
+      .not.toBeInTheDocument();
+  });
+
+  test("asks the backend for one key's usage and keeps the key in the address", async () => {
+    const requestedSummaryQueries: string[] = [];
+    worker.use(
+      ...usageHandlers(
+        { ...SUMMARY, is_platform_ai_on: true },
+        requestedSummaryQueries,
+      ),
+    );
+    const { router } = await renderUsagePage(
+      APP_ROUTES.SETTINGS_ROUTES.AI_USAGE_SUMMARY,
+    );
+
+    await page.getByRole("combobox", { name: "AI key" }).click();
+    await page.getByRole("option", { name: "Platform AI" }).click();
+
+    await expect
+      .poll(() => requestedSummaryQueries)
+      .toEqual([
+        "?last_day_count=30",
+        "?last_day_count=30&key_source=PLATFORM",
+      ]);
+    expect(router.state.location.search).toBe("?key=PLATFORM");
+
+    await page.getByRole("combobox", { name: "AI key" }).click();
+    await page.getByRole("option", { name: "All usage" }).click();
+
+    await expect
+      .poll(() => requestedSummaryQueries.length)
+      .toBeGreaterThanOrEqual(2);
+    expect(router.state.location.search).toBe("");
+  });
+
+  test("lets a key the backend refuses be cleared from the address", async () => {
+    worker.use(
+      http.get(
+        testTenantApiUrl(API_ENDPOINTS.AI_USAGE.SUMMARY),
+        ({ request }) =>
+          new URL(request.url).searchParams.has("key_source")
+            ? HttpResponse.json(
+                { error: "unknown variant `SOMEONE`" },
+                { status: 400 },
+              )
+            : HttpResponse.json(SUMMARY),
+      ),
+      ...usageHandlers(SUMMARY, []),
+    );
+    const { router } = await renderUsagePage(
+      `${APP_ROUTES.SETTINGS_ROUTES.AI_USAGE_SUMMARY}?key=SOMEONE`,
+    );
+
+    await expect
+      .element(page.getByText("unknown variant `SOMEONE`"))
+      .toBeVisible();
+    await page.getByRole("combobox", { name: "AI key" }).click();
+    await page.getByRole("option", { name: "All usage" }).click();
+
+    await expect
+      .element(page.getByRole("group", { name: "Total tokens" }))
+      .toBeVisible();
+    expect(router.state.location.search).toBe("");
   });
 
   test("shows users as a table on the address of the user tab", async () => {

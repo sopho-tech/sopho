@@ -3,6 +3,10 @@
   max-width: none;
 }
 
+.mirrored {
+  transform: scaleX(-1);
+}
+
 .pulse {
   transform-origin: center;
   animation: iconPulse 1.4s ease-in-out infinite;

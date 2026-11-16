@@ -3,7 +3,7 @@ use super::repository;
 use crate::ai::suggested_questions_agent;
 use crate::ai_configuration::error::AiAccessError;
 use crate::ai_configuration::service as ai_configuration_service;
-use crate::ai_usage::dto::{AiAccess, AiCallContext};
+use crate::ai_usage::datatypes::{AiAccess, AiCallContext};
 use crate::authorization::constants::Action;
 use crate::authorization::dto::Actor;
 use crate::authorization::dto::{TenantContext, TenantId};

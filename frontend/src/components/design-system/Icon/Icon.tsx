@@ -10,6 +10,7 @@ import {
   Home,
   BookOpen,
   Settings,
+  ShieldUser,
   X,
   ArrowLeftRight,
   ArrowUpDown,
@@ -85,6 +86,7 @@ const iconMap: Record<IconType, LucideIcon> = {
   home: Home,
   book: BookOpen,
   settings: Settings,
+  shield_user: ShieldUser,
   close: X,
   circle_x: CircleX,
   swap_horiz: ArrowLeftRight,
@@ -159,6 +161,7 @@ type IconProps = {
   size?: IconSize;
   interactive?: boolean;
   animation?: IconAnimation;
+  mirrored?: boolean;
 };
 
 export function Icon({
@@ -168,6 +171,7 @@ export function Icon({
   size = "md",
   interactive = true,
   animation,
+  mirrored = false,
 }: IconProps) {
   const IconComponent = iconMap[type];
   const iconSize = sizeMap[size];
@@ -176,6 +180,7 @@ export function Icon({
     styles[color],
     interactive && styles.interactive,
     animation && styles[animation],
+    mirrored && styles.mirrored,
   ]
     .filter(Boolean)
     .join(" ");

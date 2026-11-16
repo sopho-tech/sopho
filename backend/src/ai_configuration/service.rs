@@ -10,7 +10,7 @@ use crate::ai_configuration::dto::{
 use crate::ai_configuration::error::{AiAccessError, AiConfigurationError};
 use crate::ai_configuration::repository;
 use crate::ai_usage::constants::KeySource;
-use crate::ai_usage::dto::{AiAccess, AiCallContext};
+use crate::ai_usage::datatypes::{AiAccess, AiCallContext};
 use crate::ai_usage::service as ai_usage_service;
 use crate::authorization::constants::Permission;
 use crate::authorization::dto::{TenantContext, TenantId};

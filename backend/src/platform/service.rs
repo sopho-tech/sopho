@@ -1,4 +1,9 @@
 use crate::ai_configuration::service as ai_configuration_service;
+use crate::ai_usage::dto::{
+    ConversationPageQuery, PlatformUsageConversationDto, PlatformUsageTenantDto,
+    PlatformUsageUserDto, UsageByKindDto, UsageConversationQuestionsDto, UsageOverTimeDto,
+    UsageRangeQuery, UsageSummaryDto,
+};
 use crate::ai_usage::service as ai_usage_service;
 use crate::authentication::oidc::service as oidc_service;
 use crate::authentication::service as authentication_service;
@@ -7,12 +12,14 @@ use crate::authorization::constants::{PlatformPermission, PlatformRole, SystemRo
 use crate::authorization::dto::{Actor, TenantId, UserId};
 use crate::authorization::service as authorization_service;
 use crate::common::AppState;
+use crate::common::constants::FIRST_PAGE;
+use crate::common::server_utils::PaginatedResponse;
 use crate::email_delivery::dto::EmailLogPageDto;
 use crate::email_delivery::service as email_delivery_service;
 use crate::email_template::service as email_template_service;
 use crate::entity::user;
 use crate::platform::constants::{
-    FIRST_PAGE, NO_AI_KEY_LABEL, OWN_AI_KEY_LABEL, PLATFORM_AI_KEY_LABEL, PLATFORM_PAGE_SIZE,
+    NO_AI_KEY_LABEL, OWN_AI_KEY_LABEL, PLATFORM_AI_KEY_LABEL, PLATFORM_PAGE_SIZE,
 };
 use crate::platform::dto::{
     DeactivatedUserDto, EmailLogQuery, EmailTemplatePreviewDto, PlatformTenantCapabilities,
@@ -44,11 +51,11 @@ pub async fn list_users(
         authentication_service::is_password_sign_in_available(app_state);
     let active_administrator_count =
         authentication_service::count_active_platform_administrators(app_state).await?;
-    let page = page_number(query.page)?;
+    let page = query.page.unwrap_or(FIRST_PAGE);
     let user_page = authentication_service::list_users_page(
         app_state,
         search_text(query.search),
-        page - 1,
+        page,
         PLATFORM_PAGE_SIZE,
     )
     .await?;
@@ -411,7 +418,7 @@ pub async fn list_email_log(
         app_state,
         query.status,
         search_text(query.search),
-        page_number(query.page)?,
+        query.page.unwrap_or(FIRST_PAGE),
         PLATFORM_PAGE_SIZE,
     )
     .await
@@ -461,16 +468,99 @@ fn account_status(account: &user::Model) -> Result<UserStatus, PlatformError> {
     })
 }
 
-fn page_number(requested_page: Option<u64>) -> Result<u64, PlatformError> {
-    match requested_page {
-        None => Ok(FIRST_PAGE),
-        Some(page) if page >= FIRST_PAGE => Ok(page),
-        Some(_) => Err(PlatformError::InvalidPage),
-    }
-}
-
 fn search_text(search: Option<String>) -> Option<String> {
     search
         .map(|search| search.trim().to_string())
         .filter(|search| !search.is_empty())
+}
+
+pub async fn get_platform_ai_usage_summary(
+    app_state: &AppState,
+    actor: UserId,
+    usage_range_query: &UsageRangeQuery,
+) -> Result<UsageSummaryDto, PlatformError> {
+    require_platform_permission(app_state, actor, PlatformPermission::PlatformAiUsageRead).await?;
+    Ok(ai_usage_service::execute_platform_ai_usage_summary(app_state, usage_range_query).await?)
+}
+
+pub async fn get_platform_ai_usage_over_time(
+    app_state: &AppState,
+    actor: UserId,
+    usage_range_query: &UsageRangeQuery,
+) -> Result<UsageOverTimeDto, PlatformError> {
+    require_platform_permission(app_state, actor, PlatformPermission::PlatformAiUsageRead).await?;
+    Ok(ai_usage_service::execute_platform_ai_usage_over_time(app_state, usage_range_query).await?)
+}
+
+pub async fn get_platform_ai_usage_by_kind(
+    app_state: &AppState,
+    actor: UserId,
+    usage_range_query: &UsageRangeQuery,
+) -> Result<UsageByKindDto, PlatformError> {
+    require_platform_permission(app_state, actor, PlatformPermission::PlatformAiUsageRead).await?;
+    Ok(ai_usage_service::execute_platform_ai_usage_by_kind(app_state, usage_range_query).await?)
+}
+
+pub async fn list_platform_ai_usage_by_tenant(
+    app_state: &AppState,
+    actor: UserId,
+    usage_range_query: &UsageRangeQuery,
+    conversation_page_query: &ConversationPageQuery,
+) -> Result<PaginatedResponse<PlatformUsageTenantDto>, PlatformError> {
+    require_platform_permission(app_state, actor, PlatformPermission::PlatformAiUsageRead).await?;
+    Ok(ai_usage_service::execute_platform_ai_usage_by_tenant(
+        app_state,
+        usage_range_query,
+        conversation_page_query,
+    )
+    .await?)
+}
+
+pub async fn list_platform_ai_usage_by_user(
+    app_state: &AppState,
+    actor: UserId,
+    usage_range_query: &UsageRangeQuery,
+    conversation_page_query: &ConversationPageQuery,
+) -> Result<PaginatedResponse<PlatformUsageUserDto>, PlatformError> {
+    require_platform_permission(app_state, actor, PlatformPermission::PlatformAiUsageRead).await?;
+    Ok(ai_usage_service::execute_platform_ai_usage_by_user(
+        app_state,
+        usage_range_query,
+        conversation_page_query,
+    )
+    .await?)
+}
+
+pub async fn list_platform_ai_usage_by_conversation(
+    app_state: &AppState,
+    actor: UserId,
+    usage_range_query: &UsageRangeQuery,
+    conversation_page_query: &ConversationPageQuery,
+) -> Result<PaginatedResponse<PlatformUsageConversationDto>, PlatformError> {
+    require_platform_permission(app_state, actor, PlatformPermission::PlatformAiUsageRead).await?;
+    Ok(ai_usage_service::execute_platform_ai_usage_by_conversation(
+        app_state,
+        usage_range_query,
+        conversation_page_query,
+    )
+    .await?)
+}
+
+pub async fn get_platform_ai_usage_of_conversation_questions(
+    app_state: &AppState,
+    actor: UserId,
+    usage_range_query: &UsageRangeQuery,
+    tenant_id: Uuid,
+    conversation_id: Uuid,
+) -> Result<UsageConversationQuestionsDto, PlatformError> {
+    require_platform_permission(app_state, actor, PlatformPermission::PlatformAiUsageRead).await?;
+    Ok(
+        ai_usage_service::execute_platform_ai_usage_of_conversation_questions(
+            app_state,
+            usage_range_query,
+            &TenantId::from_system_unchecked(tenant_id),
+            conversation_id,
+        )
+        .await?,
+    )
 }

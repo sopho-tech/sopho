@@ -1,5 +1,6 @@
 export type UsageRangeParams = {
   lastDayCount: string;
+  keySource: string | null;
 };
 
 export type UsageSummaryDto = {
@@ -11,6 +12,7 @@ export type UsageSummaryDto = {
   total_tokens: number;
   call_count: number;
   has_usage: boolean;
+  is_platform_ai_on: boolean;
   missing_token_counts_note: string | null;
 };
 

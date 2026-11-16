@@ -15,6 +15,7 @@ type IconButtonProps = {
   iconColor: IconColor;
   size?: IconButtonSize;
   iconSize?: IconSize;
+  iconMirrored?: boolean;
   tooltip?: {
     text?: string;
     content?: React.ReactNode;
@@ -38,6 +39,7 @@ export function IconButton({
   iconColor,
   size = "none",
   iconSize,
+  iconMirrored,
   tooltip,
   onClick,
   tabIndex,
@@ -70,6 +72,7 @@ export function IconButton({
         color={iconColor}
         type={type}
         size={iconSize}
+        mirrored={iconMirrored}
         animation={busy ? busyAnimation : undefined}
       ></Icon>
     </button>

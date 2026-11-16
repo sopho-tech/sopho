@@ -7,10 +7,15 @@ use crate::ai_usage::constants::{
     ONE_CALL_WITHOUT_TOKEN_COUNTS_NOTE, OUTPUT_TOKEN_KIND, PRIVATE_CONVERSATION_LABEL,
     PRIVATE_QUESTION_LABEL, QuestionTextKind, TOTAL_TOKEN_KIND, UTC_DAY_FORMAT,
 };
+use crate::ai_usage::datatypes::{
+    AiCallContext, ConversationName, LargestUser, ModelCallRecord, QuestionText, UsagePage,
+    UsageRange, UsageScope,
+};
 use crate::ai_usage::dto::{
-    AiCallContext, ConversationPageQuery, ModelCallRecord, UsageByKindDto, UsageByUserDto,
-    UsageConversationDto, UsageConversationQuestionsDto, UsageDayDto, UsageKindDto,
-    UsageOverTimeDto, UsageQuestionDto, UsageRange, UsageRangeQuery, UsageSummaryDto, UsageUserDto,
+    ConversationPageQuery, PlatformUsageConversationDto, PlatformUsageTenantDto,
+    PlatformUsageUserDto, UsageByKindDto, UsageByUserDto, UsageConversationDto,
+    UsageConversationQuestionsDto, UsageDayDto, UsageKindDto, UsageOverTimeDto, UsageQuestionDto,
+    UsageRangeQuery, UsageSummaryDto, UsageUserDto,
 };
 use crate::ai_usage::error::AiUsageError;
 use crate::ai_usage::repository;
@@ -19,13 +24,15 @@ use crate::authorization::constants::Permission;
 use crate::authorization::dto::{TenantContext, TenantId};
 use crate::authorization::service::require_capability;
 use crate::common::AppState;
+use crate::common::constants::FIRST_PAGE;
 use crate::common::server_utils::PaginatedResponse;
 use crate::common::time_utils;
-use crate::conversational_analytics::conversation::dto::{
+use crate::conversational_analytics::conversation::datatypes::{
     ConversationQuestionsForUsage, QuestionForUsage,
 };
 use crate::conversational_analytics::conversation::service as conversation_service;
 use crate::entity::ai_usage;
+use crate::tenant::service as tenant_service;
 use chrono::{Days, NaiveDate, NaiveTime};
 use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::{Set, TransactionTrait};
@@ -181,6 +188,7 @@ pub fn resolve_usage_range(
         .checked_add_days(Days::new(1))
         .ok_or(AiUsageError::RangeOutOfCalendar)?;
     Ok(UsageRange {
+        key_source: usage_range_query.key_source,
         first_day,
         last_day,
         starts_at: first_day.and_time(NaiveTime::MIN).and_utc(),
@@ -202,13 +210,27 @@ pub async fn get_usage_summary(
     usage_range_query: &UsageRangeQuery,
 ) -> Result<UsageSummaryDto, AiUsageError> {
     let usage_range = authorized_usage_range(tenant_context, usage_range_query)?;
-    let tenant_id = tenant_context.tenant_id();
-    let totals = repository::sum_usage(&app_state.database_connection, tenant_id, &usage_range)
+    usage_summary_in_scope(
+        app_state,
+        UsageScope::Tenant {
+            tenant_id: tenant_context.tenant_id(),
+        },
+        usage_range,
+    )
+    .await
+}
+
+async fn usage_summary_in_scope(
+    app_state: &AppState,
+    usage_scope: UsageScope<'_>,
+    usage_range: UsageRange,
+) -> Result<UsageSummaryDto, AiUsageError> {
+    let totals = repository::sum_usage(&app_state.database_connection, usage_scope, &usage_range)
         .await?
         .ok_or_else(|| missing_totals_error("the usage summary"))?;
     let calls_without_token_counts = repository::count_calls_without_token_counts(
         &app_state.database_connection,
-        tenant_id,
+        usage_scope,
         &usage_range,
     )
     .await?
@@ -231,6 +253,7 @@ pub async fn get_usage_summary(
         total_tokens: totals.input_tokens + totals.output_tokens,
         call_count: totals.call_count,
         has_usage: totals.call_count > 0,
+        is_platform_ai_on: app_state.config.platform_ai.is_some(),
         missing_token_counts_note,
     })
 }
@@ -245,12 +268,24 @@ pub async fn get_usage_over_time(
     usage_range_query: &UsageRangeQuery,
 ) -> Result<UsageOverTimeDto, AiUsageError> {
     let usage_range = authorized_usage_range(tenant_context, usage_range_query)?;
-    let day_rows = repository::sum_usage_by_day(
-        &app_state.database_connection,
-        tenant_context.tenant_id(),
-        &usage_range,
+    usage_over_time_in_scope(
+        app_state,
+        UsageScope::Tenant {
+            tenant_id: tenant_context.tenant_id(),
+        },
+        usage_range,
     )
-    .await?;
+    .await
+}
+
+async fn usage_over_time_in_scope(
+    app_state: &AppState,
+    usage_scope: UsageScope<'_>,
+    usage_range: UsageRange,
+) -> Result<UsageOverTimeDto, AiUsageError> {
+    let day_rows =
+        repository::sum_usage_by_day(&app_state.database_connection, usage_scope, &usage_range)
+            .await?;
     let mut day_rows_by_day = HashMap::new();
     for day_row in day_rows {
         let day = NaiveDate::parse_from_str(&day_row.day, UTC_DAY_FORMAT)
@@ -310,7 +345,9 @@ pub async fn get_usage_by_user(
     let usage_range = authorized_usage_range(tenant_context, usage_range_query)?;
     let user_rows = repository::sum_usage_by_user(
         &app_state.database_connection,
-        tenant_context.tenant_id(),
+        UsageScope::Tenant {
+            tenant_id: tenant_context.tenant_id(),
+        },
         &usage_range,
     )
     .await?;
@@ -340,12 +377,24 @@ pub async fn get_usage_by_kind(
     usage_range_query: &UsageRangeQuery,
 ) -> Result<UsageByKindDto, AiUsageError> {
     let usage_range = authorized_usage_range(tenant_context, usage_range_query)?;
-    let agent_rows = repository::sum_usage_by_agent(
-        &app_state.database_connection,
-        tenant_context.tenant_id(),
-        &usage_range,
+    usage_by_kind_in_scope(
+        app_state,
+        UsageScope::Tenant {
+            tenant_id: tenant_context.tenant_id(),
+        },
+        usage_range,
     )
-    .await?;
+    .await
+}
+
+async fn usage_by_kind_in_scope(
+    app_state: &AppState,
+    usage_scope: UsageScope<'_>,
+    usage_range: UsageRange,
+) -> Result<UsageByKindDto, AiUsageError> {
+    let agent_rows =
+        repository::sum_usage_by_agent(&app_state.database_connection, usage_scope, &usage_range)
+            .await?;
     let mut kinds: Vec<UsageKindDto> = Vec::new();
     for agent_row in agent_rows {
         let agent_name =
@@ -384,22 +433,6 @@ fn stored_uuid(stored_value: &str) -> Result<Uuid, AiUsageError> {
         .map_err(|_| AiUsageError::UnreadableStoredValue(format!("id {stored_value}")))
 }
 
-struct LargestUser {
-    total_tokens: i64,
-    user_id: Option<Uuid>,
-}
-
-impl LargestUser {
-    fn is_larger_than(&self, other_user: &LargestUser) -> bool {
-        (self.total_tokens, other_user.user_id) > (other_user.total_tokens, self.user_id)
-    }
-}
-
-struct ConversationName {
-    name: String,
-    name_kind: ConversationNameKind,
-}
-
 fn conversation_name(name_when_readable_of_existing: Option<&Option<String>>) -> ConversationName {
     match name_when_readable_of_existing {
         Some(Some(name)) => ConversationName {
@@ -425,14 +458,10 @@ pub async fn list_usage_by_conversation(
 ) -> Result<PaginatedResponse<UsageConversationDto>, AiUsageError> {
     let usage_range = authorized_usage_range(tenant_context, usage_range_query)?;
     let tenant_id = tenant_context.tenant_id();
-    let page = conversation_page_query.page.unwrap_or(0);
-    let page_size = conversation_page_query
-        .page_size
-        .unwrap_or(DEFAULT_CONVERSATION_PAGE_SIZE)
-        .clamp(1, MAXIMUM_CONVERSATION_PAGE_SIZE);
+    let usage_page = usage_page(conversation_page_query)?;
     let conversation_count = repository::count_conversations_with_usage(
         &app_state.database_connection,
-        tenant_id,
+        UsageScope::Tenant { tenant_id },
         &usage_range,
     )
     .await?
@@ -440,15 +469,12 @@ pub async fn list_usage_by_conversation(
     let total_items = u64::try_from(conversation_count).map_err(|_| {
         AiUsageError::UnreadableStoredValue(format!("conversation count {conversation_count}"))
     })?;
-    let first_row_offset = page
-        .checked_mul(page_size)
-        .ok_or(AiUsageError::PageOutOfRange)?;
     let conversation_rows = repository::sum_usage_by_conversation(
         &app_state.database_connection,
-        tenant_id,
+        UsageScope::Tenant { tenant_id },
         &usage_range,
-        first_row_offset,
-        page_size,
+        usage_page.first_row_offset,
+        usage_page.page_size,
     )
     .await?;
 
@@ -473,7 +499,7 @@ pub async fn list_usage_by_conversation(
 
     let conversation_user_rows = repository::sum_usage_by_conversation_and_user(
         &app_state.database_connection,
-        tenant_id,
+        UsageScope::Tenant { tenant_id },
         &usage_range,
         &stored_conversation_ids,
     )
@@ -520,18 +546,7 @@ pub async fn list_usage_by_conversation(
             call_count: conversation_row.call_count,
         });
     }
-    Ok(PaginatedResponse {
-        data: conversations,
-        total_pages: total_items.div_ceil(page_size),
-        page,
-        page_size,
-        total_items,
-    })
-}
-
-struct QuestionText {
-    text: String,
-    text_kind: QuestionTextKind,
+    paginated_usage(conversations, total_items, &usage_page)
 }
 
 fn question_text(
@@ -583,7 +598,9 @@ pub async fn get_usage_of_conversation_questions(
     let usage_range = authorized_usage_range(tenant_context, usage_range_query)?;
     let question_rows = repository::sum_usage_by_question(
         &app_state.database_connection,
-        tenant_context.tenant_id(),
+        UsageScope::Tenant {
+            tenant_id: tenant_context.tenant_id(),
+        },
         &usage_range,
         conversation_id,
     )
@@ -604,9 +621,21 @@ pub async fn get_usage_of_conversation_questions(
         .into_iter()
         .map(|description| (description.conversation_id, description.name_when_readable))
         .collect();
-    let ConversationName { name, name_kind } =
-        conversation_name(name_when_readable_by_conversation_id.get(&conversation_id));
+    assemble_conversation_questions(
+        conversation_id,
+        conversation_name(name_when_readable_by_conversation_id.get(&conversation_id)),
+        conversation_questions.as_ref(),
+        question_rows,
+    )
+}
 
+fn assemble_conversation_questions(
+    conversation_id: Uuid,
+    conversation_name: ConversationName,
+    conversation_questions: Option<&ConversationQuestionsForUsage>,
+    question_rows: Vec<repository::UsageQuestionRow>,
+) -> Result<UsageConversationQuestionsDto, AiUsageError> {
+    let ConversationName { name, name_kind } = conversation_name;
     let mut questions = Vec::with_capacity(question_rows.len());
     let mut total_tokens = 0;
     let mut call_count = 0;
@@ -618,7 +647,7 @@ pub async fn get_usage_of_conversation_questions(
             .map(stored_uuid)
             .transpose()?;
         let QuestionText { text, text_kind } =
-            question_text(conversation_questions.as_ref(), conversation_message_id)?;
+            question_text(conversation_questions, conversation_message_id)?;
         let question_tokens = question_row.input_tokens + question_row.output_tokens;
         total_tokens += question_tokens;
         call_count += question_row.call_count;
@@ -643,6 +672,358 @@ pub async fn get_usage_of_conversation_questions(
         question_count,
         questions,
     })
+}
+
+fn platform_usage_range(usage_range_query: &UsageRangeQuery) -> Result<UsageRange, AiUsageError> {
+    if usage_range_query.key_source.is_some() {
+        return Err(AiUsageError::KeySourceNotAllowed);
+    }
+    let mut usage_range =
+        resolve_usage_range(usage_range_query, time_utils::now_utc().date_naive())?;
+    usage_range.key_source = Some(KeySource::Platform);
+    Ok(usage_range)
+}
+
+fn usage_page(conversation_page_query: &ConversationPageQuery) -> Result<UsagePage, AiUsageError> {
+    let page = conversation_page_query.page.unwrap_or(FIRST_PAGE);
+    let page_size = conversation_page_query
+        .page_size
+        .unwrap_or(DEFAULT_CONVERSATION_PAGE_SIZE);
+    if !(1..=MAXIMUM_CONVERSATION_PAGE_SIZE).contains(&page_size) {
+        return Err(AiUsageError::PageSizeOutOfRange {
+            maximum_page_size: MAXIMUM_CONVERSATION_PAGE_SIZE,
+        });
+    }
+    let first_row_offset = page
+        .checked_mul(page_size)
+        .ok_or(AiUsageError::PageOutOfRange)?;
+    Ok(UsagePage {
+        page,
+        page_size,
+        first_row_offset,
+    })
+}
+
+fn paginated_usage<UsageRow>(
+    usage_rows: Vec<UsageRow>,
+    total_items: u64,
+    usage_page: &UsagePage,
+) -> Result<PaginatedResponse<UsageRow>, AiUsageError> {
+    let total_pages = total_items.div_ceil(usage_page.page_size);
+    if usage_page.page != FIRST_PAGE && usage_page.page >= total_pages {
+        return Err(AiUsageError::PageOutOfRange);
+    }
+    Ok(PaginatedResponse {
+        data: usage_rows,
+        total_pages,
+        page: usage_page.page,
+        page_size: usage_page.page_size,
+        total_items,
+    })
+}
+
+async fn load_tenant_names(
+    app_state: &AppState,
+    tenant_ids: Vec<Uuid>,
+) -> Result<HashMap<Uuid, String>, AiUsageError> {
+    Ok(tenant_service::find_tenant_names(app_state, tenant_ids).await?)
+}
+
+fn tenant_name(
+    tenant_names: &HashMap<Uuid, String>,
+    tenant_id: Uuid,
+) -> Result<String, AiUsageError> {
+    tenant_names.get(&tenant_id).cloned().ok_or_else(|| {
+        AiUsageError::UnreadableStoredValue(format!("usage belongs to unknown tenant {tenant_id}"))
+    })
+}
+
+pub async fn execute_platform_ai_usage_summary(
+    app_state: &AppState,
+    usage_range_query: &UsageRangeQuery,
+) -> Result<UsageSummaryDto, AiUsageError> {
+    usage_summary_in_scope(
+        app_state,
+        UsageScope::AllTenants,
+        platform_usage_range(usage_range_query)?,
+    )
+    .await
+}
+
+pub async fn execute_platform_ai_usage_over_time(
+    app_state: &AppState,
+    usage_range_query: &UsageRangeQuery,
+) -> Result<UsageOverTimeDto, AiUsageError> {
+    usage_over_time_in_scope(
+        app_state,
+        UsageScope::AllTenants,
+        platform_usage_range(usage_range_query)?,
+    )
+    .await
+}
+
+pub async fn execute_platform_ai_usage_by_kind(
+    app_state: &AppState,
+    usage_range_query: &UsageRangeQuery,
+) -> Result<UsageByKindDto, AiUsageError> {
+    usage_by_kind_in_scope(
+        app_state,
+        UsageScope::AllTenants,
+        platform_usage_range(usage_range_query)?,
+    )
+    .await
+}
+
+pub async fn execute_platform_ai_usage_by_tenant(
+    app_state: &AppState,
+    usage_range_query: &UsageRangeQuery,
+    conversation_page_query: &ConversationPageQuery,
+) -> Result<PaginatedResponse<PlatformUsageTenantDto>, AiUsageError> {
+    let usage_range = platform_usage_range(usage_range_query)?;
+    let usage_page = usage_page(conversation_page_query)?;
+    let repository::UsageRowsPage {
+        usage_rows: page_rows,
+        total_row_count: total_items,
+    } = repository::sum_usage_by_tenant(
+        &app_state.database_connection,
+        &usage_range,
+        usage_page.page,
+        usage_page.page_size,
+    )
+    .await?;
+    let tenant_names = load_tenant_names(
+        app_state,
+        page_rows
+            .iter()
+            .map(|tenant_row| tenant_row.tenant_id)
+            .collect(),
+    )
+    .await?;
+    let used_tokens_by_tenant = platform_ai_used_tokens_by_tenant(app_state).await?;
+    let platform_ai_token_allowance = app_state
+        .config
+        .platform_ai
+        .as_ref()
+        .map(|platform_ai| platform_ai.token_allowance);
+    let mut tenants = Vec::with_capacity(page_rows.len());
+    for tenant_row in page_rows {
+        let platform_ai_used_tokens = used_tokens_by_tenant
+            .get(&tenant_row.tenant_id)
+            .copied()
+            .ok_or_else(|| {
+                AiUsageError::UnreadableStoredValue(format!(
+                    "tenant {} has platform AI usage but no running total",
+                    tenant_row.tenant_id
+                ))
+            })?;
+        tenants.push(PlatformUsageTenantDto {
+            tenant_id: tenant_row.tenant_id,
+            tenant_name: tenant_name(&tenant_names, tenant_row.tenant_id)?,
+            total_tokens: tenant_row.input_tokens + tenant_row.output_tokens,
+            call_count: tenant_row.call_count,
+            platform_ai_used_tokens,
+            platform_ai_token_allowance,
+        });
+    }
+    paginated_usage(tenants, total_items, &usage_page)
+}
+
+pub async fn execute_platform_ai_usage_by_user(
+    app_state: &AppState,
+    usage_range_query: &UsageRangeQuery,
+    conversation_page_query: &ConversationPageQuery,
+) -> Result<PaginatedResponse<PlatformUsageUserDto>, AiUsageError> {
+    let usage_range = platform_usage_range(usage_range_query)?;
+    let usage_page = usage_page(conversation_page_query)?;
+    let repository::UsageRowsPage {
+        usage_rows: page_rows,
+        total_row_count: total_items,
+    } = repository::sum_usage_by_tenant_and_user(
+        &app_state.database_connection,
+        &usage_range,
+        usage_page.page,
+        usage_page.page_size,
+    )
+    .await?;
+    let tenant_names = load_tenant_names(
+        app_state,
+        page_rows
+            .iter()
+            .map(|tenant_user_row| tenant_user_row.tenant_id)
+            .collect(),
+    )
+    .await?;
+    let user_names = load_user_names(
+        app_state,
+        page_rows
+            .iter()
+            .filter_map(|tenant_user_row| tenant_user_row.user_id)
+            .collect(),
+    )
+    .await?;
+    let mut users = Vec::with_capacity(page_rows.len());
+    for tenant_user_row in page_rows {
+        users.push(PlatformUsageUserDto {
+            user_id: tenant_user_row.user_id,
+            name: user_name(&user_names, tenant_user_row.user_id),
+            tenant_id: tenant_user_row.tenant_id,
+            tenant_name: tenant_name(&tenant_names, tenant_user_row.tenant_id)?,
+            total_tokens: tenant_user_row.input_tokens + tenant_user_row.output_tokens,
+            call_count: tenant_user_row.call_count,
+        });
+    }
+    paginated_usage(users, total_items, &usage_page)
+}
+
+pub async fn execute_platform_ai_usage_by_conversation(
+    app_state: &AppState,
+    usage_range_query: &UsageRangeQuery,
+    conversation_page_query: &ConversationPageQuery,
+) -> Result<PaginatedResponse<PlatformUsageConversationDto>, AiUsageError> {
+    let usage_range = platform_usage_range(usage_range_query)?;
+    let usage_page = usage_page(conversation_page_query)?;
+    let conversation_count = repository::count_conversations_with_usage(
+        &app_state.database_connection,
+        UsageScope::AllTenants,
+        &usage_range,
+    )
+    .await?
+    .ok_or_else(|| missing_totals_error("the number of conversations with platform AI usage"))?;
+    let total_items = u64::try_from(conversation_count).map_err(|_| {
+        AiUsageError::UnreadableStoredValue(format!("conversation count {conversation_count}"))
+    })?;
+    let conversation_rows = repository::sum_usage_by_conversation(
+        &app_state.database_connection,
+        UsageScope::AllTenants,
+        &usage_range,
+        usage_page.first_row_offset,
+        usage_page.page_size,
+    )
+    .await?;
+    let stored_conversation_ids: Vec<String> = conversation_rows
+        .iter()
+        .map(|conversation_row| conversation_row.conversation_id.clone())
+        .collect();
+    let conversation_ids = stored_conversation_ids
+        .iter()
+        .map(|stored_conversation_id| stored_uuid(stored_conversation_id))
+        .collect::<Result<Vec<Uuid>, AiUsageError>>()?;
+    let name_by_conversation_id: HashMap<Uuid, Option<String>> =
+        conversation_service::describe_conversations_for_platform_usage(
+            app_state,
+            &conversation_ids,
+        )
+        .await?
+        .into_iter()
+        .map(|description| (description.conversation_id, description.name_when_readable))
+        .collect();
+    let conversation_user_rows = repository::sum_usage_by_conversation_and_user(
+        &app_state.database_connection,
+        UsageScope::AllTenants,
+        &usage_range,
+        &stored_conversation_ids,
+    )
+    .await?;
+    let mut tenant_id_by_conversation_id: HashMap<String, Uuid> = HashMap::new();
+    let mut largest_user_by_conversation_id: HashMap<String, LargestUser> = HashMap::new();
+    for conversation_user_row in conversation_user_rows {
+        tenant_id_by_conversation_id.insert(
+            conversation_user_row.conversation_id.clone(),
+            conversation_user_row.tenant_id,
+        );
+        let user = LargestUser {
+            total_tokens: conversation_user_row.input_tokens + conversation_user_row.output_tokens,
+            user_id: conversation_user_row.user_id,
+        };
+        let is_largest_so_far = largest_user_by_conversation_id
+            .get(&conversation_user_row.conversation_id)
+            .is_none_or(|largest_user| user.is_larger_than(largest_user));
+        if is_largest_so_far {
+            largest_user_by_conversation_id.insert(conversation_user_row.conversation_id, user);
+        }
+    }
+    let tenant_names = load_tenant_names(
+        app_state,
+        tenant_id_by_conversation_id.values().copied().collect(),
+    )
+    .await?;
+    let user_names = load_user_names(
+        app_state,
+        largest_user_by_conversation_id
+            .values()
+            .filter_map(|largest_user| largest_user.user_id)
+            .collect(),
+    )
+    .await?;
+    let mut conversations = Vec::with_capacity(conversation_rows.len());
+    for (conversation_row, conversation_id) in conversation_rows.into_iter().zip(conversation_ids) {
+        let missing_details = || {
+            AiUsageError::UnreadableStoredValue(format!(
+                "conversation {conversation_id} has usage but no tenant or user totals"
+            ))
+        };
+        let tenant_id = *tenant_id_by_conversation_id
+            .get(&conversation_row.conversation_id)
+            .ok_or_else(missing_details)?;
+        let largest_user = largest_user_by_conversation_id
+            .get(&conversation_row.conversation_id)
+            .ok_or_else(missing_details)?;
+        let ConversationName { name, name_kind } =
+            conversation_name(name_by_conversation_id.get(&conversation_id));
+        conversations.push(PlatformUsageConversationDto {
+            conversation_id,
+            tenant_id,
+            tenant_name: tenant_name(&tenant_names, tenant_id)?,
+            name,
+            name_kind,
+            user_name: user_name(&user_names, largest_user.user_id),
+            total_tokens: conversation_row.input_tokens + conversation_row.output_tokens,
+            call_count: conversation_row.call_count,
+        });
+    }
+    paginated_usage(conversations, total_items, &usage_page)
+}
+
+pub async fn execute_platform_ai_usage_of_conversation_questions(
+    app_state: &AppState,
+    usage_range_query: &UsageRangeQuery,
+    tenant_id: &TenantId,
+    conversation_id: Uuid,
+) -> Result<UsageConversationQuestionsDto, AiUsageError> {
+    let usage_range = platform_usage_range(usage_range_query)?;
+    let question_rows = repository::sum_usage_by_question(
+        &app_state.database_connection,
+        UsageScope::Tenant { tenant_id },
+        &usage_range,
+        conversation_id,
+    )
+    .await?;
+    let conversation_questions =
+        conversation_service::find_conversation_questions_for_platform_usage(
+            app_state,
+            tenant_id,
+            conversation_id,
+        )
+        .await?;
+    let conversation_ids_in_the_tenant: Vec<Uuid> = conversation_questions
+        .iter()
+        .map(|_| conversation_id)
+        .collect();
+    let name_by_conversation_id: HashMap<Uuid, Option<String>> =
+        conversation_service::describe_conversations_for_platform_usage(
+            app_state,
+            &conversation_ids_in_the_tenant,
+        )
+        .await?
+        .into_iter()
+        .map(|description| (description.conversation_id, description.name_when_readable))
+        .collect();
+    assemble_conversation_questions(
+        conversation_id,
+        conversation_name(name_by_conversation_id.get(&conversation_id)),
+        conversation_questions.as_ref(),
+        question_rows,
+    )
 }
 
 #[cfg(test)]
@@ -717,6 +1098,7 @@ mod tests {
                 from: None,
                 to: None,
                 last_day_count: None,
+                key_source: None,
             },
             day(2026, 11, 15),
         )
@@ -741,6 +1123,7 @@ mod tests {
                 from: None,
                 to: None,
                 last_day_count: Some(7),
+                key_source: None,
             },
             day(2026, 11, 15),
         )
@@ -757,6 +1140,7 @@ mod tests {
                 from: Some(day(2026, 11, 1)),
                 to: None,
                 last_day_count: Some(7),
+                key_source: None,
             },
             day(2026, 11, 15),
         );
@@ -771,6 +1155,7 @@ mod tests {
                 from: Some(day(2026, 11, 14)),
                 to: Some(day(2026, 11, 14)),
                 last_day_count: None,
+                key_source: None,
             },
             day(2026, 11, 15),
         )
@@ -786,6 +1171,7 @@ mod tests {
                 from: Some(day(2026, 11, 15)),
                 to: Some(day(2026, 11, 14)),
                 last_day_count: None,
+                key_source: None,
             },
             day(2026, 11, 15),
         );
@@ -800,6 +1186,7 @@ mod tests {
                 from: Some(day(2025, 11, 14)),
                 to: Some(day(2026, 11, 15)),
                 last_day_count: None,
+                key_source: None,
             },
             day(2026, 11, 15),
         );
@@ -808,6 +1195,7 @@ mod tests {
                 from: Some(day(2025, 11, 15)),
                 to: Some(day(2026, 11, 15)),
                 last_day_count: None,
+                key_source: None,
             },
             day(2026, 11, 15),
         );

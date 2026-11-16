@@ -29,12 +29,12 @@ import { DeactivateUserDialog } from "src/components/Platform/DeactivateUserDial
 import { PlatformPagination } from "src/components/Platform/PlatformPagination";
 import { UserTenants } from "src/components/Platform/UserTenants";
 import {
-  FIRST_PAGE,
   SEARCH_DEBOUNCE_MILLISECONDS,
   SEARCH_INPUT_STYLE,
   USER_ACTIONS_LABEL,
   USERS_TABLE_COLUMNS,
 } from "src/components/Platform/constants";
+import { FIRST_PAGE } from "src/constants/pagination";
 import { useDebouncedValue } from "src/utils/hooks";
 
 function tenantsWithoutOwnerMessage(tenants: TenantSummaryDto[]): string {
@@ -345,7 +345,7 @@ export function Users() {
     <Flex direction="column" gap="lg">
       <Flex direction="column" gap="2xs">
         <Heading accessibilityLevel={2} size="2xl" textColor="black">
-          Global Users
+          Users
         </Heading>
         <Text fontSize="sm" color="subtle">
           Manage users across all tenants.

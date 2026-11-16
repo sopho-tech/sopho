@@ -20,6 +20,7 @@ mod passwords;
 mod platform;
 mod platform_administrator_emails;
 mod platform_ai;
+mod platform_ai_usage;
 mod platform_emails;
 mod platform_users;
 mod rate_limiting;

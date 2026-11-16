@@ -1,3 +1,4 @@
+use crate::ai_usage::dto::{ConversationPageQuery, UsageRangeQuery};
 use crate::authentication::service::PasswordFlowError;
 use crate::authorization::dto::AuthenticatedUser;
 use crate::common::AppState;
@@ -35,6 +36,12 @@ struct EmailPath {
     email_id: Uuid,
 }
 
+#[derive(Deserialize)]
+struct UsageConversationPath {
+    tenant_id: Uuid,
+    conversation_id: Uuid,
+}
+
 pub fn routes(app_state: AppState) -> Router {
     Router::new()
         .route("/user", get(list_users))
@@ -50,6 +57,19 @@ pub fn routes(app_state: AppState) -> Router {
             post(remove_administrator),
         )
         .route("/tenant", get(list_tenants))
+        .route("/ai_usage/summary", get(get_platform_ai_usage_summary))
+        .route("/ai_usage/over_time", get(get_platform_ai_usage_over_time))
+        .route("/ai_usage/by_kind", get(get_platform_ai_usage_by_kind))
+        .route("/ai_usage/by_tenant", get(list_platform_ai_usage_by_tenant))
+        .route("/ai_usage/by_user", get(list_platform_ai_usage_by_user))
+        .route(
+            "/ai_usage/by_conversation",
+            get(list_platform_ai_usage_by_conversation),
+        )
+        .route(
+            "/ai_usage/tenant/{tenant_id}/conversation/{conversation_id}/questions",
+            get(get_platform_ai_usage_of_conversation_questions),
+        )
         .route("/tenant/{tenant_id}/owner/{user_id}", put(appoint_owner))
         .route("/tenant/{tenant_id}/suspend", post(suspend_tenant))
         .route("/tenant/{tenant_id}/restore", post(restore_tenant))
@@ -135,6 +155,137 @@ async fn list_tenants(
     }
 }
 
+async fn get_platform_ai_usage_summary(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+    Query(usage_range_query): Query<UsageRangeQuery>,
+) -> Response {
+    match service::get_platform_ai_usage_summary(
+        &app_state,
+        authenticated_user.user_id(),
+        &usage_range_query,
+    )
+    .await
+    {
+        Ok(usage_summary) => Json(usage_summary).into_response(),
+        Err(error) => platform_error_response(error).into_response(),
+    }
+}
+
+async fn get_platform_ai_usage_over_time(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+    Query(usage_range_query): Query<UsageRangeQuery>,
+) -> Response {
+    match service::get_platform_ai_usage_over_time(
+        &app_state,
+        authenticated_user.user_id(),
+        &usage_range_query,
+    )
+    .await
+    {
+        Ok(usage_over_time) => Json(usage_over_time).into_response(),
+        Err(error) => platform_error_response(error).into_response(),
+    }
+}
+
+async fn get_platform_ai_usage_by_kind(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+    Query(usage_range_query): Query<UsageRangeQuery>,
+) -> Response {
+    match service::get_platform_ai_usage_by_kind(
+        &app_state,
+        authenticated_user.user_id(),
+        &usage_range_query,
+    )
+    .await
+    {
+        Ok(usage_by_kind) => Json(usage_by_kind).into_response(),
+        Err(error) => platform_error_response(error).into_response(),
+    }
+}
+
+async fn list_platform_ai_usage_by_tenant(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+    Query(usage_range_query): Query<UsageRangeQuery>,
+    Query(conversation_page_query): Query<ConversationPageQuery>,
+) -> Response {
+    match service::list_platform_ai_usage_by_tenant(
+        &app_state,
+        authenticated_user.user_id(),
+        &usage_range_query,
+        &conversation_page_query,
+    )
+    .await
+    {
+        Ok(usage_by_tenant) => Json(usage_by_tenant).into_response(),
+        Err(error) => platform_error_response(error).into_response(),
+    }
+}
+
+async fn list_platform_ai_usage_by_user(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+    Query(usage_range_query): Query<UsageRangeQuery>,
+    Query(conversation_page_query): Query<ConversationPageQuery>,
+) -> Response {
+    match service::list_platform_ai_usage_by_user(
+        &app_state,
+        authenticated_user.user_id(),
+        &usage_range_query,
+        &conversation_page_query,
+    )
+    .await
+    {
+        Ok(usage_by_user) => Json(usage_by_user).into_response(),
+        Err(error) => platform_error_response(error).into_response(),
+    }
+}
+
+async fn list_platform_ai_usage_by_conversation(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+    Query(usage_range_query): Query<UsageRangeQuery>,
+    Query(conversation_page_query): Query<ConversationPageQuery>,
+) -> Response {
+    match service::list_platform_ai_usage_by_conversation(
+        &app_state,
+        authenticated_user.user_id(),
+        &usage_range_query,
+        &conversation_page_query,
+    )
+    .await
+    {
+        Ok(usage_by_conversation) => Json(usage_by_conversation).into_response(),
+        Err(error) => platform_error_response(error).into_response(),
+    }
+}
+
+async fn get_platform_ai_usage_of_conversation_questions(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+    Path(UsageConversationPath {
+        tenant_id,
+        conversation_id,
+    }): Path<UsageConversationPath>,
+    Query(usage_range_query): Query<UsageRangeQuery>,
+) -> Response {
+    match service::get_platform_ai_usage_of_conversation_questions(
+        &app_state,
+        authenticated_user.user_id(),
+        &usage_range_query,
+        tenant_id,
+        conversation_id,
+    )
+    .await
+    {
+        Ok(conversation_questions) => Json(conversation_questions).into_response(),
+        Err(error) => platform_error_response(error).into_response(),
+    }
+}
+
 async fn appoint_owner(
     State(app_state): State<AppState>,
     authenticated_user: AuthenticatedUser,
@@ -210,7 +361,9 @@ fn platform_error_response(error: PlatformError) -> (StatusCode, Json<Value>) {
         PlatformError::UserNotFound
         | PlatformError::TenantNotFound
         | PlatformError::EmailDelivery(EmailDeliveryError::NotFound) => StatusCode::NOT_FOUND,
-        PlatformError::InvalidPage => StatusCode::BAD_REQUEST,
+        PlatformError::AiUsage(ai_usage_error) if ai_usage_error.is_invalid_request() => {
+            StatusCode::BAD_REQUEST
+        }
         PlatformError::CannotDeactivateYourself
         | PlatformError::CannotRemoveYourOwnAdministratorRole
         | PlatformError::LastPlatformAdministrator
@@ -227,6 +380,7 @@ fn platform_error_response(error: PlatformError) -> (StatusCode, Json<Value>) {
         | PlatformError::EmailTemplate(_)
         | PlatformError::Membership(_)
         | PlatformError::Tenant(_)
+        | PlatformError::AiUsage(_)
         | PlatformError::Database(_)
         | PlatformError::Internal(_) => {
             tracing::error!("Platform request failed: {error}");

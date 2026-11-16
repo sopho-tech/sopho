@@ -3,7 +3,7 @@ mod user_prompt;
 
 use crate::ai::agent_utils::{AgentName, AgentSettings, ModelRole};
 use crate::ai::dto::DashboardSummaryInput;
-use crate::ai_usage::dto::AiCallContext;
+use crate::ai_usage::datatypes::AiCallContext;
 use crate::common::AppState;
 use anyhow::Result;
 

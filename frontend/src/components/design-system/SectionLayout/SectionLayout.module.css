@@ -4,6 +4,20 @@
   background-color: var(--color-primary-100);
 }
 
+.header {
+  min-height: var(--section-nav-item-height);
+}
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
 .navList {
   display: flex;
   flex-direction: column;
@@ -44,7 +58,7 @@
 
 .navLink[data-active="true"]:not([data-variant="group"]) {
   background-color: var(--color-grey-100);
-  box-shadow: var(--shadow-2xs);
+  box-shadow: var(--section-nav-item-active-shadow);
 }
 
 .navLabel {

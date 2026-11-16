@@ -1,8 +1,8 @@
 import * as NavigationMenu from "@radix-ui/react-navigation-menu";
 import { NavLink, useLocation } from "react-router";
-import { Box } from "src/components/design-system/Box";
 import { Flex } from "src/components/design-system/Flex";
-import { Text } from "src/components/design-system/Text";
+import { Icon } from "src/components/design-system/Icon";
+import type { IconType } from "src/components/design-system/datatypes";
 import styles from "src/components/design-system/SectionLayout/SectionLayout.module.css";
 
 export type SectionNavigationSubItem = {
@@ -21,6 +21,8 @@ export type SectionNavigationItem = {
 
 export type SectionLayoutProps = {
   title: string;
+  titleIcon?: IconType;
+  titleAction?: React.ReactNode;
   items: SectionNavigationItem[];
   children: React.ReactNode;
 };
@@ -106,7 +108,13 @@ function SectionNavigationEntry({
   );
 }
 
-export function SectionLayout({ title, items, children }: SectionLayoutProps) {
+export function SectionLayout({
+  title,
+  titleIcon,
+  titleAction,
+  items,
+  children,
+}: SectionLayoutProps) {
   const { pathname } = useLocation();
 
   return (
@@ -122,11 +130,28 @@ export function SectionLayout({ title, items, children }: SectionLayoutProps) {
         width="15%"
         className={styles.aside}
       >
-        <Box paddingX="sm" paddingBottom="xs">
-          <Text fontSize="base" color="darkGrey">
-            {title}
-          </Text>
-        </Box>
+        <Flex
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          gap="xs"
+          paddingX="sm"
+          paddingBottom="sm"
+          className={styles.header}
+        >
+          <Flex direction="row" alignItems="center" gap="xs">
+            {titleIcon && (
+              <Icon
+                type={titleIcon}
+                color="black"
+                size="md"
+                interactive={false}
+              />
+            )}
+            <span className={styles.title}>{title}</span>
+          </Flex>
+          {titleAction}
+        </Flex>
         <NavigationMenu.Root orientation="vertical">
           <NavigationMenu.List className={styles.navList}>
             {items.map((item) => (

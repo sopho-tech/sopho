@@ -13,7 +13,7 @@ use crate::ai::dto::{
     SchemaStatusColumn, SchemaStatusTable, SelectionSet, SqlGenerationAction,
     SqlGenerationActionType, TableFunction,
 };
-use crate::ai_usage::dto::AiCallContext;
+use crate::ai_usage::datatypes::AiCallContext;
 use crate::common::AppState;
 use crate::connection::constants::{SourceType, SqlDialect};
 use crate::data_catalog::dto::Database;

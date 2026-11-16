@@ -6,7 +6,16 @@ pub const CACHED_INPUT_TOKEN_KIND: &str = "cached input";
 pub const TOTAL_TOKEN_KIND: &str = "total";
 
 #[derive(
-    Clone, Copy, Debug, PartialEq, Eq, Display, EnumString, IntoStaticStr, serde::Serialize,
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    Eq,
+    Display,
+    EnumString,
+    IntoStaticStr,
+    serde::Serialize,
+    serde::Deserialize,
 )]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -49,6 +58,7 @@ pub const AGENT_NAME_ALIAS: &str = "agent_name";
 pub const CONVERSATION_ID_ALIAS: &str = "conversation_id";
 pub const CONVERSATION_MESSAGE_ID_ALIAS: &str = "conversation_message_id";
 pub const CONVERSATION_COUNT_ALIAS: &str = "conversation_count";
+pub const TENANT_ID_ALIAS: &str = "tenant_id";
 pub const FIRST_CALL_AT_ALIAS: &str = "first_call_at";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, IntoStaticStr)]

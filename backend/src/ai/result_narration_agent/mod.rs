@@ -4,7 +4,7 @@ mod user_prompt;
 use crate::ai::agent_utils::{AgentName, AgentSettings, ModelRole};
 use crate::ai::dto::{Event, EventChannels};
 use crate::ai::error::is_usage_recording_failure;
-use crate::ai_usage::dto::AiCallContext;
+use crate::ai_usage::datatypes::AiCallContext;
 use crate::common::AppState;
 use crate::database::constants::QueryResult;
 use anyhow::Result;
