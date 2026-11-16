@@ -104,7 +104,7 @@ impl PostgresDatabase {
             .await
             .expect("connect to the Postgres test server");
         connection
-            .execute(format!("CREATE DATABASE \"{name}\"").as_str())
+            .execute(sqlx::AssertSqlSafe(format!("CREATE DATABASE \"{name}\"")))
             .await
             .expect("create a Postgres test database");
         Self {
@@ -133,7 +133,9 @@ impl Drop for PostgresDatabase {
                     .await
                     .expect("connect to the Postgres test server");
                 connection
-                    .execute(format!("DROP DATABASE \"{name}\" WITH (FORCE)").as_str())
+                    .execute(sqlx::AssertSqlSafe(format!(
+                        "DROP DATABASE \"{name}\" WITH (FORCE)"
+                    )))
                     .await
                     .expect("drop the Postgres test database");
             });

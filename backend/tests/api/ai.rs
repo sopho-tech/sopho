@@ -23,7 +23,7 @@ async fn stored_api_key(app: &TestApp) -> String {
     let backend = app.app_state.database_connection.get_database_backend();
     app.app_state
         .database_connection
-        .query_one(backend.build(&query))
+        .query_one_raw(backend.build(&query))
         .await
         .expect("read the stored AI configuration")
         .expect("the AI configuration row exists")

@@ -3,7 +3,7 @@ use crate::authorization::dto::Actor;
 use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::entity::{resource_grant, role, role_permission, tenant_membership};
-use sea_orm::sea_query::{Expr, Query, SelectStatement};
+use sea_orm::sea_query::{Expr, ExprTrait, Query, SelectStatement};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, Set,
 };

@@ -1,6 +1,6 @@
 use crate::support::TestApp;
 use chrono::{DateTime, FixedOffset, Utc};
-use sea_orm::sea_query::{Alias, Asterisk, Expr, Query, SelectStatement, SimpleExpr};
+use sea_orm::sea_query::{Alias, Asterisk, Expr, ExprTrait, Query, SelectStatement, SimpleExpr};
 use sea_orm::{ConnectionTrait, DbBackend, DbErr, QueryResult, Value};
 use uuid::Uuid;
 
@@ -39,7 +39,7 @@ pub async fn try_insert_row(
         .to_owned();
     app.app_state
         .database_connection
-        .execute(backend(app).build(&statement))
+        .execute_raw(backend(app).build(&statement))
         .await
         .map(|_| ())
 }
@@ -67,7 +67,7 @@ pub async fn update_rows(
     }
     app.app_state
         .database_connection
-        .execute(backend(app).build(&statement))
+        .execute_raw(backend(app).build(&statement))
         .await
         .unwrap_or_else(|error| panic!("update {table}: {error}"))
         .rows_affected()
@@ -83,7 +83,7 @@ pub async fn count_rows(app: &TestApp, table: &str, filters: &[Column<'_>]) -> i
     );
     app.app_state
         .database_connection
-        .query_one(backend(app).build(&statement))
+        .query_one_raw(backend(app).build(&statement))
         .await
         .unwrap_or_else(|error| panic!("count {table}: {error}"))
         .expect("a count returns a row")
@@ -106,7 +106,7 @@ pub async fn select_rows(
     );
     app.app_state
         .database_connection
-        .query_all(backend(app).build(&statement))
+        .query_all_raw(backend(app).build(&statement))
         .await
         .unwrap_or_else(|error| panic!("select from {table}: {error}"))
 }

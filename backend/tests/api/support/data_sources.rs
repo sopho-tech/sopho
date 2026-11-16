@@ -36,7 +36,7 @@ pub async fn create_postgres_sample_database() -> PostgresDatabase {
     let mut connection = PgConnection::connect(&database.url)
         .await
         .expect("connect to the Postgres sample database");
-    sqlx::raw_sql(&sample_data)
+    sqlx::raw_sql(sqlx::AssertSqlSafe(sample_data))
         .execute(&mut connection)
         .await
         .expect("load the Postgres sample data");

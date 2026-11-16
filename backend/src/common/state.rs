@@ -1000,17 +1000,13 @@ impl AppState {
             .map(email_delivery::service::build_email_transport)
             .transpose()?;
         let rate_limiters = rate_limit::service::build_rate_limiters(&config)?;
-        let platform_model_client = config
-            .platform_ai
-            .as_ref()
-            .map(|platform_ai| {
-                ai_configuration::service::build_client_for_provider(
-                    platform_ai.provider,
-                    &platform_ai.api_key,
-                    &config,
-                )
-            })
-            .transpose()?;
+        let platform_model_client = config.platform_ai.as_ref().map(|platform_ai| {
+            ai_configuration::service::build_client_for_provider(
+                platform_ai.provider,
+                &platform_ai.api_key,
+                &config,
+            )
+        });
         Ok(Self {
             database_connection,
             rate_limiters,

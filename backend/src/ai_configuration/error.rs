@@ -26,8 +26,6 @@ pub enum AiConfigurationError {
     Database(#[from] sea_orm::DbErr),
     #[error("Encryption error: {0}")]
     Encryption(String),
-    #[error("AI client construction failed: {0}")]
-    ClientBuild(String),
     #[error("AI usage could not be recorded: {0}")]
     UsageRecording(String),
     #[error("{0}")]

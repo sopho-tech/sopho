@@ -3,7 +3,7 @@ use crate::support::constants::{DEMO_ORDER_COUNT, ORDER_COUNT_QUERY, SAMPLE_DATA
 use crate::support::postgres_server::shared_postgres_server;
 use reqwest::StatusCode;
 use sea_orm::ConnectionTrait;
-use sea_orm::sea_query::{Alias, Expr, Query};
+use sea_orm::sea_query::{Alias, Expr, ExprTrait, Query};
 use serde_json::{Value, json};
 use uuid::Uuid;
 
@@ -56,7 +56,7 @@ async fn stored_connection_password(app: &TestApp, connection: &Value) -> String
     let backend = app.app_state.database_connection.get_database_backend();
     app.app_state
         .database_connection
-        .query_one(backend.build(&query))
+        .query_one_raw(backend.build(&query))
         .await
         .expect("read the stored connection")
         .expect("the connection row exists")

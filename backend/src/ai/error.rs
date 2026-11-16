@@ -1,11 +1,11 @@
 use crate::ai_usage::error::AiUsageError;
-use rig::completion::PromptError;
+use rig_core::ProviderError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum AgentCallError {
     #[error("PromptError: {0}")]
-    Prompt(#[from] PromptError),
+    Prompt(#[from] Box<ProviderError>),
     #[error("DeserializationError: {0}")]
     UnparsableAnswer(#[from] serde_json::Error),
     #[error("EmptyResponse: model returned no content")]

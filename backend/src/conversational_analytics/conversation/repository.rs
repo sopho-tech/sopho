@@ -4,7 +4,7 @@ use crate::authorization::dto::TenantId;
 use crate::common::time_utils;
 use crate::entity::conversation;
 use sea_orm::Condition;
-use sea_orm::sea_query::{Expr, Func};
+use sea_orm::sea_query::{Expr, ExprTrait, Func};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr,
     EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, Set,
