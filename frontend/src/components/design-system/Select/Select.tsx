@@ -132,6 +132,7 @@ type SelectItemProps = {
   value: string;
   textValue?: string;
   description?: string | null;
+  disabled?: boolean;
   children: string | React.ReactNode;
 };
 
@@ -139,10 +140,12 @@ const SelectItem = ({
   value,
   textValue,
   description,
+  disabled = false,
   children,
 }: SelectItemProps) => (
   <RadixSelect.Item
     value={value}
+    disabled={disabled}
     textValue={textValue ?? (typeof children === "string" ? children : "")}
     className={SelectStyles.selectItem}
   >

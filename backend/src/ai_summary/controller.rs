@@ -170,7 +170,7 @@ fn summary_error_response(err: SummaryError) -> (StatusCode, axum::Json<serde_js
             StatusCode::FORBIDDEN,
             axum::Json(serde_json::json!({
                 "error": PLATFORM_AI_ALLOWANCE_USED_MESSAGE,
-                "code": codes::PLATFORM_AI_ALLOWANCE_USED.as_str(),
+                "error_code": codes::PLATFORM_AI_ALLOWANCE_USED.as_str(),
             })),
         ),
         SummaryError::PromptTooLong(max) => (

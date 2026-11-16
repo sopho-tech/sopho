@@ -1,6 +1,7 @@
 import { PlatformAiAllowance } from "src/api/ai_configuration";
 import { BannerSlim, Flex, Heading, Text } from "src/components/design-system";
-import { formatWholeNumber } from "src/utils/number_format";
+import { AllowanceUsageMeter } from "src/components/Settings/AIUsage/AllowanceUsageMeter";
+import { ALLOWANCE_USAGE_LABEL } from "src/components/Settings/AIUsage/constants";
 
 type PlatformAiCardProps = {
   platformAi: PlatformAiAllowance;
@@ -30,13 +31,22 @@ export function PlatformAiCard({
         platform&apos;s key within a token allowance. Add a key of your own
         below to remove the limit.
       </Text>
+      <Flex direction="column" gap="2xs">
+        <Text fontSize="sm" color="subtle">
+          {ALLOWANCE_USAGE_LABEL}
+        </Text>
+        <AllowanceUsageMeter
+          allowanceUsage={platformAi.allowance_usage}
+          width="full"
+        />
+      </Flex>
       <Flex direction="row" gap="lg" flexWrap="wrap">
         <Flex direction="column" gap="2xs">
           <Text fontSize="sm" color="subtle">
             Tokens used
           </Text>
           <Text fontSize="lg" color="black">
-            {`${formatWholeNumber(platformAi.used_tokens)} of ${formatWholeNumber(platformAi.token_allowance)}`}
+            {platformAi.allowance_usage.tokens_label}
           </Text>
         </Flex>
         <Flex direction="column" gap="2xs">
@@ -44,7 +54,7 @@ export function PlatformAiCard({
             Tokens left
           </Text>
           <Text fontSize="lg" color="black">
-            {formatWholeNumber(platformAi.remaining_tokens)}
+            {platformAi.tokens_left_label}
           </Text>
         </Flex>
       </Flex>

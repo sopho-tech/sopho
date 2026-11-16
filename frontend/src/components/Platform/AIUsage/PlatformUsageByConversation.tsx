@@ -1,24 +1,25 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
   PlatformUsageConversationDto,
   usePlatformUsageByConversation,
 } from "src/api/platform_ai_usage";
-import { Avatar, Flex, Table, Text } from "src/components/design-system";
-import { PlatformUsagePagination } from "src/components/Platform/AIUsage/PlatformUsagePagination";
+import { Avatar, Table, Text } from "src/components/design-system";
 import {
   CONVERSATION_ID_PATH_PARAMETER,
   CONVERSATIONS_USAGE_TABLE_COLUMNS,
+  CONVERSATIONS_USAGE_TABLE_HEADERS,
   PLATFORM_USAGE_PAGE_SIZE,
   TENANT_ID_PATH_PARAMETER,
 } from "src/components/Platform/AIUsage/constants";
+import { UsageListTable } from "src/components/Settings/AIUsage/UsageListTable";
 import {
   UsageFailure,
   UsageLoading,
 } from "src/components/Settings/AIUsage/UsageStates";
 import { formatCount } from "src/components/Settings/AIUsage/format";
 import {
-  useConversationPage,
+  useUsageList,
   useUsageRange,
 } from "src/components/Settings/AIUsage/hooks";
 import { APP_ROUTES } from "src/constants/app_routes";
@@ -70,14 +71,12 @@ export function PlatformUsageByConversation() {
   const navigate = useNavigate();
   const location = useLocation();
   const { lastDayCount } = useUsageRange();
-  const { conversationPage, changeConversationPage } = useConversationPage();
-  const usagePage = useMemo(
-    () => ({ page: conversationPage, pageSize: PLATFORM_USAGE_PAGE_SIZE }),
-    [conversationPage],
+  const { usageList, changePage, changeSort, changeSearch } = useUsageList(
+    PLATFORM_USAGE_PAGE_SIZE,
   );
   const byConversation = usePlatformUsageByConversation(
     lastDayCount,
-    usagePage,
+    usageList,
   );
 
   const handleOpenConversation = useCallback(
@@ -99,33 +98,26 @@ export function PlatformUsageByConversation() {
     return <UsageLoading />;
   }
   return (
-    <Flex direction="column" gap="sm">
-      <Table
-        columns={CONVERSATIONS_USAGE_TABLE_COLUMNS}
-        aria-label="Platform AI usage by conversation"
-      >
-        <Table.Header>
-          <Table.HeaderCell>Conversation</Table.HeaderCell>
-          <Table.HeaderCell>Tenant</Table.HeaderCell>
-          <Table.HeaderCell>User</Table.HeaderCell>
-          <Table.HeaderCell align="end">Tokens</Table.HeaderCell>
-          <Table.HeaderCell align="end">Calls</Table.HeaderCell>
-        </Table.Header>
-        {byConversation.data.data.map((conversation) => (
-          <ConversationRow
-            key={conversation.conversation_id}
-            conversation={conversation}
-            onOpen={handleOpenConversation}
-          />
-        ))}
-      </Table>
-      <PlatformUsagePagination
-        totalPages={byConversation.data.total_pages}
-        page={byConversation.data.page}
-        pageSize={byConversation.data.page_size}
-        totalItems={byConversation.data.total_items}
-        onChangePage={changeConversationPage}
-      />
-    </Flex>
+    <UsageListTable
+      columns={CONVERSATIONS_USAGE_TABLE_COLUMNS}
+      aria-label="Platform AI usage by conversation"
+      searchLabel="Search conversations"
+      searchPlaceholder="Search by conversation, tenant or user"
+      headers={CONVERSATIONS_USAGE_TABLE_HEADERS}
+      usageList={usageList}
+      usageListPage={byConversation.data}
+      hasRows={byConversation.data.data.length > 0}
+      onChangeSort={changeSort}
+      onChangeSearch={changeSearch}
+      onChangePage={changePage}
+    >
+      {byConversation.data.data.map((conversation) => (
+        <ConversationRow
+          key={conversation.conversation_id}
+          conversation={conversation}
+          onOpen={handleOpenConversation}
+        />
+      ))}
+    </UsageListTable>
   );
 }

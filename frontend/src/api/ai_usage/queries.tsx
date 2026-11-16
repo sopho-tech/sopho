@@ -4,6 +4,7 @@ import {
   UsageByKindDto,
   UsageByUserDto,
   UsageConversationQuestionsDto,
+  UsageListParams,
   UsageOverTimeDto,
   UsageRangeParams,
   UsageSummaryDto,
@@ -12,31 +13,29 @@ import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { ApiService } from "src/utils/api_client";
 import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
-type ConversationPageParams = {
-  page: number;
-  pageSize: number;
-};
-
 export const aiUsageKeys = {
   all: (tenantId: string) => [tenantId, "ai_usage"] as const,
   summary: (tenantId: string, range: UsageRangeParams) =>
     [...aiUsageKeys.all(tenantId), "summary", range] as const,
   overTime: (tenantId: string, range: UsageRangeParams) =>
     [...aiUsageKeys.all(tenantId), "over_time", range] as const,
-  byUser: (tenantId: string, range: UsageRangeParams) =>
-    [...aiUsageKeys.all(tenantId), "by_user", range] as const,
+  byUser: (
+    tenantId: string,
+    range: UsageRangeParams,
+    usageList: UsageListParams,
+  ) => [...aiUsageKeys.all(tenantId), "by_user", range, usageList] as const,
   byKind: (tenantId: string, range: UsageRangeParams) =>
     [...aiUsageKeys.all(tenantId), "by_kind", range] as const,
   byConversation: (
     tenantId: string,
     range: UsageRangeParams,
-    conversationPage: ConversationPageParams,
+    usageList: UsageListParams,
   ) =>
     [
       ...aiUsageKeys.all(tenantId),
       "by_conversation",
       range,
-      conversationPage,
+      usageList,
     ] as const,
   conversationQuestions: (
     tenantId: string,
@@ -56,6 +55,20 @@ function rangeSearchParams(range: UsageRangeParams): URLSearchParams {
   searchParams.set("last_day_count", range.lastDayCount);
   if (range.keySource !== null) {
     searchParams.set("key_source", range.keySource);
+  }
+  return searchParams;
+}
+
+export function addUsageListSearchParams(
+  searchParams: URLSearchParams,
+  usageList: UsageListParams,
+): URLSearchParams {
+  searchParams.set("page", String(usageList.page));
+  searchParams.set("page_size", String(usageList.pageSize));
+  searchParams.set("sort_by", usageList.sortColumn);
+  searchParams.set("sort_direction", usageList.sortDirection);
+  if (usageList.search !== "") {
+    searchParams.set("search", usageList.search);
   }
   return searchParams;
 }
@@ -105,18 +118,22 @@ export const useUsageOverTime = (range: UsageRangeParams) => {
   });
 };
 
-export const useUsageByUser = (range: UsageRangeParams) => {
+export const useUsageByUser = (
+  range: UsageRangeParams,
+  usageList: UsageListParams,
+) => {
   const tenantId = useTenantId();
   return useQuery({
-    queryKey: aiUsageKeys.byUser(tenantId, range),
+    queryKey: aiUsageKeys.byUser(tenantId, range, usageList),
     queryFn: () =>
       getUsage<UsageByUserDto>(
         usageUrl(
           tenantId,
           API_ENDPOINTS.AI_USAGE.BY_USER,
-          rangeSearchParams(range),
+          addUsageListSearchParams(rangeSearchParams(range), usageList),
         ),
       ),
+    placeholderData: keepPreviousData,
   });
 };
 
@@ -137,23 +154,19 @@ export const useUsageByKind = (range: UsageRangeParams) => {
 
 export const useUsageByConversation = (
   range: UsageRangeParams,
-  conversationPage: ConversationPageParams,
+  usageList: UsageListParams,
 ) => {
   const tenantId = useTenantId();
   return useQuery({
-    queryKey: aiUsageKeys.byConversation(tenantId, range, conversationPage),
-    queryFn: () => {
-      const searchParams = rangeSearchParams(range);
-      searchParams.set("page", String(conversationPage.page));
-      searchParams.set("page_size", String(conversationPage.pageSize));
-      return getUsage<UsageByConversationDto>(
+    queryKey: aiUsageKeys.byConversation(tenantId, range, usageList),
+    queryFn: () =>
+      getUsage<UsageByConversationDto>(
         usageUrl(
           tenantId,
           API_ENDPOINTS.AI_USAGE.BY_CONVERSATION,
-          searchParams,
+          addUsageListSearchParams(rangeSearchParams(range), usageList),
         ),
-      );
-    },
+      ),
     placeholderData: keepPreviousData,
   });
 };

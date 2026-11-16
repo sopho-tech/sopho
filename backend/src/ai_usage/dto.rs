@@ -1,4 +1,7 @@
-use crate::ai_usage::constants::{ConversationNameKind, KeySource, QuestionTextKind};
+use crate::ai_usage::constants::{
+    AllowanceUsageLevel, ConversationNameKind, KeySource, QuestionTextKind, SortDirection,
+    UsageSortColumn,
+};
 use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -12,9 +15,12 @@ pub struct UsageRangeQuery {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ConversationPageQuery {
+pub struct UsageListQuery {
     pub page: Option<u64>,
     pub page_size: Option<u64>,
+    pub search: Option<String>,
+    pub sort_by: Option<UsageSortColumn>,
+    pub sort_direction: Option<SortDirection>,
 }
 
 #[derive(Debug, Serialize)]
@@ -51,11 +57,6 @@ pub struct UsageUserDto {
     pub name: String,
     pub total_tokens: i64,
     pub call_count: i64,
-}
-
-#[derive(Debug, Serialize)]
-pub struct UsageByUserDto {
-    pub users: Vec<UsageUserDto>,
 }
 
 #[derive(Debug, Serialize)]
@@ -108,8 +109,14 @@ pub struct PlatformUsageTenantDto {
     pub tenant_name: String,
     pub total_tokens: i64,
     pub call_count: i64,
-    pub platform_ai_used_tokens: u64,
-    pub platform_ai_token_allowance: Option<u64>,
+    pub allowance_usage: Option<AllowanceUsageDto>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AllowanceUsageDto {
+    pub tokens_label: String,
+    pub used_percentage: u64,
+    pub level: AllowanceUsageLevel,
 }
 
 #[derive(Debug, Serialize)]

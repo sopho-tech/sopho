@@ -1,5 +1,7 @@
 use crate::ai::agent_utils::ModelClient;
-use crate::ai_usage::constants::{ConversationNameKind, KeySource, QuestionTextKind};
+use crate::ai_usage::constants::{
+    ConversationNameKind, KeySource, QuestionTextKind, SortDirection, UsageSortColumn,
+};
 use crate::authorization::dto::{TenantId, UserId};
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
@@ -125,6 +127,32 @@ pub struct UsageRange {
     pub last_day: NaiveDate,
     pub starts_at: DateTime<Utc>,
     pub ends_before: DateTime<Utc>,
+}
+
+pub(super) struct UsageOrdering {
+    pub(super) lowercase_search_text: Option<String>,
+    pub(super) sort_column: UsageSortColumn,
+    pub(super) sort_direction: SortDirection,
+}
+
+pub(super) struct UsageListing {
+    pub(super) usage_page: UsagePage,
+    pub(super) usage_ordering: UsageOrdering,
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(super) enum UsageSortValue {
+    Text { lowercase_text: String },
+    Number { number: i64 },
+}
+
+pub(super) trait ListedUsageRow {
+    const SORT_COLUMNS: &'static [UsageSortColumn];
+
+    fn searchable_texts(&self) -> Vec<&str>;
+    fn sort_value(&self, sort_column: UsageSortColumn) -> Option<UsageSortValue>;
+    fn total_tokens(&self) -> i64;
+    fn stable_row_id(&self) -> String;
 }
 
 pub(super) struct UsagePage {

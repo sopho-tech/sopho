@@ -1,6 +1,5 @@
-use crate::ai::agent_utils::ModelClient;
+use crate::ai::agent_utils::{ModelClient, ModelProvider};
 use crate::ai_configuration;
-use crate::ai_configuration::dto::Provider;
 use crate::authorization::dto::TenantId;
 use crate::common::constants::{
     ADMINISTRATOR_EMAILS_NEED_PROVIDER_REASON, DEFAULT_SELF_SERVE_TENANT_LIMIT,
@@ -28,7 +27,7 @@ use crate::rate_limit;
 use crate::rate_limit::constants::{
     DEFAULT_AI_BURST_SIZE, DEFAULT_AI_REQUESTS_PER_MINUTE, DEFAULT_API_BURST_SIZE,
     DEFAULT_API_REQUESTS_PER_MINUTE, DEFAULT_SIGN_IN_BURST_SIZE,
-    DEFAULT_SIGN_IN_REQUESTS_PER_MINUTE, MINIMUM_RATE_LIMIT_VALUE,
+    DEFAULT_SIGN_IN_REQUESTS_PER_MINUTE, MAXIMUM_RATE_LIMIT_VALUE, MINIMUM_RATE_LIMIT_VALUE,
 };
 use crate::rate_limit::dto::{RateLimitQuota, RateLimitSettings};
 use crate::rate_limit::service::RateLimiters;
@@ -237,7 +236,7 @@ pub fn platform_ai_configuration_from_values(
     api_key: String,
     token_allowance: &str,
 ) -> Result<PlatformAiConfiguration, ConfigurationError> {
-    let provider = Provider::from_str(provider).map_err(|_| {
+    let provider = ModelProvider::from_str(provider).map_err(|_| {
         ConfigurationError::InvalidPlatformAiProvider {
             value: provider.to_string(),
         }
@@ -271,10 +270,8 @@ pub fn rate_limit_value_from_variable(
         return Ok(default_value);
     };
     match value.parse::<u32>() {
-        Ok(rate_limit_value) if rate_limit_value >= MINIMUM_RATE_LIMIT_VALUE => {
-            Ok(rate_limit_value)
-        }
-        _ => Err(ConfigurationError::InvalidRateLimit { variable, value }),
+        Ok(rate_limit_value) => validated_rate_limit_value(variable, rate_limit_value),
+        Err(_) => Err(ConfigurationError::InvalidRateLimit { variable, value }),
     }
 }
 
@@ -324,7 +321,7 @@ fn validated_rate_limit_value(
     variable: EnvironmentVariable,
     rate_limit_value: u32,
 ) -> Result<u32, ConfigurationError> {
-    if rate_limit_value < MINIMUM_RATE_LIMIT_VALUE {
+    if !(MINIMUM_RATE_LIMIT_VALUE..=MAXIMUM_RATE_LIMIT_VALUE).contains(&rate_limit_value) {
         return Err(ConfigurationError::InvalidRateLimit {
             variable,
             value: rate_limit_value.to_string(),
@@ -487,7 +484,7 @@ pub struct PasswordAdministratorConfiguration {
 
 #[derive(Clone, Deserialize)]
 pub struct PlatformAiConfiguration {
-    pub provider: Provider,
+    pub provider: ModelProvider,
     pub api_key: String,
     pub token_allowance: u64,
 }
@@ -1067,7 +1064,7 @@ mod tests {
         rate_limit_value_from_variable, self_serve_tenant_limit_from_variable,
         tenant_member_limit_from_variable,
     };
-    use crate::ai_configuration::dto::Provider;
+    use crate::ai::agent_utils::ModelProvider;
     use crate::common::constants::{EnvironmentVariable, SmtpTls};
     use crate::common::errors::ConfigurationError;
     use crate::connection::constants::SourceType;
@@ -1213,7 +1210,7 @@ mod tests {
                 .unwrap();
 
         let platform_ai = configurations.platform_ai.expect("platform AI settings");
-        assert_eq!(platform_ai.provider, Provider::Anthropic);
+        assert_eq!(platform_ai.provider, ModelProvider::Anthropic);
         assert_eq!(platform_ai.api_key, "platform-key");
         assert_eq!(platform_ai.token_allowance, 100_000);
         assert!(!format!("{platform_ai:?}").contains("platform-key"));
@@ -1534,6 +1531,57 @@ mod tests {
             error,
             ConfigurationError::InvalidRateLimit {
                 variable: EnvironmentVariable::SophoRateLimitApiBurst,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn a_rate_limit_above_the_maximum_is_refused_naming_the_variable_and_the_range() {
+        assert_eq!(
+            rate_limit_value_from_variable(
+                EnvironmentVariable::SophoRateLimitApiBurst,
+                Some("1000000".to_string()),
+                120
+            )
+            .unwrap(),
+            1_000_000
+        );
+        let error = rate_limit_value_from_variable(
+            EnvironmentVariable::SophoRateLimitApiBurst,
+            Some("1000001".to_string()),
+            120,
+        )
+        .unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "invalid SOPHO_RATE_LIMIT_API_BURST \"1000001\", expected a whole number from 1 to 1000000"
+        );
+    }
+
+    #[test]
+    fn a_rate_limit_above_the_maximum_given_to_the_builder_is_refused() {
+        let error = with_password_administrator(configurations_builder())
+            .rate_limits(RateLimitSettings {
+                sign_in: RateLimitQuota {
+                    requests_per_minute: 10,
+                    burst_size: 10,
+                },
+                api: RateLimitQuota {
+                    requests_per_minute: 600,
+                    burst_size: 120,
+                },
+                ai: RateLimitQuota {
+                    requests_per_minute: 1_000_001,
+                    burst_size: 10,
+                },
+            })
+            .build()
+            .unwrap_err();
+        assert!(matches!(
+            error,
+            ConfigurationError::InvalidRateLimit {
+                variable: EnvironmentVariable::SophoRateLimitAiPerMinute,
                 ..
             }
         ));

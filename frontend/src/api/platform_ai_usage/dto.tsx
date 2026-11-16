@@ -1,12 +1,11 @@
-import { ConversationNameKind } from "src/api/ai_usage";
+import { AllowanceUsage, ConversationNameKind } from "src/api/ai_usage";
 
 export type PlatformUsageTenantDto = {
   tenant_id: string;
   tenant_name: string;
   total_tokens: number;
   call_count: number;
-  platform_ai_used_tokens: number;
-  platform_ai_token_allowance: number | null;
+  allowance_usage: AllowanceUsage | null;
 };
 
 export type PlatformUsageUserDto = {

@@ -14,6 +14,14 @@ use reqwest::StatusCode;
 use serde_json::{Value, json};
 
 const GENEROUS_TOKEN_ALLOWANCE: u64 = 1_000_000;
+const FORMATTED_GENEROUS_TOKEN_ALLOWANCE: &str = "1,000,000";
+const FORMATTED_GENEROUS_TOKEN_ALLOWANCE_SUFFIX: &str = " of 1,000,000";
+const TOKENS_OF_ALLOWANCE_SEPARATOR: &str = " of ";
+const NO_TOKENS_LEFT_LABEL: &str = "0";
+const LOW_ALLOWANCE_USAGE_LEVEL: &str = "LOW";
+const HIGH_ALLOWANCE_USAGE_LEVEL: &str = "HIGH";
+const WHOLE_ALLOWANCE_PERCENTAGE: i64 = 100;
+const DIGIT_GROUP_SEPARATOR: &str = ",";
 const TOKEN_ALLOWANCE_BELOW_ONE_ANSWER: u64 = 100;
 const ALLOWANCE_USED_CODE: &str = "PLATFORM_AI_ALLOWANCE_USED";
 const ALLOWANCE_USED_MESSAGE: &str = "This tenant has used its platform AI allowance. Add your own AI key in Settings to keep using AI.";
@@ -112,6 +120,35 @@ async fn create_order_status_chart(app: &TestApp, connection_id: &str) -> String
     string_field(&chart, "id")
 }
 
+fn used_tokens_of_label(platform_ai_tokens_label: &Value) -> i64 {
+    let formatted_used_tokens = platform_ai_tokens_label
+        .as_str()
+        .expect("the label is text")
+        .strip_suffix(FORMATTED_GENEROUS_TOKEN_ALLOWANCE_SUFFIX)
+        .expect("the label ends with the allowance");
+    whole_number_of_formatted_text(formatted_used_tokens)
+}
+
+fn used_tokens_of_any_allowance_label(tokens_used_label: &Value) -> i64 {
+    let (formatted_used_tokens, _formatted_token_allowance) = tokens_used_label
+        .as_str()
+        .expect("the label is text")
+        .split_once(TOKENS_OF_ALLOWANCE_SEPARATOR)
+        .expect("the label names the allowance");
+    whole_number_of_formatted_text(formatted_used_tokens)
+}
+
+fn whole_number_of_label(whole_number_label: &Value) -> i64 {
+    whole_number_of_formatted_text(whole_number_label.as_str().expect("the label is text"))
+}
+
+fn whole_number_of_formatted_text(formatted_whole_number: &str) -> i64 {
+    formatted_whole_number
+        .replace(DIGIT_GROUP_SEPARATOR, "")
+        .parse()
+        .expect("the text is a whole number")
+}
+
 fn new_conversation_body(connection_id: &str) -> Value {
     json!({
         "connection_id": connection_id,
@@ -131,9 +168,12 @@ async fn a_tenant_with_no_key_answers_on_the_platform_key_and_its_total_matches_
             "key_source": PLATFORM_KEY_SOURCE,
             "unavailable_message": null,
             "platform_ai": {
-                "token_allowance": GENEROUS_TOKEN_ALLOWANCE,
-                "used_tokens": 0,
-                "remaining_tokens": GENEROUS_TOKEN_ALLOWANCE,
+                "allowance_usage": {
+                    "tokens_label": format!("0{FORMATTED_GENEROUS_TOKEN_ALLOWANCE_SUFFIX}"),
+                    "used_percentage": 0,
+                    "level": LOW_ALLOWANCE_USAGE_LEVEL,
+                },
+                "tokens_left_label": FORMATTED_GENEROUS_TOKEN_ALLOWANCE,
                 "is_allowance_used": false,
             },
         })
@@ -151,11 +191,11 @@ async fn a_tenant_with_no_key_answers_on_the_platform_key_and_its_total_matches_
     );
     let status_after = ai_status(&app).await;
     assert_eq!(
-        status_after["platform_ai"]["used_tokens"],
+        used_tokens_of_label(&status_after["platform_ai"]["allowance_usage"]["tokens_label"]),
         usage_totals.platform_tokens
     );
     assert_eq!(
-        status_after["platform_ai"]["remaining_tokens"],
+        whole_number_of_label(&status_after["platform_ai"]["tokens_left_label"]),
         GENEROUS_TOKEN_ALLOWANCE as i64 - usage_totals.platform_tokens
     );
     assert!(
@@ -202,7 +242,7 @@ async fn an_answer_that_crosses_the_allowance_finishes_and_later_work_is_refused
     ] {
         assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.body);
         assert_eq!(
-            refused.body["code"], ALLOWANCE_USED_CODE,
+            refused.body["error_code"], ALLOWANCE_USED_CODE,
             "{}",
             refused.body
         );
@@ -212,7 +252,19 @@ async fn an_answer_that_crosses_the_allowance_finishes_and_later_work_is_refused
     assert_eq!(status["is_ai_available"], false);
     assert_eq!(status["unavailable_message"], ALLOWANCE_USED_MESSAGE);
     assert_eq!(status["platform_ai"]["is_allowance_used"], true);
-    assert_eq!(status["platform_ai"]["remaining_tokens"], 0);
+    assert_eq!(
+        status["platform_ai"]["tokens_left_label"],
+        NO_TOKENS_LEFT_LABEL
+    );
+    assert_eq!(
+        status["platform_ai"]["allowance_usage"]["level"],
+        HIGH_ALLOWANCE_USAGE_LEVEL
+    );
+    assert_eq!(
+        status["platform_ai"]["allowance_usage"]["used_percentage"],
+        platform_ai_used_tokens(&app).await * WHOLE_ALLOWANCE_PERCENTAGE
+            / TOKEN_ALLOWANCE_BELOW_ONE_ANSWER as i64
+    );
     let canvases = app.get("/canvas?page=0&page_size=10").await;
     assert_eq!(canvases.status, StatusCode::OK, "{}", canvases.body);
     let members = app.get("/member").await;
@@ -253,7 +305,9 @@ async fn adding_a_key_moves_the_tenant_to_its_own_key_and_removing_it_moves_it_b
     );
     assert_eq!(status_back_on_the_platform_key["is_ai_available"], false);
     assert_eq!(
-        status_back_on_the_platform_key["platform_ai"]["used_tokens"],
+        used_tokens_of_any_allowance_label(
+            &status_back_on_the_platform_key["platform_ai"]["allowance_usage"]["tokens_label"]
+        ),
         used_tokens_on_the_platform_key
     );
 }
@@ -278,7 +332,7 @@ async fn a_tenant_whose_own_key_fails_is_refused_and_never_uses_the_platform_key
         .await;
 
     assert_eq!(new_conversation.status, StatusCode::FORBIDDEN);
-    assert_eq!(new_conversation.body["code"], AI_NOT_LIVE_CODE);
+    assert_eq!(new_conversation.body["error_code"], AI_NOT_LIVE_CODE);
     assert_eq!(
         chart_summary.status,
         StatusCode::PRECONDITION_FAILED,
@@ -333,7 +387,7 @@ async fn a_tenant_with_no_key_is_refused_as_before_when_platform_ai_is_off() {
         .await;
 
     assert_eq!(new_conversation.status, StatusCode::FORBIDDEN);
-    assert_eq!(new_conversation.body["code"], AI_NOT_LIVE_CODE);
+    assert_eq!(new_conversation.body["error_code"], AI_NOT_LIVE_CODE);
     assert_eq!(
         ai_status(&app).await,
         json!({
@@ -367,7 +421,7 @@ async fn a_question_stored_just_before_the_allowance_ran_out_is_refused_when_its
         "{}",
         completion.body
     );
-    assert_eq!(completion.body["code"], ALLOWANCE_USED_CODE);
+    assert_eq!(completion.body["error_code"], ALLOWANCE_USED_CODE);
 }
 
 #[tokio::test]
@@ -389,16 +443,12 @@ async fn platform_administrators_see_each_tenants_key_and_platform_ai_usage() {
     let tenant_on_the_platform_key = &tenants_on_the_platform_key.body[0];
     assert_eq!(tenant_on_the_platform_key["ai_key_label"], "Platform AI");
     assert_eq!(
-        tenant_on_the_platform_key["platform_ai_used_tokens"],
+        used_tokens_of_label(&tenant_on_the_platform_key["platform_ai_tokens_label"]),
         used_tokens
-    );
-    assert_eq!(
-        tenant_on_the_platform_key["platform_ai_token_allowance"],
-        GENEROUS_TOKEN_ALLOWANCE
     );
     assert_eq!(tenants_on_own_key.body[0]["ai_key_label"], "Own key");
     assert_eq!(
-        tenants_on_own_key.body[0]["platform_ai_used_tokens"],
+        used_tokens_of_label(&tenants_on_own_key.body[0]["platform_ai_tokens_label"]),
         used_tokens
     );
     assert!(

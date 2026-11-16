@@ -1,8 +1,8 @@
 use crate::ai_configuration::service as ai_configuration_service;
 use crate::ai_usage::dto::{
-    ConversationPageQuery, PlatformUsageConversationDto, PlatformUsageTenantDto,
-    PlatformUsageUserDto, UsageByKindDto, UsageConversationQuestionsDto, UsageOverTimeDto,
-    UsageRangeQuery, UsageSummaryDto,
+    PlatformUsageConversationDto, PlatformUsageTenantDto, PlatformUsageUserDto, UsageByKindDto,
+    UsageConversationQuestionsDto, UsageListQuery, UsageOverTimeDto, UsageRangeQuery,
+    UsageSummaryDto,
 };
 use crate::ai_usage::service as ai_usage_service;
 use crate::authentication::oidc::service as oidc_service;
@@ -19,7 +19,8 @@ use crate::email_delivery::service as email_delivery_service;
 use crate::email_template::service as email_template_service;
 use crate::entity::user;
 use crate::platform::constants::{
-    NO_AI_KEY_LABEL, OWN_AI_KEY_LABEL, PLATFORM_AI_KEY_LABEL, PLATFORM_PAGE_SIZE,
+    NO_AI_KEY_LABEL, NO_PLATFORM_AI_USAGE_LABEL, OWN_AI_KEY_LABEL, PLATFORM_AI_KEY_LABEL,
+    PLATFORM_PAGE_SIZE,
 };
 use crate::platform::dto::{
     DeactivatedUserDto, EmailLogQuery, EmailTemplatePreviewDto, PlatformTenantCapabilities,
@@ -291,15 +292,16 @@ pub async fn list_tenants(
         } else {
             NO_AI_KEY_LABEL
         };
-        let platform_ai_used_tokens =
-            platform_ai_used_tokens_by_tenant
-                .as_ref()
-                .map(|used_tokens_by_tenant| {
-                    used_tokens_by_tenant
-                        .get(&found_tenant.id)
-                        .copied()
-                        .unwrap_or_default()
-                });
+        let platform_ai_tokens_label = match &platform_ai_used_tokens_by_tenant {
+            Some(used_tokens_by_tenant) => ai_usage_service::platform_ai_tokens_label(
+                used_tokens_by_tenant
+                    .get(&found_tenant.id)
+                    .copied()
+                    .unwrap_or_default(),
+                platform_ai_token_allowance,
+            ),
+            None => NO_PLATFORM_AI_USAGE_LABEL.to_string(),
+        };
         let tenant_status =
             TenantStatus::from_str(&found_tenant.status).map_err(PlatformError::Internal)?;
         let is_suspended = tenant_status == TenantStatus::Suspended;
@@ -318,8 +320,7 @@ pub async fn list_tenants(
             },
             created_at: found_tenant.created_at,
             ai_key_label,
-            platform_ai_used_tokens,
-            platform_ai_token_allowance,
+            platform_ai_tokens_label,
         });
     }
     Ok(platform_tenants)
@@ -505,13 +506,13 @@ pub async fn list_platform_ai_usage_by_tenant(
     app_state: &AppState,
     actor: UserId,
     usage_range_query: &UsageRangeQuery,
-    conversation_page_query: &ConversationPageQuery,
+    usage_list_query: &UsageListQuery,
 ) -> Result<PaginatedResponse<PlatformUsageTenantDto>, PlatformError> {
     require_platform_permission(app_state, actor, PlatformPermission::PlatformAiUsageRead).await?;
     Ok(ai_usage_service::execute_platform_ai_usage_by_tenant(
         app_state,
         usage_range_query,
-        conversation_page_query,
+        usage_list_query,
     )
     .await?)
 }
@@ -520,13 +521,13 @@ pub async fn list_platform_ai_usage_by_user(
     app_state: &AppState,
     actor: UserId,
     usage_range_query: &UsageRangeQuery,
-    conversation_page_query: &ConversationPageQuery,
+    usage_list_query: &UsageListQuery,
 ) -> Result<PaginatedResponse<PlatformUsageUserDto>, PlatformError> {
     require_platform_permission(app_state, actor, PlatformPermission::PlatformAiUsageRead).await?;
     Ok(ai_usage_service::execute_platform_ai_usage_by_user(
         app_state,
         usage_range_query,
-        conversation_page_query,
+        usage_list_query,
     )
     .await?)
 }
@@ -535,13 +536,13 @@ pub async fn list_platform_ai_usage_by_conversation(
     app_state: &AppState,
     actor: UserId,
     usage_range_query: &UsageRangeQuery,
-    conversation_page_query: &ConversationPageQuery,
+    usage_list_query: &UsageListQuery,
 ) -> Result<PaginatedResponse<PlatformUsageConversationDto>, PlatformError> {
     require_platform_permission(app_state, actor, PlatformPermission::PlatformAiUsageRead).await?;
     Ok(ai_usage_service::execute_platform_ai_usage_by_conversation(
         app_state,
         usage_range_query,
-        conversation_page_query,
+        usage_list_query,
     )
     .await?)
 }

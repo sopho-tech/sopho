@@ -1,9 +1,9 @@
 use crate::ai_usage::constants::{
     AGENT_NAME_ALIAS, BIG_INTEGER_TYPE, CACHED_INPUT_TOKENS_ALIAS, CALL_COUNT_ALIAS,
-    CONVERSATION_COUNT_ALIAS, CONVERSATION_ID_ALIAS, CONVERSATION_ID_EXPRESSION,
-    CONVERSATION_MESSAGE_ID_ALIAS, CONVERSATION_MESSAGE_ID_EXPRESSION, DAY_ALIAS,
-    FIRST_CALL_AT_ALIAS, INPUT_TOKENS_ALIAS, OUTPUT_TOKENS_ALIAS, POSTGRES_UTC_DAY_EXPRESSION,
-    SQLITE_UTC_DAY_EXPRESSION, TENANT_ID_ALIAS, USER_ID_ALIAS,
+    CONVERSATION_ID_ALIAS, CONVERSATION_ID_EXPRESSION, CONVERSATION_MESSAGE_ID_ALIAS,
+    CONVERSATION_MESSAGE_ID_EXPRESSION, DAY_ALIAS, FIRST_CALL_AT_ALIAS, INPUT_TOKENS_ALIAS,
+    OUTPUT_TOKENS_ALIAS, POSTGRES_UTC_DAY_EXPRESSION, SQLITE_UTC_DAY_EXPRESSION, TENANT_ID_ALIAS,
+    USER_ID_ALIAS,
 };
 use crate::ai_usage::datatypes::{UsageRange, UsageScope};
 use crate::authorization::dto::TenantId;
@@ -12,8 +12,7 @@ use sea_orm::prelude::DateTimeWithTimeZone;
 use sea_orm::sea_query::{Alias, Expr, Func, OnConflict, SimpleExpr};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection, DbBackend,
-    DbErr, EntityTrait, FromQueryResult, Order, PaginatorTrait, QueryFilter, QueryOrder,
-    QuerySelect, Select, Set,
+    DbErr, EntityTrait, FromQueryResult, Order, QueryFilter, QueryOrder, QuerySelect, Select, Set,
 };
 use uuid::Uuid;
 
@@ -90,17 +89,6 @@ pub struct UsageTenantUserRow {
     pub input_tokens: i64,
     pub output_tokens: i64,
     pub call_count: i64,
-}
-
-#[derive(Debug)]
-pub struct UsageRowsPage<UsageRow> {
-    pub usage_rows: Vec<UsageRow>,
-    pub total_row_count: u64,
-}
-
-#[derive(Debug, FromQueryResult)]
-struct ConversationCountRow {
-    conversation_count: i64,
 }
 
 pub async fn insert_ai_usage(
@@ -298,29 +286,10 @@ pub async fn sum_usage_by_agent(
         .await
 }
 
-pub async fn count_conversations_with_usage(
-    database_connection: &DatabaseConnection,
-    usage_scope: UsageScope<'_>,
-    usage_range: &UsageRange,
-) -> Result<Option<i64>, DbErr> {
-    let conversation_count = usage_in_range(usage_scope, usage_range)
-        .column_as(
-            Expr::expr(conversation_id_expression()).count_distinct(),
-            CONVERSATION_COUNT_ALIAS,
-        )
-        .filter(Expr::expr(conversation_id_expression()).is_not_null())
-        .into_model::<ConversationCountRow>()
-        .one(database_connection)
-        .await?;
-    Ok(conversation_count.map(|row| row.conversation_count))
-}
-
 pub async fn sum_usage_by_conversation(
     database_connection: &DatabaseConnection,
     usage_scope: UsageScope<'_>,
     usage_range: &UsageRange,
-    first_row_offset: u64,
-    page_size: u64,
 ) -> Result<Vec<UsageConversationRow>, DbErr> {
     with_call_count(with_token_sums(usage_in_range(usage_scope, usage_range)))
         .column_as(conversation_id_expression(), CONVERSATION_ID_ALIAS)
@@ -328,8 +297,6 @@ pub async fn sum_usage_by_conversation(
         .group_by(conversation_id_expression())
         .order_by(total_tokens_ordering(), Order::Desc)
         .order_by(conversation_id_expression(), Order::Asc)
-        .offset(first_row_offset)
-        .limit(page_size)
         .into_model::<UsageConversationRow>()
         .all(database_connection)
         .await
@@ -339,13 +306,12 @@ pub async fn sum_usage_by_conversation_and_user(
     database_connection: &DatabaseConnection,
     usage_scope: UsageScope<'_>,
     usage_range: &UsageRange,
-    conversation_ids: &[String],
 ) -> Result<Vec<UsageConversationUserRow>, DbErr> {
     with_token_sums(usage_in_range(usage_scope, usage_range))
         .column_as(conversation_id_expression(), CONVERSATION_ID_ALIAS)
         .column_as(ai_usage::Column::TenantId, TENANT_ID_ALIAS)
         .column_as(ai_usage::Column::UserId, USER_ID_ALIAS)
-        .filter(Expr::expr(conversation_id_expression()).is_in(conversation_ids.to_vec()))
+        .filter(Expr::expr(conversation_id_expression()).is_not_null())
         .group_by(conversation_id_expression())
         .group_by(ai_usage::Column::TenantId)
         .group_by(ai_usage::Column::UserId)
@@ -377,10 +343,8 @@ pub async fn sum_usage_by_question(
 pub async fn sum_usage_by_tenant(
     database_connection: &DatabaseConnection,
     usage_range: &UsageRange,
-    page: u64,
-    page_size: u64,
-) -> Result<UsageRowsPage<UsageTenantRow>, DbErr> {
-    let tenant_rows_paginator = with_call_count(with_token_sums(usage_in_range(
+) -> Result<Vec<UsageTenantRow>, DbErr> {
+    with_call_count(with_token_sums(usage_in_range(
         UsageScope::AllTenants,
         usage_range,
     )))
@@ -389,20 +353,15 @@ pub async fn sum_usage_by_tenant(
     .order_by(total_tokens_ordering(), Order::Desc)
     .order_by(ai_usage::Column::TenantId, Order::Asc)
     .into_model::<UsageTenantRow>()
-    .paginate(database_connection, page_size);
-    Ok(UsageRowsPage {
-        total_row_count: tenant_rows_paginator.num_items().await?,
-        usage_rows: tenant_rows_paginator.fetch_page(page).await?,
-    })
+    .all(database_connection)
+    .await
 }
 
 pub async fn sum_usage_by_tenant_and_user(
     database_connection: &DatabaseConnection,
     usage_range: &UsageRange,
-    page: u64,
-    page_size: u64,
-) -> Result<UsageRowsPage<UsageTenantUserRow>, DbErr> {
-    let tenant_user_rows_paginator = with_call_count(with_token_sums(usage_in_range(
+) -> Result<Vec<UsageTenantUserRow>, DbErr> {
+    with_call_count(with_token_sums(usage_in_range(
         UsageScope::AllTenants,
         usage_range,
     )))
@@ -414,9 +373,6 @@ pub async fn sum_usage_by_tenant_and_user(
     .order_by(ai_usage::Column::TenantId, Order::Asc)
     .order_by(ai_usage::Column::UserId, Order::Asc)
     .into_model::<UsageTenantUserRow>()
-    .paginate(database_connection, page_size);
-    Ok(UsageRowsPage {
-        total_row_count: tenant_user_rows_paginator.num_items().await?,
-        usage_rows: tenant_user_rows_paginator.fetch_page(page).await?,
-    })
+    .all(database_connection)
+    .await
 }

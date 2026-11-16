@@ -85,8 +85,11 @@ const BY_TENANT = usagePageOf<PlatformUsageTenantDto>([
     tenant_name: "Borealis Labs",
     total_tokens: 72000,
     call_count: 95,
-    platform_ai_used_tokens: 88000,
-    platform_ai_token_allowance: 100000,
+    allowance_usage: {
+      tokens_label: "88,000 of 100,000",
+      used_percentage: 88,
+      level: "MEDIUM",
+    },
   },
 ]);
 
@@ -272,12 +275,53 @@ describe("platform AI usage", () => {
 
     const tenantRow = page.getByRole("row", { name: "Borealis Labs" });
     await expect.element(tenantRow.getByText("72,000")).toBeVisible();
+    const allowanceUsageMeter = tenantRow.getByRole("meter", {
+      name: "Allowance usage",
+    });
     await expect
-      .element(tenantRow.getByText("88,000 of 100,000"))
-      .toBeVisible();
+      .element(allowanceUsageMeter)
+      .toHaveAttribute("aria-valuenow", "88");
+    await expect.element(tenantRow.getByText("88%")).toBeVisible();
     await expect
       .element(page.getByRole("tab", { name: "By Tenant" }))
       .toHaveAttribute("aria-selected", "true");
+  });
+
+  test("sorts tenants by allowance usage and searches them through the backend", async () => {
+    const requestedTenantQueries: string[] = [];
+    worker.use(
+      http.get(API_ENDPOINTS.PLATFORM.AI_USAGE_BY_TENANT, ({ request }) => {
+        const requestedSearchParams = new URL(request.url).searchParams;
+        requestedTenantQueries.push(
+          `${requestedSearchParams.get("sort_by")} ${requestedSearchParams.get("sort_direction")} ${requestedSearchParams.get("search")}`,
+        );
+        return HttpResponse.json(BY_TENANT);
+      }),
+      ...platformUsageHandlers(SUMMARY, [], []),
+    );
+    const { router } = await renderPlatformUsagePage(
+      `${APP_ROUTES.PLATFORM_ROUTES.AI_USAGE_BY_TENANT}?page=2`,
+    );
+    await expect
+      .element(page.getByRole("row", { name: "Borealis Labs" }))
+      .toBeVisible();
+
+    await page.getByRole("button", { name: "Allowance usage" }).click();
+    await expect
+      .element(page.getByRole("columnheader", { name: "Allowance usage" }))
+      .toHaveAttribute("aria-sort", "descending");
+    await page.getByRole("textbox", { name: "Search tenants" }).fill("bore");
+
+    await expect
+      .poll(() => requestedTenantQueries)
+      .toEqual([
+        "total_tokens desc null",
+        "allowance_usage desc null",
+        "allowance_usage desc bore",
+      ]);
+    expect(router.state.location.search).toBe(
+      "?sort=allowance_usage&direction=desc&search=bore",
+    );
   });
 
   test("shows each user with their tenant", async () => {
@@ -296,7 +340,7 @@ describe("platform AI usage", () => {
     worker.use(...platformUsageHandlers(SUMMARY, [], []));
     const { router } = await renderWithProviders({
       routes: PLATFORM_USAGE_ROUTES,
-      initialPath: `${APP_ROUTES.PLATFORM_ROUTES.AI_USAGE_BY_USER}?days=7&page=3`,
+      initialPath: `${APP_ROUTES.PLATFORM_ROUTES.AI_USAGE_BY_USER}?days=7&page=3&sort=name&direction=asc&search=priya`,
     });
 
     await page.getByRole("tab", { name: "By Tenant" }).click();

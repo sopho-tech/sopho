@@ -122,7 +122,7 @@ async fn execute_completion(
     match service::execute_completion(app_state, &tenant_context, conversation_id).await {
         Ok(sse) => sse.into_response(),
         Err(e) => {
-            let (status, error, code) = match &e {
+            let (status, error, error_code) = match &e {
                 ExecuteCompletionError::GetConnection(GetDatabaseConnectionError::Refused(
                     guard_error,
                 )) => (
@@ -157,8 +157,8 @@ async fn execute_completion(
                     Some(codes::PLATFORM_AI_ALLOWANCE_USED.as_str()),
                 ),
             };
-            let body = match code {
-                Some(c) => serde_json::json!({ "error": error, "code": c }),
+            let body = match error_code {
+                Some(error_code) => serde_json::json!({ "error": error, "error_code": error_code }),
                 None => serde_json::json!({ "error": error }),
             };
             (status, axum::Json(body)).into_response()
@@ -188,7 +188,7 @@ async fn append_user_message(
             (StatusCode::OK, axum::Json(serde_json::json!(response_dto))).into_response()
         }
         Err(e) => {
-            let (status, error, code) = match &e {
+            let (status, error, error_code) = match &e {
                 AppendUserMessageError::Database(_) => {
                     (StatusCode::INTERNAL_SERVER_ERROR, e.to_string(), None)
                 }
@@ -217,8 +217,8 @@ async fn append_user_message(
                     Some(codes::PLATFORM_AI_ALLOWANCE_USED.as_str()),
                 ),
             };
-            let body = match code {
-                Some(c) => serde_json::json!({ "error": error, "code": c }),
+            let body = match error_code {
+                Some(error_code) => serde_json::json!({ "error": error, "error_code": error_code }),
                 None => serde_json::json!({ "error": error }),
             };
             (status, axum::Json(body)).into_response()
@@ -227,7 +227,7 @@ async fn append_user_message(
 }
 
 fn conversation_error_http_response(e: ConversationError) -> (StatusCode, axum::Json<Value>) {
-    let (status, error, code) = match &e {
+    let (status, error, error_code) = match &e {
         ConversationError::Database(_) | ConversationError::AiUsageRecording(_) => {
             (StatusCode::INTERNAL_SERVER_ERROR, e.to_string(), None)
         }
@@ -245,8 +245,8 @@ fn conversation_error_http_response(e: ConversationError) -> (StatusCode, axum::
             Some(codes::PLATFORM_AI_ALLOWANCE_USED.as_str()),
         ),
     };
-    let body = match code {
-        Some(c) => serde_json::json!({ "error": error, "code": c }),
+    let body = match error_code {
+        Some(error_code) => serde_json::json!({ "error": error, "error_code": error_code }),
         None => serde_json::json!({ "error": error }),
     };
     (status, axum::Json(body))

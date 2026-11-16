@@ -1,4 +1,3 @@
-import { formatWholeNumber } from "src/utils/number_format";
 import { useCallback, useState } from "react";
 import {
   Badge,
@@ -27,7 +26,6 @@ import {
   TENANT_STATUS_BADGE_VARIANTS,
   TENANTS_PAGE_DESCRIPTION,
   TENANT_STATUS_NAMES,
-  NO_PLATFORM_AI_USAGE_LABEL,
   TENANTS_TABLE_COLUMNS,
 } from "src/components/Platform/constants";
 import { TenantSuspensionDialog } from "src/components/Platform/TenantSuspensionDialog";
@@ -75,10 +73,7 @@ function TenantRow({ tenant, onChangeSuspension }: TenantRowProps) {
       </Table.Cell>
       <Table.Cell>
         <Text fontSize="sm" color="darkGrey">
-          {tenant.platform_ai_used_tokens !== null &&
-          tenant.platform_ai_token_allowance !== null
-            ? `${formatWholeNumber(tenant.platform_ai_used_tokens)} of ${formatWholeNumber(tenant.platform_ai_token_allowance)}`
-            : NO_PLATFORM_AI_USAGE_LABEL}
+          {tenant.platform_ai_tokens_label}
         </Text>
       </Table.Cell>
       <Table.Cell>

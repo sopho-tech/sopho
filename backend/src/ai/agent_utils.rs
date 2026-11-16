@@ -59,11 +59,39 @@ pub struct AgentSettings<'a> {
     pub max_tokens: u64,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, strum::IntoStaticStr)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    Eq,
+    serde::Serialize,
+    serde::Deserialize,
+    strum::EnumString,
+    strum::IntoStaticStr,
+)]
+#[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 pub enum ModelProvider {
     Anthropic,
     Openai,
+}
+
+impl ModelProvider {
+    pub fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Anthropic => "ANTHROPIC",
+            Self::Openai => "OPENAI",
+        }
+    }
+
+    pub fn from_db_str(s: &str) -> Option<Self> {
+        match s {
+            "ANTHROPIC" => Some(Self::Anthropic),
+            "OPENAI" => Some(Self::Openai),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone)]

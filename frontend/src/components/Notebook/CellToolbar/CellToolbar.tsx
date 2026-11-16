@@ -3,6 +3,7 @@ import { Toolbar } from "src/components/design-system/Toolbar";
 import { IconButton } from "src/components/design-system/IconButton/IconButton";
 import { InlineEdit } from "src/components/design-system/InlineEdit";
 import { useConnections } from "src/api/connection";
+import { UNAVAILABLE_CONNECTION_STATUS_LABEL } from "src/components/Connection/constants";
 import { Select } from "src/components/design-system/Select";
 import { useUpdateCell, useCell, useClearCellOutput } from "src/api/cell";
 import { useCanvasCapabilities } from "src/api/canvas/queries";
@@ -47,7 +48,8 @@ export function CellToolbar({ cellId }: { cellId: string }) {
   const updateCellMutation = useUpdateCell();
   const getCellQuery = useCell(cellId);
   const [options, setOptions] = useState<
-    { label: string; value: string }[] | undefined
+    | { label: string; value: string; isSourceTypeAvailable: boolean }[]
+    | undefined
   >(undefined);
   const [initialValue, setInitialValue] = useState<
     { label: string; value: string } | undefined
@@ -63,6 +65,7 @@ export function CellToolbar({ cellId }: { cellId: string }) {
     const connectionOptions = query.data.map((connection) => ({
       label: connection.name,
       value: connection.id,
+      isSourceTypeAvailable: connection.is_source_type_available,
     }));
 
     const cellConnectionId = getCellQuery.data.connection_id;
@@ -160,9 +163,18 @@ export function CellToolbar({ cellId }: { cellId: string }) {
             />
           </Toolbar.Button>
           <Select.Content>
-            {(options ?? []).map((opt) => (
-              <Select.Item key={opt.value} value={opt.value}>
-                {opt.label}
+            {(options ?? []).map((connectionOption) => (
+              <Select.Item
+                key={connectionOption.value}
+                value={connectionOption.value}
+                disabled={!connectionOption.isSourceTypeAvailable}
+                description={
+                  connectionOption.isSourceTypeAvailable
+                    ? null
+                    : UNAVAILABLE_CONNECTION_STATUS_LABEL
+                }
+              >
+                {connectionOption.label}
               </Select.Item>
             ))}
           </Select.Content>

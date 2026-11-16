@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useState } from "react";
+import { ReactNode } from "react";
 import {
   BannerSlim,
   Box,
@@ -7,6 +7,7 @@ import {
   Input,
   Text,
 } from "src/components/design-system";
+import { useTenantNameInput } from "src/components/CreateTenantDialog/useTenantNameInput";
 
 type CreateFirstTenantFormProps = {
   onCreate: (name: string) => void;
@@ -21,26 +22,8 @@ export function CreateFirstTenantForm({
   errorMessage,
   leadingAction,
 }: CreateFirstTenantFormProps) {
-  const [name, setName] = useState("");
-  const canCreate = name.trim().length > 0 && !isCreating;
-
-  const handleNameChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => setName(event.target.value),
-    [],
-  );
-  const handleCreate = useCallback(
-    () => onCreate(name.trim()),
-    [onCreate, name],
-  );
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLInputElement>) => {
-      if (event.key === "Enter" && canCreate) {
-        event.preventDefault();
-        handleCreate();
-      }
-    },
-    [canCreate, handleCreate],
-  );
+  const { name, canCreate, handleNameChange, handleCreate, handleKeyDown } =
+    useTenantNameInput({ onCreate, isCreating });
 
   return (
     <Box as="section" aria-label="Create your tenant">

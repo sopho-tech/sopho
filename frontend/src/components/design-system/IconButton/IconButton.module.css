@@ -27,12 +27,14 @@
   transform: scale(0.9);
 }
 
-.button:disabled {
+.button:disabled,
+.button[aria-disabled="true"] {
   cursor: not-allowed;
   opacity: var(--opacity-disabled);
 }
 
-.button:disabled:active {
+.button:disabled:active,
+.button[aria-disabled="true"]:active {
   transform: none;
 }
 

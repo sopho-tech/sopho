@@ -29,6 +29,8 @@ pub enum AiUsageError {
     PageOutOfRange,
     #[error("The page size must be between 1 and {maximum_page_size}")]
     PageSizeOutOfRange { maximum_page_size: u64 },
+    #[error("This list cannot be sorted by that column")]
+    SortColumnNotAllowed,
     #[error("Platform AI usage is always for the platform key. Remove the key source")]
     KeySourceNotAllowed,
     #[error("The date range is outside the supported calendar")]
@@ -51,6 +53,7 @@ impl AiUsageError {
             | AiUsageError::RangeOutOfCalendar
             | AiUsageError::PageOutOfRange
             | AiUsageError::PageSizeOutOfRange { .. }
+            | AiUsageError::SortColumnNotAllowed
             | AiUsageError::KeySourceNotAllowed => true,
             AiUsageError::Database(_)
             | AiUsageError::Metadata(_)

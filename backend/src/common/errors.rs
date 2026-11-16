@@ -1,6 +1,7 @@
 use crate::common::constants::EnvironmentVariable;
 use crate::common::error_codes::ErrorCode;
 use crate::connection::constants::SourceType;
+use crate::rate_limit::constants::{MAXIMUM_RATE_LIMIT_VALUE, MINIMUM_RATE_LIMIT_VALUE};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -274,7 +275,11 @@ pub enum ConfigurationError {
         variable = EnvironmentVariable::SophoPlatformAiApiKey
     )]
     EmptyPlatformAiApiKey,
-    #[error("invalid {variable} {value:?}, expected a whole number of at least 1")]
+    #[error(
+        "invalid {variable} {value:?}, expected a whole number from {minimum} to {maximum}",
+        minimum = MINIMUM_RATE_LIMIT_VALUE,
+        maximum = MAXIMUM_RATE_LIMIT_VALUE
+    )]
     InvalidRateLimit {
         variable: EnvironmentVariable,
         value: String,

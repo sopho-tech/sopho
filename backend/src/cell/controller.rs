@@ -158,7 +158,7 @@ fn cell_error_http_response(error: CellError) -> (StatusCode, axum::Json<Value>)
             StatusCode::PRECONDITION_FAILED,
             axum::Json(serde_json::json!({
                 "status": StatusCode::PRECONDITION_FAILED.as_u16(),
-                "code": codes::MISSING_PREREQUISITES.as_str(),
+                "error_code": codes::MISSING_PREREQUISITES.as_str(),
                 "message": MISSING_CONNECTION_MESSAGE
             })),
         ),
@@ -206,7 +206,7 @@ fn execute_query_error_response(error: ExecuteQueryError) -> (StatusCode, axum::
             StatusCode::BAD_REQUEST,
             axum::Json(serde_json::json!({
                 "status": StatusCode::BAD_REQUEST.as_u16(),
-                "code": codes::SYNTAX_ERROR.as_str(),
+                "error_code": codes::SYNTAX_ERROR.as_str(),
                 "message": database_error.to_string()
             })),
         ),

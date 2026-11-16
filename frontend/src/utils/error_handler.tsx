@@ -71,7 +71,7 @@ export const isTenantSuspendedError = (error: unknown): boolean =>
 export const isPlatformAiAllowanceUsedError = (error: unknown): boolean =>
   error instanceof ApiError &&
   error.status === 403 &&
-  error.code === PLATFORM_AI_ALLOWANCE_USED_ERROR_CODE;
+  error.errorCode === PLATFORM_AI_ALLOWANCE_USED_ERROR_CODE;
 
 export const queryErrorHandler = (
   error: unknown,

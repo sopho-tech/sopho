@@ -22,6 +22,7 @@ import { formatUtcDay } from "src/components/Settings/AIUsage/format";
 import {
   useChangeUsageKey,
   useChangeUsageRange,
+  searchWithoutUsageList,
   useUsageRange,
 } from "src/components/Settings/AIUsage/hooks";
 import { useTenantPath } from "src/utils/tenant";
@@ -42,7 +43,7 @@ export function AIUsage() {
     (usageTabPath: string) =>
       void navigate({
         pathname: toTenantPath(usageTabPath),
-        search: location.search,
+        search: searchWithoutUsageList(location.search),
       }),
     [navigate, toTenantPath, location.search],
   );

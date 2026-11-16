@@ -1,7 +1,9 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
+  addUsageListSearchParams,
   UsageByKindDto,
   UsageConversationQuestionsDto,
+  UsageListParams,
   UsageOverTimeDto,
   UsageSummaryDto,
 } from "src/api/ai_usage";
@@ -14,11 +16,6 @@ import {
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { ApiService } from "src/utils/api_client";
 
-type UsagePageParams = {
-  page: number;
-  pageSize: number;
-};
-
 export const platformAiUsageKeys = {
   all: ["platform", "ai_usage"] as const,
   summary: (lastDayCount: string) =>
@@ -27,16 +24,16 @@ export const platformAiUsageKeys = {
     [...platformAiUsageKeys.all, "over_time", lastDayCount] as const,
   byKind: (lastDayCount: string) =>
     [...platformAiUsageKeys.all, "by_kind", lastDayCount] as const,
-  byTenant: (lastDayCount: string, usagePage: UsagePageParams) =>
-    [...platformAiUsageKeys.all, "by_tenant", lastDayCount, usagePage] as const,
-  byUser: (lastDayCount: string, usagePage: UsagePageParams) =>
-    [...platformAiUsageKeys.all, "by_user", lastDayCount, usagePage] as const,
-  byConversation: (lastDayCount: string, usagePage: UsagePageParams) =>
+  byTenant: (lastDayCount: string, usageList: UsageListParams) =>
+    [...platformAiUsageKeys.all, "by_tenant", lastDayCount, usageList] as const,
+  byUser: (lastDayCount: string, usageList: UsageListParams) =>
+    [...platformAiUsageKeys.all, "by_user", lastDayCount, usageList] as const,
+  byConversation: (lastDayCount: string, usageList: UsageListParams) =>
     [
       ...platformAiUsageKeys.all,
       "by_conversation",
       lastDayCount,
-      usagePage,
+      usageList,
     ] as const,
   conversationQuestions: (
     lastDayCount: string,
@@ -60,12 +57,9 @@ function rangeSearchParams(lastDayCount: string): URLSearchParams {
 
 function pagedSearchParams(
   lastDayCount: string,
-  usagePage: UsagePageParams,
+  usageList: UsageListParams,
 ): URLSearchParams {
-  const searchParams = rangeSearchParams(lastDayCount);
-  searchParams.set("page", String(usagePage.page));
-  searchParams.set("page_size", String(usagePage.pageSize));
-  return searchParams;
+  return addUsageListSearchParams(rangeSearchParams(lastDayCount), usageList);
 }
 
 async function getPlatformUsage<UsageBody>(
@@ -110,42 +104,42 @@ export const usePlatformUsageByKind = (lastDayCount: string) =>
 
 export const usePlatformUsageByTenant = (
   lastDayCount: string,
-  usagePage: UsagePageParams,
+  usageList: UsageListParams,
 ) =>
   useQuery({
-    queryKey: platformAiUsageKeys.byTenant(lastDayCount, usagePage),
+    queryKey: platformAiUsageKeys.byTenant(lastDayCount, usageList),
     queryFn: () =>
       getPlatformUsage<PlatformUsagePage<PlatformUsageTenantDto>>(
         API_ENDPOINTS.PLATFORM.AI_USAGE_BY_TENANT,
-        pagedSearchParams(lastDayCount, usagePage),
+        pagedSearchParams(lastDayCount, usageList),
       ),
     placeholderData: keepPreviousData,
   });
 
 export const usePlatformUsageByUser = (
   lastDayCount: string,
-  usagePage: UsagePageParams,
+  usageList: UsageListParams,
 ) =>
   useQuery({
-    queryKey: platformAiUsageKeys.byUser(lastDayCount, usagePage),
+    queryKey: platformAiUsageKeys.byUser(lastDayCount, usageList),
     queryFn: () =>
       getPlatformUsage<PlatformUsagePage<PlatformUsageUserDto>>(
         API_ENDPOINTS.PLATFORM.AI_USAGE_BY_USER,
-        pagedSearchParams(lastDayCount, usagePage),
+        pagedSearchParams(lastDayCount, usageList),
       ),
     placeholderData: keepPreviousData,
   });
 
 export const usePlatformUsageByConversation = (
   lastDayCount: string,
-  usagePage: UsagePageParams,
+  usageList: UsageListParams,
 ) =>
   useQuery({
-    queryKey: platformAiUsageKeys.byConversation(lastDayCount, usagePage),
+    queryKey: platformAiUsageKeys.byConversation(lastDayCount, usageList),
     queryFn: () =>
       getPlatformUsage<PlatformUsagePage<PlatformUsageConversationDto>>(
         API_ENDPOINTS.PLATFORM.AI_USAGE_BY_CONVERSATION,
-        pagedSearchParams(lastDayCount, usagePage),
+        pagedSearchParams(lastDayCount, usageList),
       ),
     placeholderData: keepPreviousData,
   });

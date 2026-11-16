@@ -1,3 +1,5 @@
+import { AllowanceUsage } from "src/api/ai_usage";
+
 export type Provider = "anthropic" | "openai";
 export type AiConfigurationStatus =
   "not_configured" | "untested" | "live" | "failed";
@@ -5,9 +7,8 @@ export type AiConfigurationStatus =
 export type KeySource = "TENANT" | "PLATFORM";
 
 export type PlatformAiAllowance = {
-  token_allowance: number;
-  used_tokens: number;
-  remaining_tokens: number;
+  allowance_usage: AllowanceUsage;
+  tokens_left_label: string;
   is_allowance_used: boolean;
 };
 

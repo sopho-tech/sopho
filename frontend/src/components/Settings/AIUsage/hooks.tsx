@@ -1,12 +1,24 @@
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router";
-import { UsageRangeParams } from "src/api/ai_usage";
+import {
+  UsageListParams,
+  UsageRangeParams,
+  UsageSortColumn,
+  UsageSortDirection,
+} from "src/api/ai_usage";
 import {
   ALL_KEYS_OPTION,
   CONVERSATION_PAGE_SEARCH_PARAMETER,
   DEFAULT_RANGE_OPTION,
+  DEFAULT_SORT_COLUMN,
+  DEFAULT_SORT_DIRECTION,
   KEY_SEARCH_PARAMETER,
+  OPPOSITE_SORT_DIRECTIONS,
   RANGE_SEARCH_PARAMETER,
+  SEARCH_TEXT_SEARCH_PARAMETER,
+  SORT_COLUMN_SEARCH_PARAMETER,
+  SORT_DIRECTION_SEARCH_PARAMETER,
+  USAGE_LIST_SEARCH_PARAMETERS,
 } from "src/components/Settings/AIUsage/constants";
 import { FIRST_PAGE } from "src/constants/pagination";
 
@@ -53,29 +65,74 @@ export function useChangeUsageKey(): (keyOption: string) => void {
   );
 }
 
-export function useConversationPage(): {
-  conversationPage: number;
-  changeConversationPage: (conversationPage: number) => void;
+export function searchWithoutUsageList(search: string): string {
+  const searchParamsWithoutUsageList = new URLSearchParams(search);
+  USAGE_LIST_SEARCH_PARAMETERS.forEach((usageListSearchParameter) =>
+    searchParamsWithoutUsageList.delete(usageListSearchParameter),
+  );
+  return searchParamsWithoutUsageList.toString();
+}
+
+export function useUsageList(pageSize: number): {
+  usageList: UsageListParams;
+  changePage: (page: number) => void;
+  changeSort: (sortColumn: UsageSortColumn) => void;
+  changeSearch: (search: string) => void;
 } {
   const [searchParams, setSearchParams] = useSearchParams();
-  const requestedConversationPage = searchParams.get(
-    CONVERSATION_PAGE_SEARCH_PARAMETER,
+  const requestedPage = searchParams.get(CONVERSATION_PAGE_SEARCH_PARAMETER);
+  const page = requestedPage === null ? FIRST_PAGE : Number(requestedPage);
+  const sortColumn = (searchParams.get(SORT_COLUMN_SEARCH_PARAMETER) ??
+    DEFAULT_SORT_COLUMN) as UsageSortColumn;
+  const sortDirection = (searchParams.get(SORT_DIRECTION_SEARCH_PARAMETER) ??
+    DEFAULT_SORT_DIRECTION) as UsageSortDirection;
+  const search = searchParams.get(SEARCH_TEXT_SEARCH_PARAMETER) ?? "";
+  const usageList = useMemo(
+    () => ({ page, pageSize, search, sortColumn, sortDirection }),
+    [page, pageSize, search, sortColumn, sortDirection],
   );
-  const conversationPage =
-    requestedConversationPage === null
-      ? FIRST_PAGE
-      : Number(requestedConversationPage);
-  const changeConversationPage = useCallback(
-    (nextConversationPage: number) =>
+
+  const changePage = useCallback(
+    (nextPage: number) =>
       setSearchParams((currentSearchParams) => {
         const nextSearchParams = new URLSearchParams(currentSearchParams);
         nextSearchParams.set(
           CONVERSATION_PAGE_SEARCH_PARAMETER,
-          String(nextConversationPage),
+          String(nextPage),
         );
         return nextSearchParams;
       }),
     [setSearchParams],
   );
-  return { conversationPage, changeConversationPage };
+  const changeSort = useCallback(
+    (nextSortColumn: UsageSortColumn) =>
+      setSearchParams((currentSearchParams) => {
+        const nextSearchParams = new URLSearchParams(currentSearchParams);
+        nextSearchParams.set(SORT_COLUMN_SEARCH_PARAMETER, nextSortColumn);
+        nextSearchParams.set(
+          SORT_DIRECTION_SEARCH_PARAMETER,
+          nextSortColumn === sortColumn
+            ? OPPOSITE_SORT_DIRECTIONS[sortDirection]
+            : DEFAULT_SORT_DIRECTION,
+        );
+        nextSearchParams.delete(CONVERSATION_PAGE_SEARCH_PARAMETER);
+        return nextSearchParams;
+      }),
+    [setSearchParams, sortColumn, sortDirection],
+  );
+  const changeSearch = useCallback(
+    (nextSearch: string) =>
+      setSearchParams((currentSearchParams) => {
+        const nextSearchParams = new URLSearchParams(currentSearchParams);
+        if (nextSearch === "") {
+          nextSearchParams.delete(SEARCH_TEXT_SEARCH_PARAMETER);
+        } else {
+          nextSearchParams.set(SEARCH_TEXT_SEARCH_PARAMETER, nextSearch);
+        }
+        nextSearchParams.delete(CONVERSATION_PAGE_SEARCH_PARAMETER);
+        return nextSearchParams;
+      }),
+    [setSearchParams],
+  );
+  return { usageList, changePage, changeSort, changeSearch };
 }

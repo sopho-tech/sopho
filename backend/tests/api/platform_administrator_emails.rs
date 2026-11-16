@@ -1,14 +1,16 @@
 use crate::support::constants::{
     ACCOUNT_DEACTIVATED_SIGN_IN_ERROR, CONNECT_RESULT_LOCATION_PREFIX, LISTED_ADMINISTRATOR_EMAIL,
-    PLATFORM_ADMINISTRATOR, PLATFORM_MEMBER, SINGLE_SIGN_ON_PROVIDER, USER_STATUS_DEACTIVATED,
+    PLATFORM_ADMINISTRATOR, PLATFORM_MEMBER, SINGLE_SIGN_ON_PROVIDER, SSO_FAILED,
+    USER_STATUS_DEACTIVATED,
 };
-use crate::support::database::{now, select_rows, update_rows};
+use crate::support::database::{backend, count_rows, now, select_rows, update_rows};
 use crate::support::identity_provider::{
     SignInOutcome, complete_sign_in, sign_in_at_provider, sign_in_with_provider, start_connect,
 };
 use crate::support::tenants::{create_user, sign_in};
 use crate::support::{DeploymentFlags, TestApp, UserSession};
 use reqwest::StatusCode;
+use sea_orm::{ConnectionTrait, DbBackend};
 use serde_json::{Value, json};
 use uuid::Uuid;
 
@@ -274,5 +276,73 @@ async fn a_password_sign_in_never_promotes_and_connecting_the_provider_does() {
     assert_eq!(
         platform_role_of_email(&app, LISTED_ADMINISTRATOR_EMAIL).await,
         PLATFORM_ADMINISTRATOR
+    );
+}
+
+async fn refuse_promotion_to_platform_administrator(app: &TestApp) {
+    let statement = match backend(app) {
+        DbBackend::Sqlite => format!(
+            "CREATE TRIGGER refuse_promotion BEFORE UPDATE OF platform_role ON \"user\" \
+             WHEN NEW.platform_role = '{PLATFORM_ADMINISTRATOR}' \
+             BEGIN SELECT RAISE(ABORT, 'promotion refused by the test'); END"
+        ),
+        DbBackend::Postgres => format!(
+            "ALTER TABLE \"user\" ADD CONSTRAINT refuse_promotion \
+             CHECK (platform_role <> '{PLATFORM_ADMINISTRATOR}') NOT VALID"
+        ),
+        other_backend => panic!("unsupported metadata database {other_backend:?}"),
+    };
+    app.app_state
+        .database_connection
+        .execute_unprepared(&statement)
+        .await
+        .expect("refuse promotion to platform administrator");
+}
+
+#[tokio::test]
+async fn a_connect_whose_promotion_fails_links_nothing() {
+    let app = spawn_with_passwords_and_listed_administrator().await;
+    let listed = create_user(&app, "unpromotable", PLATFORM_MEMBER).await;
+    assert_eq!(
+        update_rows(
+            &app,
+            "user",
+            &[
+                ("email", LISTED_ADMINISTRATOR_EMAIL.into()),
+                ("email_verified_at", now().into()),
+            ],
+            &[("id", listed.id.into())],
+        )
+        .await,
+        1
+    );
+    let listed = crate::support::tenants::TestUser {
+        email: LISTED_ADMINISTRATOR_EMAIL.to_string(),
+        ..listed
+    };
+    let session = sign_in(&app, &listed).await;
+    refuse_promotion_to_platform_administrator(&app).await;
+
+    let started = start_connect(&session, SINGLE_SIGN_ON_PROVIDER).await;
+    let callback_url = sign_in_at_provider(
+        &started,
+        "unpromotable-subject",
+        claims(LISTED_ADMINISTRATOR_EMAIL, true),
+    )
+    .await;
+    let failed = complete_sign_in(&session, &callback_url).await;
+
+    assert_eq!(
+        failed.location,
+        format!("{CONNECT_RESULT_LOCATION_PREFIX}{SSO_FAILED}")
+    );
+    assert_eq!(
+        count_rows(&app, "federated_identity", &[("user_id", listed.id.into())]).await,
+        0,
+        "the identity must not stay linked when the connect reports a failure"
+    );
+    assert_eq!(
+        platform_role_of_email(&app, LISTED_ADMINISTRATOR_EMAIL).await,
+        PLATFORM_MEMBER
     );
 }

@@ -118,7 +118,7 @@ async fn failed_liveness_check_marks_the_configuration_failed_and_blocks_convers
         )
         .await;
     assert_eq!(conversation.status, StatusCode::FORBIDDEN);
-    assert_eq!(conversation.body["code"], "AI_NOT_LIVE");
+    assert_eq!(conversation.body["error_code"], "AI_NOT_LIVE");
 }
 
 #[tokio::test]
@@ -404,6 +404,32 @@ async fn the_startup_refresh_calls_no_llm_when_the_background_refresh_is_off() {
         llm_requests_before_startup_refresh
     );
     assert_eq!(requests_answered_by(&app, "suggested_questions_agent"), 0);
+}
+
+#[tokio::test]
+async fn the_daily_refresh_is_scheduled_by_default() {
+    let app = TestApp::spawn().await;
+
+    let is_daily_refresh_scheduled = sopho::is_any_background_job_scheduled(&app.app_state)
+        .await
+        .expect("build the scheduler");
+
+    assert!(is_daily_refresh_scheduled);
+}
+
+#[tokio::test]
+async fn the_daily_refresh_is_not_scheduled_when_the_background_refresh_is_off() {
+    let app = TestApp::spawn_with_deployment_flags(DeploymentFlags {
+        is_background_suggested_question_refresh_off: true,
+        ..DeploymentFlags::default()
+    })
+    .await;
+
+    let is_daily_refresh_scheduled = sopho::is_any_background_job_scheduled(&app.app_state)
+        .await
+        .expect("build the scheduler");
+
+    assert!(!is_daily_refresh_scheduled);
 }
 
 #[tokio::test]

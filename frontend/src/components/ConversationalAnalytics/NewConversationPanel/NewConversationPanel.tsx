@@ -5,6 +5,7 @@ import { useCreateConversation } from "src/api/conversational_analytics/queries"
 import { useConnections } from "src/api/connection/queries";
 import { useAiConfiguration } from "src/api/ai_configuration";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { UNAVAILABLE_CONNECTION_STATUS_LABEL } from "src/components/Connection/constants";
 import { useTenantPath } from "src/utils/tenant";
 import {
   MessageComposer,
@@ -26,8 +27,12 @@ export function NewConversationPanel() {
   const composerRef = useRef<MessageComposerHandle>(null);
 
   useEffect(() => {
-    if (!selectedConnectionId && connections?.length) {
-      setSelectedConnectionId(connections[0].id);
+    if (selectedConnectionId) return;
+    const firstAvailableConnection = connections?.find(
+      (connection) => connection.is_source_type_available,
+    );
+    if (firstAvailableConnection) {
+      setSelectedConnectionId(firstAvailableConnection.id);
     }
   }, [connections, selectedConnectionId]);
 
@@ -95,9 +100,18 @@ export function NewConversationPanel() {
                 className={styles.connectionSelect}
               />
               <Select.Content>
-                {(connections ?? []).map((c) => (
-                  <Select.Item key={c.id} value={c.id}>
-                    {c.name}
+                {(connections ?? []).map((connection) => (
+                  <Select.Item
+                    key={connection.id}
+                    value={connection.id}
+                    disabled={!connection.is_source_type_available}
+                    description={
+                      connection.is_source_type_available
+                        ? null
+                        : UNAVAILABLE_CONNECTION_STATUS_LABEL
+                    }
+                  >
+                    {connection.name}
                   </Select.Item>
                 ))}
               </Select.Content>

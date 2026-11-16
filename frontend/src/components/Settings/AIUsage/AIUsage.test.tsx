@@ -25,6 +25,7 @@ import {
 } from "src/components/Settings/AIUsage";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { APP_ROUTES } from "src/constants/app_routes";
+import { FIRST_PAGE } from "src/constants/pagination";
 import { PERMISSIONS } from "src/constants/permissions";
 import { worker } from "src/test/msw/browser_worker";
 import { renderWithProviders } from "src/test/render_with_providers";
@@ -48,7 +49,7 @@ const SUMMARY: UsageSummaryDto = {
   has_usage: true,
   is_platform_ai_on: false,
   missing_token_counts_note:
-    "3 calls in this range reported no token counts. They are included in the number of calls but add no tokens.",
+    "3 model calls in this range reported no token counts. They are included in the number of model calls but add no tokens.",
 };
 
 const EMPTY_SUMMARY: UsageSummaryDto = {
@@ -82,7 +83,7 @@ const OVER_TIME: UsageOverTimeDto = {
 };
 
 const BY_USER: UsageByUserDto = {
-  users: [
+  data: [
     {
       user_id: "00000000-0000-4000-8000-000000000001",
       name: "Priya Nair",
@@ -91,6 +92,10 @@ const BY_USER: UsageByUserDto = {
     },
     { user_id: null, name: "Background", total_tokens: 58000, call_count: 112 },
   ],
+  total_pages: 1,
+  page: FIRST_PAGE,
+  page_size: 10,
+  total_items: 2,
 };
 
 const BY_KIND: UsageByKindDto = {
@@ -153,7 +158,7 @@ const CONVERSATION_QUESTIONS: UsageConversationQuestionsDto = {
     },
     {
       conversation_message_id: null,
-      text: "Conversation naming and other calls outside a question",
+      text: "Conversation naming and other model calls outside a question",
       text_kind: "NO_QUESTION",
       first_call_at: "2026-11-14T09:13:00Z",
       total_tokens: 6420,
@@ -493,7 +498,7 @@ describe("AI usage", () => {
     await expect
       .element(
         questions.getByText(
-          "Conversation naming and other calls outside a question",
+          "Conversation naming and other model calls outside a question",
         ),
       )
       .toBeVisible();
@@ -509,6 +514,132 @@ describe("AI usage", () => {
     await expect
       .element(page.getByRole("table", { name: "Usage by conversation" }))
       .toBeVisible();
+  });
+
+  test("searching users asks the backend for the matching users and says when none match", async () => {
+    const requestedSearches: (string | null)[] = [];
+    worker.use(
+      http.get(
+        testTenantApiUrl(API_ENDPOINTS.AI_USAGE.BY_USER),
+        ({ request }) => {
+          const requestedSearch = new URL(request.url).searchParams.get(
+            "search",
+          );
+          requestedSearches.push(requestedSearch);
+          return HttpResponse.json(
+            requestedSearch === null
+              ? BY_USER
+              : { ...BY_USER, data: [], total_pages: 0, total_items: 0 },
+          );
+        },
+      ),
+      ...usageHandlers(SUMMARY, []),
+    );
+    const { router } = await renderUsagePage(
+      APP_ROUTES.SETTINGS_ROUTES.AI_USAGE_BY_USER,
+    );
+    await expect
+      .element(page.getByRole("row", { name: "Priya Nair" }))
+      .toBeVisible();
+
+    await page.getByRole("textbox", { name: "Search users" }).fill("nobody");
+
+    await expect
+      .element(page.getByText("No entries match your search."))
+      .toBeVisible();
+    expect(requestedSearches).toContain("nobody");
+    expect(router.state.location.search).toBe("?search=nobody");
+  });
+
+  test("sorting conversations by a column asks the backend for that order and flips it on a second click", async () => {
+    const requestedOrders: string[] = [];
+    worker.use(
+      http.get(
+        testTenantApiUrl(API_ENDPOINTS.AI_USAGE.BY_CONVERSATION),
+        ({ request }) => {
+          const requestedSearchParams = new URL(request.url).searchParams;
+          requestedOrders.push(
+            `${requestedSearchParams.get("sort_by")} ${requestedSearchParams.get("sort_direction")}`,
+          );
+          return HttpResponse.json(BY_CONVERSATION);
+        },
+      ),
+      ...usageHandlers(SUMMARY, []),
+    );
+    await renderUsagePage(APP_ROUTES.SETTINGS_ROUTES.AI_USAGE_BY_CONVERSATION);
+    await expect
+      .element(page.getByRole("columnheader", { name: "Tokens" }))
+      .toHaveAttribute("aria-sort", "descending");
+
+    await page.getByRole("button", { name: "Model calls" }).click();
+    await expect
+      .element(page.getByRole("columnheader", { name: "Model calls" }))
+      .toHaveAttribute("aria-sort", "descending");
+    await page.getByRole("button", { name: "Model calls" }).click();
+
+    await expect
+      .element(page.getByRole("columnheader", { name: "Model calls" }))
+      .toHaveAttribute("aria-sort", "ascending");
+    await expect
+      .element(page.getByRole("columnheader", { name: "Tokens" }))
+      .toHaveAttribute("aria-sort", "none");
+    await expect
+      .poll(() => requestedOrders)
+      .toEqual(["total_tokens desc", "call_count desc", "call_count asc"]);
+  });
+
+  test("moving to the next page of conversations asks the backend for that page and shows its rows", async () => {
+    const secondPageNumber = FIRST_PAGE + 1;
+    const requestedPages: (string | null)[] = [];
+    worker.use(
+      http.get(
+        testTenantApiUrl(API_ENDPOINTS.AI_USAGE.BY_CONVERSATION),
+        ({ request }) => {
+          const requestedPage = new URL(request.url).searchParams.get("page");
+          requestedPages.push(requestedPage);
+          return HttpResponse.json(
+            requestedPage === String(secondPageNumber)
+              ? {
+                  ...BY_CONVERSATION,
+                  data: [BY_CONVERSATION.data[1]],
+                  total_pages: 2,
+                  page: secondPageNumber,
+                }
+              : {
+                  ...BY_CONVERSATION,
+                  data: [BY_CONVERSATION.data[0]],
+                  total_pages: 2,
+                  page: FIRST_PAGE,
+                },
+          );
+        },
+      ),
+      ...usageHandlers(SUMMARY, []),
+    );
+    const { router } = await renderUsagePage(
+      APP_ROUTES.SETTINGS_ROUTES.AI_USAGE_BY_CONVERSATION,
+    );
+    await expect
+      .element(page.getByRole("row", { name: "Weekly revenue by region" }))
+      .toBeVisible();
+    expect(requestedPages).not.toContain(String(secondPageNumber));
+
+    await page
+      .getByRole("button", { name: String(secondPageNumber + 1), exact: true })
+      .click();
+
+    await expect
+      .element(page.getByRole("row", { name: "Private conversation" }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole("row", { name: "Weekly revenue by region" }))
+      .not.toBeInTheDocument();
+    expect(requestedPages[requestedPages.length - 1]).toBe(
+      String(secondPageNumber),
+    );
+    expect(new URLSearchParams(router.state.location.search).get("page")).toBe(
+      String(secondPageNumber),
+    );
   });
 
   test("shows the backend's label for a private conversation and its questions", async () => {

@@ -58,6 +58,12 @@ export { ExpandableSearch } from "src/components/design-system/ExpandableSearch"
 export type { ExpandableSearchProps } from "src/components/design-system/ExpandableSearch";
 export { CommandMenu } from "src/components/design-system/CommandMenu";
 export { Badge } from "src/components/design-system/Badge";
+export { ProgressMeter } from "src/components/design-system/ProgressMeter";
+export type {
+  ProgressMeterProps,
+  ProgressMeterTone,
+  ProgressMeterWidth,
+} from "src/components/design-system/ProgressMeter";
 export { Card } from "src/components/design-system/Card";
 export { Separator } from "src/components/design-system/Separator";
 export type { SeparatorProps } from "src/components/design-system/Separator";

@@ -3,6 +3,8 @@ use strum::{AsRefStr, Display, EnumString};
 
 pub const API_PATH_PREFIX: &str = "/api/";
 pub const FIRST_PAGE: u64 = 0;
+pub const DIGIT_GROUP_SIZE: usize = 3;
+pub const DIGIT_GROUP_SEPARATOR: char = ',';
 pub const LINK_TOKEN_BYTES: usize = 32;
 pub const SMTP_TIMEOUT_SECONDS: u64 = 30;
 pub const OIDC_PROVIDER_VARIABLE_PREFIX: &str = "SOPHO_OIDC_";

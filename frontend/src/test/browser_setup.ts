@@ -16,12 +16,15 @@ vi.mock("@paper-design/shaders-react", async (importOriginal) => {
   return { ...shaders, MeshGradient: MeshGradientWithoutAnimation };
 });
 
+window.localStorage.clear();
+
 beforeAll(async () => {
   await worker.start({ quiet: true, onUnhandledFrame: recordUnhandledRequest });
 });
 
 afterEach(async () => {
   await cleanup();
+  window.localStorage.clear();
   worker.resetHandlers();
   assertEveryRequestWasHandled();
 });

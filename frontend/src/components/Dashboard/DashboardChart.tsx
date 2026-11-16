@@ -167,8 +167,13 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
     useGenerateChartSummary(dashboardId);
   const { mutate: savePrompt, isPending: isSavingPrompt } =
     useUpdateChartPrompt(dashboardId, cellId);
-  const isAiConfigured = aiConfiguration?.is_ai_available === true;
   const canEdit = useCanvasCapabilities().can_edit;
+  const isAiAvailable = aiConfiguration?.is_ai_available === true;
+  const aiUnavailableMessage = isAiAvailable
+    ? null
+    : (aiConfiguration?.unavailable_message ?? null);
+  const showSummarizeControl =
+    canEdit && (isAiAvailable || aiUnavailableMessage !== null);
   const isSummarizing = summary?.status === "GENERATING" || isPending;
 
   const handleSummarize = useCallback(() => {
@@ -238,7 +243,7 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
           alignItems="center"
           revealOnHover={revealChrome}
         >
-          {isAiConfigured && canEdit && (
+          {showSummarizeControl && (
             <SummaryPromptControl
               iconType="sparkles"
               actionLabel="Summarise chart"
@@ -247,6 +252,7 @@ function DashboardChartWithQuery({ cellId, dashboardId }: DashboardChartProps) {
               userPrompt={summary?.user_prompt ?? null}
               busy={isSummarizing}
               isSaving={isSavingPrompt}
+              unavailableMessage={aiUnavailableMessage}
               size="sm"
               onGenerate={handleSummarize}
               onSavePrompt={savePrompt}

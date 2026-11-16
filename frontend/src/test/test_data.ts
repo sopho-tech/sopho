@@ -54,9 +54,12 @@ export const AI_ON_THE_PLATFORM_KEY: AiConfiguration = {
   key_source: "PLATFORM",
   unavailable_message: null,
   platform_ai: {
-    token_allowance: 100000,
-    used_tokens: 41250,
-    remaining_tokens: 58750,
+    allowance_usage: {
+      tokens_label: "41,250 of 100,000",
+      used_percentage: 41,
+      level: "LOW",
+    },
+    tokens_left_label: "58,750",
     is_allowance_used: false,
   },
 };
@@ -68,9 +71,12 @@ export const AI_WITH_THE_ALLOWANCE_USED: AiConfiguration = {
   unavailable_message:
     "This tenant has used its platform AI allowance. Add your own AI key in Settings to keep using AI.",
   platform_ai: {
-    token_allowance: 100000,
-    used_tokens: 104300,
-    remaining_tokens: 0,
+    allowance_usage: {
+      tokens_label: "104,300 of 100,000",
+      used_percentage: 104,
+      level: "HIGH",
+    },
+    tokens_left_label: "0",
     is_allowance_used: true,
   },
 };

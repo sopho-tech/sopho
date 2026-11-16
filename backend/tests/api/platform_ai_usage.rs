@@ -14,6 +14,8 @@ use uuid::Uuid;
 
 const RANGE_QUERY: &str = "from=2026-11-10&to=2026-11-12";
 const TOKEN_ALLOWANCE: u64 = 1_000_000;
+const FORMATTED_TOKEN_ALLOWANCE: &str = "1,000,000";
+const LOW_ALLOWANCE_USAGE_LEVEL: &str = "LOW";
 const PLATFORM_KEY_SOURCE: &str = "PLATFORM";
 const TENANT_KEY_SOURCE: &str = "TENANT";
 const PRIVATE_VISIBILITY: &str = "PRIVATE";
@@ -183,7 +185,7 @@ async fn a_tenant_can_look_at_its_platform_ai_usage_and_its_own_key_usage_apart(
             { "kind": "SUMMARIES", "label": "Summaries", "total_tokens": 30, "call_count": 1 },
         ])
     );
-    assert_eq!(platform_ai_by_user["users"][0]["total_tokens"], 130);
+    assert_eq!(platform_ai_by_user["data"][0]["total_tokens"], 130);
     assert_eq!(platform_ai_over_time["days"][1]["total_tokens"], 130);
     assert_eq!(platform_ai_by_conversation["data"][0]["total_tokens"], 100);
     assert_eq!(own_key_questions["total_tokens"], 7000);
@@ -284,16 +286,22 @@ async fn platform_administrators_see_platform_key_usage_across_tenants() {
                 "tenant_name": "Second tenant",
                 "total_tokens": 450,
                 "call_count": 2,
-                "platform_ai_used_tokens": 8450,
-                "platform_ai_token_allowance": TOKEN_ALLOWANCE,
+                "allowance_usage": {
+                    "tokens_label": format!("8,450 of {FORMATTED_TOKEN_ALLOWANCE}"),
+                    "used_percentage": 0,
+                    "level": LOW_ALLOWANCE_USAGE_LEVEL,
+                },
             },
             {
                 "tenant_id": app.tenant_id,
                 "tenant_name": "Default",
                 "total_tokens": 100,
                 "call_count": 1,
-                "platform_ai_used_tokens": 100,
-                "platform_ai_token_allowance": TOKEN_ALLOWANCE,
+                "allowance_usage": {
+                    "tokens_label": format!("100 of {FORMATTED_TOKEN_ALLOWANCE}"),
+                    "used_percentage": 0,
+                    "level": LOW_ALLOWANCE_USAGE_LEVEL,
+                },
             },
         ])
     );
@@ -335,6 +343,46 @@ async fn platform_administrators_see_platform_key_usage_across_tenants() {
     let second_page_of_users =
         platform_usage(&app, &format!("by_user?{RANGE_QUERY}&page=1&page_size=2")).await;
     assert_eq!(second_page_of_users["data"], json!([by_user["data"][2]]));
+    let tenants_by_name = platform_usage(
+        &app,
+        &format!("by_tenant?{RANGE_QUERY}&sort_by=tenant_name&sort_direction=asc"),
+    )
+    .await;
+    assert_eq!(
+        tenants_by_name["data"],
+        json!([by_tenant["data"][1], by_tenant["data"][0]])
+    );
+    let tenants_with_fewest_calls_first = platform_usage(
+        &app,
+        &format!("by_tenant?{RANGE_QUERY}&sort_by=call_count&sort_direction=asc"),
+    )
+    .await;
+    assert_eq!(
+        tenants_with_fewest_calls_first["data"],
+        json!([by_tenant["data"][1], by_tenant["data"][0]])
+    );
+    let users_of_the_searched_tenant =
+        platform_usage(&app, &format!("by_user?{RANGE_QUERY}&search=SECOND%20ten")).await;
+    assert_eq!(
+        users_of_the_searched_tenant["data"],
+        json!([by_user["data"][0], by_user["data"][2]])
+    );
+    assert_eq!(users_of_the_searched_tenant["total_items"], 2);
+    let second_page_of_the_search = platform_usage(
+        &app,
+        &format!("by_user?{RANGE_QUERY}&search=second%20ten&page=1&page_size=1"),
+    )
+    .await;
+    assert_eq!(
+        second_page_of_the_search["data"],
+        json!([by_user["data"][2]])
+    );
+    let conversations_of_the_searched_tenant = platform_usage(
+        &app,
+        &format!("by_conversation?{RANGE_QUERY}&search=default"),
+    )
+    .await;
+    assert_eq!(conversations_of_the_searched_tenant["total_items"], 1);
     assert_eq!(second_page_of_users["page"], 1);
     let second_page_of_tenants =
         platform_usage(&app, &format!("by_tenant?{RANGE_QUERY}&page=1&page_size=1")).await;
@@ -350,6 +398,9 @@ async fn platform_administrators_see_platform_key_usage_across_tenants() {
         "by_conversation?page=1&page_size=10",
         "by_tenant?page=0&page_size=0",
         "by_user?page=0&page_size=51",
+        "by_user?sort_by=allowance_usage",
+        "by_tenant?sort_by=user_name",
+        "by_conversation?sort_by=allowance_usage",
         "summary?key_source=TENANT",
         "by_tenant?key_source=PLATFORM",
     ] {

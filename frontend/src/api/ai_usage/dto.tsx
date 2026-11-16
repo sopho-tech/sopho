@@ -3,6 +3,32 @@ export type UsageRangeParams = {
   keySource: string | null;
 };
 
+export type UsageSortColumn =
+  | "name"
+  | "tenant_name"
+  | "user_name"
+  | "total_tokens"
+  | "call_count"
+  | "allowance_usage";
+
+export type UsageSortDirection = "asc" | "desc";
+
+export type UsageListParams = {
+  page: number;
+  pageSize: number;
+  search: string;
+  sortColumn: UsageSortColumn;
+  sortDirection: UsageSortDirection;
+};
+
+export type AllowanceUsageLevel = "LOW" | "MEDIUM" | "HIGH";
+
+export type AllowanceUsage = {
+  tokens_label: string;
+  used_percentage: number;
+  level: AllowanceUsageLevel;
+};
+
 export type UsageSummaryDto = {
   from: string;
   to: string;
@@ -36,7 +62,11 @@ export type UsageUserDto = {
 };
 
 export type UsageByUserDto = {
-  users: UsageUserDto[];
+  data: UsageUserDto[];
+  total_pages: number;
+  page: number;
+  page_size: number;
+  total_items: number;
 };
 
 export type UsageKindDto = {

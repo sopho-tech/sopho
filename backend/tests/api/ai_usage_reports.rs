@@ -20,6 +20,7 @@ const RANGE_QUERY: &str = "from=2026-11-10&to=2026-11-12";
 const USAGE_READER_ROLE: &str = "USAGE_READER";
 const PLATFORM_MEMBER: &str = "MEMBER";
 const PRIVATE_VISIBILITY: &str = "PRIVATE";
+const DELETED_ACCOUNT_LABEL: &str = "Deleted account";
 
 struct RecordedCall<'a> {
     tenant_id: Uuid,
@@ -227,7 +228,7 @@ async fn reports_add_up_the_calls_in_the_range_and_leave_out_the_rest() {
             "call_count": 4,
             "has_usage": true,
             "is_platform_ai_on": false,
-            "missing_token_counts_note": "1 call in this range reported no token counts. It is included in the number of calls but adds no tokens.",
+            "missing_token_counts_note": "1 model call in this range reported no token counts. It is included in the number of model calls but adds no tokens.",
         })
     );
     assert_eq!(
@@ -243,13 +244,46 @@ async fn reports_add_up_the_calls_in_the_range_and_leave_out_the_rest() {
     assert_eq!(
         by_user,
         json!({
-            "users": [
+            "data": [
                 { "user_id": admin_user_id, "name": ADMIN_FULL_NAME, "total_tokens": 175, "call_count": 2 },
                 { "user_id": null, "name": "Background", "total_tokens": 33, "call_count": 1 },
                 { "user_id": colleague.id, "name": colleague.full_name, "total_tokens": 0, "call_count": 1 },
             ],
+            "total_pages": 1,
+            "page": 0,
+            "page_size": 10,
+            "total_items": 3,
         })
     );
+    let users_with_fewest_tokens_first = usage(
+        &app,
+        &format!("by_user?{RANGE_QUERY}&sort_by=total_tokens&sort_direction=asc"),
+    )
+    .await;
+    assert_eq!(
+        users_with_fewest_tokens_first["data"],
+        json!([by_user["data"][2], by_user["data"][1], by_user["data"][0]])
+    );
+    let users_matching_a_search =
+        usage(&app, &format!("by_user?{RANGE_QUERY}&search=%20BACKground")).await;
+    assert_eq!(users_matching_a_search["data"], json!([by_user["data"][1]]));
+    assert_eq!(users_matching_a_search["total_items"], 1);
+    let conversations_matching_no_search = usage(
+        &app,
+        &format!("by_conversation?{RANGE_QUERY}&search=matches-no-conversation"),
+    )
+    .await;
+    assert_eq!(conversations_matching_no_search["data"], json!([]));
+    assert_eq!(conversations_matching_no_search["total_items"], 0);
+    for refused_sort in [
+        "by_user?sort_by=tenant_name",
+        "by_conversation?sort_by=allowance_usage",
+    ] {
+        let refused = app
+            .get(&format!("/ai_usage/{refused_sort}&{RANGE_QUERY}"))
+            .await;
+        assert_eq!(refused.status, StatusCode::BAD_REQUEST, "{refused_sort}");
+    }
     assert_eq!(
         by_kind,
         json!({
@@ -333,7 +367,7 @@ async fn usage_of_one_tenant_is_not_returned_for_another() {
     .await;
 
     assert_eq!(summary["call_count"], 0);
-    assert_eq!(by_user["users"], json!([]));
+    assert_eq!(by_user["data"], json!([]));
     assert_eq!(by_kind["kinds"], json!([]));
     assert_eq!(by_conversation["data"], json!([]));
     assert_eq!(conversation_questions["questions"], json!([]));
@@ -441,6 +475,42 @@ async fn a_conversation_row_names_the_user_who_used_the_most_tokens_in_it() {
     assert_eq!(by_conversation["data"][0]["total_tokens"], 140);
     assert_eq!(by_conversation["data"][0]["call_count"], 3);
     assert_eq!(by_conversation["data"][0]["user_name"], colleague.full_name);
+}
+
+#[tokio::test]
+async fn usage_of_a_user_who_no_longer_exists_is_labelled_as_a_deleted_account() {
+    let app = TestApp::spawn().await;
+    app.login_as_admin().await;
+    let deleted_user_id = Uuid::new_v4();
+    let conversation_id = Uuid::new_v4();
+    record_call(
+        &app,
+        RecordedCall {
+            tenant_id: app.tenant_id,
+            user_id: Some(deleted_user_id),
+            agent_name: "router_agent",
+            input_tokens: 70,
+            output_tokens: 5,
+            cached_input_tokens: 0,
+            metadata: json!({ "conversation_id": conversation_id }),
+            created_at: "2026-11-11T12:00:00Z",
+        },
+    )
+    .await;
+
+    let by_user = usage(&app, &format!("by_user?{RANGE_QUERY}")).await;
+    let by_conversation = usage(&app, &format!("by_conversation?{RANGE_QUERY}")).await;
+
+    assert_eq!(
+        by_user["data"],
+        json!([
+            { "user_id": deleted_user_id, "name": DELETED_ACCOUNT_LABEL, "total_tokens": 75, "call_count": 1 },
+        ])
+    );
+    assert_eq!(
+        by_conversation["data"][0]["user_name"],
+        DELETED_ACCOUNT_LABEL
+    );
 }
 
 #[tokio::test]
@@ -563,7 +633,7 @@ async fn an_answered_question_shows_up_in_every_report_and_its_rows_add_up() {
         [
             (ORDER_STATUS_QUESTION.to_string(), "TEXT".to_string()),
             (
-                "Conversation naming and other calls outside a question".to_string(),
+                "Conversation naming and other model calls outside a question".to_string(),
                 "NO_QUESTION".to_string()
             ),
             ("Canvas command".to_string(), "COMMAND".to_string()),

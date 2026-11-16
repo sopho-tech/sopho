@@ -23,8 +23,7 @@ const ACTIVE_TENANT: PlatformTenantDto = {
   active_owner_count: 1,
   created_at: "2026-10-01T09:00:00Z",
   ai_key_label: "Platform AI",
-  platform_ai_used_tokens: 41250,
-  platform_ai_token_allowance: 100000,
+  platform_ai_tokens_label: "41,250 of 100,000",
 };
 
 const SUSPENDED_TENANT: PlatformTenantDto = {
@@ -35,8 +34,7 @@ const SUSPENDED_TENANT: PlatformTenantDto = {
   active_owner_count: 1,
   created_at: "2026-10-02T09:00:00Z",
   ai_key_label: "Own key",
-  platform_ai_used_tokens: null,
-  platform_ai_token_allowance: null,
+  platform_ai_tokens_label: "Off",
 };
 
 const tenantsRoutes = [

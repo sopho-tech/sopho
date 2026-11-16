@@ -45,6 +45,10 @@ describe("AI configurations", () => {
       .element(platformAiCard.getByText("41,250 of 100,000"))
       .toBeVisible();
     await expect.element(platformAiCard.getByText("58,750")).toBeVisible();
+    await expect
+      .element(platformAiCard.getByRole("meter", { name: "Allowance usage" }))
+      .toHaveAttribute("aria-valuenow", "41");
+    await expect.element(platformAiCard.getByText("41%")).toBeVisible();
   });
 
   test("shows the backend's message when the platform AI allowance is used", async () => {
@@ -54,6 +58,10 @@ describe("AI configurations", () => {
     await expect
       .element(platformAiCard.getByText("104,300 of 100,000"))
       .toBeVisible();
+    await expect
+      .element(platformAiCard.getByRole("meter", { name: "Allowance usage" }))
+      .toHaveAttribute("aria-valuenow", "100");
+    await expect.element(platformAiCard.getByText("104%")).toBeVisible();
     await expect
       .element(
         platformAiCard.getByText(

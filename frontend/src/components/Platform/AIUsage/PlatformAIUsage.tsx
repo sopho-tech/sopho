@@ -17,13 +17,11 @@ import {
   PLATFORM_USAGE_EMPTY_HEADING,
   PLATFORM_USAGE_TABS,
 } from "src/components/Platform/AIUsage/constants";
-import {
-  CONVERSATION_PAGE_SEARCH_PARAMETER,
-  RANGE_OPTIONS,
-} from "src/components/Settings/AIUsage/constants";
+import { RANGE_OPTIONS } from "src/components/Settings/AIUsage/constants";
 import { formatUtcDay } from "src/components/Settings/AIUsage/format";
 import {
   useChangeUsageRange,
+  searchWithoutUsageList,
   useUsageRange,
 } from "src/components/Settings/AIUsage/hooks";
 
@@ -38,14 +36,11 @@ export function PlatformAIUsage() {
     location.pathname.startsWith(usageTab.value),
   );
   const handleChooseTab = useCallback(
-    (usageTabPath: string) => {
-      const searchParamsWithoutPage = new URLSearchParams(location.search);
-      searchParamsWithoutPage.delete(CONVERSATION_PAGE_SEARCH_PARAMETER);
+    (usageTabPath: string) =>
       void navigate({
         pathname: usageTabPath,
-        search: searchParamsWithoutPage.toString(),
-      });
-    },
+        search: searchWithoutUsageList(location.search),
+      }),
     [navigate, location.search],
   );
 

@@ -1,8 +1,10 @@
-use crate::support::canvas_builder::{create_canvas, create_sql_cell, string_field};
+use crate::support::canvas_builder::{
+    create_canvas, create_chart_cell, create_sql_cell, order_status_chart_content, string_field,
+};
 use crate::support::constants::{
     CONNECTION_HOST_NOT_ALLOWED_CODE, CONNECTION_HOST_NOT_ALLOWED_MESSAGE,
     CONNECTION_TYPE_DISABLED_CODE, INTERNAL_HOSTS, OFFERED_SOURCE_TYPE_PATH, ORDER_COUNT_QUERY,
-    ORDER_STATUS_QUESTION, SQLITE_DISABLED_MESSAGE, UNRESOLVABLE_HOST,
+    ORDER_STATUS_QUERY, ORDER_STATUS_QUESTION, SQLITE_DISABLED_MESSAGE, UNRESOLVABLE_HOST,
 };
 use crate::support::conversation::start_conversation;
 use crate::support::postgres_server::shared_postgres_server;
@@ -237,12 +239,57 @@ async fn an_existing_connection_of_a_disabled_type_stops_working() {
         "{}",
         completion.body
     );
-    assert_eq!(completion.body["code"], CONNECTION_TYPE_DISABLED_CODE);
+    assert_eq!(completion.body["error_code"], CONNECTION_TYPE_DISABLED_CODE);
     assert_eq!(completion.body["error"], SQLITE_DISABLED_MESSAGE);
     assert_eq!(
         app.fake_llm.received_requests().len(),
         llm_requests_before_completion,
         "a refused completion must not call the LLM"
+    );
+}
+
+#[tokio::test]
+async fn a_chart_on_an_existing_connection_of_a_disabled_type_stops_working() {
+    let mut app = TestApp::spawn().await;
+    app.login_as_admin().await;
+    let connection = app.create_sqlite_demo_connection().await;
+    let connection_id = string_field(&connection, "id");
+    let canvas = create_canvas(&app, "Orders").await;
+    let sql_cell = create_sql_cell(
+        &app,
+        &canvas.notebook_id,
+        &connection_id,
+        "Orders by status",
+        ORDER_STATUS_QUERY,
+    )
+    .await;
+    let chart_cell = create_chart_cell(
+        &app,
+        &canvas.notebook_id,
+        &connection_id,
+        "Orders by status chart",
+        order_status_chart_content(&string_field(&sql_cell, "id")),
+    )
+    .await;
+    let chart_execution_path = format!("/cell/{}/execute", string_field(&chart_cell, "id"));
+    let executed_chart = app.post(&chart_execution_path, json!({})).await;
+    assert_eq!(
+        executed_chart.status,
+        StatusCode::OK,
+        "{}",
+        executed_chart.body
+    );
+
+    let redeployed = redeploy(&app, sqlite_disabled()).await;
+
+    let refused_chart = redeployed
+        .admin
+        .post(&chart_execution_path, json!({}))
+        .await;
+    assert_refused(
+        &refused_chart,
+        CONNECTION_TYPE_DISABLED_CODE,
+        SQLITE_DISABLED_MESSAGE,
     );
 }
 

@@ -99,8 +99,11 @@ export const ExistingConversationPanel = () => {
   const toTenantPath = useTenantPath();
   const startStream = useStartStream();
   const composerRef = useRef<MessageComposerHandle>(null);
-  const { events: streamingEvents, isStreaming } =
-    useConversationStream(conversationId);
+  const {
+    events: streamingEvents,
+    isStreaming,
+    refusalMessage: completionRefusalMessage,
+  } = useConversationStream(conversationId);
   const appendUserMessage = useAppendUserMessage(conversationId);
   const gate = useCanSendFollowUp(conversationId);
 
@@ -233,6 +236,11 @@ export const ExistingConversationPanel = () => {
                     events={streamingEvents}
                     isStreaming={isStreaming}
                   />
+                </Flex>
+              )}
+              {completionRefusalMessage !== null && (
+                <Flex direction="column" className={styles.messageWrapper}>
+                  <BannerSlim type="error" message={completionRefusalMessage} />
                 </Flex>
               )}
               {gate.canSend && !isStreaming && followUpQuestions.length > 0 && (

@@ -16,7 +16,6 @@ export type PaginatedData<T> = {
 
 export type ApiErrorBody = {
   status?: number;
-  code?: string;
   error_code?: string;
   message?: string;
   error?: string;
@@ -54,10 +53,6 @@ export class ApiError extends Error {
   ) {
     super(displayedErrorMessage(status, body, message));
     this.name = "ApiError";
-  }
-
-  get code(): string | undefined {
-    return this.body.code;
   }
 
   get errorCode(): string | undefined {

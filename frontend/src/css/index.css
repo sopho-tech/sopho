@@ -329,6 +329,7 @@ ul ul li {
   --border-radius-xl: 1rem; /* 16px */
   --border-radius-2xl: 1.5rem; /* 24px */
   --border-radius-full: 9999px;
+  --progress-meter-compact-track-width: 4.5rem;
 
   /* Icon Sizes */
   --icon-sm: 0.75rem;

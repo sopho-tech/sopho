@@ -1,4 +1,4 @@
-use crate::ai_usage::dto::{ConversationPageQuery, UsageRangeQuery};
+use crate::ai_usage::dto::{UsageListQuery, UsageRangeQuery};
 use crate::authentication::service::PasswordFlowError;
 use crate::authorization::dto::AuthenticatedUser;
 use crate::common::AppState;
@@ -210,13 +210,13 @@ async fn list_platform_ai_usage_by_tenant(
     State(app_state): State<AppState>,
     authenticated_user: AuthenticatedUser,
     Query(usage_range_query): Query<UsageRangeQuery>,
-    Query(conversation_page_query): Query<ConversationPageQuery>,
+    Query(usage_list_query): Query<UsageListQuery>,
 ) -> Response {
     match service::list_platform_ai_usage_by_tenant(
         &app_state,
         authenticated_user.user_id(),
         &usage_range_query,
-        &conversation_page_query,
+        &usage_list_query,
     )
     .await
     {
@@ -229,13 +229,13 @@ async fn list_platform_ai_usage_by_user(
     State(app_state): State<AppState>,
     authenticated_user: AuthenticatedUser,
     Query(usage_range_query): Query<UsageRangeQuery>,
-    Query(conversation_page_query): Query<ConversationPageQuery>,
+    Query(usage_list_query): Query<UsageListQuery>,
 ) -> Response {
     match service::list_platform_ai_usage_by_user(
         &app_state,
         authenticated_user.user_id(),
         &usage_range_query,
-        &conversation_page_query,
+        &usage_list_query,
     )
     .await
     {
@@ -248,13 +248,13 @@ async fn list_platform_ai_usage_by_conversation(
     State(app_state): State<AppState>,
     authenticated_user: AuthenticatedUser,
     Query(usage_range_query): Query<UsageRangeQuery>,
-    Query(conversation_page_query): Query<ConversationPageQuery>,
+    Query(usage_list_query): Query<UsageListQuery>,
 ) -> Response {
     match service::list_platform_ai_usage_by_conversation(
         &app_state,
         authenticated_user.user_id(),
         &usage_range_query,
-        &conversation_page_query,
+        &usage_list_query,
     )
     .await
     {

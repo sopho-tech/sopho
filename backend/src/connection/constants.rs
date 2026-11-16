@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use strum::{Display, EnumString, VariantArray};
+use strum::{Display, EnumMessage, EnumString, VariantArray};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum SqlDialect {
@@ -18,13 +18,26 @@ impl fmt::Display for SqlDialect {
 }
 
 #[derive(
-    Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Display, EnumString, VariantArray,
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    Display,
+    EnumMessage,
+    EnumString,
+    VariantArray,
 )]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum SourceType {
+    #[strum(message = "PostgreSQL")]
     Postgresql,
+    #[strum(message = "Supabase")]
     Supabase,
+    #[strum(message = "SQLite")]
     Sqlite,
 }
 
@@ -35,11 +48,8 @@ impl SourceType {
     }
 
     pub fn display_name(self) -> &'static str {
-        match self {
-            SourceType::Postgresql => "PostgreSQL",
-            SourceType::Supabase => "Supabase",
-            SourceType::Sqlite => "SQLite",
-        }
+        self.get_message()
+            .unwrap_or_else(|| panic!("{MISSING_SOURCE_TYPE_DISPLAY_NAME_MESSAGE}: {self}"))
     }
 
     pub fn to_sql_dialect(self) -> SqlDialect {
@@ -80,3 +90,20 @@ impl fmt::Display for ConnectionStatus {
 }
 
 pub const CONNECTION_NOT_FOUND_MESSAGE: &str = "Connection not found";
+pub const MISSING_SOURCE_TYPE_DISPLAY_NAME_MESSAGE: &str =
+    "a source type was declared without a display name";
+
+#[cfg(test)]
+mod tests {
+    use super::SourceType;
+    use strum::VariantArray;
+
+    #[test]
+    fn every_source_type_has_its_display_name() {
+        let display_names: Vec<&str> = SourceType::VARIANTS
+            .iter()
+            .map(|source_type| source_type.display_name())
+            .collect();
+        assert_eq!(display_names, ["PostgreSQL", "Supabase", "SQLite"]);
+    }
+}
