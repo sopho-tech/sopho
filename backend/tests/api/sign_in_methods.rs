@@ -1,7 +1,8 @@
 use crate::support::constants::{
     ACCOUNT_DEACTIVATED_SIGN_IN_ERROR, CONNECT_RESULT_LOCATION_PREFIX, EMAIL_OUTBOX_TABLE,
     LAST_SIGN_IN_METHOD_CODE, OTHER_SINGLE_SIGN_ON_PROVIDER, PASSWORD_ACCOUNT, PLATFORM_MEMBER,
-    SIGN_IN_METHOD_ADDED_EMAIL_KIND, SIGN_IN_METHOD_REMOVED_EMAIL_KIND, SINGLE_SIGN_ON_PROVIDER,
+    RETIRED_SINGLE_SIGN_ON_PROVIDER, SIGN_IN_METHOD_ADDED_EMAIL_KIND,
+    SIGN_IN_METHOD_REMOVED_EMAIL_KIND, SINGLE_SIGN_ON_PROVIDER,
     SINGLE_SIGN_ON_PROVIDER_DISPLAY_NAME, SSO_FAILED, USER_STATUS_DEACTIVATED,
 };
 use crate::support::database::{count_rows, insert_row, now, select_rows, update_rows};
@@ -433,4 +434,72 @@ async fn my_sign_in_methods_list_says_what_can_be_disconnected() {
         .expect("the sole provider")
         .clone();
     assert_eq!(sole["can_disconnect"], false);
+}
+
+#[tokio::test]
+async fn a_retired_provider_is_not_another_way_to_sign_in_when_passwords_are_on() {
+    let app = TestApp::spawn_with_email_and_single_sign_on().await;
+    let single_sign_on_only = create_user(&app, "retired-provider", PLATFORM_MEMBER).await;
+    remove_password(&app, &single_sign_on_only).await;
+    add_federated_identity(
+        &app,
+        &single_sign_on_only,
+        SINGLE_SIGN_ON_PROVIDER,
+        "configured-subject",
+    )
+    .await;
+    add_federated_identity(
+        &app,
+        &single_sign_on_only,
+        RETIRED_SINGLE_SIGN_ON_PROVIDER,
+        "retired-subject",
+    )
+    .await;
+    let session = app.session(None);
+    assert!(
+        sign_in_with_provider(
+            &session,
+            SINGLE_SIGN_ON_PROVIDER,
+            "configured-subject",
+            verified_claims(&single_sign_on_only.email, &single_sign_on_only.full_name),
+        )
+        .await
+        .is_signed_in()
+    );
+
+    let sign_in_methods = session.get("/auth/my_sign_in_method").await;
+    assert_eq!(
+        sign_in_methods.status,
+        StatusCode::OK,
+        "{}",
+        sign_in_methods.body
+    );
+    let can_disconnect_provider = |provider_name: &str| {
+        sign_in_methods.body["providers"]
+            .as_array()
+            .expect("the providers")
+            .iter()
+            .find(|provider| provider["name"] == provider_name)
+            .unwrap_or_else(|| panic!("{provider_name} is not listed"))["can_disconnect"]
+            .clone()
+    };
+    assert_eq!(can_disconnect_provider(SINGLE_SIGN_ON_PROVIDER), false);
+    assert_eq!(
+        can_disconnect_provider(RETIRED_SINGLE_SIGN_ON_PROVIDER),
+        true
+    );
+
+    let refused = session
+        .delete(&format!(
+            "/auth/oidc/{SINGLE_SIGN_ON_PROVIDER}/federated_identity"
+        ))
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.body);
+    assert_eq!(refused.body["error_code"], LAST_SIGN_IN_METHOD_CODE);
+    assert_eq!(
+        federated_identities_of(&app, &single_sign_on_only)
+            .await
+            .len(),
+        2
+    );
 }

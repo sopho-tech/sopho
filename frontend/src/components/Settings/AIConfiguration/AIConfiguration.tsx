@@ -25,6 +25,7 @@ import {
   useUpdateAiConfiguration,
 } from "src/api/ai_configuration";
 import styles from "src/components/Settings/AIConfiguration/AIConfiguration.module.css";
+import { PlatformAiCard } from "src/components/Settings/AIConfiguration/PlatformAiCard";
 import { RemoveAiConfigurationDialog } from "src/components/Settings/AIConfiguration/RemoveAiConfigurationDialog";
 import { formatTimestamp } from "src/utils/timestamp_utils";
 
@@ -67,6 +68,14 @@ function CurrentProviderTable({
   configuration: AiConfiguration;
   onRemove: () => void;
 }) {
+  if (configuration.status === "not_configured" && configuration.platform_ai) {
+    return (
+      <PlatformAiCard
+        platformAi={configuration.platform_ai}
+        unavailableMessage={configuration.unavailable_message}
+      />
+    );
+  }
   if (configuration.status === "not_configured") {
     return (
       <BannerSlim

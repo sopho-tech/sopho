@@ -7,6 +7,7 @@ import type {
   ExecuteCellResponseDto,
 } from "src/components/Notebook/Cell/dto";
 import {
+  AI_NOT_CONFIGURED,
   CANVAS,
   OFFERED_SOURCE_TYPES,
   SQLITE_CONNECTION,
@@ -110,7 +111,7 @@ export function canvasPageHandlers({
       HttpResponse.json([SQLITE_CONNECTION]),
     ),
     http.get(testTenantApiUrl(API_ENDPOINTS.AI_CONFIGURATION.GET), () =>
-      HttpResponse.json({ status: "not_configured" }),
+      HttpResponse.json(AI_NOT_CONFIGURED),
     ),
     http.get(testTenantApiUrl(API_ENDPOINTS.AI_SUMMARY.GET_BY_DASHBOARD), () =>
       HttpResponse.json({ dashboard: null, charts: [] }),

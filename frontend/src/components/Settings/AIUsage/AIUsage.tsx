@@ -10,15 +10,19 @@ import {
   Text,
 } from "src/components/design-system";
 import {
+  ALL_KEYS_OPTION,
   EMPTY_DESCRIPTION,
   EMPTY_HEADING,
+  KEY_OPTIONS,
   PAGE_DESCRIPTION,
   RANGE_OPTIONS,
   USAGE_TABS,
 } from "src/components/Settings/AIUsage/constants";
 import { formatUtcDay } from "src/components/Settings/AIUsage/format";
 import {
+  useChangeUsageKey,
   useChangeUsageRange,
+  searchWithoutUsageList,
   useUsageRange,
 } from "src/components/Settings/AIUsage/hooks";
 import { useTenantPath } from "src/utils/tenant";
@@ -29,6 +33,7 @@ export function AIUsage() {
   const toTenantPath = useTenantPath();
   const range = useUsageRange();
   const changeUsageRange = useChangeUsageRange();
+  const changeUsageKey = useChangeUsageKey();
   const summary = useUsageSummary(range);
 
   const chosenTab = USAGE_TABS.find((usageTab) =>
@@ -38,7 +43,7 @@ export function AIUsage() {
     (usageTabPath: string) =>
       void navigate({
         pathname: toTenantPath(usageTabPath),
-        search: location.search,
+        search: searchWithoutUsageList(location.search),
       }),
     [navigate, toTenantPath, location.search],
   );
@@ -60,16 +65,36 @@ export function AIUsage() {
           </Text>
         </Flex>
         <Flex direction="column" alignItems="flex-end" gap="2xs">
-          <Select value={range.lastDayCount} onValueChange={changeUsageRange}>
-            <Select.Trigger aria-label="Date range" />
-            <Select.Content>
-              {RANGE_OPTIONS.map((rangeOption) => (
-                <Select.Item key={rangeOption.value} value={rangeOption.value}>
-                  {rangeOption.label}
-                </Select.Item>
-              ))}
-            </Select.Content>
-          </Select>
+          <Flex direction="row" alignItems="center" gap="sm">
+            {(summary.data?.is_platform_ai_on || range.keySource !== null) && (
+              <Select
+                value={range.keySource ?? ALL_KEYS_OPTION}
+                onValueChange={changeUsageKey}
+              >
+                <Select.Trigger aria-label="AI key" />
+                <Select.Content>
+                  {KEY_OPTIONS.map((keyOption) => (
+                    <Select.Item key={keyOption.value} value={keyOption.value}>
+                      {keyOption.label}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select>
+            )}
+            <Select value={range.lastDayCount} onValueChange={changeUsageRange}>
+              <Select.Trigger aria-label="Date range" />
+              <Select.Content>
+                {RANGE_OPTIONS.map((rangeOption) => (
+                  <Select.Item
+                    key={rangeOption.value}
+                    value={rangeOption.value}
+                  >
+                    {rangeOption.label}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select>
+          </Flex>
           {summary.data && (
             <Text fontSize="xs" color="subtle">
               {`${formatUtcDay(summary.data.from)} to ${formatUtcDay(summary.data.to)}`}

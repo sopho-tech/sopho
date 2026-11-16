@@ -1,6 +1,5 @@
 use crate::ai::error::AgentCallError;
-use crate::ai_usage::constants::KeySource;
-use crate::ai_usage::dto::{AiCallContext, ModelCallRecord, TokenUsage};
+use crate::ai_usage::datatypes::{AiCallContext, ModelCallRecord, TokenUsage};
 use crate::ai_usage::service as ai_usage_service;
 use crate::common::AppState;
 use rig::agent::PromptResponse;
@@ -60,11 +59,39 @@ pub struct AgentSettings<'a> {
     pub max_tokens: u64,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, strum::IntoStaticStr)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    Eq,
+    serde::Serialize,
+    serde::Deserialize,
+    strum::EnumString,
+    strum::IntoStaticStr,
+)]
+#[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 pub enum ModelProvider {
     Anthropic,
     Openai,
+}
+
+impl ModelProvider {
+    pub fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Anthropic => "ANTHROPIC",
+            Self::Openai => "OPENAI",
+        }
+    }
+
+    pub fn from_db_str(s: &str) -> Option<Self> {
+        match s {
+            "ANTHROPIC" => Some(Self::Anthropic),
+            "OPENAI" => Some(Self::Openai),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -134,7 +161,6 @@ impl ModelClient {
                 agent_name,
                 model_provider: self.model_provider(),
                 model_name,
-                key_source: KeySource::Tenant,
             },
         }
     }
@@ -179,7 +205,6 @@ struct UsageRecorder {
     agent_name: AgentName,
     model_provider: ModelProvider,
     model_name: &'static str,
-    key_source: KeySource,
 }
 
 impl UsageRecorder {
@@ -191,7 +216,6 @@ impl UsageRecorder {
                 agent_name: self.agent_name.as_str(),
                 provider: self.model_provider.into(),
                 model: self.model_name,
-                key_source: self.key_source,
                 token_usage: normalized_token_usage(self.model_provider, reported_usage),
             },
         )
@@ -288,7 +312,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{ModelProvider, normalized_token_usage};
-    use crate::ai_usage::dto::TokenUsage;
+    use crate::ai_usage::datatypes::TokenUsage;
 
     fn reported_usage(
         input_tokens: u64,

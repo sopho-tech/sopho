@@ -52,7 +52,15 @@ type CanvasButtonsProps = {
   canEdit: boolean;
 };
 
-function SummarizeButton({ dashboardId }: { dashboardId: string }) {
+type SummarizeControlProps = {
+  dashboardId: string;
+  unavailableMessage: string | null;
+};
+
+function SummarizeButton({
+  dashboardId,
+  unavailableMessage,
+}: SummarizeControlProps) {
   const { data: summary } = useDashboardSummary(dashboardId);
   const { mutate: generateSummary, isPending } =
     useGenerateDashboardSummary(dashboardId);
@@ -76,13 +84,17 @@ function SummarizeButton({ dashboardId }: { dashboardId: string }) {
       userPrompt={summary?.user_prompt ?? null}
       busy={isGenerating}
       isSaving={isSavingPrompt}
+      unavailableMessage={unavailableMessage}
       onGenerate={handleClick}
       onSavePrompt={savePrompt}
     />
   );
 }
 
-function SummarizeAllChartsButton({ dashboardId }: { dashboardId: string }) {
+function SummarizeAllChartsButton({
+  dashboardId,
+  unavailableMessage,
+}: SummarizeControlProps) {
   const { data: isAnyChartGenerating } =
     useAnyChartSummaryGenerating(dashboardId);
   const { mutate: generateAll, isPending } =
@@ -101,8 +113,10 @@ function SummarizeAllChartsButton({ dashboardId }: { dashboardId: string }) {
       type="wand_sparkles"
       onClick={handleClick}
       busy={isGenerating}
+      disabledReason={unavailableMessage ?? undefined}
       backgroundColor="default"
       iconColor="grey"
+      aria-label="Summarise all charts"
       tooltip={SUMMARIZE_ALL_CHARTS_TOOLTIP}
     />
   );
@@ -143,12 +157,16 @@ export function CanvasButtons({
 
   const dashboardId = dashboardQuery.data?.id;
   const hasSavedCharts = (dashboardQuery.data?.layout?.length ?? 0) > 0;
-  const canSummarize =
+  const isAiAvailable = aiConfiguration?.is_ai_available === true;
+  const aiUnavailableMessage = isAiAvailable
+    ? null
+    : (aiConfiguration?.unavailable_message ?? null);
+  const showSummarizeControls =
     canEdit &&
     isDashboardView &&
     !isEditing &&
     hasSavedCharts &&
-    aiConfiguration?.status === "live" &&
+    (isAiAvailable || aiUnavailableMessage !== null) &&
     !!dashboardId;
 
   return (
@@ -172,8 +190,18 @@ export function CanvasButtons({
           />
         )}
         {isDashboardView && hasSavedCharts && <RefreshAllChartsButton />}
-        {canSummarize && <SummarizeAllChartsButton dashboardId={dashboardId} />}
-        {canSummarize && <SummarizeButton dashboardId={dashboardId} />}
+        {showSummarizeControls && (
+          <SummarizeAllChartsButton
+            dashboardId={dashboardId}
+            unavailableMessage={aiUnavailableMessage}
+          />
+        )}
+        {showSummarizeControls && (
+          <SummarizeButton
+            dashboardId={dashboardId}
+            unavailableMessage={aiUnavailableMessage}
+          />
+        )}
       </Flex>
       <SegmentedControl
         options={SEGMENTED_OPTIONS}

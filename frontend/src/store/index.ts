@@ -9,3 +9,4 @@ export type { ChartCellSlice } from "src/store/chartCellSlice";
 export type { ConnectionSlice } from "src/store/connectionSlice";
 export type { CommandMenuSlice } from "src/store/commandMenuSlice";
 export type { SidebarSlice } from "src/store/sidebarSlice";
+export type { TenantSlice } from "src/store/tenantSlice";

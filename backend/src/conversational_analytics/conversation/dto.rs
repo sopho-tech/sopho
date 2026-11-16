@@ -6,7 +6,6 @@ use crate::conversational_analytics::segment::MessageSegment;
 use crate::entity;
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -88,19 +87,4 @@ pub struct ConversationWithMessagesDto {
     pub messages: Vec<ConversationMessageWithContentDto>,
     pub should_execute_completion: bool,
     pub user_message_limit_reached: bool,
-}
-
-pub struct ConversationDescriptionForUsage {
-    pub conversation_id: Uuid,
-    pub name_when_readable: Option<String>,
-}
-
-pub enum QuestionForUsage {
-    Text { text: String },
-    Command,
-}
-
-pub struct ConversationQuestionsForUsage {
-    pub is_readable: bool,
-    pub questions_by_answer_message_id: HashMap<Uuid, QuestionForUsage>,
 }

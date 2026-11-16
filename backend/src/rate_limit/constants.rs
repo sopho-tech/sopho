@@ -1,5 +1,6 @@
 pub const RATE_LIMIT_WINDOW_SECONDS: u64 = 60;
 pub const MINIMUM_RATE_LIMIT_VALUE: u32 = 1;
+pub const MAXIMUM_RATE_LIMIT_VALUE: u32 = 1_000_000;
 pub const RETRY_AFTER_ROUNDING_SECONDS: u64 = 1;
 pub const SINGLE_SECOND: u64 = 1;
 pub const SECOND_UNIT: &str = "second";
@@ -22,3 +23,18 @@ pub const MISSING_PEER_ADDRESS_LOG_MESSAGE: &str =
     "rate limiting needs the peer address, but the server was started without connection info";
 pub const MISSING_AUTHENTICATED_USER_LOG_MESSAGE: &str =
     "a user rate limit ran on a request the authentication guard did not identify";
+pub const RATE_LIMIT_REFUSAL_LOG_MESSAGE: &str = "a request was refused by a rate limit";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, strum::IntoStaticStr)]
+#[strum(serialize_all = "snake_case")]
+pub enum RateLimitName {
+    SignIn,
+    Api,
+    Ai,
+}
+
+impl RateLimitName {
+    pub fn as_str(self) -> &'static str {
+        self.into()
+    }
+}

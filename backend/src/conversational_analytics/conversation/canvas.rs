@@ -1,6 +1,6 @@
 use crate::ai::canvas_generation_agent;
 use crate::ai::dto::{CanvasCandidate, ConversationHistory, Event, EventChannels};
-use crate::ai_usage::dto::AiCallContext;
+use crate::ai_usage::datatypes::AiCallContext;
 use crate::authorization::dto::TenantId;
 
 use crate::canvas::dto::{CanvasAuthorship, CanvasChangeSummary};

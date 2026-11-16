@@ -3,8 +3,10 @@ import {
   Badge,
   BannerSlim,
   Button,
+  DropdownMenu,
   Flex,
   Heading,
+  IconButton,
   Table,
   Text,
 } from "src/components/design-system";
@@ -20,7 +22,9 @@ import { CreateTenantDialog } from "src/components/CreateTenantDialog";
 import {
   RESTORE_TENANT_LABEL,
   SUSPEND_TENANT_LABEL,
+  TENANT_ACTIONS_LABEL,
   TENANT_STATUS_BADGE_VARIANTS,
+  TENANTS_PAGE_DESCRIPTION,
   TENANT_STATUS_NAMES,
   TENANTS_TABLE_COLUMNS,
 } from "src/components/Platform/constants";
@@ -38,6 +42,8 @@ function TenantRow({ tenant, onChangeSuspension }: TenantRowProps) {
     () => onChangeSuspension(tenant),
     [onChangeSuspension, tenant],
   );
+  const hasActions =
+    tenant.capabilities.can_suspend || tenant.capabilities.can_restore;
 
   return (
     <Table.Row aria-label={tenant.name}>
@@ -62,27 +68,50 @@ function TenantRow({ tenant, onChangeSuspension }: TenantRowProps) {
       </Table.Cell>
       <Table.Cell>
         <Text fontSize="sm" color="darkGrey">
-          {formatDate(tenant.created_at)}
+          {tenant.ai_key_label}
         </Text>
       </Table.Cell>
       <Table.Cell>
-        {tenant.capabilities.can_suspend && (
-          <Button
-            label={SUSPEND_TENANT_LABEL}
-            shape="rectangle"
-            size="sm"
-            backgroundColor="white"
-            onClick={handleChangeSuspension}
-          />
-        )}
-        {tenant.capabilities.can_restore && (
-          <Button
-            label={RESTORE_TENANT_LABEL}
-            shape="rectangle"
-            size="sm"
-            backgroundColor="white"
-            onClick={handleChangeSuspension}
-          />
+        <Text fontSize="sm" color="darkGrey">
+          {tenant.platform_ai_tokens_label}
+        </Text>
+      </Table.Cell>
+      <Table.Cell>
+        <Text fontSize="sm" color="darkGrey">
+          {formatDate(tenant.created_at)}
+        </Text>
+      </Table.Cell>
+      <Table.Cell align="end">
+        {hasActions && (
+          <DropdownMenu modal={false}>
+            <DropdownMenu.Trigger>
+              <IconButton
+                type="more_horiz"
+                backgroundColor="default"
+                iconColor="grey"
+                iconSize="md"
+                aria-label={`${TENANT_ACTIONS_LABEL} for ${tenant.name}`}
+              />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content>
+              {tenant.capabilities.can_suspend && (
+                <DropdownMenu.Item
+                  icon="circle_x"
+                  onClick={handleChangeSuspension}
+                >
+                  {SUSPEND_TENANT_LABEL}
+                </DropdownMenu.Item>
+              )}
+              {tenant.capabilities.can_restore && (
+                <DropdownMenu.Item
+                  icon="refresh"
+                  onClick={handleChangeSuspension}
+                >
+                  {RESTORE_TENANT_LABEL}
+                </DropdownMenu.Item>
+              )}
+            </DropdownMenu.Content>
+          </DropdownMenu>
         )}
       </Table.Cell>
     </Table.Row>
@@ -135,8 +164,10 @@ function TenantsTable() {
           <Table.HeaderCell>Tenant</Table.HeaderCell>
           <Table.HeaderCell>Status</Table.HeaderCell>
           <Table.HeaderCell>Active owners</Table.HeaderCell>
+          <Table.HeaderCell>AI key</Table.HeaderCell>
+          <Table.HeaderCell>Platform AI tokens</Table.HeaderCell>
           <Table.HeaderCell>Created</Table.HeaderCell>
-          <Table.HeaderCell>Actions</Table.HeaderCell>
+          <Table.HeaderCell />
         </Table.Header>
         {tenants.data.map((tenant) => (
           <TenantRow
@@ -186,10 +217,10 @@ export function Tenants() {
       >
         <Flex direction="column" gap="2xs">
           <Heading accessibilityLevel={2} size="2xl" textColor="black">
-            Global Tenants
+            Tenants
           </Heading>
           <Text fontSize="sm" color="subtle">
-            Create tenants, see who owns each one, and suspend or restore them.
+            {TENANTS_PAGE_DESCRIPTION}
           </Text>
         </Flex>
         <Button

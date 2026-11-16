@@ -1,4 +1,4 @@
-use crate::common::constants::CreatedByFilter;
+use crate::common::constants::{CreatedByFilter, FIRST_PAGE};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -10,7 +10,7 @@ pub struct Pagination {
 
 impl Pagination {
     pub fn page(&self) -> u64 {
-        self.page.unwrap_or(0)
+        self.page.unwrap_or(FIRST_PAGE)
     }
 
     pub fn page_size(&self) -> u64 {

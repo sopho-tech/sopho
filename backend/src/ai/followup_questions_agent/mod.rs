@@ -3,7 +3,7 @@ mod user_prompt;
 
 use crate::ai::agent_utils::{AgentName, AgentSettings, ModelRole};
 use crate::ai::dto::{ConversationHistory, ConversationHistoryTerminalStatus};
-use crate::ai_usage::dto::AiCallContext;
+use crate::ai_usage::datatypes::AiCallContext;
 use crate::common::AppState;
 use crate::data_catalog::dto::Database;
 use crate::entity;
@@ -46,9 +46,7 @@ pub async fn suggest_followups(
     history: &ConversationHistory,
     catalog: &Database,
 ) -> Result<Vec<String>> {
-    let model_client = app_state
-        .require_model_client(call_context.tenant_id())
-        .await?;
+    let model_client = call_context.model_client();
     let agent = model_client.build_agent(
         app_state,
         call_context,

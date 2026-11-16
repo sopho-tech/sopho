@@ -9,8 +9,10 @@ import {
 } from "src/api/ai_configuration/dto";
 import { tenantApiUrl, useTenantId } from "src/utils/tenant";
 
+export const AI_CONFIGURATION_QUERY_SCOPE = "ai_configuration";
+
 export const aiConfigurationKeys = {
-  all: (tenantId: string) => [tenantId, "ai_configuration"] as const,
+  all: (tenantId: string) => [tenantId, AI_CONFIGURATION_QUERY_SCOPE] as const,
   detail: (tenantId: string) =>
     [...aiConfigurationKeys.all(tenantId), "detail"] as const,
 };

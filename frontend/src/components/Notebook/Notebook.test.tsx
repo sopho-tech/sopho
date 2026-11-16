@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { Canvas } from "src/components/Canvases/Canvas";
 import { Notebook } from "src/components/Notebook";
+import { UNAVAILABLE_CONNECTION_STATUS_LABEL } from "src/components/Connection/constants";
 import { API_ENDPOINTS } from "src/constants/api_endpoints";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { canvasPageHandlers } from "src/test/msw/handlers";
@@ -20,6 +21,8 @@ import {
   ORDER_COUNT_SQL,
   ORDER_STATUS_CHART_RESULT,
   ORDER_STATUS_RESULT,
+  POSTGRES_CONNECTION,
+  SQLITE_CONNECTION,
   SQL_CELL,
   dashboardWithCharts,
 } from "src/test/test_data";
@@ -134,5 +137,44 @@ describe("notebook", () => {
     const seriesLabels = page.getByPlaceholder("legend label");
     await expect.element(seriesLabels.nth(0)).toHaveValue("Orders");
     await expect.element(seriesLabels.nth(1)).toHaveValue("Largest status");
+  });
+
+  test("a connection whose type is turned off is marked and cannot be picked for a cell", async () => {
+    worker.use(
+      http.get(testTenantApiUrl(API_ENDPOINTS.CONNECTION.GET_ALL), () =>
+        HttpResponse.json([
+          SQLITE_CONNECTION,
+          { ...POSTGRES_CONNECTION, is_source_type_available: false },
+        ]),
+      ),
+      ...canvasPageHandlers({
+        cells: [SQL_CELL],
+        dashboard: dashboardWithCharts([]),
+        executionResults: {},
+      }),
+    );
+    await renderWithProviders({
+      routes: notebookRoutes,
+      initialPath: notebookPath,
+    });
+
+    await page.getByRole("combobox").click();
+
+    const unavailableConnectionOption = page.getByRole("option", {
+      name: POSTGRES_CONNECTION.name,
+    });
+    await expect
+      .element(unavailableConnectionOption)
+      .toHaveAttribute("aria-disabled", "true");
+    await expect
+      .element(
+        unavailableConnectionOption.getByText(
+          UNAVAILABLE_CONNECTION_STATUS_LABEL,
+        ),
+      )
+      .toBeVisible();
+    await expect
+      .element(page.getByRole("option", { name: SQLITE_CONNECTION.name }))
+      .not.toHaveAttribute("aria-disabled");
   });
 });

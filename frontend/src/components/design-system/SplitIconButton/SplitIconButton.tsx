@@ -30,6 +30,7 @@ export type SplitIconButtonProps = {
   size?: SplitIconButtonSize;
   onClick: () => void;
   busy?: boolean;
+  disabledReason?: string;
   primaryLabel: string;
   onSecondaryClick: () => void;
   secondaryLabel: string;
@@ -43,6 +44,7 @@ export function SplitIconButton({
   size = "md",
   onClick,
   busy = false,
+  disabledReason,
   primaryLabel,
   onSecondaryClick,
   secondaryLabel,
@@ -70,6 +72,7 @@ export function SplitIconButton({
         iconSize={iconSize}
         onClick={onClick}
         busy={busy}
+        disabledReason={disabledReason}
         aria-label={primaryLabel}
       />
       <IconButton
@@ -79,6 +82,7 @@ export function SplitIconButton({
         iconSize={variant.caretSize}
         onClick={onSecondaryClick}
         className={styles.caret}
+        disabledReason={disabledReason}
         aria-label={secondaryLabel}
       />
     </Flex>

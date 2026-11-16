@@ -2,12 +2,18 @@ use serde::Deserialize;
 use strum::{AsRefStr, Display, EnumString};
 
 pub const API_PATH_PREFIX: &str = "/api/";
+pub const FIRST_PAGE: u64 = 0;
+pub const DIGIT_GROUP_SIZE: usize = 3;
+pub const DIGIT_GROUP_SEPARATOR: char = ',';
 pub const LINK_TOKEN_BYTES: usize = 32;
 pub const SMTP_TIMEOUT_SECONDS: u64 = 30;
 pub const OIDC_PROVIDER_VARIABLE_PREFIX: &str = "SOPHO_OIDC_";
 pub const DEFAULT_SELF_SERVE_TENANT_LIMIT: u64 = 2;
 pub const MINIMUM_SELF_SERVE_TENANT_LIMIT: u64 = 1;
 pub const MINIMUM_TENANT_MEMBER_LIMIT: u64 = 1;
+pub const MINIMUM_PLATFORM_AI_TOKEN_ALLOWANCE: u64 = 1;
+pub const PLATFORM_AI_WITH_BACKGROUND_REFRESH_REASON: &str = "the background suggested-question refresh would spend the platform AI key for every tenant with no key of its own";
+pub const REDACTED_SECRET: &str = "[redacted]";
 pub const PLATFORM_ADMINISTRATOR_EMAIL_SEPARATOR: char = ',';
 pub const NOBODY_CAN_SIGN_IN_REASON: &str =
     "with password sign-in off, people need an OIDC provider to sign in";
@@ -69,6 +75,9 @@ pub enum EnvironmentVariable {
     SophoRateLimitAiBurst,
     SophoTenantMemberLimit,
     SophoFeatureLogsFormat,
+    SophoPlatformAiProvider,
+    SophoPlatformAiApiKey,
+    SophoPlatformAiTokenAllowance,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display, EnumString, Deserialize)]

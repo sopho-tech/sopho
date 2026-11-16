@@ -71,6 +71,8 @@ export type PlatformTenantDto = {
   capabilities: PlatformTenantCapabilities;
   active_owner_count: number;
   created_at: string;
+  ai_key_label: string;
+  platform_ai_tokens_label: string;
 };
 
 export type EmailLogEntryDto = {

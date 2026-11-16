@@ -29,6 +29,14 @@ export const API_ENDPOINTS = {
     EMAILS: "/api/v1/platform/email",
     RETRY_EMAIL: "/api/v1/platform/email/:email_id/retry",
     EMAIL_TEMPLATES: "/api/v1/platform/email_template",
+    AI_USAGE_SUMMARY: "/api/v1/platform/ai_usage/summary",
+    AI_USAGE_OVER_TIME: "/api/v1/platform/ai_usage/over_time",
+    AI_USAGE_BY_KIND: "/api/v1/platform/ai_usage/by_kind",
+    AI_USAGE_BY_TENANT: "/api/v1/platform/ai_usage/by_tenant",
+    AI_USAGE_BY_USER: "/api/v1/platform/ai_usage/by_user",
+    AI_USAGE_BY_CONVERSATION: "/api/v1/platform/ai_usage/by_conversation",
+    AI_USAGE_CONVERSATION_QUESTIONS:
+      "/api/v1/platform/ai_usage/tenant/:tenant_id/conversation/:conversation_id/questions",
   },
   INVITATION_LINK: {
     LOOKUP: "/api/v1/invitation_link/lookup",

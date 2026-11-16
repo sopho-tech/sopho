@@ -182,8 +182,8 @@ fn invitation_link_error_http_response(error: InvitationError) -> (StatusCode, a
             (StatusCode::BAD_REQUEST, Some(ErrorCode::FullNameRequired))
         }
         InvitationError::PasswordRule(rule) => (StatusCode::BAD_REQUEST, Some(rule.error_code())),
-        InvitationError::PasswordSignInOff(password_error) => {
-            (StatusCode::FORBIDDEN, password_error.error_code())
+        InvitationError::PasswordSignInOff => {
+            (StatusCode::FORBIDDEN, Some(ErrorCode::PasswordSignInOff))
         }
         _ => (invitation_error_status(&error), None),
     };
@@ -226,7 +226,7 @@ fn invitation_error_status(error: &InvitationError) -> StatusCode {
         | InvitationError::PasswordRule(_) => StatusCode::BAD_REQUEST,
         InvitationError::Unauthorized(_)
         | InvitationError::RoleTooPowerful
-        | InvitationError::PasswordSignInOff(_)
+        | InvitationError::PasswordSignInOff
         | InvitationError::InvitationForAnotherAccount => StatusCode::FORBIDDEN,
         InvitationError::AlreadyMember
         | InvitationError::MemberLimitReached { .. }

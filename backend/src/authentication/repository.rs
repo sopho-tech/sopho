@@ -18,7 +18,7 @@ pub async fn save_user(
 }
 
 pub async fn get_user(
-    db: &DatabaseConnection,
+    db: &impl ConnectionTrait,
     id: Uuid,
 ) -> Result<Option<entity::user::Model>, DbErr> {
     entity::user::Entity::find_by_id(id).one(db).await

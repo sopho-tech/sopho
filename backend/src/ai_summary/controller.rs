@@ -1,7 +1,9 @@
+use crate::ai_configuration::constants::{AI_NOT_LIVE_MESSAGE, PLATFORM_AI_ALLOWANCE_USED_MESSAGE};
 use crate::ai_summary::dto;
 use crate::ai_summary::service::{self, GenerateOutcome, SummaryError};
 use crate::authorization::dto::TenantContext;
 use crate::common::AppState;
+use crate::common::error_codes::codes;
 use crate::rate_limit::service::limit_ai_requests;
 use axum::Router;
 use axum::extract::State;
@@ -159,6 +161,17 @@ fn summary_error_response(err: SummaryError) -> (StatusCode, axum::Json<serde_js
         SummaryError::AiNotConfigured => (
             StatusCode::PRECONDITION_FAILED,
             axum::Json(serde_json::json!({ "error": "AI is not configured" })),
+        ),
+        SummaryError::AiNotLive => (
+            StatusCode::PRECONDITION_FAILED,
+            axum::Json(serde_json::json!({ "error": AI_NOT_LIVE_MESSAGE })),
+        ),
+        SummaryError::PlatformAiAllowanceUsed => (
+            StatusCode::FORBIDDEN,
+            axum::Json(serde_json::json!({
+                "error": PLATFORM_AI_ALLOWANCE_USED_MESSAGE,
+                "error_code": codes::PLATFORM_AI_ALLOWANCE_USED.as_str(),
+            })),
         ),
         SummaryError::PromptTooLong(max) => (
             StatusCode::BAD_REQUEST,

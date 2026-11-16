@@ -13,6 +13,7 @@ import {
   CommandMenuSlice,
 } from "src/store/commandMenuSlice";
 import { createSidebarSlice, SidebarSlice } from "src/store/sidebarSlice";
+import { createTenantSlice, TenantSlice } from "src/store/tenantSlice";
 
 export type Store = DashboardSlice &
   CanvasSlice &
@@ -21,7 +22,8 @@ export type Store = DashboardSlice &
   ChartCellSlice &
   ConnectionSlice &
   CommandMenuSlice &
-  SidebarSlice;
+  SidebarSlice &
+  TenantSlice;
 
 export const useStore = create<Store>()((...a) => ({
   ...createDashboardSlice(...a),
@@ -32,4 +34,5 @@ export const useStore = create<Store>()((...a) => ({
   ...createConnectionSlice(...a),
   ...createCommandMenuSlice(...a),
   ...createSidebarSlice(...a),
+  ...createTenantSlice(...a),
 }));

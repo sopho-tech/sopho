@@ -1,8 +1,9 @@
 use crate::support::constants::{
     ADMIN_EMAIL, ADMIN_FULL_NAME, ADMIN_PASSWORD, ADMIN_USERNAME, AI_PROVIDER_API_KEY, API_PREFIX,
     ENCRYPTION_KEY, ENVIRONMENT, FAKE_LLM_FIXTURES_RELATIVE_PATH, FRONTEND_DIRECTORY_FOR_API_TESTS,
-    NO_DEFAULT_TENANT_ID, POSTGRES_SAMPLE_CONNECTION_NAME, SAMPLE_DATABASE_SCHEMA,
-    SQLITE_DEMO_CONNECTION_NAME, TENANT_PATH_SEGMENT, TENANT_SCOPED_ROUTE_GROUPS,
+    NO_DEFAULT_TENANT_ID, PLATFORM_AI_API_KEY, POSTGRES_SAMPLE_CONNECTION_NAME,
+    SAMPLE_DATABASE_SCHEMA, SQLITE_DEMO_CONNECTION_NAME, TENANT_PATH_SEGMENT,
+    TENANT_SCOPED_ROUTE_GROUPS,
 };
 use crate::support::data_sources::{
     SqliteDemoDatabase, copy_sqlite_demo_database, create_postgres_sample_database, manifest_path,
@@ -196,9 +197,27 @@ pub struct DeploymentFlags {
     pub is_proxy_client_address_trusted: bool,
     pub rate_limits: Option<RateLimitSettings>,
     pub tenant_member_limit: Option<u64>,
+    pub platform_ai: Option<PlatformAiDeployment>,
+}
+
+#[derive(Clone)]
+pub struct PlatformAiDeployment {
+    pub provider: &'static str,
+    pub token_allowance: u64,
 }
 
 impl DeploymentFlags {
+    pub fn with_platform_ai(provider: &'static str, token_allowance: u64) -> Self {
+        Self {
+            is_background_suggested_question_refresh_off: true,
+            platform_ai: Some(PlatformAiDeployment {
+                provider,
+                token_allowance,
+            }),
+            ..Self::default()
+        }
+    }
+
     pub fn passwordless(platform_administrator_emails: &str) -> Self {
         Self {
             is_password_sign_in_off: true,
@@ -660,6 +679,14 @@ fn test_configurations(
         );
     let configurations_builder = match deployment_flags.rate_limits {
         Some(rate_limits) => configurations_builder.rate_limits(rate_limits),
+        None => configurations_builder,
+    };
+    let configurations_builder = match &deployment_flags.platform_ai {
+        Some(platform_ai) => configurations_builder
+            .feature_flag(FeatureFlag::UsePlatformAi, true)
+            .platform_ai_provider(platform_ai.provider)
+            .platform_ai_api_key(PLATFORM_AI_API_KEY)
+            .platform_ai_token_allowance(platform_ai.token_allowance.to_string()),
         None => configurations_builder,
     };
     let configurations_builder = match deployment_flags.tenant_member_limit {

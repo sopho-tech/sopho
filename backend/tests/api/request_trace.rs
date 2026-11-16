@@ -1,12 +1,22 @@
-use crate::support::TestApp;
+use crate::support::canvas_builder::string_field;
 use crate::support::constants::{
-    REQUEST_ID_HEADER, SECRET_CALLBACK_CODE, SINGLE_SIGN_ON_PROVIDER, TERMINAL_COLOUR_CODE_END,
+    ADMIN_EMAIL, ADMIN_PASSWORD, ORDER_STATUS_QUESTION, PLATFORM_AI_API_KEY, REQUEST_ID_HEADER,
+    SECRET_CALLBACK_CODE, SINGLE_SIGN_ON_PROVIDER, TERMINAL_COLOUR_CODE_END,
     TERMINAL_ESCAPE_CHARACTER,
 };
+use crate::support::constants::{
+    API_BURST_FOR_TESTS, API_RATE_LIMIT_NAME, RATE_LIMIT_REFUSAL_LOG_MESSAGE,
+    SIGN_IN_BURST_FOR_TESTS, SIGN_IN_RATE_LIMIT_NAME, SLOWEST_REFILL_PER_MINUTE,
+    UNLIMITED_BURST_FOR_TESTS, WARNING_LOG_LEVEL,
+};
+use crate::support::conversation::answer_order_status_question;
 use crate::support::database::select_uuid;
+use crate::support::identity_provider::{sign_in_at_provider, start_sign_in};
+use crate::support::{DeploymentFlags, TestApp};
 use reqwest::{Response, StatusCode};
 use serde_json::Value;
 use sopho::LogsFormat;
+use sopho::{RateLimitQuota, RateLimitSettings};
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 use tracing::subscriber::DefaultGuard;
@@ -275,6 +285,233 @@ async fn the_query_string_of_a_sign_in_callback_is_not_logged() {
         callback_lines[0]["path"],
         format!("/api/v1/auth/oidc/{SINGLE_SIGN_ON_PROVIDER}/callback")
     );
+    assert!(
+        !captured_logs.text().contains(SECRET_CALLBACK_CODE),
+        "the callback code was logged"
+    );
+}
+
+const PLATFORM_AI_PROVIDER: &str = "anthropic";
+const TRACED_SINGLE_SIGN_ON_EMAIL: &str = "traced@example.test";
+const TOKEN_ALLOWANCE_BELOW_ONE_ANSWER: u64 = 100;
+
+#[tokio::test]
+async fn the_platform_ai_key_is_never_logged() {
+    let (captured_logs, _capture_guard) = capture_logs(LogsFormat::Json);
+    let mut app = TestApp::spawn_with_deployment_flags(DeploymentFlags::with_platform_ai(
+        PLATFORM_AI_PROVIDER,
+        TOKEN_ALLOWANCE_BELOW_ONE_ANSWER,
+    ))
+    .await;
+    app.login_as_admin().await;
+    let connection = app.create_sqlite_demo_connection().await;
+    let connection_id = string_field(&connection, "id");
+
+    answer_order_status_question(&app, &connection_id).await;
+    let refused_conversation = app
+        .post(
+            "/conversational_analytics",
+            serde_json::json!({
+                "connection_id": connection_id,
+                "segments": [{ "type": "TEXT", "text": ORDER_STATUS_QUESTION }],
+            }),
+        )
+        .await;
+    assert_eq!(
+        refused_conversation.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        refused_conversation.body
+    );
+
+    assert!(!captured_logs.json_lines().is_empty());
+    assert!(
+        !captured_logs.text().contains(PLATFORM_AI_API_KEY),
+        "the platform AI key was logged"
+    );
+}
+
+fn assert_finished_line_of_request_carries_user_id(
+    captured_logs: &CapturedLogs,
+    request_id: &str,
+    expected_user_id: &str,
+) {
+    let request_lines = captured_logs.json_lines_of_request(request_id);
+    let finished_line = request_lines.last().unwrap_or_else(|| {
+        panic!(
+            "no log line carries the request id: {}",
+            captured_logs.text()
+        )
+    });
+    assert_eq!(finished_line["user_id"], expected_user_id);
+}
+
+#[tokio::test]
+async fn the_log_line_of_a_password_sign_in_carries_the_user_id() {
+    let app = TestApp::spawn().await;
+    let expected_user_id = admin_user_id(&app).await;
+    let (captured_logs, _capture_guard) = capture_logs(LogsFormat::Json);
+
+    let sign_in = app
+        .client
+        .post(app.api_url("/auth/session"))
+        .json(&serde_json::json!({ "email": ADMIN_EMAIL, "password": ADMIN_PASSWORD }))
+        .send()
+        .await
+        .expect("sign in with the password");
+    assert_eq!(sign_in.status(), StatusCode::OK);
+
+    assert_finished_line_of_request_carries_user_id(
+        &captured_logs,
+        &request_id_of(&sign_in),
+        &expected_user_id,
+    );
+}
+
+#[tokio::test]
+async fn the_log_line_of_a_single_sign_on_callback_carries_the_user_id() {
+    let app = TestApp::spawn_with_single_sign_on().await;
+    let session = app.session(None);
+    let started = start_sign_in(&session, SINGLE_SIGN_ON_PROVIDER).await;
+    let callback_url = sign_in_at_provider(
+        &started,
+        "traced-subject",
+        serde_json::json!({
+            "email": TRACED_SINGLE_SIGN_ON_EMAIL,
+            "email_verified": true,
+            "name": "A Traced Person",
+        }),
+    )
+    .await;
+    let (captured_logs, _capture_guard) = capture_logs(LogsFormat::Json);
+
+    let callback = session
+        .client_without_redirects()
+        .get(&callback_url)
+        .send()
+        .await
+        .expect("return to the application");
+    assert!(callback.status().is_redirection());
+
+    let expected_user_id = select_uuid(
+        &app,
+        "user",
+        "id",
+        &[("email", TRACED_SINGLE_SIGN_ON_EMAIL.into())],
+    )
+    .await
+    .to_string();
+    assert_finished_line_of_request_carries_user_id(
+        &captured_logs,
+        &request_id_of(&callback),
+        &expected_user_id,
+    );
+}
+
+fn quota_with_burst(burst_size: u32) -> RateLimitQuota {
+    RateLimitQuota {
+        requests_per_minute: SLOWEST_REFILL_PER_MINUTE,
+        burst_size,
+    }
+}
+
+fn rate_limit_refusal_lines(captured_logs: &CapturedLogs, request_id: &str) -> Vec<Value> {
+    captured_logs
+        .json_lines_of_request(request_id)
+        .into_iter()
+        .filter(|line| line["message"] == RATE_LIMIT_REFUSAL_LOG_MESSAGE)
+        .collect()
+}
+
+#[tokio::test]
+async fn a_rate_limit_refusal_is_logged_naming_the_limit_that_refused() {
+    let app = TestApp::spawn_with_deployment_flags(DeploymentFlags {
+        is_rate_limiting_on: true,
+        rate_limits: Some(RateLimitSettings {
+            sign_in: quota_with_burst(SIGN_IN_BURST_FOR_TESTS),
+            api: quota_with_burst(API_BURST_FOR_TESTS),
+            ai: quota_with_burst(UNLIMITED_BURST_FOR_TESTS),
+        }),
+        ..DeploymentFlags::default()
+    })
+    .await;
+    app.login_as_admin().await;
+    let expected_user_id = admin_user_id(&app).await;
+    let (captured_logs, _capture_guard) = capture_logs(LogsFormat::Json);
+
+    for _ in 0..API_BURST_FOR_TESTS {
+        let allowed_request = app
+            .client
+            .get(app.api_url("/connection"))
+            .send()
+            .await
+            .expect("list connections");
+        assert_eq!(allowed_request.status(), StatusCode::OK);
+        assert!(
+            rate_limit_refusal_lines(&captured_logs, &request_id_of(&allowed_request)).is_empty()
+        );
+    }
+    let refused_api_request = app
+        .client
+        .get(app.api_url("/connection"))
+        .send()
+        .await
+        .expect("list connections");
+    assert_eq!(refused_api_request.status(), StatusCode::TOO_MANY_REQUESTS);
+    let api_refusal_lines =
+        rate_limit_refusal_lines(&captured_logs, &request_id_of(&refused_api_request));
+    assert_eq!(api_refusal_lines.len(), 1, "{}", captured_logs.text());
+    assert_eq!(api_refusal_lines[0]["rate_limit"], API_RATE_LIMIT_NAME);
+    assert_eq!(api_refusal_lines[0]["level"], WARNING_LOG_LEVEL);
+    assert_eq!(api_refusal_lines[0]["user_id"], expected_user_id);
+
+    let signed_out_client = app.client_without_redirects();
+    let callback_url = format!(
+        "{}/api/v1/auth/oidc/{SINGLE_SIGN_ON_PROVIDER}/callback?code={SECRET_CALLBACK_CODE}&state=any",
+        app.base_url()
+    );
+    for _ in 0..SIGN_IN_BURST_FOR_TESTS {
+        signed_out_client
+            .get(&callback_url)
+            .send()
+            .await
+            .expect("request the callback");
+    }
+    let refused_navigation = signed_out_client
+        .get(&callback_url)
+        .send()
+        .await
+        .expect("request the callback");
+    assert!(refused_navigation.status().is_redirection());
+    let navigation_refusal_lines =
+        rate_limit_refusal_lines(&captured_logs, &request_id_of(&refused_navigation));
+    assert_eq!(
+        navigation_refusal_lines.len(),
+        1,
+        "{}",
+        captured_logs.text()
+    );
+    assert_eq!(
+        navigation_refusal_lines[0]["rate_limit"],
+        SIGN_IN_RATE_LIMIT_NAME
+    );
+    assert_eq!(navigation_refusal_lines[0]["level"], WARNING_LOG_LEVEL);
+
+    let refused_sign_in = signed_out_client
+        .post(format!("{}/api/v1/invitation_link/lookup", app.base_url()))
+        .json(&serde_json::json!({ "token": "not-a-real-token" }))
+        .send()
+        .await
+        .expect("look up the invitation link");
+    assert_eq!(refused_sign_in.status(), StatusCode::TOO_MANY_REQUESTS);
+    let sign_in_refusal_lines =
+        rate_limit_refusal_lines(&captured_logs, &request_id_of(&refused_sign_in));
+    assert_eq!(sign_in_refusal_lines.len(), 1, "{}", captured_logs.text());
+    assert_eq!(
+        sign_in_refusal_lines[0]["rate_limit"],
+        SIGN_IN_RATE_LIMIT_NAME
+    );
+
     assert!(
         !captured_logs.text().contains(SECRET_CALLBACK_CODE),
         "the callback code was logged"

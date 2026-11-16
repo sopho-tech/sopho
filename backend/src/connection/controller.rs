@@ -130,7 +130,7 @@ async fn execute_query(
             StatusCode::BAD_REQUEST,
             axum::Json(serde_json::json!({
                 "status": StatusCode::BAD_REQUEST.as_u16(),
-                "code": codes::SYNTAX_ERROR.as_str(),
+                "error_code": codes::SYNTAX_ERROR.as_str(),
                 "message": e.to_string()
             })),
         ),

@@ -1,110 +1,26 @@
-use crate::ai_usage::constants::{ConversationNameKind, KeySource, QuestionTextKind};
-use crate::authorization::dto::{TenantId, UserId};
-use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
+use crate::ai_usage::constants::{
+    AllowanceUsageLevel, ConversationNameKind, KeySource, QuestionTextKind, SortDirection,
+    UsageSortColumn,
+};
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AiUsageMetadata {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub conversation_id: Option<Uuid>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub conversation_message_id: Option<Uuid>,
-}
-
-#[derive(Clone, Debug)]
-pub struct AiCallContext {
-    tenant_id: TenantId,
-    user_id: Option<UserId>,
-    metadata: AiUsageMetadata,
-}
-
-impl AiCallContext {
-    pub fn for_user(tenant_id: TenantId, user_id: UserId) -> Self {
-        Self {
-            tenant_id,
-            user_id: Some(user_id),
-            metadata: AiUsageMetadata::default(),
-        }
-    }
-
-    pub fn for_background_work(tenant_id: TenantId) -> Self {
-        Self {
-            tenant_id,
-            user_id: None,
-            metadata: AiUsageMetadata::default(),
-        }
-    }
-
-    pub fn in_conversation(mut self, conversation_id: Uuid) -> Self {
-        self.metadata = AiUsageMetadata {
-            conversation_id: Some(conversation_id),
-            conversation_message_id: None,
-        };
-        self
-    }
-
-    pub fn answering_message(
-        mut self,
-        conversation_id: Uuid,
-        conversation_message_id: Uuid,
-    ) -> Self {
-        self.metadata = AiUsageMetadata {
-            conversation_id: Some(conversation_id),
-            conversation_message_id: Some(conversation_message_id),
-        };
-        self
-    }
-
-    pub fn tenant_id(&self) -> &TenantId {
-        &self.tenant_id
-    }
-
-    pub fn user_id(&self) -> Option<UserId> {
-        self.user_id
-    }
-
-    pub fn metadata(&self) -> &AiUsageMetadata {
-        &self.metadata
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct TokenUsage {
-    pub input_tokens: u64,
-    pub output_tokens: u64,
-    pub cached_input_tokens: u64,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct ModelCallRecord {
-    pub agent_name: &'static str,
-    pub provider: &'static str,
-    pub model: &'static str,
-    pub key_source: KeySource,
-    pub token_usage: TokenUsage,
-}
 
 #[derive(Debug, Deserialize)]
 pub struct UsageRangeQuery {
     pub from: Option<NaiveDate>,
     pub to: Option<NaiveDate>,
     pub last_day_count: Option<i64>,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct UsageRange {
-    pub first_day: NaiveDate,
-    pub last_day: NaiveDate,
-    pub starts_at: DateTime<Utc>,
-    pub ends_before: DateTime<Utc>,
+    pub key_source: Option<KeySource>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ConversationPageQuery {
+pub struct UsageListQuery {
     pub page: Option<u64>,
     pub page_size: Option<u64>,
+    pub search: Option<String>,
+    pub sort_by: Option<UsageSortColumn>,
+    pub sort_direction: Option<SortDirection>,
 }
 
 #[derive(Debug, Serialize)]
@@ -117,6 +33,7 @@ pub struct UsageSummaryDto {
     pub total_tokens: i64,
     pub call_count: i64,
     pub has_usage: bool,
+    pub is_platform_ai_on: bool,
     pub missing_token_counts_note: Option<String>,
 }
 
@@ -140,11 +57,6 @@ pub struct UsageUserDto {
     pub name: String,
     pub total_tokens: i64,
     pub call_count: i64,
-}
-
-#[derive(Debug, Serialize)]
-pub struct UsageByUserDto {
-    pub users: Vec<UsageUserDto>,
 }
 
 #[derive(Debug, Serialize)]
@@ -189,4 +101,42 @@ pub struct UsageConversationQuestionsDto {
     pub call_count: i64,
     pub question_count: i64,
     pub questions: Vec<UsageQuestionDto>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PlatformUsageTenantDto {
+    pub tenant_id: Uuid,
+    pub tenant_name: String,
+    pub total_tokens: i64,
+    pub call_count: i64,
+    pub allowance_usage: Option<AllowanceUsageDto>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AllowanceUsageDto {
+    pub tokens_label: String,
+    pub used_percentage: u64,
+    pub level: AllowanceUsageLevel,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PlatformUsageUserDto {
+    pub user_id: Option<Uuid>,
+    pub name: String,
+    pub tenant_id: Uuid,
+    pub tenant_name: String,
+    pub total_tokens: i64,
+    pub call_count: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PlatformUsageConversationDto {
+    pub conversation_id: Uuid,
+    pub tenant_id: Uuid,
+    pub tenant_name: String,
+    pub name: String,
+    pub name_kind: ConversationNameKind,
+    pub user_name: String,
+    pub total_tokens: i64,
+    pub call_count: i64,
 }

@@ -16,6 +16,7 @@ pub enum FeatureFlag {
     BackgroundSuggestedQuestionRefresh,
     RateLimiting,
     TrustProxyClientAddress,
+    UsePlatformAi,
 }
 
 impl FeatureFlag {
@@ -27,7 +28,8 @@ impl FeatureFlag {
         match self {
             FeatureFlag::SelfServeTenantCreation
             | FeatureFlag::RateLimiting
-            | FeatureFlag::TrustProxyClientAddress => false,
+            | FeatureFlag::TrustProxyClientAddress
+            | FeatureFlag::UsePlatformAi => false,
             FeatureFlag::PasswordSignIn
             | FeatureFlag::SeedPasswordAdministrator
             | FeatureFlag::DefaultTenant

@@ -1,3 +1,4 @@
+pub use crate::authentication::constants::PASSWORD_SIGN_IN_OFF_MESSAGE;
 pub use crate::authentication::constants::UserStatus;
 use crate::authentication::constants::{
     ACCESS_TOKEN_EXPIRY_HOURS, ACCOUNT_DEACTIVATED_MESSAGE, CookieName, REFRESH_TOKEN_EXPIRY_DAYS,
@@ -5,7 +6,7 @@ use crate::authentication::constants::{
 };
 use crate::authentication::constants::{
     INVALID_CREDENTIALS_MESSAGE, PASSWORD_ADMINISTRATOR_NOT_CONFIGURED_MESSAGE,
-    PASSWORD_SIGN_IN_OFF_MESSAGE, SESSION_NOT_FOUND_MESSAGE, USER_NOT_FOUND_MESSAGE,
+    SESSION_NOT_FOUND_MESSAGE, USER_NOT_FOUND_MESSAGE,
 };
 use crate::authentication::dto;
 use crate::authentication::error::{AccountCreationError, CredentialsError};
@@ -35,7 +36,7 @@ use axum::response::IntoResponse;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use chrono::{Duration, Utc};
 use getrandom;
-use sea_orm::DbErr;
+use sea_orm::{ConnectionTrait, DbErr};
 use time::OffsetDateTime;
 use tower_cookies::Cookies;
 use tower_cookies::cookie::Cookie;
@@ -144,7 +145,7 @@ pub async fn get_session(cookies: Cookies, app_state: AppState) -> impl IntoResp
             Json(serde_json::json!({
                 "status": StatusCode::UNAUTHORIZED.to_string(),
                 "message": "Access token expired",
-                "code": codes::ACCESS_TOKEN_EXPIRED.as_str()
+                "error_code": codes::ACCESS_TOKEN_EXPIRED.as_str()
             })),
         );
     }
@@ -437,8 +438,16 @@ pub async fn set_platform_role(
     user_id: Uuid,
     platform_role: PlatformRole,
 ) -> Result<(), DbErr> {
+    set_platform_role_on_connection(&app_state.database_connection, user_id, platform_role).await
+}
+
+pub async fn set_platform_role_on_connection(
+    database_connection: &impl ConnectionTrait,
+    user_id: Uuid,
+    platform_role: PlatformRole,
+) -> Result<(), DbErr> {
     repository::set_user_platform_role(
-        &app_state.database_connection,
+        database_connection,
         user_id,
         platform_role.as_str(),
         time_utils::now_utc_into(),
@@ -628,6 +637,7 @@ async fn create_new_session(app_state: &AppState, user_id: Uuid) -> Result<dto::
         },
     )
     .await?;
+    crate::request_trace::service::record_user_id(session.user_id);
 
     Ok(build_session_dto(session, access_token, refresh_token))
 }

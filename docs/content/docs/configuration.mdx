@@ -70,7 +70,7 @@ Controls how much Sopho logs, using the [tracing filter syntax](https://docs.rs/
 
 ## Feature flags
 
-A feature flag turns one behaviour of Sopho on or off for the whole deployment. Each flag is an environment variable named `SOPHO_FEATURE_<NAME>` that accepts `true` or `false`. Leave it unset to keep the default. Sopho fails to start if a flag has any other value, and logs every flag at startup.
+A feature flag turns one behaviour of Sopho on or off for the whole deployment. Each flag is an environment variable named `SOPHO_FEATURE_<NAME>` that accepts `true` or `false`. Leave it unset to keep the default. Sopho fails to start if a flag has any other value, including an empty one such as `SOPHO_FEATURE_RATE_LIMITING=`, and logs every flag at startup.
 
 | Variable                                              | Default | Purpose                                                                                                                                                                              |
 | ----------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -82,19 +82,21 @@ A feature flag turns one behaviour of Sopho on or off for the whole deployment. 
 | `SOPHO_FEATURE_BACKGROUND_SUGGESTED_QUESTION_REFRESH` | `true`  | Generates suggested questions for every connection at startup and once a day, which calls the configured AI provider. When `false`, no suggested questions are generated             |
 | `SOPHO_FEATURE_RATE_LIMITING`                         | `false` | Limits how fast requests may arrive. See [Rate limiting](#rate-limiting)                                                                                                             |
 | `SOPHO_FEATURE_TRUST_PROXY_CLIENT_ADDRESS`            | `false` | Reads a visitor's address from the `x-forwarded-for` header a reverse proxy sets. Turn it on only when Sopho is reachable solely through that proxy                                  |
+| `SOPHO_FEATURE_USE_PLATFORM_AI`                       | `false` | Lets a tenant with no AI key of its own use AI on a key the deployment provides, up to an allowance. See [Platform AI](#platform-ai)                                                 |
 
 ### Combinations Sopho refuses
 
 Some settings cannot work together. Sopho fails to start and names both settings when:
 
-| If                                                      | Then you also need                                            | Why                                                                       |
-| ------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `SOPHO_FEATURE_PASSWORD_SIGN_IN` is `false`             | at least one provider in `SOPHO_OIDC_PROVIDERS`               | otherwise nobody can sign in                                              |
-| `SOPHO_FEATURE_PASSWORD_SIGN_IN` is `false`             | `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` set to `false`    | the seeded administrator has only a password, so it could never sign in   |
-| `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` is `false`  | at least one address in `SOPHO_PLATFORM_ADMINISTRATOR_EMAILS` | otherwise a new deployment can never have an administrator                |
-| `SOPHO_PLATFORM_ADMINISTRATOR_EMAILS` is set            | at least one provider in `SOPHO_OIDC_PROVIDERS`               | a listed person becomes an administrator by signing in through a provider |
-| `SOPHO_FEATURE_DEFAULT_TENANT` is `true`                | `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` set to `true`     | the default tenant and its demo are owned by the seeded administrator     |
-| `SQLITE` is listed in `SOPHO_DISABLED_CONNECTION_TYPES` | `SOPHO_FEATURE_DEFAULT_TENANT` set to `false`                 | the default tenant's demo is a SQLite connection                          |
+| If                                                      | Then you also need                                                   | Why                                                                                         |
+| ------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `SOPHO_FEATURE_PASSWORD_SIGN_IN` is `false`             | at least one provider in `SOPHO_OIDC_PROVIDERS`                      | otherwise nobody can sign in                                                                |
+| `SOPHO_FEATURE_PASSWORD_SIGN_IN` is `false`             | `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` set to `false`           | the seeded administrator has only a password, so it could never sign in                     |
+| `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` is `false`  | at least one address in `SOPHO_PLATFORM_ADMINISTRATOR_EMAILS`        | otherwise a new deployment can never have an administrator                                  |
+| `SOPHO_PLATFORM_ADMINISTRATOR_EMAILS` is set            | at least one provider in `SOPHO_OIDC_PROVIDERS`                      | a listed person becomes an administrator by signing in through a provider                   |
+| `SOPHO_FEATURE_DEFAULT_TENANT` is `true`                | `SOPHO_FEATURE_SEED_PASSWORD_ADMINISTRATOR` set to `true`            | the default tenant and its demo are owned by the seeded administrator                       |
+| `SQLITE` is listed in `SOPHO_DISABLED_CONNECTION_TYPES` | `SOPHO_FEATURE_DEFAULT_TENANT` set to `false`                        | the default tenant's demo is a SQLite connection                                            |
+| `SOPHO_FEATURE_USE_PLATFORM_AI` is `true`               | `SOPHO_FEATURE_BACKGROUND_SUGGESTED_QUESTION_REFRESH` set to `false` | the background refresh would spend the platform key for every tenant with no key of its own |
 
 ## SOPHO_SELF_SERVE_TENANT_LIMIT
 
@@ -116,6 +118,20 @@ When `SOPHO_FEATURE_INTERNAL_ADDRESS_CONNECTIONS` is `false`, Sopho refuses a Po
 
 This check gives people a clear error. It is not a complete guard: the host is checked when Sopho first opens a connection to it, and a host name can resolve to a different address later. On a public deployment, also block outbound traffic from Sopho to internal ranges and the cloud metadata address with a firewall.
 
+## Platform AI
+
+When `SOPHO_FEATURE_USE_PLATFORM_AI` is `true`, a tenant that has not saved an AI key of its own uses AI on a key the deployment provides. A tenant that saves its own key uses that key instead. Sopho fails to start if the flag is on and any of these three settings is missing or invalid; when the flag is off they are not read.
+
+| Variable                            | Value                                                                                   |
+| ----------------------------------- | --------------------------------------------------------------------------------------- |
+| `SOPHO_PLATFORM_AI_PROVIDER`        | `anthropic` or `openai`                                                                 |
+| `SOPHO_PLATFORM_AI_API_KEY`         | The provider's API key. It must not be empty                                            |
+| `SOPHO_PLATFORM_AI_TOKEN_ALLOWANCE` | How many tokens each tenant may use on the platform key. A whole number of at least `1` |
+
+Every tenant gets the same allowance, counted over the tenant's whole life. An answer that crosses the allowance still finishes. After that, AI requests on the platform key are refused with a message asking the tenant to add its own key in Settings.
+
+Platform administrators see what the platform key was used for, across all tenants, in the Platform area.
+
 ## SOPHO_TENANT_MEMBER_LIMIT
 
 The most people one tenant may have. It must be a whole number of at least `1`. Leave it unset for no limit.
@@ -124,7 +140,7 @@ Active members and pending invitations both count. When a tenant is at the limit
 
 ## Suspending a tenant
 
-A platform administrator can suspend a tenant from **Global Tenants**, and restore it from the same screen. While a tenant is suspended:
+A platform administrator can suspend a tenant from **Platform → Tenants**, and restore it from the same screen. While a tenant is suspended:
 
 - every member is refused on every page and request of that tenant, with the message "This tenant is suspended. Contact support";
 - the tenant still appears in each member's tenant list, marked as suspended;
@@ -173,7 +189,7 @@ When `SOPHO_FEATURE_RATE_LIMITING` is `true`, Sopho limits requests in three gro
 | Every signed-in request                                                        | person          | `SOPHO_RATE_LIMIT_API_PER_MINUTE`, `SOPHO_RATE_LIMIT_API_BURST`         | `600` and `120` |
 | Requests that call the AI provider                                             | person          | `SOPHO_RATE_LIMIT_AI_PER_MINUTE`, `SOPHO_RATE_LIMIT_AI_BURST`           | `20` and `10`   |
 
-Each value must be a whole number of at least `1`. Visitors on IPv6 are counted by their `/64` network, so changing address within one network gives no fresh allowance. A request that calls the AI provider counts against both the AI limit and the signed-in limit. Token refresh, the session check, the health check and static files are never limited.
+Each value must be a whole number from `1` to `1000000`. Visitors on IPv6 are counted by their `/64` network, so changing address within one network gives no fresh allowance. A request that calls the AI provider counts against both the AI limit and the signed-in limit. Token refresh, the session check, the health check and static files are never limited.
 
 A refused request gets HTTP `429` with a `retry-after` header. A refused single sign-on step returns the person to the sign-in page with a message.
 

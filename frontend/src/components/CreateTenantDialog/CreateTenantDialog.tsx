@@ -1,4 +1,3 @@
-import { useCallback, useState } from "react";
 import { Dialog } from "src/components/Dialog";
 import {
   BannerSlim,
@@ -8,6 +7,7 @@ import {
   Text,
 } from "src/components/design-system";
 import { CreatedTenantDto, useCreateTenant } from "src/api/tenant/queries";
+import { useTenantNameInput } from "src/components/CreateTenantDialog/useTenantNameInput";
 
 type CreateTenantDialogProps = {
   onCreated: (tenant: CreatedTenantDto) => void;
@@ -18,25 +18,12 @@ export function CreateTenantDialog({
   onCreated,
   onClose,
 }: CreateTenantDialogProps) {
-  const [name, setName] = useState("");
   const createTenant = useCreateTenant({ onSuccess: onCreated });
-  const { mutate: create } = createTenant;
-  const canCreate = name.trim().length > 0 && !createTenant.isPending;
-
-  const handleNameChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => setName(event.target.value),
-    [],
-  );
-  const handleCreate = useCallback(() => create(name.trim()), [create, name]);
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLInputElement>) => {
-      if (event.key === "Enter" && canCreate) {
-        event.preventDefault();
-        handleCreate();
-      }
-    },
-    [canCreate, handleCreate],
-  );
+  const { name, canCreate, handleNameChange, handleCreate, handleKeyDown } =
+    useTenantNameInput({
+      onCreate: createTenant.mutate,
+      isCreating: createTenant.isPending,
+    });
 
   return (
     <Dialog

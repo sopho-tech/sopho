@@ -1,3 +1,4 @@
+use crate::ai_usage::error::AiUsageError;
 use crate::authentication::service::PasswordFlowError;
 use crate::authorization::errors::AuthorizationError;
 use crate::common::error_codes::ErrorCode;
@@ -5,9 +6,9 @@ use crate::email_delivery::error::EmailDeliveryError;
 use crate::email_template::error::EmailTemplateError;
 use crate::platform::constants::{
     APPOINTEE_DEACTIVATED_MESSAGE, CANNOT_DEACTIVATE_YOURSELF_MESSAGE,
-    CANNOT_REMOVE_YOUR_OWN_ADMINISTRATOR_ROLE_MESSAGE, INVALID_PAGE_MESSAGE,
-    LAST_PLATFORM_ADMINISTRATOR_MESSAGE, PLATFORM_ACCOUNT_DEACTIVATED_MESSAGE,
-    PLATFORM_TENANT_NOT_FOUND_MESSAGE, PLATFORM_USER_NOT_FOUND_MESSAGE,
+    CANNOT_REMOVE_YOUR_OWN_ADMINISTRATOR_ROLE_MESSAGE, LAST_PLATFORM_ADMINISTRATOR_MESSAGE,
+    PLATFORM_ACCOUNT_DEACTIVATED_MESSAGE, PLATFORM_TENANT_NOT_FOUND_MESSAGE,
+    PLATFORM_USER_NOT_FOUND_MESSAGE,
 };
 use crate::tenant::error::TenantError;
 use crate::tenant::membership::error::MembershipError;
@@ -31,8 +32,6 @@ pub enum PlatformError {
     AppointeeDeactivated,
     #[error("{PLATFORM_ACCOUNT_DEACTIVATED_MESSAGE}")]
     AccountDeactivated,
-    #[error("{INVALID_PAGE_MESSAGE}")]
-    InvalidPage,
     #[error("{0}")]
     PasswordReset(PasswordFlowError),
     #[error("{0}")]
@@ -43,6 +42,8 @@ pub enum PlatformError {
     Membership(MembershipError),
     #[error("{0}")]
     Tenant(TenantError),
+    #[error("{0}")]
+    AiUsage(#[from] AiUsageError),
     #[error("Database error: {0}")]
     Database(#[from] sea_orm::DbErr),
     #[error("{0}")]
@@ -69,11 +70,11 @@ impl PlatformError {
                 Some(ErrorCode::EmailNotRetryable)
             }
             PlatformError::Unauthorized(_)
-            | PlatformError::InvalidPage
             | PlatformError::EmailDelivery(_)
             | PlatformError::EmailTemplate(_)
             | PlatformError::Membership(_)
             | PlatformError::Tenant(_)
+            | PlatformError::AiUsage(_)
             | PlatformError::Database(_)
             | PlatformError::Internal(_) => None,
         }

@@ -188,6 +188,8 @@ pub enum PlatformPermission {
     EmailManage,
     #[strum(serialize = "tenant:suspend")]
     TenantSuspend,
+    #[strum(serialize = "platform_ai_usage:read")]
+    PlatformAiUsageRead,
 }
 
 impl PlatformPermission {
@@ -221,6 +223,7 @@ impl PlatformRole {
                 PlatformPermission::TenantAppointOwner,
                 PlatformPermission::EmailManage,
                 PlatformPermission::TenantSuspend,
+                PlatformPermission::PlatformAiUsageRead,
             ],
             PlatformRole::Member => Vec::new(),
         }

@@ -4,8 +4,8 @@ use crate::common::error_codes::ErrorCode;
 use crate::feature_flag::constants::FeatureFlag;
 use crate::rate_limit::constants::{
     LIMITER_CLEANUP_INTERVAL_SECONDS, RATE_LIMIT_KEY_UNAVAILABLE_MESSAGE,
-    RATE_LIMIT_WINDOW_SECONDS, RETRY_AFTER_ROUNDING_SECONDS, SECOND_UNIT, SECONDS_UNIT,
-    SINGLE_SECOND, TOO_MANY_REQUESTS_MESSAGE_PREFIX,
+    RATE_LIMIT_REFUSAL_LOG_MESSAGE, RATE_LIMIT_WINDOW_SECONDS, RETRY_AFTER_ROUNDING_SECONDS,
+    RateLimitName, SECOND_UNIT, SECONDS_UNIT, SINGLE_SECOND, TOO_MANY_REQUESTS_MESSAGE_PREFIX,
 };
 use crate::rate_limit::dto::RateLimitQuota;
 use crate::rate_limit::key_extractor::{AuthenticatedUserKeyExtractor, ClientAddressKeyExtractor};
@@ -80,10 +80,21 @@ fn key_unavailable_response() -> Response<Body> {
         .into_response()
 }
 
-fn too_many_requests_response(error: GovernorError) -> Response<Body> {
+fn log_rate_limit_refusal(rate_limit_name: RateLimitName) {
+    tracing::warn!(
+        rate_limit = rate_limit_name.as_str(),
+        "{RATE_LIMIT_REFUSAL_LOG_MESSAGE}"
+    );
+}
+
+fn too_many_requests_response(
+    rate_limit_name: RateLimitName,
+    error: GovernorError,
+) -> Response<Body> {
     let GovernorError::TooManyRequests { wait_time, .. } = error else {
         return key_unavailable_response();
     };
+    log_rate_limit_refusal(rate_limit_name);
     let retry_after_seconds = wait_time.saturating_add(RETRY_AFTER_ROUNDING_SECONDS);
     let unit = match retry_after_seconds {
         SINGLE_SECOND => SECOND_UNIT,
@@ -104,6 +115,7 @@ fn too_many_requests_response(error: GovernorError) -> Response<Body> {
 fn too_many_sign_in_navigations_response(error: GovernorError) -> Response<Body> {
     match error {
         GovernorError::TooManyRequests { .. } => {
+            log_rate_limit_refusal(RateLimitName::SignIn);
             Redirect::to(&too_many_attempts_sign_in_path()).into_response()
         }
         GovernorError::UnableToExtractKey | GovernorError::Other { .. } => {
@@ -119,7 +131,7 @@ pub fn limit_sign_in_requests<RouterState: Clone + Send + Sync + 'static>(
     match rate_limiters {
         Some(rate_limiters) => router.route_layer(
             GovernorLayer::new(rate_limiters.sign_in.clone())
-                .error_handler(too_many_requests_response),
+                .error_handler(|error| too_many_requests_response(RateLimitName::SignIn, error)),
         ),
         None => router,
     }
@@ -144,7 +156,8 @@ pub fn limit_api_requests<RouterState: Clone + Send + Sync + 'static>(
 ) -> Router<RouterState> {
     match rate_limiters {
         Some(rate_limiters) => router.route_layer(
-            GovernorLayer::new(rate_limiters.api.clone()).error_handler(too_many_requests_response),
+            GovernorLayer::new(rate_limiters.api.clone())
+                .error_handler(|error| too_many_requests_response(RateLimitName::Api, error)),
         ),
         None => router,
     }
@@ -156,7 +169,8 @@ pub fn limit_ai_requests<RouterState: Clone + Send + Sync + 'static>(
 ) -> MethodRouter<RouterState> {
     match rate_limiters {
         Some(rate_limiters) => method_router.route_layer(
-            GovernorLayer::new(rate_limiters.ai.clone()).error_handler(too_many_requests_response),
+            GovernorLayer::new(rate_limiters.ai.clone())
+                .error_handler(|error| too_many_requests_response(RateLimitName::Ai, error)),
         ),
         None => method_router,
     }
@@ -184,15 +198,19 @@ pub fn start_limiter_cleanup(rate_limiters: &Option<RateLimiters>) {
 #[cfg(test)]
 mod tests {
     use super::too_many_requests_response;
+    use crate::rate_limit::constants::RateLimitName;
     use axum::http::StatusCode;
     use axum::http::header::RETRY_AFTER;
     use tower_governor::GovernorError;
 
     async fn refusal_for_wait(wait_time: u64) -> (String, serde_json::Value) {
-        let response = too_many_requests_response(GovernorError::TooManyRequests {
-            wait_time,
-            headers: None,
-        });
+        let response = too_many_requests_response(
+            RateLimitName::Api,
+            GovernorError::TooManyRequests {
+                wait_time,
+                headers: None,
+            },
+        );
         assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
         let retry_after = response.headers()[RETRY_AFTER]
             .to_str()
@@ -218,7 +236,8 @@ mod tests {
 
     #[tokio::test]
     async fn a_request_that_cannot_be_attributed_is_a_server_error() {
-        let response = too_many_requests_response(GovernorError::UnableToExtractKey);
+        let response =
+            too_many_requests_response(RateLimitName::Api, GovernorError::UnableToExtractKey);
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 }

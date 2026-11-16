@@ -23,6 +23,7 @@ mod m20261014_000001_create_identity_tables;
 mod m20261026_000001_create_password_reset_and_email_tables;
 mod m20261112_000001_create_self_serve_tenant_creation_table;
 mod m20261115_000001_create_ai_usage_table;
+mod m20261116_000001_create_platform_ai_usage_table;
 
 pub struct Migrator;
 
@@ -52,6 +53,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261026_000001_create_password_reset_and_email_tables::Migration),
             Box::new(m20261112_000001_create_self_serve_tenant_creation_table::Migration),
             Box::new(m20261115_000001_create_ai_usage_table::Migration),
+            Box::new(m20261116_000001_create_platform_ai_usage_table::Migration),
         ]
     }
 }

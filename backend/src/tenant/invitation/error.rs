@@ -1,5 +1,5 @@
 use crate::authentication::error::AccountCreationError;
-use crate::authentication::service::{PasswordFlowError, PasswordRuleError};
+use crate::authentication::service::{PASSWORD_SIGN_IN_OFF_MESSAGE, PasswordRuleError};
 use crate::authorization::errors::AuthorizationError;
 use crate::email_delivery::error::EmailDeliveryError;
 use crate::email_template::error::EmailTemplateError;
@@ -32,8 +32,8 @@ pub enum InvitationError {
     AccountExists,
     #[error("{FULL_NAME_REQUIRED_MESSAGE}")]
     FullNameRequired,
-    #[error("{0}")]
-    PasswordSignInOff(PasswordFlowError),
+    #[error("{PASSWORD_SIGN_IN_OFF_MESSAGE}")]
+    PasswordSignInOff,
     #[error("{0}")]
     PasswordRule(#[from] PasswordRuleError),
     #[error("{0}")]

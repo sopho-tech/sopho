@@ -29,7 +29,7 @@ use openidconnect::{
     TokenResponse,
 };
 use sea_orm::prelude::DateTimeWithTimeZone;
-use sea_orm::{DatabaseTransaction, TransactionTrait};
+use sea_orm::{ConnectionTrait, DatabaseTransaction, TransactionTrait};
 use tower_cookies::Cookies;
 use tower_cookies::cookie::{Cookie, SameSite};
 use uuid::Uuid;
@@ -249,14 +249,6 @@ async fn complete_login(
             connect_federated_identity(app_state, linking_user_id, claims)
                 .await
                 .map_err(failure)?;
-            promote_listed_platform_administrator(
-                app_state,
-                linking_user_id,
-                provider_name,
-                provider_verified_email.as_deref(),
-            )
-            .await
-            .map_err(failure)?;
             Ok(CallbackOutcome::Connected {
                 provider_name: provider_name.to_string(),
             })
@@ -265,6 +257,7 @@ async fn complete_login(
             let user_id = resolve_user(app_state, claims).await.map_err(failure)?;
             promote_listed_platform_administrator(
                 app_state,
+                &app_state.database_connection,
                 user_id,
                 provider_name,
                 provider_verified_email.as_deref(),
@@ -414,6 +407,7 @@ pub async fn resolve_user(
 
 async fn promote_listed_platform_administrator(
     app_state: &AppState,
+    database_connection: &impl ConnectionTrait,
     user_id: Uuid,
     provider_name: &str,
     provider_verified_email: Option<&str>,
@@ -429,15 +423,19 @@ async fn promote_listed_platform_administrator(
     if !is_listed {
         return Ok(());
     }
-    let account = authentication_repository::get_user(&app_state.database_connection, user_id)
+    let account = authentication_repository::get_user(database_connection, user_id)
         .await?
         .ok_or(OidcLoginError::AttemptNotFound)?;
     require_active(&account)?;
     if account.platform_role == PlatformRole::Administrator.as_str() {
         return Ok(());
     }
-    authentication_service::set_platform_role(app_state, account.id, PlatformRole::Administrator)
-        .await?;
+    authentication_service::set_platform_role_on_connection(
+        database_connection,
+        account.id,
+        PlatformRole::Administrator,
+    )
+    .await?;
     tracing::info!(
         "User {} became a platform administrator by signing in with {provider_name}: their verified email is in the platform administrator list",
         account.id
@@ -451,17 +449,18 @@ fn has_another_way_to_sign_in(
     federated_identities: &[federated_identity::Model],
     federated_identity_id: Uuid,
 ) -> bool {
-    if authentication_service::is_password_sign_in_available(app_state) {
-        return account.password_hash.is_some() || federated_identities.len() > 1;
-    }
-    federated_identities.iter().any(|other_federated_identity| {
-        other_federated_identity.id != federated_identity_id
-            && app_state
-                .config
-                .oidc_providers
-                .iter()
-                .any(|provider| provider.name == other_federated_identity.provider_name)
-    })
+    let can_sign_in_with_password =
+        authentication_service::is_password_sign_in_available(app_state)
+            && account.password_hash.is_some();
+    can_sign_in_with_password
+        || federated_identities.iter().any(|other_federated_identity| {
+            other_federated_identity.id != federated_identity_id
+                && app_state
+                    .config
+                    .oidc_providers
+                    .iter()
+                    .any(|provider| provider.name == other_federated_identity.provider_name)
+        })
 }
 
 pub async fn connect_federated_identity(
@@ -502,7 +501,18 @@ pub async fn connect_federated_identity(
     if has_federated_identity_at_provider {
         return Err(OidcLoginError::AlreadyConnected);
     }
-    add_federated_identity(app_state, &linking_user, &claims, &email).await
+    let txn = app_state.database_connection.begin().await?;
+    add_federated_identity_transaction(&txn, app_state, &linking_user, &claims, &email).await?;
+    promote_listed_platform_administrator(
+        app_state,
+        &txn,
+        linking_user.id,
+        &claims.provider_name,
+        Some(&email),
+    )
+    .await?;
+    txn.commit().await?;
+    Ok(())
 }
 
 pub async fn list_my_sign_in_methods(
@@ -622,11 +632,23 @@ async fn add_federated_identity(
     email: &str,
 ) -> Result<(), OidcLoginError> {
     let txn = app_state.database_connection.begin().await?;
-    repository::insert_federated_identity(&txn, federated_identity_for(account.id, claims, email))
+    add_federated_identity_transaction(&txn, app_state, account, claims, email).await?;
+    txn.commit().await?;
+    Ok(())
+}
+
+async fn add_federated_identity_transaction(
+    txn: &DatabaseTransaction,
+    app_state: &AppState,
+    account: &user::Model,
+    claims: &VerifiedClaims,
+    email: &str,
+) -> Result<(), OidcLoginError> {
+    repository::insert_federated_identity(txn, federated_identity_for(account.id, claims, email))
         .await?;
-    authentication_service::mark_email_verified_transaction(&txn, account.id).await?;
+    authentication_service::mark_email_verified_transaction(txn, account.id).await?;
     queue_sign_in_method_notice_transaction(
-        &txn,
+        txn,
         app_state,
         account,
         &claims.provider_name,
@@ -638,9 +660,7 @@ async fn add_federated_identity(
         SignInMethodError::EmailTemplate(error) => OidcLoginError::EmailTemplate(error),
         SignInMethodError::Database(error) => OidcLoginError::Database(error),
         other => OidcLoginError::Internal(other.to_string()),
-    })?;
-    txn.commit().await?;
-    Ok(())
+    })
 }
 
 async fn queue_sign_in_method_notice_transaction(

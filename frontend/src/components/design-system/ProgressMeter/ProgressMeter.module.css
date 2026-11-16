@@ -1,0 +1,62 @@
+.progressMeter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.track {
+  height: var(--space-xs);
+  overflow: hidden;
+  background-color: var(--color-grey-300);
+  border-radius: var(--border-radius-full);
+}
+
+.full {
+  width: 100%;
+}
+
+.full .track {
+  flex: 1;
+  min-width: var(--space-xl);
+}
+
+.compact .track {
+  flex: none;
+  width: var(--progress-meter-compact-track-width);
+}
+
+.fill {
+  display: block;
+  width: min(var(--progress-meter-percentage), 100%);
+  height: 100%;
+  border-radius: var(--border-radius-full);
+  transition: width var(--transition-duration-short)
+    var(--transition-easing-standard-decelerate);
+}
+
+.green {
+  background-color: var(--color-green-500);
+}
+
+.yellow {
+  background-color: var(--color-yellow-600);
+}
+
+.red {
+  background-color: var(--color-red-500);
+}
+
+.percentage {
+  min-width: 4ch;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-grey-700);
+  text-align: end;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
+}

@@ -122,6 +122,16 @@ pub async fn find_conversations_by_ids(
         .await
 }
 
+pub async fn find_conversations_by_ids_across_tenants(
+    db: &DatabaseConnection,
+    conversation_ids: &[Uuid],
+) -> Result<Vec<conversation::Model>, DbErr> {
+    conversation::Entity::find()
+        .filter(conversation::Column::Id.is_in(conversation_ids.to_vec()))
+        .all(db)
+        .await
+}
+
 pub async fn count_conversations_by_ids(
     db: &DatabaseConnection,
     tenant_id: &TenantId,

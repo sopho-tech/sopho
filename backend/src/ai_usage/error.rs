@@ -13,6 +13,8 @@ pub enum AiUsageError {
         token_kind: &'static str,
         token_count: u64,
     },
+    #[error("the platform AI key was used for a call that reported no token counts")]
+    PlatformCallWithoutTokenCounts,
     #[error("{0}")]
     Unauthorized(#[from] AuthorizationError),
     #[error("The date range starts after it ends")]
@@ -25,6 +27,12 @@ pub enum AiUsageError {
     RangeWithoutDays,
     #[error("The page is out of range")]
     PageOutOfRange,
+    #[error("The page size must be between 1 and {maximum_page_size}")]
+    PageSizeOutOfRange { maximum_page_size: u64 },
+    #[error("This list cannot be sorted by that column")]
+    SortColumnNotAllowed,
+    #[error("Platform AI usage is always for the platform key. Remove the key source")]
+    KeySourceNotAllowed,
     #[error("The date range is outside the supported calendar")]
     RangeOutOfCalendar,
     #[error("AI usage was recorded for an unknown agent: {agent_name}")]
@@ -33,4 +41,28 @@ pub enum AiUsageError {
     UnreadableStoredValue(String),
     #[error("{0}")]
     Conversation(#[from] ConversationError),
+}
+
+impl AiUsageError {
+    pub fn is_invalid_request(&self) -> bool {
+        match self {
+            AiUsageError::RangeReversed
+            | AiUsageError::RangeTooLong { .. }
+            | AiUsageError::RangeAmbiguous
+            | AiUsageError::RangeWithoutDays
+            | AiUsageError::RangeOutOfCalendar
+            | AiUsageError::PageOutOfRange
+            | AiUsageError::PageSizeOutOfRange { .. }
+            | AiUsageError::SortColumnNotAllowed
+            | AiUsageError::KeySourceNotAllowed => true,
+            AiUsageError::Database(_)
+            | AiUsageError::Metadata(_)
+            | AiUsageError::TokenCountOutOfRange { .. }
+            | AiUsageError::PlatformCallWithoutTokenCounts
+            | AiUsageError::Unauthorized(_)
+            | AiUsageError::UnknownAgent { .. }
+            | AiUsageError::UnreadableStoredValue(_)
+            | AiUsageError::Conversation(_) => false,
+        }
+    }
 }

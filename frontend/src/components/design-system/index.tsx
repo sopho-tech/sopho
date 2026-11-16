@@ -15,6 +15,7 @@ export { Form } from "src/components/design-system/Form";
 export { Select } from "src/components/design-system/Select";
 export type { SelectOption } from "src/components/design-system/Select";
 export { Text } from "src/components/design-system/Text";
+export { Link } from "src/components/design-system/Link";
 export { Input } from "src/components/design-system/Input";
 export type { InputProps } from "src/components/design-system/Input";
 export { Kbd, KbdGroup } from "src/components/design-system/Kbd";
@@ -57,6 +58,12 @@ export { ExpandableSearch } from "src/components/design-system/ExpandableSearch"
 export type { ExpandableSearchProps } from "src/components/design-system/ExpandableSearch";
 export { CommandMenu } from "src/components/design-system/CommandMenu";
 export { Badge } from "src/components/design-system/Badge";
+export { ProgressMeter } from "src/components/design-system/ProgressMeter";
+export type {
+  ProgressMeterProps,
+  ProgressMeterTone,
+  ProgressMeterWidth,
+} from "src/components/design-system/ProgressMeter";
 export { Card } from "src/components/design-system/Card";
 export { Separator } from "src/components/design-system/Separator";
 export type { SeparatorProps } from "src/components/design-system/Separator";

@@ -1,5 +1,18 @@
 import { useCallback, useMemo } from "react";
+import { Icon } from "src/components/design-system/Icon";
 import styles from "src/components/design-system/Table/Table.module.css";
+
+export type TableSortDirection = "asc" | "desc";
+
+const ARIA_SORT_VALUES: Record<TableSortDirection, "ascending" | "descending"> =
+  {
+    asc: "ascending",
+    desc: "descending",
+  };
+const SORT_ICON_TYPES = {
+  asc: "arrow_up",
+  desc: "arrow_down",
+} as const;
 
 type TableProps = {
   columns: string;
@@ -36,10 +49,43 @@ type TableCellProps = {
   align?: "start" | "end";
 };
 
-function TableHeaderCell({ children, align = "start" }: TableCellProps) {
+type TableHeaderCellProps = TableCellProps & {
+  onSort?: () => void;
+  sortDirection?: TableSortDirection;
+};
+
+function TableHeaderCell({
+  children,
+  align = "start",
+  onSort,
+  sortDirection,
+}: TableHeaderCellProps) {
+  const className = `${styles.cell} ${align === "end" ? styles.alignEnd : ""}`;
+  if (!onSort) {
+    return (
+      <th scope="col" className={className}>
+        {children}
+      </th>
+    );
+  }
   return (
-    <th className={`${styles.cell} ${align === "end" ? styles.alignEnd : ""}`}>
-      {children}
+    <th
+      scope="col"
+      className={className}
+      aria-sort={sortDirection ? ARIA_SORT_VALUES[sortDirection] : "none"}
+    >
+      <button
+        type="button"
+        className={`${styles.sortButton} ${sortDirection ? styles.sortButtonActive : ""}`}
+        onClick={onSort}
+      >
+        {children}
+        <Icon
+          type={sortDirection ? SORT_ICON_TYPES[sortDirection] : "swap_vert"}
+          size="sm"
+          color="grey"
+        />
+      </button>
     </th>
   );
 }

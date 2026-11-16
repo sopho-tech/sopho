@@ -1,3 +1,4 @@
+import type { AiConfiguration } from "src/api/ai_configuration";
 import type { UserDto } from "src/api/auth/queries";
 import {
   ActorKind,
@@ -28,6 +29,57 @@ import {
   type ConversationWithMessagesDto,
 } from "src/components/ConversationalAnalytics/dto";
 import { ColumnDataType } from "src/constants/database_types";
+
+export const AI_ON_OWN_KEY: AiConfiguration = {
+  status: "live",
+  provider: "anthropic",
+  is_ai_available: true,
+  key_source: "TENANT",
+  unavailable_message: null,
+  platform_ai: null,
+};
+
+export const AI_NOT_CONFIGURED: AiConfiguration = {
+  status: "not_configured",
+  is_ai_available: false,
+  key_source: null,
+  unavailable_message:
+    "AI is not configured for this tenant. Add an AI key in Settings to use AI.",
+  platform_ai: null,
+};
+
+export const AI_ON_THE_PLATFORM_KEY: AiConfiguration = {
+  status: "not_configured",
+  is_ai_available: true,
+  key_source: "PLATFORM",
+  unavailable_message: null,
+  platform_ai: {
+    allowance_usage: {
+      tokens_label: "41,250 of 100,000",
+      used_percentage: 41,
+      level: "LOW",
+    },
+    tokens_left_label: "58,750",
+    is_allowance_used: false,
+  },
+};
+
+export const AI_WITH_THE_ALLOWANCE_USED: AiConfiguration = {
+  status: "not_configured",
+  is_ai_available: false,
+  key_source: "PLATFORM",
+  unavailable_message:
+    "This tenant has used its platform AI allowance. Add your own AI key in Settings to keep using AI.",
+  platform_ai: {
+    allowance_usage: {
+      tokens_label: "104,300 of 100,000",
+      used_percentage: 104,
+      level: "HIGH",
+    },
+    tokens_left_label: "0",
+    is_allowance_used: true,
+  },
+};
 
 export const TEST_TENANT_ID = "00000000-0000-4000-8000-000000000901";
 

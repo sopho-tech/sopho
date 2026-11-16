@@ -2,7 +2,6 @@ import { EmailStatus } from "src/api/invitation/queries";
 import { TenantStatus } from "src/api/platform/queries";
 import { BadgeProps } from "src/components/design-system/Badge";
 
-export const FIRST_PAGE = 1;
 export const SEARCH_DEBOUNCE_MILLISECONDS = 300;
 
 export const SEARCH_INPUT_STYLE = { maxWidth: "24rem" };
@@ -51,7 +50,10 @@ export const USER_ACTIONS_LABEL = "User actions";
 
 export const USERS_TABLE_COLUMNS =
   "minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 1.2fr) 2.5rem";
-export const TENANTS_TABLE_COLUMNS = "minmax(0, 1fr) 8rem 10rem 10rem 7rem";
+export const TENANTS_TABLE_COLUMNS =
+  "minmax(0, 1fr) 7rem 8rem 7rem 11rem 8rem 2.5rem";
+export const TENANT_ACTIONS_LABEL = "Tenant actions";
+export const TENANTS_PAGE_DESCRIPTION = "Manage tenants.";
 export const SUSPEND_TENANT_LABEL = "Suspend";
 export const RESTORE_TENANT_LABEL = "Restore";
 export const SUSPEND_TENANT_DESCRIPTION =
@@ -74,6 +76,7 @@ export const TENANT_STATUS_BADGE_VARIANTS: Record<
 export const EMAILS_TABLE_COLUMNS =
   "minmax(0, 1.2fr) minmax(0, 1.4fr) 9rem 6rem 5rem 10rem 2.5rem";
 export const EMAIL_ACTIONS_LABEL = "Email actions";
+export const EMAIL_TEMPLATE_KIND_PARAMETER = "kind";
 
 export const VISIBLE_TENANT_COUNT = 2;
 export const TENANT_ROLE_GRID_STYLE = {
@@ -93,3 +96,5 @@ export const EMAIL_FORMATS = [
 
 export const EMAIL_TEMPLATE_LIST_STYLE = { width: "16rem", flexShrink: 0 };
 export const EMAIL_TEMPLATE_PREVIEW_STYLE = { flex: 1, minWidth: 0 };
+export const PLATFORM_AREA_TITLE = "Platform";
+export const EXIT_PLATFORM_LABEL = "Exit platform";

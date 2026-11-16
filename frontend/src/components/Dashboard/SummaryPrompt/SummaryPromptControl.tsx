@@ -18,6 +18,7 @@ type SummaryPromptControlProps = {
   userPrompt: string | null;
   busy: boolean;
   isSaving: boolean;
+  unavailableMessage: string | null;
   size?: SplitIconButtonSize;
   onGenerate: () => void;
   onSavePrompt: (userPrompt: string | null) => void;
@@ -31,6 +32,7 @@ export function SummaryPromptControl({
   userPrompt,
   busy,
   isSaving,
+  unavailableMessage,
   size = "md",
   onGenerate,
   onSavePrompt,
@@ -47,6 +49,21 @@ export function SummaryPromptControl({
     },
     [onSavePrompt],
   );
+
+  if (unavailableMessage !== null) {
+    return (
+      <SplitIconButton
+        type={iconType}
+        iconColor="grey"
+        size={size}
+        onClick={onGenerate}
+        disabledReason={unavailableMessage}
+        primaryLabel={actionLabel}
+        onSecondaryClick={handleOpen}
+        secondaryLabel={`${actionLabel} — edit prompt`}
+      />
+    );
+  }
 
   return (
     <>

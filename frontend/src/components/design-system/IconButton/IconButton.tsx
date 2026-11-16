@@ -15,6 +15,7 @@ type IconButtonProps = {
   iconColor: IconColor;
   size?: IconButtonSize;
   iconSize?: IconSize;
+  iconMirrored?: boolean;
   tooltip?: {
     text?: string;
     content?: React.ReactNode;
@@ -24,6 +25,7 @@ type IconButtonProps = {
   tabIndex?: number;
   className?: string;
   disabled?: boolean;
+  disabledReason?: string;
   busy?: boolean;
   busyAnimation?: IconAnimation;
   ref?: React.Ref<HTMLButtonElement>;
@@ -38,11 +40,13 @@ export function IconButton({
   iconColor,
   size = "none",
   iconSize,
+  iconMirrored,
   tooltip,
   onClick,
   tabIndex,
   className: customClassName,
   disabled = false,
+  disabledReason,
   busy = false,
   busyAnimation = "pulse",
   ref,
@@ -56,13 +60,15 @@ export function IconButton({
     lg: styles.sizeLg,
   };
   const sizeClassName = sizeClassNames[size];
+  const isDisabledWithReason = disabledReason !== undefined;
   const button = (
     <button
       ref={ref}
       className={`${styles.button} ${sizeClassName} ${backgroundColorClassName} ${customClassName ?? ""}`.trim()}
-      onClick={onClick}
+      onClick={isDisabledWithReason ? undefined : onClick}
       tabIndex={tabIndex}
-      disabled={disabled || busy}
+      disabled={!isDisabledWithReason && (disabled || busy)}
+      aria-disabled={isDisabledWithReason || undefined}
       aria-busy={busy || undefined}
       {...buttonProps}
     >
@@ -70,16 +76,17 @@ export function IconButton({
         color={iconColor}
         type={type}
         size={iconSize}
+        mirrored={iconMirrored}
         animation={busy ? busyAnimation : undefined}
       ></Icon>
     </button>
   );
 
-  if (tooltip) {
+  if (tooltip || isDisabledWithReason) {
     return (
       <ToolTip
-        messageElement={tooltip.content ?? tooltip.text}
-        tooltipSide={tooltip.direction || "top"}
+        messageElement={disabledReason ?? tooltip?.content ?? tooltip?.text}
+        tooltipSide={tooltip?.direction || "top"}
       >
         {button}
       </ToolTip>

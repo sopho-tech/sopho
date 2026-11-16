@@ -162,7 +162,7 @@ async fn invalid_sql_returns_a_clear_error() {
         .await;
 
     assert_eq!(result.status, StatusCode::BAD_REQUEST);
-    assert_eq!(result.body["code"], "SYNTAX_ERROR");
+    assert_eq!(result.body["error_code"], "SYNTAX_ERROR");
     assert!(
         result.body["message"]
             .as_str()

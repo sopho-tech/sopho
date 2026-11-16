@@ -1,0 +1,38 @@
+.link {
+  color: var(--color-primary-700);
+  text-decoration: none;
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition-color);
+}
+
+.link:hover {
+  color: var(--color-primary-800);
+  text-decoration: underline;
+  text-underline-offset: var(--space-3xs);
+}
+
+.link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.fontSizeXs {
+  font-size: var(--font-size-xs);
+}
+
+.fontSizeSm {
+  font-size: var(--font-size-sm);
+}
+
+.fontSizeBase {
+  font-size: var(--font-size-base);
+}
+
+.truncate {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

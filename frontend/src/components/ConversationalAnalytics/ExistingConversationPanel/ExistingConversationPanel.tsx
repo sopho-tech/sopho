@@ -10,7 +10,7 @@ import {
 import { APP_ROUTES } from "src/constants/app_routes";
 import { useTenantPath } from "src/utils/tenant";
 import { ConversationActionsMenu } from "src/components/ConversationalAnalytics/ConversationActionsMenu";
-import { Flex, Icon, Text } from "src/components/design-system";
+import { BannerSlim, Flex, Icon, Text } from "src/components/design-system";
 import { ConversationLimitNotice } from "src/components/ConversationalAnalytics/ExistingConversationPanel/ConversationLimitNotice";
 import { AttributionLine } from "src/components/Attribution";
 import { MessageHoverFooter } from "src/components/ConversationalAnalytics/ExistingConversationPanel/MessageHoverFooter";
@@ -99,8 +99,11 @@ export const ExistingConversationPanel = () => {
   const toTenantPath = useTenantPath();
   const startStream = useStartStream();
   const composerRef = useRef<MessageComposerHandle>(null);
-  const { events: streamingEvents, isStreaming } =
-    useConversationStream(conversationId);
+  const {
+    events: streamingEvents,
+    isStreaming,
+    refusalMessage: completionRefusalMessage,
+  } = useConversationStream(conversationId);
   const appendUserMessage = useAppendUserMessage(conversationId);
   const gate = useCanSendFollowUp(conversationId);
 
@@ -145,7 +148,7 @@ export const ExistingConversationPanel = () => {
   const composerDisabled = !gate.canSend || appendUserMessage.isPending;
   const composerDisabledTooltip = gate.canSend
     ? undefined
-    : getFollowUpDisabledTooltip(gate.reason);
+    : (gate.aiUnavailableMessage ?? getFollowUpDisabledTooltip(gate.reason));
 
   const lastAssistantStatus = useMemo(() => {
     const all = conversationQuery.data?.messages ?? [];
@@ -235,6 +238,11 @@ export const ExistingConversationPanel = () => {
                   />
                 </Flex>
               )}
+              {completionRefusalMessage !== null && (
+                <Flex direction="column" className={styles.messageWrapper}>
+                  <BannerSlim type="error" message={completionRefusalMessage} />
+                </Flex>
+              )}
               {gate.canSend && !isStreaming && followUpQuestions.length > 0 && (
                 <SuggestedQuestionList
                   questions={followUpQuestions.map((text) => ({
@@ -248,10 +256,14 @@ export const ExistingConversationPanel = () => {
           </Flex>
           <Flex
             direction="column"
+            gap="sm"
             paddingTop="md"
             paddingBottom="md"
             sx={FLEX_SHRINK_STYLE}
           >
+            {!gate.canSend && gate.aiUnavailableMessage && (
+              <BannerSlim type="warning" message={gate.aiUnavailableMessage} />
+            )}
             {conversationFull ? (
               <ConversationLimitNotice />
             ) : (

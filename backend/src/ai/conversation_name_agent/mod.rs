@@ -2,7 +2,7 @@ mod system_prompt;
 mod user_prompt;
 
 use crate::ai::agent_utils::{AgentName, AgentSettings, ModelRole};
-use crate::ai_usage::dto::AiCallContext;
+use crate::ai_usage::datatypes::AiCallContext;
 use crate::common::AppState;
 use anyhow::Result;
 
@@ -13,9 +13,7 @@ pub async fn suggest_name(
     call_context: &AiCallContext,
     question: &str,
 ) -> Result<String> {
-    let model_client = app_state
-        .require_model_client(call_context.tenant_id())
-        .await?;
+    let model_client = call_context.model_client();
     let agent = model_client.build_agent(
         app_state,
         call_context,

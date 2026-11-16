@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import type { PlatformTenantDto } from "src/api/platform/queries";
 import { Tenants } from "src/components/Platform/Tenants";
 import { ProtectedRoute } from "src/components/ProtectedRoute";
@@ -22,6 +22,8 @@ const ACTIVE_TENANT: PlatformTenantDto = {
   capabilities: { can_suspend: true, can_restore: false },
   active_owner_count: 1,
   created_at: "2026-10-01T09:00:00Z",
+  ai_key_label: "Platform AI",
+  platform_ai_tokens_label: "41,250 of 100,000",
 };
 
 const SUSPENDED_TENANT: PlatformTenantDto = {
@@ -31,6 +33,8 @@ const SUSPENDED_TENANT: PlatformTenantDto = {
   capabilities: { can_suspend: false, can_restore: true },
   active_owner_count: 1,
   created_at: "2026-10-02T09:00:00Z",
+  ai_key_label: "Own key",
+  platform_ai_tokens_label: "Off",
 };
 
 const tenantsRoutes = [
@@ -66,19 +70,34 @@ describe("platform tenants", () => {
 
     const activeRow = page.getByRole("row", { name: "Acme Analytics" });
     const suspendedRow = page.getByRole("row", { name: "Frozen Works" });
+    await expect.element(activeRow.getByText("Platform AI")).toBeVisible();
+    await expect
+      .element(activeRow.getByText("41,250 of 100,000"))
+      .toBeVisible();
+    await expect.element(suspendedRow.getByText("Own key")).toBeVisible();
+    await expect.element(suspendedRow.getByText("Off")).toBeVisible();
     await expect.element(activeRow.getByText("Active")).toBeVisible();
-    await expect
-      .element(activeRow.getByRole("button", { name: "Suspend" }))
-      .toBeVisible();
-    await expect
-      .element(activeRow.getByRole("button", { name: "Restore" }))
-      .not.toBeInTheDocument();
     await expect.element(suspendedRow.getByText("Suspended")).toBeVisible();
+
+    await activeRow
+      .getByRole("button", { name: "Tenant actions for Acme Analytics" })
+      .click();
     await expect
-      .element(suspendedRow.getByRole("button", { name: "Restore" }))
+      .element(page.getByRole("menuitem", { name: "Suspend" }))
       .toBeVisible();
     await expect
-      .element(suspendedRow.getByRole("button", { name: "Suspend" }))
+      .element(page.getByRole("menuitem", { name: "Restore" }))
+      .not.toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+
+    await suspendedRow
+      .getByRole("button", { name: "Tenant actions for Frozen Works" })
+      .click();
+    await expect
+      .element(page.getByRole("menuitem", { name: "Restore" }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole("menuitem", { name: "Suspend" }))
       .not.toBeInTheDocument();
   });
 
@@ -97,9 +116,9 @@ describe("platform tenants", () => {
     });
 
     await page
-      .getByRole("row", { name: "Acme Analytics" })
-      .getByRole("button", { name: "Suspend" })
+      .getByRole("button", { name: "Tenant actions for Acme Analytics" })
       .click();
+    await page.getByRole("menuitem", { name: "Suspend" }).click();
     await expect
       .element(page.getByText("Suspend Acme Analytics?"))
       .toBeVisible();
@@ -112,9 +131,9 @@ describe("platform tenants", () => {
     expect(suspendedTenantIds).toEqual([]);
 
     await page
-      .getByRole("row", { name: "Acme Analytics" })
-      .getByRole("button", { name: "Suspend" })
+      .getByRole("button", { name: "Tenant actions for Acme Analytics" })
       .click();
+    await page.getByRole("menuitem", { name: "Suspend" }).click();
     await page
       .getByRole("dialog")
       .getByRole("button", { name: "Suspend" })
@@ -144,9 +163,9 @@ describe("platform tenants", () => {
     });
 
     await page
-      .getByRole("row", { name: "Frozen Works" })
-      .getByRole("button", { name: "Restore" })
+      .getByRole("button", { name: "Tenant actions for Frozen Works" })
       .click();
+    await page.getByRole("menuitem", { name: "Restore" }).click();
     await expect.element(page.getByText("Restore Frozen Works?")).toBeVisible();
     await page
       .getByRole("dialog")

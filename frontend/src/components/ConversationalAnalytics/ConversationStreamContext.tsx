@@ -1,3 +1,4 @@
+import { aiConfigurationKeys } from "src/api/ai_configuration";
 import {
   createContext,
   useCallback,
@@ -32,9 +33,14 @@ function isTerminalEvent(eventName: string): boolean {
 type StreamEntry = {
   events: AgentEvent[];
   isStreaming: boolean;
+  refusalMessage: string | null;
 };
 
-const EMPTY_STREAM: StreamEntry = { events: [], isStreaming: false };
+const EMPTY_STREAM: StreamEntry = {
+  events: [],
+  isStreaming: false,
+  refusalMessage: null,
+};
 
 type StreamStore = {
   streams: Map<string, StreamEntry>;
@@ -102,7 +108,11 @@ export function ConversationStreamProvider({
 
       const controller = new AbortController();
       store.controllers.set(conversationId, controller);
-      store.streams.set(conversationId, { events: [], isStreaming: true });
+      store.streams.set(conversationId, {
+        events: [],
+        isStreaming: true,
+        refusalMessage: null,
+      });
       notify(store);
 
       const endpoint = tenantApiUrl(
@@ -114,6 +124,7 @@ export function ConversationStreamProvider({
       );
 
       const run = async () => {
+        let refusalMessage: string | null = null;
         try {
           await streamSse(
             endpoint,
@@ -137,12 +148,16 @@ export function ConversationStreamProvider({
                         conversationId,
                       ),
                     });
+                    void queryClient.invalidateQueries({
+                      queryKey: aiConfigurationKeys.all(tenantId),
+                    });
                     return;
                   }
                   const prev = store.streams.get(conversationId)?.events ?? [];
                   store.streams.set(conversationId, {
                     events: [...prev, parsed],
                     isStreaming: true,
+                    refusalMessage: null,
                   });
                   notify(store);
                 } catch {
@@ -154,9 +169,20 @@ export function ConversationStreamProvider({
         } catch (e) {
           if (e instanceof DOMException && e.name === "AbortError") return;
           console.error(e);
+          refusalMessage = e instanceof Error ? e.message : String(e);
+          void queryClient.invalidateQueries({
+            queryKey: aiConfigurationKeys.all(tenantId),
+          });
         } finally {
           store.controllers.delete(conversationId);
-          if (store.streams.has(conversationId)) {
+          if (refusalMessage !== null) {
+            store.streams.set(conversationId, {
+              events: [],
+              isStreaming: false,
+              refusalMessage,
+            });
+            notify(store);
+          } else if (store.streams.has(conversationId)) {
             store.streams.delete(conversationId);
             notify(store);
           }

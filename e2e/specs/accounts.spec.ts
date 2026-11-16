@@ -311,7 +311,6 @@ test("a new person signs in with single sign-on and creates their own tenants", 
 
 test("a platform administrator suspends and restores a tenant", async ({
   signedInPage,
-  tenantId,
   browser,
   baseURL,
 }) => {
@@ -337,10 +336,13 @@ test("a platform administrator suspends and restores a tenant", async ({
   await expect(visitor.page).toHaveURL(TENANT_HOME_URL_PATTERN);
   const founderTenantUrl = visitor.page.url();
 
-  await signedInPage.goto(tenantUrl(tenantId, APP_URLS.TENANTS));
+  await signedInPage.goto(APP_URLS.PLATFORM_TENANTS);
   const tenantRow = signedInPage.getByRole("row", { name: tenantName });
   await expect(tenantRow.getByText("Active", { exact: true })).toBeVisible();
-  await tenantRow.getByRole("button", { name: "Suspend" }).click();
+  await tenantRow
+    .getByRole("button", { name: `Tenant actions for ${tenantName}` })
+    .click();
+  await signedInPage.getByRole("menuitem", { name: "Suspend" }).click();
   await signedInPage
     .getByRole("dialog")
     .getByRole("button", { name: "Suspend" })
@@ -353,7 +355,10 @@ test("a platform administrator suspends and restores a tenant", async ({
     visitor.page.getByRole("button", { name: `Tenant: ${tenantName}` }),
   ).toBeHidden();
 
-  await tenantRow.getByRole("button", { name: "Restore" }).click();
+  await tenantRow
+    .getByRole("button", { name: `Tenant actions for ${tenantName}` })
+    .click();
+  await signedInPage.getByRole("menuitem", { name: "Restore" }).click();
   await signedInPage
     .getByRole("dialog")
     .getByRole("button", { name: "Restore" })

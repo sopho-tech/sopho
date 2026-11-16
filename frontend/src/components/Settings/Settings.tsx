@@ -4,7 +4,6 @@ import {
   SectionLayout,
   SectionNavigationItem,
 } from "src/components/design-system";
-import { usePlatformNavigationItems } from "src/components/Platform/hooks";
 import { useTenantPermission } from "src/api/tenant/queries";
 import { APP_ROUTES } from "src/constants/app_routes";
 import { PERMISSIONS } from "src/constants/permissions";
@@ -12,7 +11,6 @@ import { useTenantPath } from "src/utils/tenant";
 
 export function Settings() {
   const toTenantPath = useTenantPath();
-  const platformNavigationItems = usePlatformNavigationItems();
   const canInvite = useTenantPermission(PERMISSIONS.MEMBER_INVITE);
   const canReadUsage = useTenantPermission(PERMISSIONS.USAGE_READ);
   const items = useMemo<SectionNavigationItem[]>(
@@ -59,9 +57,8 @@ export function Settings() {
             ]
           : undefined,
       },
-      ...platformNavigationItems,
     ],
-    [toTenantPath, platformNavigationItems, canInvite, canReadUsage],
+    [toTenantPath, canInvite, canReadUsage],
   );
 
   return (

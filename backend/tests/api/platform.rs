@@ -1,8 +1,9 @@
 use crate::support::TestApp;
 use crate::support::canvas_builder::string_field;
 use crate::support::constants::{
-    EMAIL_MANAGE_PERMISSION, OWNER_ROLE, PLATFORM_MEMBER, TENANT_APPOINT_OWNER_PERMISSION,
-    TENANT_CREATE_PERMISSION, TENANT_SUSPEND_PERMISSION, USER_MANAGE_PERMISSION,
+    EMAIL_MANAGE_PERMISSION, OWNER_ROLE, PLATFORM_AI_USAGE_READ_PERMISSION, PLATFORM_MEMBER,
+    TENANT_APPOINT_OWNER_PERMISSION, TENANT_CREATE_PERMISSION, TENANT_SUSPEND_PERMISSION,
+    USER_MANAGE_PERMISSION,
 };
 use crate::support::database::count_rows;
 use crate::support::tenants::{create_user, sign_in};
@@ -66,7 +67,8 @@ async fn current_user_reports_platform_permissions() {
             USER_MANAGE_PERMISSION,
             TENANT_APPOINT_OWNER_PERMISSION,
             EMAIL_MANAGE_PERMISSION,
-            TENANT_SUSPEND_PERMISSION
+            TENANT_SUSPEND_PERMISSION,
+            PLATFORM_AI_USAGE_READ_PERMISSION
         ])
     );
 

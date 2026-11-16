@@ -29,9 +29,16 @@ pub async fn start(app_state: AppState) {
 }
 
 async fn start_scheduler(app_state: AppState) -> anyhow::Result<()> {
-    let sched = build(&app_state).await?;
+    let sched = build_with_jobs(&app_state).await?;
+    sched.start().await?;
+    info!("scheduler started");
+    Ok(())
+}
 
-    if is_background_suggested_question_refresh_enabled(&app_state) {
+async fn build_with_jobs(app_state: &AppState) -> anyhow::Result<JobScheduler> {
+    let sched = build(app_state).await?;
+
+    if is_background_suggested_question_refresh_enabled(app_state) {
         let job_state = app_state.clone();
         let job = Job::new_async(SUGGESTED_QUESTION_DAILY_CRON, move |_uuid, _lock| {
             let job_state = job_state.clone();
@@ -42,9 +49,12 @@ async fn start_scheduler(app_state: AppState) -> anyhow::Result<()> {
         sched.add(job).await?;
     }
 
-    sched.start().await?;
-    info!("scheduler started");
-    Ok(())
+    Ok(sched)
+}
+
+pub(crate) async fn is_any_job_scheduled(app_state: &AppState) -> anyhow::Result<bool> {
+    let mut scheduler_with_jobs = build_with_jobs(app_state).await?;
+    Ok(scheduler_with_jobs.time_till_next_job().await?.is_some())
 }
 
 async fn build(app_state: &AppState) -> anyhow::Result<JobScheduler> {

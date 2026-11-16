@@ -104,7 +104,7 @@ async fn users_are_searched_by_name_or_email_and_paged() {
     let first_page = app.get("/platform/user?search=PAGECHECK%20USER").await;
     assert_eq!(first_page.status, StatusCode::OK, "{}", first_page.body);
     assert_eq!(first_page.body["total"], 51);
-    assert_eq!(first_page.body["page"], 1);
+    assert_eq!(first_page.body["page"], 0);
     assert_eq!(first_page.body["page_size"], 50);
     assert_eq!(first_page.body["total_pages"], 2);
     assert_eq!(
@@ -112,7 +112,7 @@ async fn users_are_searched_by_name_or_email_and_paged() {
         50
     );
 
-    let second_page = app.get("/platform/user?search=pagecheck&page=2").await;
+    let second_page = app.get("/platform/user?search=pagecheck&page=1").await;
     assert_eq!(
         second_page.body["users"].as_array().expect("users").len(),
         1
@@ -129,11 +129,6 @@ async fn users_are_searched_by_name_or_email_and_paged() {
     assert_eq!(
         found[0]["capabilities"]["can_send_password_reset"], false,
         "email is off"
-    );
-
-    assert_eq!(
-        app.get("/platform/user?page=0").await.status,
-        StatusCode::BAD_REQUEST
     );
 }
 

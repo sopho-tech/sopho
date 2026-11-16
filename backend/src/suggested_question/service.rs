@@ -1,7 +1,9 @@
 use super::dto::SuggestedQuestionDto;
 use super::repository;
 use crate::ai::suggested_questions_agent;
-use crate::ai_usage::dto::AiCallContext;
+use crate::ai_configuration::error::AiAccessError;
+use crate::ai_configuration::service as ai_configuration_service;
+use crate::ai_usage::datatypes::{AiAccess, AiCallContext};
 use crate::authorization::constants::Action;
 use crate::authorization::dto::Actor;
 use crate::authorization::dto::{TenantContext, TenantId};
@@ -52,10 +54,21 @@ fn is_stale(generated_at: sea_orm::prelude::DateTimeWithTimeZone) -> bool {
 }
 
 pub async fn refresh_all_stale(app_state: &AppState, tenant_id: &TenantId, actor: &Actor) {
-    if app_state.current_model_client(tenant_id).await.is_none() {
-        info!("suggested_question: AI not configured; skipping refresh");
-        return;
-    }
+    let ai_access = match ai_configuration_service::resolve_ai_access(app_state, tenant_id).await {
+        Ok(ai_access) => ai_access,
+        Err(
+            ai_access_error @ (AiAccessError::NotConfigured
+            | AiAccessError::NotLive
+            | AiAccessError::PlatformAiAllowanceUsed),
+        ) => {
+            info!("suggested_question: skipping refresh: {ai_access_error}");
+            return;
+        }
+        Err(ai_access_error) => {
+            error!("suggested_question: AI access could not be resolved: {ai_access_error}");
+            return;
+        }
+    };
 
     let connections =
         match connection_service::execute_get_all_connections(app_state, tenant_id).await {
@@ -88,7 +101,7 @@ pub async fn refresh_all_stale(app_state: &AppState, tenant_id: &TenantId, actor
             continue;
         }
 
-        if let Err(e) = regenerate(app_state, tenant_id, &connection, actor).await {
+        if let Err(e) = regenerate(app_state, tenant_id, &connection, actor, &ai_access).await {
             error!(
                 "suggested_question: regen failed for connection {}: {e}",
                 connection.id
@@ -107,9 +120,10 @@ async fn regenerate(
     tenant_id: &TenantId,
     connection: &entity::connection::Model,
     actor: &Actor,
+    ai_access: &AiAccess,
 ) -> anyhow::Result<()> {
     let catalog = data_catalog::get_data_catalog_of_connection(app_state, connection).await?;
-    let call_context = AiCallContext::for_background_work(tenant_id.clone());
+    let call_context = AiCallContext::for_background_work(tenant_id.clone(), ai_access.clone());
     let questions = suggested_questions_agent::suggest_questions(
         app_state,
         &call_context,

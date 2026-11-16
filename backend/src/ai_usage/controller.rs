@@ -1,5 +1,5 @@
 use crate::ai_usage::constants::USAGE_NOT_FOUND_MESSAGE;
-use crate::ai_usage::dto::{ConversationPageQuery, UsageRangeQuery};
+use crate::ai_usage::dto::{UsageListQuery, UsageRangeQuery};
 use crate::ai_usage::error::AiUsageError;
 use crate::ai_usage::service;
 use crate::authorization::dto::TenantContext;
@@ -57,9 +57,16 @@ async fn get_usage_by_user(
     State(app_state): State<AppState>,
     tenant_context: TenantContext,
     Query(usage_range_query): Query<UsageRangeQuery>,
+    Query(usage_list_query): Query<UsageListQuery>,
 ) -> Response {
     usage_response(
-        service::get_usage_by_user(&app_state, &tenant_context, &usage_range_query).await,
+        service::get_usage_by_user(
+            &app_state,
+            &tenant_context,
+            &usage_range_query,
+            &usage_list_query,
+        )
+        .await,
     )
 }
 
@@ -77,14 +84,14 @@ async fn list_usage_by_conversation(
     State(app_state): State<AppState>,
     tenant_context: TenantContext,
     Query(usage_range_query): Query<UsageRangeQuery>,
-    Query(conversation_page_query): Query<ConversationPageQuery>,
+    Query(usage_list_query): Query<UsageListQuery>,
 ) -> Response {
     usage_response(
         service::list_usage_by_conversation(
             &app_state,
             &tenant_context,
             &usage_range_query,
-            &conversation_page_query,
+            &usage_list_query,
         )
         .await,
     )
@@ -114,26 +121,12 @@ fn usage_response<UsageBody: Serialize>(usage_result: Result<UsageBody, AiUsageE
             authorization_error_response(authorization_error, USAGE_NOT_FOUND_MESSAGE)
                 .into_response()
         }
-        Err(
-            usage_error @ (AiUsageError::RangeReversed
-            | AiUsageError::RangeTooLong { .. }
-            | AiUsageError::RangeAmbiguous
-            | AiUsageError::PageOutOfRange
-            | AiUsageError::RangeWithoutDays
-            | AiUsageError::RangeOutOfCalendar),
-        ) => (
+        Err(usage_error) if usage_error.is_invalid_request() => (
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": usage_error.to_string() })),
         )
             .into_response(),
-        Err(
-            usage_error @ (AiUsageError::Database(_)
-            | AiUsageError::Metadata(_)
-            | AiUsageError::TokenCountOutOfRange { .. }
-            | AiUsageError::UnknownAgent { .. }
-            | AiUsageError::UnreadableStoredValue(_)
-            | AiUsageError::Conversation(_)),
-        ) => (
+        Err(usage_error) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": usage_error.to_string() })),
         )

@@ -26,6 +26,7 @@ pub const ADMIN_FULL_NAME: &str = "Test Admin";
 pub const ENCRYPTION_KEY: &str = "integration-test-encryption-key";
 pub const ENVIRONMENT: &str = "production";
 pub const AI_PROVIDER_API_KEY: &str = "fake-llm-api-key";
+pub const PLATFORM_AI_API_KEY: &str = "fake-llm-platform-ai-key";
 
 pub const ACCESS_TOKEN_COOKIE: &str = "ACCESS_TOKEN";
 pub const REFRESH_TOKEN_COOKIE: &str = "REFRESH_TOKEN";
@@ -269,7 +270,7 @@ pub const SELF_SERVE_TENANT_CREATION_TABLE: &str = "self_serve_tenant_creation";
 pub const TENANT_CREATION_CAPABILITY_PATH: &str = "/tenant/creation_capability";
 pub const TENANT_CREATION_LIMIT_REACHED_CODE: &str = "TENANT_CREATION_LIMIT_REACHED";
 pub const TWO_TENANT_LIMIT_MESSAGE: &str = "You have created the maximum of 2 tenants";
-pub const ONE_TENANT_LIMIT_MESSAGE: &str = "You have created the maximum of 1 tenants";
+pub const ONE_TENANT_LIMIT_MESSAGE: &str = "You have created the maximum of 1 tenant";
 pub const TENANT_NAME_TOO_LONG_MESSAGE: &str = "Use at most 100 characters for the tenant name";
 pub const MAXIMUM_TENANT_NAME_CHARACTERS: usize = 100;
 
@@ -304,6 +305,10 @@ pub const INTERNAL_HOSTS: [&str; 9] = [
 pub const RATE_LIMITED_CODE: &str = "RATE_LIMITED";
 pub const RATE_LIMITED_MESSAGE_PREFIX: &str = "Too many requests. Try again in ";
 pub const TOO_MANY_ATTEMPTS_SIGN_IN_LOCATION: &str = "/signin?error=too_many_attempts";
+pub const RATE_LIMIT_REFUSAL_LOG_MESSAGE: &str = "a request was refused by a rate limit";
+pub const SIGN_IN_RATE_LIMIT_NAME: &str = "sign_in";
+pub const API_RATE_LIMIT_NAME: &str = "api";
+pub const WARNING_LOG_LEVEL: &str = "WARN";
 pub const FORWARDED_FOR_HEADER: &str = "x-forwarded-for";
 pub const FIRST_CLIENT_ADDRESS: &str = "203.0.113.5";
 pub const SECOND_CLIENT_ADDRESS: &str = "203.0.113.6";
@@ -317,6 +322,7 @@ pub const FAST_REFILL_WAIT_MILLISECONDS: u64 = 700;
 pub const TENANT_SUSPENDED_CODE: &str = "TENANT_SUSPENDED";
 pub const TENANT_SUSPENDED_MESSAGE: &str = "This tenant is suspended. Contact support";
 pub const TENANT_SUSPEND_PERMISSION: &str = "tenant:suspend";
+pub const PLATFORM_AI_USAGE_READ_PERMISSION: &str = "platform_ai_usage:read";
 pub const SUSPENDED_TENANT_STATUS: &str = "SUSPENDED";
 pub const ACTIVE_TENANT_STATUS: &str = "ACTIVE";
 pub const TENANT_MEMBER_LIMIT_REACHED_CODE: &str = "TENANT_MEMBER_LIMIT_REACHED";

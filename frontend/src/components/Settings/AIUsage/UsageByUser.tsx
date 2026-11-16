@@ -1,15 +1,26 @@
 import { useUsageByUser } from "src/api/ai_usage";
-import { Avatar, Flex, Table, Text } from "src/components/design-system";
+import { Avatar, Table, Text } from "src/components/design-system";
+import { UsageListTable } from "src/components/Settings/AIUsage/UsageListTable";
 import {
   UsageFailure,
   UsageLoading,
 } from "src/components/Settings/AIUsage/UsageStates";
-import { USERS_TABLE_COLUMNS } from "src/components/Settings/AIUsage/constants";
+import {
+  CONVERSATION_PAGE_SIZE,
+  USERS_TABLE_COLUMNS,
+  USERS_TABLE_HEADERS,
+} from "src/components/Settings/AIUsage/constants";
 import { formatCount } from "src/components/Settings/AIUsage/format";
-import { useUsageRange } from "src/components/Settings/AIUsage/hooks";
+import {
+  useUsageList,
+  useUsageRange,
+} from "src/components/Settings/AIUsage/hooks";
 
 export function UsageByUser() {
-  const byUser = useUsageByUser(useUsageRange());
+  const { usageList, changePage, changeSort, changeSearch } = useUsageList(
+    CONVERSATION_PAGE_SIZE,
+  );
+  const byUser = useUsageByUser(useUsageRange(), usageList);
 
   if (byUser.error) {
     return <UsageFailure failure={byUser.error} />;
@@ -18,32 +29,37 @@ export function UsageByUser() {
     return <UsageLoading />;
   }
   return (
-    <Flex direction="column" gap="lg">
-      <Table columns={USERS_TABLE_COLUMNS} aria-label="Usage by user">
-        <Table.Header>
-          <Table.HeaderCell>User</Table.HeaderCell>
-          <Table.HeaderCell align="end">Tokens</Table.HeaderCell>
-          <Table.HeaderCell align="end">Calls</Table.HeaderCell>
-        </Table.Header>
-        {byUser.data.users.map((user) => (
-          <Table.Row key={user.user_id ?? user.name} aria-label={user.name}>
-            <Table.Cell>
-              <Avatar name={user.name} />
-              <Text fontSize="sm" truncate>
-                {user.name}
-              </Text>
-            </Table.Cell>
-            <Table.Cell align="end">
-              <Text fontSize="sm">{formatCount(user.total_tokens)}</Text>
-            </Table.Cell>
-            <Table.Cell align="end">
-              <Text fontSize="sm" color="subtle">
-                {formatCount(user.call_count)}
-              </Text>
-            </Table.Cell>
-          </Table.Row>
-        ))}
-      </Table>
-    </Flex>
+    <UsageListTable
+      columns={USERS_TABLE_COLUMNS}
+      aria-label="Usage by user"
+      searchLabel="Search users"
+      searchPlaceholder="Search by user"
+      headers={USERS_TABLE_HEADERS}
+      usageList={usageList}
+      usageListPage={byUser.data}
+      hasRows={byUser.data.data.length > 0}
+      onChangeSort={changeSort}
+      onChangeSearch={changeSearch}
+      onChangePage={changePage}
+    >
+      {byUser.data.data.map((user) => (
+        <Table.Row key={user.user_id ?? user.name} aria-label={user.name}>
+          <Table.Cell>
+            <Avatar name={user.name} />
+            <Text fontSize="sm" truncate>
+              {user.name}
+            </Text>
+          </Table.Cell>
+          <Table.Cell align="end">
+            <Text fontSize="sm">{formatCount(user.total_tokens)}</Text>
+          </Table.Cell>
+          <Table.Cell align="end">
+            <Text fontSize="sm" color="subtle">
+              {formatCount(user.call_count)}
+            </Text>
+          </Table.Cell>
+        </Table.Row>
+      ))}
+    </UsageListTable>
   );
 }

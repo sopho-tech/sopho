@@ -479,6 +479,51 @@ async fn name_suggestion_and_the_key_check_fail_when_usage_cannot_be_recorded() 
 }
 
 #[tokio::test]
+async fn chart_and_dashboard_summaries_fail_when_usage_cannot_be_recorded() {
+    let (app, connection_id) = app_with_live_ai("anthropic").await;
+    let canvas = create_canvas(&app, "Dashboard usage").await;
+    let sql_cell = create_sql_cell(
+        &app,
+        &canvas.notebook_id,
+        &connection_id,
+        "Orders by status",
+        ORDER_STATUS_QUERY,
+    )
+    .await;
+    let chart = create_chart_cell(
+        &app,
+        &canvas.notebook_id,
+        &connection_id,
+        "Orders by status chart",
+        order_status_chart_content(&string_field(&sql_cell, "id")),
+    )
+    .await;
+    let chart_id = string_field(&chart, "id");
+    place_chart_on_dashboard(&app, &canvas, &chart_id).await;
+    drop_usage_table(&app).await;
+
+    let chart_summary = summarize_chart(&app, &chart_id).await;
+    let dashboard_summary = app
+        .post(
+            &format!(
+                "/ai_summary/dashboard/{}",
+                string_field(&canvas.dashboard, "id")
+            ),
+            json!({}),
+        )
+        .await;
+
+    assert_eq!(chart_summary["status"], "FAILED", "{chart_summary}");
+    assert_eq!(chart_summary["summary_text"], Value::Null);
+    assert_eq!(
+        dashboard_summary.body["status"], "FAILED",
+        "{}",
+        dashboard_summary.body
+    );
+    assert_eq!(dashboard_summary.body["summary_text"], Value::Null);
+}
+
+#[tokio::test]
 async fn owners_and_admins_may_read_usage_and_members_and_viewers_may_not() {
     let app = TestApp::spawn().await;
     app.login_as_admin().await;

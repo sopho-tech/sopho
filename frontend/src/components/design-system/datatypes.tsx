@@ -35,6 +35,7 @@ export type IconType =
   | "home"
   | "book"
   | "settings"
+  | "shield_user"
   | "close"
   | "circle_x"
   | "swap_horiz"

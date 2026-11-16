@@ -36,7 +36,7 @@ type ConversationQuestionsProps = {
   onBack: () => void;
 };
 
-function ConversationQuestions({
+export function ConversationQuestions({
   conversationQuestions,
   onBack,
 }: ConversationQuestionsProps) {
@@ -78,7 +78,7 @@ function ConversationQuestions({
         <Table.Header>
           <Table.HeaderCell>Question</Table.HeaderCell>
           <Table.HeaderCell align="end">Tokens</Table.HeaderCell>
-          <Table.HeaderCell align="end">Calls</Table.HeaderCell>
+          <Table.HeaderCell align="end">Model calls</Table.HeaderCell>
         </Table.Header>
         {conversationQuestions.questions.map((question) => (
           <Table.Row

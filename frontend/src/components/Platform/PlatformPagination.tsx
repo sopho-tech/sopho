@@ -1,6 +1,5 @@
-import { useCallback } from "react";
 import { Pagination } from "src/components/design-system";
-import { FIRST_PAGE } from "src/components/Platform/constants";
+import { FIRST_PAGE, SINGLE_PAGE_COUNT } from "src/constants/pagination";
 
 type PlatformListPage = {
   page: number;
@@ -22,23 +21,21 @@ export function PlatformPagination({
   listPage,
   onPageChange,
 }: PlatformPaginationProps) {
-  const handlePageClick = useCallback(
-    (pageIndex: number) => onPageChange(pageIndex + FIRST_PAGE),
-    [onPageChange],
-  );
-
-  if (listPage.total_pages <= FIRST_PAGE && listPage.page === FIRST_PAGE) {
+  if (
+    listPage.total_pages <= SINGLE_PAGE_COUNT &&
+    listPage.page === FIRST_PAGE
+  ) {
     return null;
   }
   return (
     <Pagination
       totalPages={listPage.total_pages}
-      currentPage={listPage.page - FIRST_PAGE}
+      currentPage={listPage.page}
       pageSize={listPage.page_size}
       totalItems={listPage.total}
       showRowsPerPage={false}
       onChangePageSize={refusePageSizeChange}
-      onPageClick={handlePageClick}
+      onPageClick={onPageChange}
     />
   );
 }

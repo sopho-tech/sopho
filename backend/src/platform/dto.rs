@@ -80,6 +80,8 @@ pub struct PlatformTenantDto {
     pub capabilities: PlatformTenantCapabilities,
     pub active_owner_count: u64,
     pub created_at: DateTime<FixedOffset>,
+    pub ai_key_label: &'static str,
+    pub platform_ai_tokens_label: String,
 }
 
 #[derive(Debug, Serialize)]

@@ -82,6 +82,10 @@ pub async fn run_startup_suggested_question_refresh(app_state: &AppState) {
     scheduler::run_startup_suggested_question_refresh(app_state).await;
 }
 
+pub async fn is_any_background_job_scheduled(app_state: &AppState) -> anyhow::Result<bool> {
+    scheduler::is_any_job_scheduled(app_state).await
+}
+
 pub async fn deliver_due_emails(app_state: &AppState) -> anyhow::Result<()> {
     Ok(email_delivery::service::deliver_due_emails(app_state).await?)
 }
