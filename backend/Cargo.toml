@@ -22,7 +22,7 @@ unsafe_code = "deny"
 aes-gcm = "0.11.1"
 anyhow = "1.0.97"
 argon2 = "0.5.3"
-askama = "0.16.1"
+askama = { version = "0.16.1", default-features = false, features = ["derive", "std", "urlencode"] }
 axum = { version = "0.8.1", features = ["json"] }
 base64 = "0.23.1"
 chrono = { version = "0.4", features = ["serde"] }

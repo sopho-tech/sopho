@@ -1,3 +1,10 @@
+[advisories]
+ignore = [
+  { id = "RUSTSEC-2023-0071", reason = "rsa comes from openidconnect, which has no release on rsa 0.10; Sopho only verifies ID token signatures and holds no RSA private key" },
+  { id = "RUSTSEC-2026-0440", reason = "astral-tokio-tar comes from testcontainers, a dev-dependency with no release that drops it" },
+  { id = "RUSTSEC-2026-0459", reason = "sqlx-sqlite 0.9.0 caps libsqlite3-sys below 0.38; the flaw needs a crafted database and WAL file already on the server" },
+]
+
 [licenses]
 allow = [
   "0BSD",
