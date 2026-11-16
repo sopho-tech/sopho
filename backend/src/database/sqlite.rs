@@ -8,6 +8,7 @@ use crate::{connection::constants::ConnectionStatus, entity};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use futures_util::StreamExt;
+use sqlx::AssertSqlSafe;
 use sqlx::Column;
 use sqlx::ConnectOptions;
 use sqlx::Connection;
@@ -97,7 +98,7 @@ pub async fn execute_query(
     conn: &mut sqlx::sqlite::SqliteConnection,
     query: &str,
 ) -> Result<QueryResult, ExecuteQueryError> {
-    let rows = sqlx::query(query)
+    let rows = sqlx::query(AssertSqlSafe(query.to_string()))
         .fetch_all(conn)
         .await
         .map_err(ExecuteQueryError::Database)?;
@@ -244,7 +245,9 @@ async fn fetch_table_definition(
     table_name: &str,
 ) -> Result<Table, sqlx::Error> {
     let pragma_query = format!("PRAGMA table_info({})", quote_ident(table_name));
-    let column_rows = sqlx::query(&pragma_query).fetch_all(sqlite_pool).await?;
+    let column_rows = sqlx::query(AssertSqlSafe(pragma_query))
+        .fetch_all(sqlite_pool)
+        .await?;
 
     let mut columns: std::collections::HashMap<String, CatalogColumn> =
         std::collections::HashMap::new();
@@ -262,7 +265,9 @@ async fn fetch_table_definition(
             table = quoted_table,
             limit = CATALOG_SAMPLE_VALUES_PER_COLUMN
         );
-        let sample_rows = sqlx::query(&sample_query).fetch_all(sqlite_pool).await?;
+        let sample_rows = sqlx::query(AssertSqlSafe(sample_query))
+            .fetch_all(sqlite_pool)
+            .await?;
         let sample_values = sample_rows
             .into_iter()
             .filter_map(|sample_row| {

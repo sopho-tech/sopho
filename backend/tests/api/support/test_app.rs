@@ -597,7 +597,7 @@ async fn default_tenant_id(app_state: &AppState) -> Option<Uuid> {
     let backend = app_state.database_connection.get_database_backend();
     let tenant_rows = app_state
         .database_connection
-        .query_all(backend.build(&query))
+        .query_all_raw(backend.build(&query))
         .await
         .expect("read the tenants");
     assert!(

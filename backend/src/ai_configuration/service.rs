@@ -206,8 +206,7 @@ pub async fn upsert(
     )
     .await?;
 
-    let new_client = build_client_for_provider(provider, &api_key, &app_state.config)
-        .map_err(|e| AiConfigurationError::ClientBuild(e.to_string()))?;
+    let new_client = build_client_for_provider(provider, &api_key, &app_state.config);
     app_state.set_model_client(tenant_id, new_client).await;
 
     status_of_tenant(app_state, tenant_id, Some(&model)).await
@@ -266,8 +265,7 @@ pub async fn load_at_startup_for_tenant(
         );
         return Ok(());
     };
-    let client = build_client_for_provider(provider, &api_key, &app_state.config)
-        .map_err(|e| AiConfigurationError::ClientBuild(e.to_string()))?;
+    let client = build_client_for_provider(provider, &api_key, &app_state.config);
     app_state.set_model_client(tenant_id, client).await;
     Ok(())
 }
@@ -276,7 +274,7 @@ pub fn build_client_for_provider(
     provider: ModelProvider,
     api_key: &str,
     configurations: &Configurations,
-) -> Result<ModelClient, rig::http_client::Error> {
+) -> ModelClient {
     match provider {
         ModelProvider::Anthropic => {
             ModelClient::anthropic(api_key, configurations.anthropic_base_url.as_deref())
@@ -293,7 +291,7 @@ async fn run_liveness_ping(
     provider: ModelProvider,
     api_key: &str,
 ) -> anyhow::Result<()> {
-    let client = build_client_for_provider(provider, api_key, &app_state.config)?;
+    let client = build_client_for_provider(provider, api_key, &app_state.config);
     let call_context = AiCallContext::for_user(
         tenant_context.tenant_id().clone(),
         tenant_context.user_id(),

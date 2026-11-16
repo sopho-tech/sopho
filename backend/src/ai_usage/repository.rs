@@ -9,7 +9,7 @@ use crate::ai_usage::datatypes::{UsageRange, UsageScope};
 use crate::authorization::dto::TenantId;
 use crate::entity::{ai_usage, platform_ai_usage};
 use sea_orm::prelude::DateTimeWithTimeZone;
-use sea_orm::sea_query::{Alias, Expr, Func, OnConflict, SimpleExpr};
+use sea_orm::sea_query::{Alias, Expr, ExprTrait, Func, OnConflict, SimpleExpr};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection, DbBackend,
     DbErr, EntityTrait, FromQueryResult, Order, QueryFilter, QueryOrder, QuerySelect, Select, Set,
@@ -147,7 +147,7 @@ pub async fn list_platform_ai_usage(
 fn summed_tokens(token_column: ai_usage::Column) -> SimpleExpr {
     Expr::expr(Func::coalesce([
         Expr::col(token_column).sum(),
-        Expr::val(0_i64).into(),
+        Expr::val(0_i64),
     ]))
     .cast_as(Alias::new(BIG_INTEGER_TYPE))
 }
@@ -170,9 +170,9 @@ fn utc_day_expression(database_backend: DbBackend) -> Result<SimpleExpr, DbErr> 
     match database_backend {
         DbBackend::Sqlite => Ok(Expr::cust(SQLITE_UTC_DAY_EXPRESSION)),
         DbBackend::Postgres => Ok(Expr::cust(POSTGRES_UTC_DAY_EXPRESSION)),
-        DbBackend::MySql => Err(DbErr::Custom(
-            "AI usage by day is not supported on MySQL".to_string(),
-        )),
+        unsupported_database_backend => Err(DbErr::Custom(format!(
+            "AI usage by day is not supported on {unsupported_database_backend:?}"
+        ))),
     }
 }
 

@@ -1,6 +1,6 @@
 use aes_gcm::{
-    Aes256Gcm, Key,
-    aead::{Aead, AeadCore, KeyInit, OsRng},
+    Aes256Gcm, Nonce,
+    aead::{Aead, Generate, Key, KeyInit},
 };
 use anyhow::Result;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
@@ -32,15 +32,14 @@ pub fn generate_and_store_encryption_key() -> std::io::Result<(String, String)> 
 }
 
 pub fn generate_encryption_key() -> String {
-    let key = Aes256Gcm::generate_key(OsRng);
+    let key = Key::<Aes256Gcm>::generate();
     STANDARD.encode(key.as_slice())
 }
 
 pub fn encrypt(encryption_key: String, data: String) -> Result<String, aes_gcm::Error> {
     let key_bytes = Sha256::digest(encryption_key.as_bytes());
-    let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
-    let cipher = Aes256Gcm::new(key);
-    let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
+    let cipher = Aes256Gcm::new(&key_bytes);
+    let nonce = Nonce::generate();
     let ciphertext = cipher.encrypt(&nonce, data.as_bytes())?;
     let mut combined = nonce.as_slice().to_vec();
     combined.extend_from_slice(&ciphertext);
@@ -51,10 +50,10 @@ pub fn decrypt(encryption_key: String, data: String) -> Result<String> {
     let combined = STANDARD.decode(data.as_bytes())?;
     let (nonce_slice, ciphertext) = combined.split_at(12);
     let key_bytes = Sha256::digest(encryption_key.as_bytes());
-    let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
-    let cipher = Aes256Gcm::new(key);
+    let cipher = Aes256Gcm::new(&key_bytes);
+    let nonce = Nonce::try_from(nonce_slice)?;
     let plaintext = cipher
-        .decrypt(aes_gcm::Nonce::from_slice(nonce_slice), ciphertext)
+        .decrypt(&nonce, ciphertext)
         .map_err(|e| anyhow::anyhow!("decryption failed: {}", e))?;
     String::from_utf8(plaintext).map_err(Into::into)
 }

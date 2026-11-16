@@ -2,13 +2,13 @@ use crate::ai::error::AgentCallError;
 use crate::ai_usage::datatypes::{AiCallContext, ModelCallRecord, TokenUsage};
 use crate::ai_usage::service as ai_usage_service;
 use crate::common::AppState;
-use rig::agent::PromptResponse;
-use rig::client::CompletionClient;
-use rig::completion::{CompletionModel, Prompt, PromptError};
-use rig::http_client::Error;
-use rig::message::Message;
-use rig::providers::{anthropic, openai};
-use rig::wasm_compat::WasmCompatSend;
+use rig_core::DynModel;
+use rig_core::completion::{CompletionRequest, CompletionResponse};
+use rig_core::message::Message;
+use rig_core::operation::Completion;
+use rig_core::providers::anthropic::{Anthropic, AnthropicConfig};
+use rig_core::providers::openai::{OpenAI, OpenAIConfig};
+use rig_core::wasm_compat::WasmCompatSend;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 
@@ -22,7 +22,7 @@ pub enum ModelRole {
 #[strum(serialize_all = "snake_case")]
 #[expect(
     clippy::enum_variant_names,
-    reason = "variant names are the agent names given to rig and shown in logs"
+    reason = "variant names are the agent names recorded with usage and shown in logs"
 )]
 pub enum AgentName {
     CanvasGenerationAgent,
@@ -96,27 +96,27 @@ impl ModelProvider {
 
 #[derive(Clone)]
 pub enum ModelClient {
-    Anthropic(rig::client::Client<anthropic::client::AnthropicExt>),
-    OpenAI(rig::client::Client<openai::client::OpenAICompletionsExt>),
+    Anthropic(Box<Anthropic>),
+    OpenAI(Box<OpenAI>),
 }
 
 impl ModelClient {
-    pub fn anthropic(api_key: &str, base_url: Option<&str>) -> Result<Self, Error> {
-        let builder = anthropic::Client::builder().api_key(api_key);
-        let builder = match base_url {
-            Some(base_url) => builder.base_url(base_url),
-            None => builder,
+    pub fn anthropic(api_key: &str, base_url: Option<&str>) -> Self {
+        let anthropic_config = AnthropicConfig::new(api_key);
+        let anthropic_config = match base_url {
+            Some(base_url) => anthropic_config.with_base_url(base_url),
+            None => anthropic_config,
         };
-        Ok(Self::Anthropic(builder.build()?))
+        Self::Anthropic(Box::new(anthropic_config.client()))
     }
 
-    pub fn openai(api_key: &str, base_url: Option<&str>) -> Result<Self, Error> {
-        let builder = openai::CompletionsClient::builder().api_key(api_key);
-        let builder = match base_url {
-            Some(base_url) => builder.base_url(base_url),
-            None => builder,
+    pub fn openai(api_key: &str, base_url: Option<&str>) -> Self {
+        let openai_config = OpenAIConfig::new(api_key);
+        let openai_config = match base_url {
+            Some(base_url) => openai_config.with_base_url(base_url),
+            None => openai_config,
         };
-        Ok(Self::OpenAI(builder.build()?))
+        Self::OpenAI(Box::new(openai_config.client()))
     }
 
     pub fn build_agent(
@@ -133,34 +133,21 @@ impl ModelClient {
             max_tokens,
         } = agent_settings;
         let model_name = model_name_for(self, role);
-        let model_agent = match self {
-            Self::Anthropic(client) => ModelAgent::Anthropic(
-                client
-                    .agent(model_name)
-                    .name(agent_name.as_str())
-                    .preamble(system_prompt)
-                    .temperature(temperature)
-                    .max_tokens(max_tokens)
-                    .build(),
-            ),
-            Self::OpenAI(client) => ModelAgent::OpenAI(
-                client
-                    .agent(model_name)
-                    .name(agent_name.as_str())
-                    .preamble(system_prompt)
-                    .temperature(temperature)
-                    .max_tokens(max_tokens)
-                    .build(),
-            ),
+        let completion_model = match self {
+            Self::Anthropic(client) => client.completion(model_name).erase(),
+            Self::OpenAI(client) => client.chat(model_name).erase(),
         };
         Agent {
-            model_agent,
+            completion_model,
+            system_prompt: system_prompt.to_string(),
+            temperature,
+            max_tokens,
             usage_recorder: UsageRecorder {
                 app_state: app_state.clone(),
                 call_context: call_context.clone(),
                 agent_name,
-                model_provider: self.model_provider(),
                 model_name,
+                model_provider: self.model_provider(),
             },
         }
     }
@@ -182,20 +169,11 @@ fn model_name_for(client: &ModelClient, role: ModelRole) -> &'static str {
     }
 }
 
-pub fn normalized_token_usage(
-    model_provider: ModelProvider,
-    reported_usage: rig::completion::Usage,
-) -> TokenUsage {
-    let input_tokens = match model_provider {
-        ModelProvider::Anthropic => {
-            reported_usage.input_tokens + reported_usage.cached_input_tokens
-        }
-        ModelProvider::Openai => reported_usage.input_tokens,
-    };
+pub fn token_usage_from_reported_usage(reported_usage: rig_core::completion::Usage) -> TokenUsage {
     TokenUsage {
-        input_tokens,
-        output_tokens: reported_usage.output_tokens,
-        cached_input_tokens: reported_usage.cached_input_tokens,
+        input_tokens: reported_usage.input_tokens.unwrap_or(0),
+        output_tokens: reported_usage.output_tokens.unwrap_or(0),
+        cached_input_tokens: reported_usage.cached_input_tokens.unwrap_or(0),
     }
 }
 
@@ -208,7 +186,10 @@ struct UsageRecorder {
 }
 
 impl UsageRecorder {
-    async fn record(&self, reported_usage: rig::completion::Usage) -> Result<(), AgentCallError> {
+    async fn record(
+        &self,
+        reported_usage: rig_core::completion::Usage,
+    ) -> Result<(), AgentCallError> {
         ai_usage_service::record_model_call(
             &self.app_state,
             &self.call_context,
@@ -216,7 +197,7 @@ impl UsageRecorder {
                 agent_name: self.agent_name.as_str(),
                 provider: self.model_provider.into(),
                 model: self.model_name,
-                token_usage: normalized_token_usage(self.model_provider, reported_usage),
+                token_usage: token_usage_from_reported_usage(reported_usage),
             },
         )
         .await?;
@@ -224,24 +205,20 @@ impl UsageRecorder {
     }
 }
 
-enum ModelAgent {
-    Anthropic(rig::agent::Agent<rig::providers::anthropic::completion::CompletionModel>),
-    OpenAI(rig::agent::Agent<rig::providers::openai::completion::CompletionModel>),
-}
-
 pub struct Agent {
-    model_agent: ModelAgent,
+    completion_model: DynModel<Completion>,
+    system_prompt: String,
+    temperature: f64,
+    max_tokens: u64,
     usage_recorder: UsageRecorder,
 }
 
 impl Agent {
     pub async fn prompt(&self, prompt: &str) -> Result<String, AgentCallError> {
-        let prompt_response = match &self.model_agent {
-            ModelAgent::Anthropic(agent) => agent.prompt(prompt).extended_details().await,
-            ModelAgent::OpenAI(agent) => agent.prompt(prompt).extended_details().await,
-        }?;
-        self.usage_recorder.record(prompt_response.usage).await?;
-        Ok(prompt_response.output)
+        let completion_response = self
+            .complete(self.completion_request(Message::user(prompt), &[]))
+            .await?;
+        Ok(completion_response.text())
     }
 
     pub async fn prompt_typed<T>(
@@ -274,63 +251,65 @@ impl Agent {
     where
         T: JsonSchema + DeserializeOwned + WasmCompatSend,
     {
-        let output_schema = schemars::schema_for!(T);
-        let prompt_response = match &self.model_agent {
-            ModelAgent::Anthropic(agent) => {
-                prompt_with_output_schema(agent, output_schema, prompt, history).await
-            }
-            ModelAgent::OpenAI(agent) => {
-                prompt_with_output_schema(agent, output_schema, prompt, history).await
-            }
-        }?;
-        self.usage_recorder.record(prompt_response.usage).await?;
-        if prompt_response.output.is_empty() {
+        let earlier_messages = history.as_deref().map_or(&[][..], Vec::as_slice);
+        let completion_request = self
+            .completion_request(prompt.clone(), earlier_messages)
+            .output_schema(schemars::schema_for!(T));
+        let completion_response = self.complete(completion_request).await?;
+        if let Some(history) = history {
+            history.push(prompt);
+            history.extend(completion_response.message());
+        }
+        let answer_text = completion_response.text();
+        if answer_text.is_empty() {
             return Err(AgentCallError::EmptyAnswer);
         }
-        Ok(serde_json::from_str(&prompt_response.output)?)
+        Ok(serde_json::from_str(&answer_text)?)
     }
-}
 
-async fn prompt_with_output_schema<M>(
-    agent: &rig::agent::Agent<M>,
-    output_schema: schemars::Schema,
-    prompt: Message,
-    history: Option<&mut Vec<Message>>,
-) -> Result<PromptResponse, PromptError>
-where
-    M: CompletionModel + 'static,
-{
-    let mut agent_with_output_schema = agent.clone();
-    agent_with_output_schema.output_schema = Some(output_schema);
-    let prompt_request = agent_with_output_schema.prompt(prompt).extended_details();
-    match history {
-        Some(history) => prompt_request.with_history(history).await,
-        None => prompt_request.await,
+    fn completion_request(
+        &self,
+        prompt: Message,
+        earlier_messages: &[Message],
+    ) -> CompletionRequest {
+        CompletionRequest::new(prompt)
+            .messages(earlier_messages.iter().cloned())
+            .preamble(self.system_prompt.as_str())
+            .temperature(self.temperature)
+            .max_tokens(self.max_tokens)
+    }
+
+    async fn complete(
+        &self,
+        completion_request: CompletionRequest,
+    ) -> Result<CompletionResponse, AgentCallError> {
+        let completion_response = self
+            .completion_model
+            .call(completion_request)
+            .await
+            .map_err(Box::new)?;
+        self.usage_recorder
+            .record(completion_response.usage)
+            .await?;
+        Ok(completion_response)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{ModelProvider, normalized_token_usage};
+    use super::token_usage_from_reported_usage;
     use crate::ai_usage::datatypes::TokenUsage;
-
-    fn reported_usage(
-        input_tokens: u64,
-        output_tokens: u64,
-        cached_input_tokens: u64,
-    ) -> rig::completion::Usage {
-        rig::completion::Usage {
-            input_tokens,
-            output_tokens,
-            total_tokens: input_tokens + output_tokens,
-            cached_input_tokens,
-        }
-    }
+    use rig_core::completion::Usage;
 
     #[test]
-    fn anthropic_input_gains_the_tokens_read_from_cache() {
+    fn reported_counts_are_recorded_as_reported() {
+        let reported_usage = Usage::new()
+            .input_tokens(150)
+            .output_tokens(15)
+            .cached_input_tokens(30);
+
         assert_eq!(
-            normalized_token_usage(ModelProvider::Anthropic, reported_usage(120, 15, 30)),
+            token_usage_from_reported_usage(reported_usage),
             TokenUsage {
                 input_tokens: 150,
                 output_tokens: 15,
@@ -340,13 +319,13 @@ mod tests {
     }
 
     #[test]
-    fn openai_input_already_includes_the_tokens_read_from_cache() {
+    fn counts_the_provider_did_not_report_are_recorded_as_zero() {
         assert_eq!(
-            normalized_token_usage(ModelProvider::Openai, reported_usage(200, 60, 50)),
+            token_usage_from_reported_usage(Usage::new()),
             TokenUsage {
-                input_tokens: 200,
-                output_tokens: 60,
-                cached_input_tokens: 50,
+                input_tokens: 0,
+                output_tokens: 0,
+                cached_input_tokens: 0,
             }
         );
     }

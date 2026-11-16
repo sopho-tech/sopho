@@ -9,6 +9,7 @@ use crate::{connection::constants::ConnectionStatus, entity};
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime};
 use futures_util::StreamExt;
 use rust_decimal::Decimal;
+use sqlx::AssertSqlSafe;
 use sqlx::Column;
 use sqlx::ConnectOptions;
 use sqlx::Connection;
@@ -76,7 +77,7 @@ pub async fn execute_query(
     conn: &mut sqlx::postgres::PgConnection,
     query: &str,
 ) -> Result<QueryResult, ExecuteQueryError> {
-    let rows = sqlx::query(query)
+    let rows = sqlx::query(AssertSqlSafe(query.to_string()))
         .fetch_all(conn)
         .await
         .map_err(ExecuteQueryError::Database)?;
@@ -194,7 +195,9 @@ async fn fetch_table_sample_values(
             })
             .collect();
         let sample_query = format!("SELECT {}", projections.join(", "));
-        let sample_row = sqlx::query(&sample_query).fetch_one(postgres_pool).await?;
+        let sample_row = sqlx::query(AssertSqlSafe(sample_query))
+            .fetch_one(postgres_pool)
+            .await?;
         for chunk_index in 0..column_chunk.len() {
             let column_alias = format!("sample_column_{}", chunk_index);
             let values: Option<Vec<String>> = sample_row.try_get(column_alias.as_str())?;

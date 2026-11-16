@@ -4,7 +4,7 @@ use crate::canvas::dto;
 use crate::common::time_utils;
 use crate::entity::canvas;
 use sea_orm::Condition;
-use sea_orm::sea_query::{Expr, Func, Query, SelectStatement};
+use sea_orm::sea_query::{Expr, ExprTrait, Func, Query, SelectStatement};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr,
     EntityTrait, PaginatorTrait,

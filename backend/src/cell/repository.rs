@@ -9,7 +9,7 @@ use sea_orm::Condition;
 use sea_orm::QueryFilter;
 use sea_orm::QueryOrder;
 use sea_orm::Set;
-use sea_orm::sea_query::{Expr, Func, SelectStatement};
+use sea_orm::sea_query::{Expr, ExprTrait, Func, SelectStatement};
 use sea_orm::{
     ActiveModelTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
     Order, PaginatorTrait,

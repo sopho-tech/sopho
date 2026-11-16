@@ -1,7 +1,7 @@
 use crate::email_delivery::constants::{EXPIRED_EMAIL_MESSAGE, EmailStatus};
 use crate::entity::email_outbox;
 use sea_orm::prelude::DateTimeWithTimeZone;
-use sea_orm::sea_query::{Expr, Func};
+use sea_orm::sea_query::{Expr, ExprTrait, Func};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection, DbErr,
     EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect,

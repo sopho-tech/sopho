@@ -24,7 +24,7 @@ use crate::database::service::{execute_sql_queries_in_parallel, execute_sql_quer
 use crate::entity;
 use anyhow::Result;
 use futures_util::StreamExt;
-use rig::message::Message;
+use rig_core::message::Message;
 use tracing::info;
 
 pub async fn execute(

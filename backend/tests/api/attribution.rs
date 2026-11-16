@@ -336,7 +336,7 @@ async fn column_nullability(app: &TestApp, table: &str) -> HashMap<String, bool>
     };
     app.app_state
         .database_connection
-        .query_all(Statement::from_string(database_backend, query))
+        .query_all_raw(Statement::from_string(database_backend, query))
         .await
         .unwrap_or_else(|error| panic!("read the columns of {table}: {error}"))
         .iter()
@@ -410,7 +410,7 @@ async fn take_write_order(app: &TestApp) -> Vec<String> {
     let rows = app
         .app_state
         .database_connection
-        .query_all(Statement::from_string(
+        .query_all_raw(Statement::from_string(
             backend(app),
             "SELECT table_name FROM write_log ORDER BY write_sequence",
         ))

@@ -1,7 +1,7 @@
 use crate::authentication::constants::{SessionStatus, UserStatus};
 use crate::common::time_utils;
 use crate::entity;
-use sea_orm::sea_query::{Expr, Func};
+use sea_orm::sea_query::{Expr, ExprTrait, Func};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection, DbErr,
     EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
@@ -197,7 +197,7 @@ pub async fn lock_user_row(connection: &impl ConnectionTrait, user_id: Uuid) -> 
     Ok(entity::user::Entity::update_many()
         .col_expr(
             entity::user::Column::UpdatedAt,
-            Expr::col(entity::user::Column::UpdatedAt).into(),
+            Expr::col(entity::user::Column::UpdatedAt),
         )
         .filter(entity::user::Column::Id.eq(user_id))
         .exec(connection)

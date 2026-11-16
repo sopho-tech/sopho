@@ -8,7 +8,7 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
-FROM rust:1.99.0-trixie AS chef
+FROM rust:1.99.1-trixie AS chef
 ENV RUSTUP_TOOLCHAIN=${RUST_VERSION}
 RUN cargo install --locked cargo-chef --version 0.1.78
 WORKDIR /app

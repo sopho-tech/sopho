@@ -164,7 +164,7 @@ async fn admin_seeding_is_idempotent_across_restarts() {
     let user_count = app
         .app_state
         .database_connection
-        .query_one(Statement::from_string(
+        .query_one_raw(Statement::from_string(
             backend,
             "SELECT COUNT(*) AS user_count FROM \"user\"",
         ))

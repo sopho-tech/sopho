@@ -2,7 +2,7 @@ use crate::authorization::dto::TenantId;
 use crate::entity::notebook;
 use sea_orm::ActiveValue::Set;
 use sea_orm::Condition;
-use sea_orm::sea_query::{Expr, Query, SelectStatement};
+use sea_orm::sea_query::{Expr, ExprTrait, Query, SelectStatement};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait};
 use sea_orm::{ColumnTrait, ConnectionTrait, DatabaseTransaction, QueryFilter, QueryOrder};
 use uuid::Uuid;
