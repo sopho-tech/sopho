@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@playwright/test": "^1.65.0",
+    "@playwright/test": "^1.65.1",
     "@testcontainers/postgresql": "^12.2.1",
     "@types/node": "^26.6.6",
     "testcontainers": "^12.2.1",
