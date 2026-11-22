@@ -6,13 +6,13 @@
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.3",
     "markdownlint-cli2": "^0.24.1",
-    "oxlint": "^1.92.0",
-    "oxlint-tsgolint": "^7.0.2004",
-    "prettier": "^3.9.10",
+    "oxlint": "^1.93.0",
+    "oxlint-tsgolint": "^7.0.2007",
+    "prettier": "^3.10.1",
     "stylelint": "^17.16.0",
     "stylelint-config-css-modules": "^4.6.0",
     "stylelint-config-standard": "^40.0.0",
-    "tombi": "^1.11.0"
+    "tombi": "^1.11.2"
   },
   "overrides": {
     "katex": "^0.19.1"
